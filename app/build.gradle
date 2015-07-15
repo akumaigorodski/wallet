@@ -1,0 +1,36 @@
+apply plugin: "com.android.application"
+apply plugin: "jp.leafytree.android-scala"
+
+repositories {
+    mavenCentral()
+}
+
+android {
+    compileSdkVersion 21
+    buildToolsVersion "21.1.2"
+
+    defaultConfig {
+        versionName "1.0"
+        minSdkVersion 15
+        versionCode 1
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles 'proguard-rules.txt'
+        }
+        debug {
+            minifyEnabled true
+            proguardFiles 'proguard-rules.txt'
+        }
+    }
+}
+
+dependencies {
+    compile files('libs/zxing-core-3.1.0.jar')
+    compile files('libs/jbox2d-library-2.3.1-SNAPSHOT.jar')
+    compile 'info.hoang8f:android-segmented:1.0.4'
+    compile 'org.scala-lang:scala-library:2.11.6'
+    compile 'org.bitcoinj:bitcoinj-core:0.13'
+}

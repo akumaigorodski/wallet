@@ -1,0 +1,149 @@
+<resources>
+    <!-- lang identifier -->
+    <string name="lang">eng</string>
+
+    <!-- app wide -->
+    <string name="or">or</string>
+    <string name="app_name">Bitcoins</string>
+    <string name="sets_noscreen">Don\'t make a screenshot</string>
+    <string name="sets_password_ok">New password has been set successfully</string>
+    <string name="sets_destruct_ok">Destruction code has been set to «%1$s»</string>
+    <string name="sets_rescan_ok">Application will be closed now and blockchain rescan will be triggered on next launch</string>
+    <string name="greetings">Welcome to Bitcoins Wallet!\nPlease read <a href='http://btcontract.github.io/bitcoins'>wallet manual</a> first</string>
+    <string name="password_info">Without password you are in constant danger of losing your money. Please pick one which is at least 8 characters long</string>
+    <string name="copied_to_buffer">Copied to clipboard</string>
+    <string name="wallet_create">Create New Wallet</string>
+    <string name="wallet_empty">Wallet is empty</string>
+    <string name="wallet_password">Password</string>
+    <string name="wallet_open">Open wallet</string>
+
+    <string name="sets_fee">Fee per kilobyte</string>
+    <string name="sets_pass_ask">Ask for password on startup</string>
+    <string name="sets_pass_change">Change wallet password</string>
+    <string name="sets_destruct_set">Set destruction code</string>
+    <string name="sets_mnemonic">View mnemonic code</string>
+    <string name="sets_rescan">Rescan blockchain</string>
+    <string name="sets_about">Read app manual</string>
+
+    <string name="password_new">New password</string>
+    <string name="destruct_new">Destruction code</string>
+    <string name="password_old">Current password</string>
+    <string name="password_wrong">Wrong wallet password</string>
+    <string name="wallet_restore">Restore Wallet From Code</string>
+    <string name="password_too_short">Password is too short</string>
+    <string name="destruct_too_short">Destruction code is too short</string>
+
+    <!-- menu -->
+    <string name="action_settings">Wallet settings</string>
+    <string name="action_tx_history">View transactions</string>
+    <string name="action_request_payment">Request for a payment</string>
+    <string name="action_send_money">Send coins to an address</string>
+    <string name="action_scan_qr">Scan a QR picture</string>
+
+    <!-- errors -->
+    <string name="err_pass">Transaction failed because password did not match. Please make sure you have provided a correct password</string>
+    <string name="err_low_funds">Transaction failed because %1$s exceeds the total amount of coins in this wallet. Please add some funds and then try again</string>
+    <string name="err_empty_shrunk">Transaction failed because an output could not be shrunken for fees without violating a protocol rules. Please add some funds and then try again</string>
+    <string name="err_transaction_too_large">Transaction failed because it is too big for Bitcoin network to process. Please try breaking it into a number of smaller transactions</string>
+    <string name="err_different_net">Failed because request contains an address that belongs to a different network</string>
+    <string name="err_optional_field">Failed because requset contains a malformed amount which could not be parsed</string>
+    <string name="err_required_field">Failed because request contains a required parameter of unknown meaning</string>
+    <string name="err_uri">Failed because request contains a malformed URI which could not be parsed</string>
+    <string name="err_address">Failed because Bitcoin address in a given request is not valid</string>
+    <string name="err_neg">Failed because request contains a negative sum amount</string>
+    <string name="err_general">Failed because an unexpected error has occurred</string>
+    <string name="err_again">Retry</string>
+
+    <!-- loading errors -->
+    <string name="err_tx_load">Could not load transactions</string>
+    <string name="err_qr_gen">Could not generate a picture</string>
+    
+    <!-- dialogs -->
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_next">Next</string>
+    <string name="dialog_back">Back</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="input_hint_sat">amount in sat</string>
+    <string name="input_hint_btc">amount in btc</string>
+    <string name="input_alt_sat">%1$s in satoshi</string>
+    <string name="input_alt_btc">%1$s in bitcoins</string>
+    <string name="input_tip_sat">same amount in satoshi</string>
+    <string name="input_tip_btc">same amount in bitcoins</string>
+    <string name="dialog_addr_wrong">Bitcoin address is invalid</string>
+    <string name="dialog_sum_big">Amount exceeds wallet balance</string>
+    <string name="dialog_sum_dusty">Current amount is dusty</string>
+    <string name="spend_address_tip">where to send money</string>
+    <string name="spend_address_hint">Bitcoin address</string>
+    <string name="input_btc">&#160;bitcoins&#160;</string>
+    <string name="input_sat">&#160;satoshi&#160;</string>
+
+    <string-array name="dialog_request">
+        <item>Turn request into QR code</item>
+        <item>Copy request to clipboard</item>
+        <item>Share request&#8230;</item>
+    </string-array>
+
+    <!-- notifications -->
+    <string name="reorg">Reorg just happened</string>
+    <string name="info_progress">Sync: %1$d blocks left</string>
+    <string name="info_progress_done">Blockchain is up to date</string>
+    <string name="tx_announce">Announcing transaction&#8230;</string>
+    <string name="pass_checking">Checking password&#8230;</string>
+    <string name="pass_changing">DO NOT CLOSE WALLET</string>
+    <string name="tx_1st_conf">Got 1st confirmation</string>
+    <string name="tx_received">Just received %1$s</string>
+    <string name="tx_sent">Just sent %1$s</string>
+
+    <array name="info_peers">
+        <item>Searching for peers&#8230;</item>
+        <item>Connected to %1$d peer</item>
+        <item>Connected to %1$d peers</item>
+    </array>
+
+    <!-- activity_create, activity_restore -->
+    <string name="create_wallet_creating">Generating your wallet\nIt may take up to a few minutes</string>
+    <string name="restore_wallet_restoring">Restoring your wallet\nIt may take a while</string>
+    <string name="restore_mnemonic_wrong">Mnemonic must be 12 words long</string>
+    <string name="restore_hint">Your mnemonic code</string>
+    <string name="restore_wallet">Restore Wallet</string>
+
+    <!-- activity_request -->
+    <string name="req_generating">Generating QR code</string>
+    <string name="req_save">Share QR code</string>
+
+    <!-- activity_txs -->
+    <string name="txs_yes_fee">fee %1$s</string>
+    <string name="txs_no_fee">without fee</string>
+    <string name="txs_received_to"><![CDATA[received to <font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[sent to <font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
+
+    <string name="txs_no_time">time unknown</string>
+    <string name="txs_noaddr">unknown address</string>
+    <string name="txs_large_dead">TRANSACTION IS DEAD</string>
+    <string name="txs_normal_dead">DEAD</string>
+
+    <string name="txs_copy_hash">Copy hash to clipboard</string>
+    <string name="txs_copy_address">Copy address to clipboard</string>
+    <string name="txs_inc"><![CDATA[<font color=#777777>Transaction hash</font><br>%1$s<br><br><font color=#777777>Received coins to address</font><br>%2$s]]></string>
+    <string name="txs_out"><![CDATA[<font color=#777777>Transaction hash</font><br>%1$s<br><br><font color=#777777>Sent coins to address</font><br>%2$s]]></string>
+
+    <array name="txs_total">
+        <item>no txs</item>
+        <item>%1$s tx</item>
+        <item>%1$s txs</item>
+    </array>
+
+    <array name="txs_normal_conf">
+        <item>WAIT</item>
+        <item>%1$s</item>
+        <item>%1$s</item>
+    </array>
+
+    <array name="txs_large_conf">
+        <item>AWAITING CONFIRMATION</item>
+        <item>%1$s CONFIRMATION</item>
+        <item>%1$s CONFIRMATIONS</item>
+    </array>
+</resources>

@@ -1,0 +1,154 @@
+<resources>
+    <!-- lang identifier -->
+    <string name="lang">rus</string>
+
+    <!-- app wide -->
+    <string name="or">или</string>
+    <string name="app_name">Bitcoins</string>
+    <string name="sets_noscreen">Не делайте скриншот</string>
+    <string name="greetings">Добро пожаловать в Bitcoins!</string>
+    <string name="sets_password_ok">Новый пароль успешно установлен</string>
+    <string name="sets_destruct_ok">Установлен новый код уничтожения: «%1$s»</string>
+    <string name="sets_rescan_ok">Сейчас кошелек будет закрыт, а повторное сканирование начнется при следующем открытии</string>
+    <string name="password_info">Пожалуйста, подберите хороший пароль длиной не менее 8 символов, желательно содержащий в себе заглавные буквы и цифры</string>
+
+    <string name="wallet_restore">Восстановить кошелек из кода</string>
+    <string name="copied_to_buffer">Скопировано в буфер</string>
+    <string name="wallet_create">Создать новый кошелек</string>
+    <string name="wallet_empty">Кошелек пуст</string>
+    <string name="wallet_password">Пароль</string>
+    <string name="wallet_open">Открыть</string>
+
+    <string name="sets_pass_ask">Спрашивать пароль при входе</string>
+    <string name="sets_destruct_set">Установить код уничтожения</string>
+    <string name="sets_pass_change">Сменить пароль кошелька</string>
+    <string name="sets_rescan">Пересканировать блокчейн</string>
+    <string name="sets_mnemonic">Посмотреть мнемо-код</string>
+    <string name="sets_about">Почитать инструкцию</string>
+    <string name="sets_fee">Плата за килобайт</string>
+
+    <string name="password_new">Новый пароль</string>
+    <string name="password_old">Текущий пароль</string>
+    <string name="destruct_new">Код уничтожения</string>
+    <string name="password_wrong">Введен неверный пароль</string>
+    <string name="password_too_short">Пароль слишком короткий</string>
+    <string name="destruct_too_short">Код уничтожения слишком короткий</string>
+
+    <!-- menu -->
+    <string name="action_settings">Настройки кошелька</string>
+    <string name="action_tx_history">История переводов</string>
+    <string name="action_request_payment">Запросить платеж</string>
+    <string name="action_scan_qr">Отсканировать QR-код</string>
+    <string name="action_send_money">Отправить деньги</string>
+
+    <!-- errors -->
+    <string name="err_pass">Перевод не прошел потому что пароль не подошел. Убедитесь что вы ввели правильный пароль</string>
+    <string name="err_low_funds">Перевод не прошел потому что %1$s превышает баланс этого кошелька. Вы можете добавить денег или отправить меньшую сумму</string>
+    <string name="err_empty_shrunk">Перевод не прошел потому что не удалось подобрать нужную сумму комиссии. Вы можете добавить денег в кошелек и попробовать еше раз</string>
+    <string name="err_transaction_too_large">Перевод не прошел потому что размер транзакции оказался слишком большим и Биткоин-сеть не сможет ее обработать. Попробуйте разбить перевод на несколько транзакций с меньшей суммой денег</string>
+    <string name="err_required_field">Ошибка: запрос содержит обязательный параметр, значение которого неизвестно</string>
+    <string name="err_different_net">Ошибка: в запросе содержится адрес, принадлежащий другой сети</string>
+    <string name="err_optional_field">Ошибка: запрос содержит неправильно оформленную сумму денег</string>
+    <string name="err_address">Ошибка: запрос содержит неправильный Биткоин-адрес</string>
+    <string name="err_uri">Ошибка: запрос содержит неправильно оформленный URI</string>
+    <string name="err_neg">Ошибка: в запросе сожержится негативная сумма денег</string>
+    <string name="err_general">Произошла непредвиденная ошибка</string>
+    <string name="err_again">Еще раз</string>
+
+    <!-- loading errors -->
+    <string name="err_tx_load">С транзакциями что-то пошло не так</string>
+    <string name="err_qr_gen">Не получилось сгенерировать картинку</string>
+    
+    <!-- dialogs -->
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_next">Далее</string>
+    <string name="dialog_back">Назад</string>
+    <string name="dialog_cancel">Отмена</string>
+    <string name="input_hint_sat">сумма в sat</string>
+    <string name="input_hint_btc">сумма в btc</string>
+    <string name="input_alt_sat">%1$s в сатоши</string>
+    <string name="input_alt_btc">%1$s в биткоинах</string>
+    <string name="input_tip_sat">она же в сатоши</string>
+    <string name="input_tip_btc">она же в биткоинах</string>
+    <string name="dialog_addr_wrong">Неправильный Биткоин-адрес</string>
+    <string name="dialog_sum_big">Сумма превышает баланс кошелька</string>
+    <string name="spend_address_tip">куда пойдут деньги</string>
+    <string name="dialog_sum_dusty">Сумма слишком мала</string>
+    <string name="spend_address_hint">Биткоин-адрес</string>
+    <string name="input_btc">&#160;биткоины&#160;</string>
+    <string name="input_sat">&#160;сатоши&#160;</string>
+
+    <string-array name="dialog_request">
+        <item>Сделать QR-код запроса</item>
+        <item>Скопировать запрос в буфер</item>
+        <item>Другие варианты&#8230;</item>
+    </string-array>
+
+    <!-- notifications -->
+    <string name="reorg">Случился реорг</string>
+    <string name="info_progress">Осталось %1$d блоков</string>
+    <string name="info_progress_done">Блокчейн синхронизирован</string>
+    <string name="tx_1st_conf">Получено 1е подтверждение</string>
+    <string name="pass_checking">Проверяю пароль&#8230;</string>
+    <string name="pass_changing">НЕ ЗАКРЫВАЙТЕ КОШЕЛЕК</string>
+    <string name="tx_announce">Объявляю перевод&#8230;</string>
+    <string name="tx_received">Получено %1$s</string>
+    <string name="tx_sent">Отправлено %1$s</string>
+
+    <array name="info_peers">
+        <item>Поиск узлов&#8230;</item>
+        <item>Подключен %1$d узел</item>
+        <item>Подключены %1$d узла</item>
+        <item>Подключено %1$d узлов</item>
+    </array>
+
+    <!-- activity_create, activity_restore -->
+    <string name="restore_wallet_restoring">Восстанавливаю ваш кошелек</string>
+    <string name="create_wallet_creating">Генерирую ваш кошелек</string>
+    <string name="restore_mnemonic_wrong">Должно быть 12 слов</string>
+    <string name="restore_wallet">Восстановить кошелек</string>
+    <string name="restore_hint">Ваш мнемонический код</string>
+
+    <!-- activity_request -->
+    <string name="req_generating">Генерирую QR-код</string>
+    <string name="req_save">Поделиться картинкой</string>
+
+    <!-- activity_txs -->
+    <string name="txs_received_to"><![CDATA[получено на <font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[отправлено на <font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_yes_fee">fee %1$s</string>
+    <string name="txs_no_fee">no fee</string>
+
+    <string name="txs_large_dead">ПЕРЕВОД МЕРТВ</string>
+    <string name="txs_no_time">время неизвестно</string>
+    <string name="txs_noaddr">адрес неизвестен</string>
+    <string name="txs_normal_dead">МЕРТВ</string>
+
+    <string name="txs_copy_hash">Скопировать хэш в буфер</string>
+    <string name="txs_copy_address">Скопировать адрес в буфер</string>
+    <string name="txs_inc"><![CDATA[<font color=#777777>Хэш перевода</font><br>%1$s<br><br><font color=#777777>Получено на адрес</font><br>%2$s]]></string>
+    <string name="txs_out"><![CDATA[<font color=#777777>Хэш перевода</font><br>%1$s<br><br><font color=#777777>Отправлено на адрес</font><br>%2$s]]></string>
+
+    <array name="txs_total">
+        <item>no txs</item>
+        <item>%1$s tx</item>
+        <item>%1$s txs</item>
+        <item>%1$s txs</item>
+    </array>
+
+    <array name="txs_normal_conf">
+        <item>ЖДЕМ</item>
+        <item>%1$s</item>
+        <item>%1$s</item>
+        <item>%1$s</item>
+    </array>
+
+    <array name="txs_large_conf">
+        <item>ЖДЕМ ПОДТВЕРЖДЕНИЕ</item>
+        <item>%1$s ПОДТВЕРЖДЕНИЕ</item>
+        <item>%1$s ПОДТВЕРЖДЕНИЯ</item>
+        <item>%1$s ПОДТВЕРЖДЕНИЙ</item>
+    </array>
+</resources>

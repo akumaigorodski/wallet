@@ -1,0 +1,57 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+    android:layout_height="fill_parent" android:layout_width="fill_parent">
+
+    <LinearLayout
+        style="@style/StandardLinearLayout"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:id="@+id/createInfo">
+
+        <EditText
+            style="@style/Info"
+            android:id="@+id/createPass"
+            android:layout_width="wrap_content"
+            android:hint="@string/password_new"
+            android:inputType="textVisiblePassword"/>
+
+        <TextView
+            style="@style/MarginInfo"
+            android:layout_width="wrap_content"
+            android:text="@string/password_info"/>
+
+        <Button
+            style="@style/Info"
+            android:enabled="false"
+            android:onClick="newWallet"
+            android:id="@+id/createWallet"
+            android:layout_width="wrap_content"
+            android:text="@string/wallet_create"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        style="@style/StandardLinearLayout"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:id="@+id/createProgess"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_launcher"/>
+
+        <TextView
+            android:text="★"
+            style="@style/MarginInfo"
+            android:id="@+id/createSpin"
+            android:layout_width="fill_parent"/>
+
+        <TextView
+            style="@style/Info"
+            android:layout_width="wrap_content"
+            android:text="@string/create_wallet_creating"/>
+
+    </LinearLayout>
+</LinearLayout>

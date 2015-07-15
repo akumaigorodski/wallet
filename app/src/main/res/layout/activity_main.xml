@@ -1,0 +1,86 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+    android:layout_height="fill_parent" android:layout_width="fill_parent">
+
+    <LinearLayout
+        style="@style/StandardLinearLayout"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:id="@+id/mainProgess"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_launcher"/>
+
+        <TextView
+            style="@style/MarginInfo"
+            android:text="@string/app_name"
+            android:id="@+id/mainExplanation"
+            android:layout_width="wrap_content"/>
+
+        <TextView
+            style="@style/Info"
+            android:id="@+id/mainSpin"
+            android:layout_width="fill_parent"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        style="@style/StandardLinearLayout"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:id="@+id/mainPassword"
+        android:visibility="gone">
+
+        <EditText
+            style="@style/Info"
+            android:id="@+id/mainPassData"
+            android:inputType="textPassword"
+            android:layout_width="wrap_content"
+            android:hint="@string/wallet_password"/>
+
+        <Button
+            style="@style/Info"
+            android:onClick="tryPass"
+            android:layout_marginTop="25dp"
+            android:text="@string/wallet_open"
+            android:layout_width="wrap_content"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        style="@style/StandardLinearLayout"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:id="@+id/mainChoice"
+        android:visibility="gone">
+
+        <TextView
+            style="@style/Info"
+            android:id="@+id/mainGreetings"
+            android:text="@string/greetings"
+            android:layout_marginBottom="45dp"
+            android:layout_width="wrap_content"/>
+
+        <Button
+            style="@style/Info"
+            android:onClick="goCreateWallet"
+            android:layout_width="wrap_content"
+            android:text="@string/wallet_create"/>
+
+        <TextView
+            style="@style/Info"
+            android:text="@string/or"
+            android:layout_margin="10dp"
+            android:layout_width="wrap_content"/>
+
+        <Button
+            style="@style/Info"
+            android:onClick="goRestoreWallet"
+            android:layout_width="wrap_content"
+            android:text="@string/wallet_restore"/>
+
+    </LinearLayout>
+</LinearLayout>

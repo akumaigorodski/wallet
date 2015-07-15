@@ -1,0 +1,18 @@
+-dontoptimize
+-dontobfuscate
+-dontpreverify
+-ignorewarnings
+
+-dontwarn scala.**
+-dontwarn org.slf4j.**
+-dontwarn com.google.common.cache.**
+-dontwarn com.google.common.primitives.**
+
+-keep class scala.collection.SeqLike {
+    public protected *;
+}
+
+-keep public enum * {
+	public static **[] values();
+	public static ** valueOf(java.lang.String);
+}

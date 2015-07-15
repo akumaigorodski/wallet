@@ -1,0 +1,44 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+    android:layout_height="wrap_content" android:layout_width="wrap_content">
+
+    <EditText
+        android:textSize="26sp"
+        android:gravity="center"
+        android:paddingTop="25dp"
+        android:id="@+id/inputAmount"
+        android:inputType="numberDecimal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        style="@style/StdText"
+        android:id="@+id/inputBottom"
+        android:layout_marginBottom="20dp"
+        android:layout_width="wrap_content"/>
+
+    <info.hoang8f.android.segmented.SegmentedGroup
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_marginBottom="40dp"
+        android:orientation="horizontal"
+        android:id="@+id/inputType">
+
+        <RadioButton
+            android:textSize="18sp"
+            android:id="@+id/amtInBtc"
+            android:text="@string/input_btc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/RadioButton"/>
+
+        <RadioButton
+            android:textSize="18sp"
+            android:id="@+id/amtInSat"
+            android:text="@string/input_sat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/RadioButton"/>
+
+    </info.hoang8f.android.segmented.SegmentedGroup>
+</LinearLayout>

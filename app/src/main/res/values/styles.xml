@@ -1,0 +1,67 @@
+<resources>
+
+    <style name="StandardLinearLayout">
+        <item name="android:orientation">vertical</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="TransactionLayout">
+        <item name="android:orientation">horizontal</item>
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <!-- texts -->
+    <style name="BaseText">
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="StdText" parent="@style/BaseText">
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="Info" parent="@style/StdText">
+        <item name="android:layout_marginRight">10dp</item>
+        <item name="android:layout_marginLeft">10dp</item>
+        <item name="android:maxWidth">400dp</item>
+    </style>
+
+    <style name="MarginInfo" parent="@style/Info">
+        <item name="android:layout_marginBottom">25dp</item>
+        <item name="android:layout_marginTop">25dp</item>
+    </style>
+
+    <!-- transparent buttons -->
+    <style name="TransButton" parent="Info">
+        <item name="android:background">?android:selectableItemBackground</item>
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_margin">0dp</item>
+    </style>
+
+    <!-- for request page -->
+    <style name="ReqItem" parent="StdText">
+        <item name="android:layout_centerHorizontal">true</item>
+        <item name="android:layout_width">wrap_content</item>
+    </style>
+
+    <!-- for transactions -->
+    <style name="OneLinerText" parent="BaseText">
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <!-- overall theme style -->
+    <style name="NoBar" parent="android:Theme.Holo.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+
+    <style name="DarkBar" parent="@android:style/Theme.Holo">
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
+    <style name="LiteBar" parent="@android:style/Theme.Holo.Light">
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
+</resources>

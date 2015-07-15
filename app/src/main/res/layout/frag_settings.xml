@@ -1,0 +1,51 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+    android:layout_height="wrap_content" android:layout_width="wrap_content">
+
+    <CheckBox
+        android:padding="15dp" android:button="@null"
+        android:layout_width="fill_parent" android:text="@string/sets_pass_ask"
+        android:layout_height="wrap_content" android:id="@+id/askForPassword"
+        android:drawableRight="?android:attr/listChoiceIndicatorMultiple"/>
+
+    <View
+        android:layout_height="1dp"
+        android:background="#33999999"
+        android:layout_width="fill_parent"/>
+
+    <Button
+        android:id="@+id/setFee"
+        style="@style/TransButton"
+        android:text="@string/sets_pass_change"/>
+
+    <View
+        android:layout_height="1dp"
+        android:background="#33999999"
+        android:layout_width="fill_parent"/>
+
+    <Button
+        style="@style/TransButton"
+        android:id="@+id/changePass"
+        android:text="@string/sets_pass_change"/>
+
+    <Button
+        android:id="@+id/setCode"
+        style="@style/TransButton"
+        android:text="@string/sets_destruct_set"/>
+
+    <Button
+        style="@style/TransButton"
+        android:id="@+id/rescanBlockchain"
+        android:text="@string/sets_rescan"/>
+
+    <Button
+        style="@style/TransButton"
+        android:id="@+id/viewMnemonic"
+        android:text="@string/sets_mnemonic"/>
+
+    <Button
+        android:id="@+id/about"
+        style="@style/TransButton"
+        android:text="@string/sets_about"/>
+
+</LinearLayout>

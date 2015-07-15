@@ -1,0 +1,65 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+    android:layout_height="fill_parent" android:layout_width="fill_parent">
+
+    <LinearLayout
+        style="@style/StandardLinearLayout"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:id="@+id/restoreInfo">
+
+        <EditText
+            style="@style/Info"
+            android:id="@+id/restoreCode"
+            android:inputType="textMultiLine"
+            android:hint="@string/restore_hint"
+            android:layout_width="wrap_content"/>
+
+        <EditText
+            style="@style/MarginInfo"
+            android:id="@+id/restorePass"
+            android:layout_width="wrap_content"
+            android:hint="@string/password_new"
+            android:inputType="textVisiblePassword"/>
+
+        <TextView
+            style="@style/Info"
+            android:layout_marginBottom="25dp"
+            android:layout_width="wrap_content"
+            android:text="@string/password_info"/>
+
+        <Button
+            style="@style/Info"
+            android:enabled="false"
+            android:onClick="recWallet"
+            android:id="@+id/restoreWallet"
+            android:layout_width="wrap_content"
+            android:text="@string/restore_wallet"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        style="@style/StandardLinearLayout"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:id="@+id/restoreProgess"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_launcher"/>
+
+        <TextView
+            android:text="★"
+            style="@style/MarginInfo"
+            android:id="@+id/restoreSpin"
+            android:layout_width="fill_parent"/>
+
+        <TextView
+            style="@style/Info"
+            android:layout_width="wrap_content"
+            android:text="@string/restore_wallet_restoring"/>
+
+    </LinearLayout>
+</LinearLayout>

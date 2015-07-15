@@ -1,0 +1,29 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_marginTop="20dp" android:layout_marginBottom="20dp"
+    android:layout_height="fill_parent" android:layout_width="fill_parent">
+
+    <TextView
+        style="@style/ReqItem"
+        android:maxWidth="240dp"
+        android:id="@+id/reqAddress"/>
+
+    <TextView
+        style="@style/ReqItem"
+        android:layout_centerVertical="true"
+        android:text="@string/req_generating"/>
+
+    <ImageView
+        style="@style/ReqItem"
+        android:id="@+id/reqCode"
+        android:paddingTop="55dp"
+        android:layout_centerVertical="true"/>
+
+    <Button
+        style="@style/ReqItem"
+        android:enabled="false"
+        android:id="@+id/reqShare"
+        android:text="@string/req_save"
+        android:layout_alignParentBottom="true"/>
+
+</RelativeLayout>

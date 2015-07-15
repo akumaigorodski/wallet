@@ -1,0 +1,16 @@
+<resources>
+    <dimen name="bitmap_qr_size">290dp</dimen>
+    <dimen name="font_0">20dp</dimen>
+    <dimen name="font_1">21dp</dimen>
+    <dimen name="font_2">22dp</dimen>
+    <dimen name="font_3">23dp</dimen>
+    <dimen name="font_4">24dp</dimen>
+    <dimen name="font_5">25dp</dimen>
+    <dimen name="font_6">26dp</dimen>
+    <dimen name="font_7">27dp</dimen>
+    <dimen name="font_8">28dp</dimen>
+    <dimen name="font_9">29dp</dimen>
+    <dimen name="font_10">30dp</dimen>
+    <dimen name="font_11">31dp</dimen>
+    <dimen name="font_12">32dp</dimen>
+</resources>

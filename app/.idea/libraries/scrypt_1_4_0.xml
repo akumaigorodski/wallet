@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="scrypt-1.4.0">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.lambdaworks/scrypt/1.4.0/906506b74f30c8c20bccd9ed4a11112d8941fe87/scrypt-1.4.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.lambdaworks/scrypt/1.4.0/57d1aeaa56daeed9ef55a163aa12c6d5f5c333bf/scrypt-1.4.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
