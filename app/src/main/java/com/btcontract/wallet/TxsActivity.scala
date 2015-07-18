@@ -68,7 +68,7 @@ class TxsActivity extends InfoActivity { me =>
       // Setup adapter
       adapter = if (scrWidth < 2.2) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_small)
         else if (scrWidth < 2.6) new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_normal)
-        else if (scrWidth < 4.4) new TxsListAdapter(new TxViewHolderLarge(_), R.layout.frag_transaction_large)
+        else if (scrWidth < 4.4) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_large)
         else new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_extra)
 
       // Periodic list update
@@ -111,7 +111,7 @@ class TxsActivity extends InfoActivity { me =>
             val entry = cache(hash)
 
             val sum = transaction.getConfidence.getConfidenceType match {
-              case TransactionConfidence.ConfidenceType.DEAD => app getString R.string.txs_large_dead
+              case TransactionConfidence.ConfidenceType.DEAD => app getString R.string.txs_dead
               case _ => s"${entry.transactionAmount}<br><small>${sdf format transaction.getUpdateTime}</small>"
             }
 
@@ -251,10 +251,5 @@ class TxsActivity extends InfoActivity { me =>
       status setText confirmationStatus
       super.status(tc)
     }
-  }
-
-  class TxViewHolderLarge(view: View) extends TxViewHolderNormal(view) {
-    override val confOpts = getResources getStringArray R.array.txs_large_conf
-    override val whenTransactionIsDead = R.string.txs_large_dead
   }
 }

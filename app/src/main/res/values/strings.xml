@@ -121,7 +121,7 @@
 
     <string name="txs_no_time">time unknown</string>
     <string name="txs_noaddr">unknown address</string>
-    <string name="txs_large_dead">TRANSACTION IS DEAD</string>
+    <string name="txs_dead">TRANSACTION IS DEAD</string>
     <string name="txs_normal_dead">DEAD</string>
 
     <string name="txs_copy_hash">Copy hash to clipboard</string>
@@ -139,11 +139,5 @@
         <item>WAIT</item>
         <item>%1$s</item>
         <item>%1$s</item>
-    </array>
-
-    <array name="txs_large_conf">
-        <item>AWAITING CONFIRMATION</item>
-        <item>%1$s CONFIRMATION</item>
-        <item>%1$s CONFIRMATIONS</item>
     </array>
 </resources>

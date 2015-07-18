@@ -39,7 +39,9 @@ class WalletApp extends Application {
   var kit: WalletKit = null
 
   lazy val plur = getString(R.string.lang) match {
-    case "rus" => (phraseOptions: Strs, num: Int) =>
+    case "eng" => (options: Strs, num: Int) => if (num == 1) options(1) else options(2)
+    case "chn" => (phraseOptions: Strs, num: Int) => phraseOptions(1)
+    case "rus" | "ukr" => (phraseOptions: Strs, num: Int) =>
 
       val reminder100 = num % 100
       val reminder10 = reminder100 % 10
@@ -47,10 +49,6 @@ class WalletApp extends Application {
       else if (reminder10 > 1 & reminder10 < 5) phraseOptions(2)
       else if (reminder10 == 1) phraseOptions(1)
       else phraseOptions(3)
-
-    // Default language is English
-    case _ => (phraseOptions: Strs, num: Int) =>
-      if (num == 1) phraseOptions(1) else phraseOptions(2)
   }
 
   def mgr = getSystemService(CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]

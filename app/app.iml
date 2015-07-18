@@ -90,7 +90,6 @@
     </content>
     <orderEntry type="jdk" jdkName="Android API 21 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" exported="" name="bitcoinj-core-0.13" level="project" />
     <orderEntry type="library" exported="" name="okio-1.2.0" level="project" />
     <orderEntry type="library" exported="" name="zxing-core-3.1.0" level="project" />
     <orderEntry type="library" exported="" name="okhttp-2.2.0" level="project" />
@@ -100,10 +99,12 @@
     <orderEntry type="library" exported="" name="scala-library-2.11.6" level="project" />
     <orderEntry type="library" exported="" name="guava-16.0.1" level="project" />
     <orderEntry type="library" exported="" name="slf4j-api-1.7.7" level="project" />
-    <orderEntry type="library" exported="" name="orchid-1.1" level="project" />
     <orderEntry type="library" exported="" name="protobuf-java-2.5.0" level="project" />
+    <orderEntry type="library" exported="" name="bitcoinj-core-0.13.1" level="project" />
     <orderEntry type="library" exported="" name="jsr305-2.0.1" level="project" />
     <orderEntry type="library" exported="" name="scrypt-1.4.0" level="project" />
+    <orderEntry type="library" exported="" name="orchid-1.1.1" level="project" />
     <orderEntry type="library" exported="" name="core-1.51.0.0" level="project" />
+    <orderEntry type="library" name="scala-sdk-2.11.6" level="application" />
   </component>
 </module>
