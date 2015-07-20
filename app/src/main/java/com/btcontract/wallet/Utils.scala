@@ -352,11 +352,9 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
 
     setFee setOnClickListener new OnClickListener {
-      def wrong = wrap(openForm)(me toast R.string.password_wrong)
-      override def onClick(view: View) = rm(dialog)(openForm)
-
-      def openForm: Unit = checkPass(wrong) { _ =>
+      override def onClick(view: View) = rm(dialog) {
         val feePerKilobytePicker = new NumberPicker(me)
+
         feePerKilobytePicker setFormatter new NumberPicker.Formatter {
           def format(feeFactor: Int) = fmt(feePerKb(feeFactor).getValue)
           feePerKilobytePicker setMaxValue 10
