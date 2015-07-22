@@ -15,10 +15,11 @@
         style="@style/OneLinerText"/>
 
     <TextView
-        style="@style/StdText"
+        android:gravity="center"
         android:layout_weight="6"
         android:layout_width="0dp"
         android:id="@+id/feeAmount"
+        style="@style/OneLinerText"
         android:textColor="#FF777777"/>
 
     <TextView

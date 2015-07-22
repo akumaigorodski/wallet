@@ -112,7 +112,7 @@ class WalletApp extends Application {
       wallet addEventListener listener
       wallet.allowSpendingUnconfirmedTransactions
       peerGroup addPeerDiscovery new DnsDiscovery(params)
-      peerGroup.setUserAgent(Utils.appName, "1.0")
+      peerGroup.setUserAgent(Utils.appName, "1.01")
       peerGroup setDownloadTxDependencies false
       peerGroup setPingIntervalMsec 10000
       peerGroup addWallet wallet
@@ -131,7 +131,7 @@ class WalletApp extends Application {
       if (vib.hasVibrator) vib.vibrate(vibrationPattern, -1)
     }
 
-    val confirmed = Array(0L, 75, 300, 75, 300)
+    val confirmed = Array(0L, 75, 250, 75, 250)
     val processed = Array(0L, 85, 200)
     type Pattern = Array[Long]
   }

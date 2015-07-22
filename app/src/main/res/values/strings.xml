@@ -112,7 +112,7 @@
     <string name="req_save">Share QR code</string>
 
     <!-- activity_txs -->
-    <string name="txs_yes_fee">fee %1$s</string>
+    <string name="txs_yes_fee">%1$s fee</string>
     <string name="txs_no_fee">without fee</string>
     <string name="txs_received_to"><![CDATA[received to <font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_sent_to"><![CDATA[sent to <font color=#e31300>%1$s</font>]]></string>
