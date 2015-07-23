@@ -1,5 +1,4 @@
 <resources>
-    <!-- lang identifier -->
     <string name="lang">rus</string>
 
     <!-- app wide -->
@@ -40,6 +39,7 @@
     <string name="action_request_payment">Запросить платеж</string>
     <string name="action_scan_qr">Отсканировать QR-код</string>
     <string name="action_send_money">Отправить деньги</string>
+    <string name="action_rate">Оцените приложение</string>
 
     <!-- errors -->
     <string name="err_pass">Перевод не прошел потому что пароль не подошел. Убедитесь что вы ввели правильный пароль</string>

@@ -1,5 +1,4 @@
 <resources>
-    <!-- lang identifier -->
     <string name="lang">eng</string>
 
     <!-- app wide -->
@@ -39,6 +38,7 @@
     <string name="action_request_payment">Request for a payment</string>
     <string name="action_send_money">Send coins to an address</string>
     <string name="action_scan_qr">Scan a QR picture</string>
+    <string name="action_rate">Rate application</string>
 
     <!-- errors -->
     <string name="err_pass">Transaction failed because password did not match. Please make sure you have provided a correct password</string>
@@ -114,7 +114,7 @@
     <!-- activity_txs -->
     <string name="txs_yes_fee">%1$s fee</string>
     <string name="txs_no_fee">without fee</string>
-    <string name="txs_received_to"><![CDATA[received to <font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_received_to"><![CDATA[got on <font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_sent_to"><![CDATA[sent to <font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>

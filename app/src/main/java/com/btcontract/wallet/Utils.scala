@@ -155,11 +155,20 @@ abstract class InfoActivity extends TimerActivity { me =>
       case R.id.actionRequestPayment => mkRequestForm
       case R.id.actionSettings => mkSettingsForm
       case R.id.actionSendMoney => mkPayForm
+      case R.id.actionRateWallet => goRate
     }
 
     decideActionToTake(mi.getItemId)
     super.onOptionsItemSelected(mi)
   }
+
+  // Rater
+
+  def goRate = try {
+    val uri = Uri parse s"market://details?id=com.btcontract.wallet"
+    val marketLink = new Intent(Intent.ACTION_VIEW, uri)
+    startActivity(marketLink)
+  } catch none
 
   // CRUD for informers
 
