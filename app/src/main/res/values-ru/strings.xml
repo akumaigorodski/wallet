@@ -58,7 +58,7 @@
     <!-- loading errors -->
     <string name="err_tx_load">С транзакциями что-то пошло не так</string>
     <string name="err_qr_gen">Не получилось сгенерировать картинку</string>
-    
+
     <!-- dialogs -->
     <string name="dialog_ok">OK</string>
     <string name="dialog_next">Далее</string>
@@ -98,12 +98,12 @@
     <array name="info_peers">
         <item>Поиск узлов&#8230;</item>
         <item>Подключен %1$d узел</item>
-        <item>Подключены %1$d узла</item>
-        <item>Подключено %1$d узлов</item>
+        <item>Подключен к %1$d узлу</item>
+        <item>Подключен к %1$d узлам</item>
     </array>
 
     <!-- activity_create, activity_restore -->
-    <string name="restore_wallet_restoring">Восстанавливаю ваш кошелек</string>
+    <string name="restore_wallet_restoring">Восстанавливаю кошелек</string>
     <string name="create_wallet_creating">Генерирую ваш кошелек</string>
     <string name="restore_mnemonic_wrong">Должно быть 12 слов</string>
     <string name="restore_wallet">Восстановить кошелек</string>
@@ -114,12 +114,12 @@
     <string name="req_save">Поделиться картинкой</string>
 
     <!-- activity_txs -->
-    <string name="txs_received_to"><![CDATA[получено на <font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[отправлено на <font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_received_to"><![CDATA[↓ <font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[↑ <font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_no_fee">without fee</string>
     <string name="txs_yes_fee">%1$s fee</string>
+    <string name="txs_no_fee">нет fee</string>
 
     <string name="txs_no_time">время неизвестно</string>
     <string name="txs_noaddr">адрес неизвестен</string>
