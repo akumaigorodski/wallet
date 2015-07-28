@@ -1,25 +1,28 @@
 package com.btcontract.wallet
 
-import android.view.View.OnClickListener
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.RadioGroup.OnCheckedChangeListener
 import info.hoang8f.android.segmented.SegmentedGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.AbsListView.OnScrollListener
+import com.github.kevinsawicki.http.HttpRequest
 import org.bitcoinj.crypto.KeyCrypterException
 import android.text.method.DigitsKeyListener
+import android.view.View.OnClickListener
 import org.bitcoinj.store.SPVBlockStore
 import android.app.AlertDialog.Builder
 import android.util.DisplayMetrics
 import org.bitcoinj.uri.BitcoinURI
 import scala.collection.mutable
 import scala.concurrent.Future
+import org.json.JSONObject
 import android.net.Uri
 
 import R.string.{input_hint_btc, input_hint_sat, input_tip_sat, input_tip_btc, input_alt_sat, input_alt_btc, tx_1st_conf}
 import R.string.{dialog_ok, dialog_next, dialog_cancel, dialog_back, err_again, wallet_password, password_old}
-import R.id.{amtInSat, amtInBtc, inputAmount, inputBottom}
+import R.id.{amtInSat, amtInBtc, inputAmount, inputBottom, typeUSD, typeEUR, typeCNY}
 
+import android.content.DialogInterface.{OnDismissListener, BUTTON_POSITIVE}
 import android.content.{DialogInterface, SharedPreferences, Context, Intent}
 import org.bitcoinj.core.Wallet.{ExceededMaxTransactionSize => TxTooLarge}
 import org.bitcoinj.core.Wallet.{CouldNotAdjustDownwards, SendRequest}
@@ -38,7 +41,6 @@ import android.view._
 import android.text._
 
 import concurrent.ExecutionContext.Implicits.global
-import android.content.DialogInterface.BUTTON_POSITIVE
 import scala.language.implicitConversions
 import InputMethodManager.HIDE_NOT_ALWAYS
 import ViewGroup.FOCUS_BLOCK_DESCENDANTS
@@ -47,20 +49,24 @@ import Context.INPUT_METHOD_SERVICE
 
 
 object Utils {
+  type TryCoin = Try[Coin]
   type Strs = Array[String]
   type Coins = List[AbstractCoin]
   type Outputs = mutable.Buffer[TransactionOutput]
 
   val separator = " "
+  val emptyString = ""
   val appName = "Bitcoins"
   val rand = new scala.util.Random
   val locale = new Locale("en", "US")
   val symbols = new DecimalFormatSymbols(locale)
   val baseSat = new DecimalFormat("###,###,###")
   val baseBtc = new DecimalFormat("#.########")
+  val baseFiat = new DecimalFormat("#.##")
 
-  baseSat.setDecimalFormatSymbols(symbols)
-  baseBtc.setDecimalFormatSymbols(symbols)
+  baseFiat setDecimalFormatSymbols symbols
+  baseSat setDecimalFormatSymbols symbols
+  baseBtc setDecimalFormatSymbols symbols
 
   val interpolator = new AccelerateDecelerateInterpolator
   val passType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
@@ -153,6 +159,7 @@ abstract class InfoActivity extends TimerActivity { me =>
       case R.id.actionTxHistory => me goTo classOf[TxsActivity]
       case android.R.id.home => me goTo classOf[WalletActivity]
       case R.id.actionRequestPayment => mkRequestForm
+      case R.id.actionConverter => mkConverterForm
       case R.id.actionSettings => mkSettingsForm
       case R.id.actionSendMoney => mkPayForm
       case R.id.actionRateWallet => goRate
@@ -241,10 +248,87 @@ abstract class InfoActivity extends TimerActivity { me =>
       case some: Address => mkPayForm setAddress some
     }
 
+  def mkConverterForm = {
+    // State changes and periodic updates
+    var loadRatesTask: TimerTask = null
+    var rates: Rates = null
+
+    // Wire up inaterface
+    val content = getLayoutInflater.inflate(R.layout.frag_rates, null)
+    val alert = mkForm(new Builder(me), getString(R.string.action_converter), content)
+    val fiatInput = content.findViewById(R.id.fiatInputAmount).asInstanceOf[EditText]
+    val fiatType = content.findViewById(R.id.fiatType).asInstanceOf[SegmentedGroup]
+
+    // Get cached data and initialize elements
+    val hintMap = Map(typeUSD -> "Dollar", typeEUR -> "Euro", typeCNY -> "Yuan")
+    val inputHintMemo = prefs.getString(AbstractKit.CURRENCY, "Dollar")
+    val cache = prefs.getString(AbstractKit.RATES_JSON, separator)
+    val denomControl = new DenomControl(prefs, content)
+    val man = new AmountInputManager(denomControl)
+
+    val btcListener = new TextChangedWatcher {
+      def convert(amt: Double) = amt * rates.typeMap(fiatType.getCheckedRadioButtonId) / 100000000L
+      def update = fiatInput.setText(man.amt map man.normMap(denomControl.m) map convert map baseFiat.format getOrElse emptyString)
+      def onTextChanged(charSequence: CharSequence, start: Int, count: Int, after: Int) = if (man.input.hasFocus) update
+    }
+
+    val fiatListener = new TextChangedWatcher {
+      def convert(amount: Double) = amount / rates.typeMap(fiatType.getCheckedRadioButtonId) * 100000000L
+      def sum = Try(fiatInput.getText.toString.replace(",", "").toDouble) map convert map (Coin valueOf _.toLong)
+      def onTextChanged(s: CharSequence, x: Int, y: Int, z: Int) = if (fiatInput.hasFocus) update
+      def update = man.setAmount(sum) orElse Try(man.input setText emptyString)
+    }
+
+    val changeListener = new OnCheckedChangeListener {
+      def onCheckedChanged(rGroup: RadioGroup, cb: Int) = {
+        val currentHint = hintMap(fiatType.getCheckedRadioButtonId)
+        prefs.edit.putString(AbstractKit.CURRENCY, currentHint).commit
+        if (man.input.hasFocus) btcListener.update else fiatListener.update
+        fiatInput setHint currentHint
+      }
+    }
+
+    // Loading and working with JSON
+    def fromJSON(rawData: String) = {
+      val json = new JSONObject(rawData)
+      val usd = json getJSONObject "USD" getDouble "last"
+      val eur = json getJSONObject "EUR" getDouble "last"
+      val cny = json getJSONObject "CNY" getDouble "last"
+      Rates(usd, eur, cny)
+    }
+
+    def getRatesData = HttpRequest.get("https://blockchain.info/ticker").body
+    def loadRates: Unit = <(getRatesData, _ => loadAgain) { json =>
+      prefs.edit.putString(AbstractKit.RATES_JSON, json).commit
+      rates = Try apply fromJSON(json) getOrElse rates
+      changeListener.onCheckedChanged(null, 100)
+      loadAgain
+    }
+
+    def loadAgain = {
+      loadRatesTask = me anyToRunnable loadRates
+      timer.schedule(loadRatesTask, 30000)
+    }
+
+    // Initialize everything
+    alert setOnDismissListener new OnDismissListener {
+      def onDismiss(dialog: DialogInterface) = loadRatesTask.cancel
+    }
+
+    rates = Try apply fromJSON(cache) getOrElse Rates(0, 0, 0)
+    loadRatesTask = me anyToRunnable loadRates
+    loadRatesTask.run
+
+    man.input addTextChangedListener btcListener
+    fiatInput addTextChangedListener fiatListener
+    fiatType setOnCheckedChangeListener changeListener
+    fiatType check hintMap.map(_.swap).apply(inputHintMemo)
+  }
+
   def mkPayForm: SpendManager = {
-    val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null)
     val builder = new Builder(me).setPositiveButton(dialog_next, null)
-    val alert = mkForm(builder, ge, content)
+    val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null)
+    val alert = mkForm(builder, me getString R.string.action_send_money, content)
 
     // Wire up spend interface
     val denomControl = new DenomControl(prefs, content)
@@ -253,11 +337,8 @@ abstract class InfoActivity extends TimerActivity { me =>
 
     // If the input is sane...
     def tryPay(pay: PayData) = rm(alert) {
-      val title = pay.html(s"$ge<br><br>", "#e31300")
-      def re = mkPayForm.set(pay)
-
-      // Ask for password and send transaction once it's provided
-      pass(wallet_password, passType, title, dialog_ok, dialog_back, re) { pass =>
+      val title = pay.html(s"${me getString R.string.action_send_money}<br><br>", "#e31300")
+      pass(wallet_password, passType, title, dialog_ok, dialog_back, mkPayForm set pay) { pass =>
         add(me getString R.string.tx_announce, Informer.DECSEND).ui.run
         <(sendMoney, react)(none)
 
@@ -282,7 +363,7 @@ abstract class InfoActivity extends TimerActivity { me =>
         }
 
         def onError(msg: String) = try {
-          val info = showChoiceAlert(re, none, err_again, dialog_cancel)
+          val info = showChoiceAlert(mkPayForm set pay, none, err_again, dialog_cancel)
           info.setMessage(msg).show setCanceledOnTouchOutside false
           del(Informer.DECSEND).run
         } catch none
@@ -535,7 +616,7 @@ class AmountInputManager(val dc: DenomControl) {
   // Manage user selection, set input results
   def result = amt map normMap(dc.m) map mkResult
   def amt = Try(input.getText.toString.replace(",", "").toDouble)
-  def setAmount: Try[Coin] => Unit = _ map (_.getValue.toDouble) map inputMap(dc.m) map input.setText
+  def setAmount(tc: TryCoin) = tc map (_.getValue.toDouble) map inputMap(dc.m) map input.setText
   def mkResult(sat: Double) = Result(tipInBtc(sat), tipInSat(sat), Coin valueOf sat.toLong)
   def tipInSat(sat: Double) = btcTemplate format baseSat.format(sat)
   def tipInBtc(sat: Double) = satTemplate format inpInBtc(sat)
@@ -591,6 +672,10 @@ case class PayData(res: Try[Result], adr: Address) {
     val base = s"$plus<font color=$color>${Utils humanAddr adr.toString}</font>"
     Html fromHtml res.map(vs => s"$base<br><br>${vs.txtBtc}<br>${vs.txtSat}").getOrElse(base)
   }
+}
+
+case class Rates(usd: Double, eur: Double, cny: Double) {
+  val typeMap = Map(typeUSD -> usd, typeEUR -> eur, typeCNY -> cny)
 }
 
 case class Result(txtBtc: String, txtSat: String, value: Coin)

@@ -183,15 +183,18 @@ class WalletActivity extends InfoActivity { me =>
     var mustRun = true
     start
 
+    def proceed = {
+      canvas = surfceHolder.lockCanvas
+      canvas.drawColor(Color.TRANSPARENT, Mode.CLEAR)
+      world synchronized world.step(1 / 60f, 6, 3)
+      for (cn <- coins) cn.draw(canvas, scale)
+      Thread sleep 15
+    }
+
     override def run =
-      while (mustRun) try {
-        canvas = surfceHolder.lockCanvas
-        canvas.drawColor(Color.TRANSPARENT, Mode.CLEAR)
-        world synchronized world.step(1 / 60f, 6, 3)
-        for (cn <- coins) cn.draw(canvas, scale)
-        Thread sleep 15
-      } catch { case exception: Throwable => mustRun = false }
-        finally if (canvas != null) surfceHolder unlockCanvasAndPost canvas
+      while (mustRun) try proceed
+      catch { case _: Throwable => mustRun = false }
+      finally if (canvas != null) surfceHolder unlockCanvasAndPost canvas
   }
 
   class OnceCallback extends HolderCallback {

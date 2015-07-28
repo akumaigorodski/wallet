@@ -3,13 +3,9 @@
     android:layout_height="wrap_content" android:layout_width="wrap_content">
 
     <EditText
-        android:textSize="26sp"
-        android:gravity="center"
         android:paddingTop="25dp"
-        android:id="@+id/inputAmount"
-        android:inputType="numberDecimal"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        style="@style/BigInputText"
+        android:id="@+id/inputAmount"/>
 
     <TextView
         style="@style/StdText"

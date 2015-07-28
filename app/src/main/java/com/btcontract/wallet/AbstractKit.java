@@ -16,6 +16,8 @@ public abstract class AbstractKit extends AbstractIdleService {
     public static final String DESTRUCT_CODE = "destruct_code";
     public static final String SACK_OR_TXS = "sack_or_txs";
     public static final String FEE_FACTOR = "fee_factor";
+    public static final String RATES_JSON = "rates_json";
+    public static final String CURRENCY = "currency";
 
     public volatile BlockChain blockChain;
     public volatile PeerGroup peerGroup;

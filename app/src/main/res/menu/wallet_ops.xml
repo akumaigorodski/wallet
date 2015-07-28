@@ -27,6 +27,11 @@
         android:showAsAction="never"/>
 
     <item
+        android:title="@string/action_converter"
+        android:id="@+id/actionConverter"
+        android:showAsAction="never"/>
+
+    <item
         android:title="@string/action_rate"
         android:id="@+id/actionRateWallet"
         android:showAsAction="never"/>

@@ -39,10 +39,11 @@
     <string name="action_request_payment">Запросить платеж</string>
     <string name="action_scan_qr">Отсканировать QR-код</string>
     <string name="action_send_money">Отправить деньги</string>
-    <string name="action_rate">Оцените приложение</string>
+    <string name="action_converter">Конвертер валют</string>
+    <string name="action_rate">Оценить приложение</string>
 
     <!-- errors -->
-    <string name="err_pass">Перевод не прошел потому что пароль не подошел. Убедитесь что вы ввели правильный пароль</string>
+    <string name="err_pass">Перевод не прошел потому что пароль не подошел. Убедитесь, что вы ввели правильный пароль</string>
     <string name="err_low_funds">Перевод не прошел потому что %1$s превышает баланс этого кошелька. Вы можете добавить денег или отправить меньшую сумму</string>
     <string name="err_empty_shrunk">Перевод не прошел потому что не удалось подобрать нужную сумму комиссии. Вы можете добавить денег в кошелек и попробовать еше раз</string>
     <string name="err_transaction_too_large">Перевод не прошел потому что размер транзакции оказался слишком большим и Биткоин-сеть не сможет ее обработать. Попробуйте разбить перевод на несколько транзакций с меньшей суммой денег</string>
@@ -97,8 +98,8 @@
 
     <array name="info_peers">
         <item>Поиск узлов&#8230;</item>
-        <item>Подключен %1$d узел</item>
         <item>Подключен к %1$d узлу</item>
+        <item>Подключены %1$d узла</item>
         <item>Подключен к %1$d узлам</item>
     </array>
 
@@ -114,8 +115,8 @@
     <string name="req_save">Поделиться картинкой</string>
 
     <!-- activity_txs -->
-    <string name="txs_received_to"><![CDATA[↓ <font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[↑ <font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_received_to"><![CDATA[получ <font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[отправ <font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_yes_fee">%1$s fee</string>
