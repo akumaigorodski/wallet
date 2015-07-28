@@ -254,8 +254,9 @@ abstract class InfoActivity extends TimerActivity { me =>
     var rates: Rates = null
 
     // Wire up inaterface
+    val tpl = new Builder(me).setPositiveButton(dialog_next, null)
     val content = getLayoutInflater.inflate(R.layout.frag_rates, null)
-    val alert = mkForm(new Builder(me), getString(R.string.action_converter), content)
+    val alert = mkForm(tpl, getString(R.string.action_converter), content)
     val fiatInput = content.findViewById(R.id.fiatInputAmount).asInstanceOf[EditText]
     val fiatType = content.findViewById(R.id.fiatType).asInstanceOf[SegmentedGroup]
 
@@ -313,6 +314,11 @@ abstract class InfoActivity extends TimerActivity { me =>
     // Initialize everything
     alert setOnDismissListener new OnDismissListener {
       def onDismiss(dialog: DialogInterface) = loadRatesTask.cancel
+    }
+
+    alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
+      def provideAmountInPayForm = mkPayForm.man setAmount man.result.map(_.value)
+      def onClick(view: View) = rm(alert)(provideAmountInPayForm)
     }
 
     rates = Try apply fromJSON(cache) getOrElse Rates(0, 0, 0)
