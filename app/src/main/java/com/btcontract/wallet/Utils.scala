@@ -55,8 +55,9 @@ object Utils {
   type Outputs = mutable.Buffer[TransactionOutput]
 
   val separator = " "
-  val emptyString = ""
-  val appName = "Bitcoins"
+  val appName = "Bitcoin"
+  val emptyString = new String
+
   val rand = new scala.util.Random
   val locale = new Locale("en", "US")
   val symbols = new DecimalFormatSymbols(locale)
@@ -528,7 +529,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
 
     about setOnClickListener new View.OnClickListener {
-      def site = Uri parse "http://btcontract.github.io/bitcoins"
+      def site = Uri parse "http://btcontract.github.io/VisualBitcoinWallet/"
       def onClick(view: View) = me startActivity new Intent(Intent.ACTION_VIEW, site)
     }
 

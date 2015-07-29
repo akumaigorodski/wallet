@@ -3,12 +3,12 @@
 
     <!-- app wide -->
     <string name="or">or</string>
-    <string name="app_name">Bitcoins</string>
+    <string name="app_name">Bitcoin</string>
     <string name="sets_noscreen">Don\'t make a screenshot</string>
     <string name="sets_password_ok">New password has been set successfully</string>
     <string name="sets_destruct_ok">Destruction code has been set to «%1$s»</string>
     <string name="sets_rescan_ok">Application will be closed now and blockchain rescan will be triggered on next launch</string>
-    <string name="greetings">Welcome to Bitcoins Wallet!\nPlease read <a href='http://btcontract.github.io/bitcoins'>wallet manual</a> first</string>
+    <string name="greetings">Welcome to Visual Bitcoin Wallet!\nPlease read <a href='http://btcontract.github.io/VisualBitcoinWallet/'>wallet manual</a> first</string>
     <string name="password_info">Without password you are in constant danger of losing your money. Please pick one which is at least 8 characters long</string>
     <string name="copied_to_buffer">Copied to clipboard</string>
     <string name="wallet_create">Create New Wallet</string>

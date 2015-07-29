@@ -3,12 +3,12 @@
 
     <!-- app wide -->
     <string name="or">или</string>
-    <string name="app_name">Bitcoins</string>
+    <string name="app_name">Bitcoin</string>
     <string name="sets_noscreen">Не делайте скриншот</string>
-    <string name="greetings">Добро пожаловать в Bitcoins!</string>
     <string name="sets_password_ok">Новый пароль успешно установлен</string>
     <string name="sets_destruct_ok">Установлен новый код уничтожения: «%1$s»</string>
     <string name="sets_rescan_ok">Сейчас кошелек будет закрыт, а повторное сканирование начнется при следующем открытии</string>
+    <string name="greetings">Visual Bitcoin Wallet\nПрочитайте <a href='http://btcontract.github.io/VisualBitcoinWallet/'>инструкцию пользователя</a></string>
     <string name="password_info">Пожалуйста, подберите хороший пароль длиной не менее 8 символов, желательно содержащий в себе заглавные буквы и цифры</string>
 
     <string name="wallet_restore">Восстановить кошелек из кода</string>

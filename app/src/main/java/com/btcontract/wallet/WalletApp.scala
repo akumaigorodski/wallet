@@ -39,7 +39,7 @@ class WalletApp extends Application {
   var kit: WalletKit = null
 
   lazy val plur = getString(R.string.lang) match {
-    case "eng" => (options: Strs, num: Int) => if (num == 1) options(1) else options(2)
+    case "eng" | "esp" => (opts: Strs, num: Int) => if (num == 1) opts(1) else opts(2)
     case "chn" => (phraseOptions: Strs, num: Int) => phraseOptions(1)
     case "rus" | "ukr" => (phraseOptions: Strs, num: Int) =>
 

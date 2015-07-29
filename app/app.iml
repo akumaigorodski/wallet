@@ -106,6 +106,5 @@
     <orderEntry type="library" exported="" name="scrypt-1.4.0" level="project" />
     <orderEntry type="library" exported="" name="orchid-1.1.1" level="project" />
     <orderEntry type="library" exported="" name="core-1.51.0.0" level="project" />
-    <orderEntry type="library" name="scala-sdk-2.11.6" level="application" />
   </component>
 </module>
