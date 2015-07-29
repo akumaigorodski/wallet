@@ -36,7 +36,7 @@
     <string name="action_settings">Wallet settings</string>
     <string name="action_tx_history">View transactions</string>
     <string name="action_request_payment">Request for a payment</string>
-    <string name="action_send_money">Send coins to an address</string>
+    <string name="action_send_money">Send coins to address</string>
     <string name="action_converter">Currency converter</string>
     <string name="action_scan_qr">Scan a QR picture</string>
     <string name="action_rate">Rate application</string>

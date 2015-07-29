@@ -22,13 +22,13 @@
         android:showAsAction="never"/>
 
     <item
-        android:title="@string/action_settings"
-        android:id="@+id/actionSettings"
+        android:title="@string/action_converter"
+        android:id="@+id/actionConverter"
         android:showAsAction="never"/>
 
     <item
-        android:title="@string/action_converter"
-        android:id="@+id/actionConverter"
+        android:title="@string/action_settings"
+        android:id="@+id/actionSettings"
         android:showAsAction="never"/>
 
     <item

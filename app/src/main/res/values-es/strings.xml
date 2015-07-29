@@ -1,0 +1,144 @@
+<resources>
+    <string name="lang">esp</string>
+
+    <!-- app wide -->
+    <string name="or">o</string>
+    <string name="app_name">Bitcoin</string>
+    <string name="sets_noscreen">No hacer una captura de pantalla</string>
+    <string name="sets_password_ok">La nueva contraseña ha sido establecida exitosamente</string>
+    <string name="sets_destruct_ok">El código de destrucción se ha sido establecido en «%1$s»</string>
+    <string name="sets_rescan_ok">La aplicación se cerrará ahora y el reescaneo de la cadena de bloque se activará en el próximo reinicio</string>
+    <string name="greetings">Bienvenido a Monedero Bitcoin Visual!\nPor favor, lea el <a href='http://btcontract.github.io/VisualBitcoinWallet/'>manual de monedero</a></string>
+    <string name="password_info">Sin contraseña se expone de manera contante a perder su dinero. Por favor, elija una que tenga al menos 8 caracteres.</string>
+    <string name="copied_to_buffer">Copiado al portapapeles</string>
+    <string name="wallet_empty">El monedero está vacío</string>
+    <string name="wallet_create">Crear nuevo monedero</string>
+    <string name="wallet_open">Monedero abierto</string>
+    <string name="wallet_password">Contraseña</string>
+
+    <string name="sets_fee">Cargo por kilobyte</string>
+    <string name="sets_pass_ask">Solicitar contraseña al inicio</string>
+    <string name="sets_pass_change">Cambiar contraseña de monedero</string>
+    <string name="sets_destruct_set">Fijar código de destrucción</string>
+    <string name="sets_rescan">Reescanear cadena de bloque</string>
+    <string name="sets_about">Leer manual de la aplicación</string>
+    <string name="sets_mnemonic">Ver código nemotécnico</string>
+
+    <string name="password_new">Nueva contraseña</string>
+    <string name="password_old">Contraseña actual</string>
+    <string name="destruct_new">Código de destrucción</string>
+    <string name="password_too_short">La contraseña es muy corta</string>
+    <string name="password_wrong">Contraseña de monedero incorrecta</string>
+    <string name="wallet_restore">Restaurar monedero a partir del código</string>
+    <string name="destruct_too_short">El código de destrucción es muy corto</string>
+
+    <!-- menu -->
+    <string name="action_settings">Ajustes de monedero</string>
+    <string name="action_tx_history">Ver transacciones</string>
+    <string name="action_request_payment">Solicitar un pago</string>
+    <string name="action_converter">Convertidor de moneda</string>
+    <string name="action_scan_qr">Escanear una imagen QR</string>
+    <string name="action_send_money">Enviar monedas</string>
+    <string name="action_rate">Evaluar aplicación</string>
+
+    <!-- errors -->
+    <string name="err_pass">La transacción falló porque la contraseña no coincide.Por favor, asegúrese de que ha escrito la contraseña correcta</string>
+    <string name="err_low_funds">La transacción falló porque %1$s excede la cantidad total de monedas en este monedero. Por favor, agrege algunos fondos e inténtelo nuevamente</string>
+    <string name="err_empty_shrunk">La transacción falló porque no se pudo escoger una salida para los cargos sin violar las reglas de protocolo. Por favor, agrege algunos fondos e inténtelo nuevamente</string>
+    <string name="err_transaction_too_large">La transacción falló por que es demasiado grande para que la red de Bitcoin pueda procesarla. Por favor, intente dividirla en transacciones más pequeñas</string>
+    <string name="err_optional_field">Falló porque la solicitud contiene una cantidad malformada que no pudo ser analizada</string>
+    <string name="err_required_field">Falló porque la solicitud contiene un parámetro requerido de significado desconocido</string>
+    <string name="err_different_net">Falló porque la solicitud contiene una dirección que pertenece a una red diferente</string>
+    <string name="err_uri">Falló porque la solicitud contiene una URL malformada que no pudo ser analizada</string>
+    <string name="err_address">Falló porque la dirección Bitcoin en la solicitud no es válida</string>
+    <string name="err_neg">Falló porque la solicitud contiene una cantidad negativa</string>
+    <string name="err_general">Falló porque ha ocurrido un error inesperado</string>
+    <string name="err_again">Intertar de nuevo</string>
+
+    <!-- loading errors -->
+    <string name="err_tx_load">No se pudieron cargar las transacciones</string>
+    <string name="err_qr_gen">No se pudo generar una imagen</string>
+    
+    <!-- dialogs -->
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_back">Atrás</string>
+    <string name="dialog_next">Siguiente</string>
+    <string name="dialog_cancel">Cancelar</string>
+    <string name="input_alt_sat">%1$s en satoshi</string>
+    <string name="input_alt_btc">%1$s en bitcoins</string>
+    <string name="input_hint_sat">cantidad en sat</string>
+    <string name="input_hint_btc">cantidad en btc</string>
+    <string name="input_tip_sat">misma cantidad en satoshi</string>
+    <string name="input_tip_btc">misma cantidad en bitcoins</string>
+    <string name="dialog_addr_wrong">La dirección Bitcoin no es válida</string>
+    <string name="dialog_sum_big">La cantidad excede el balance del monedero</string>
+    <string name="dialog_sum_dusty">La cantidad actual es polvorienta</string>
+    <string name="spend_address_tip">dónde enviar dinero</string>
+    <string name="spend_address_hint">dirección Bitcoin</string>
+    <string name="input_btc">&#160;bitcoins&#160;</string>
+    <string name="input_sat">&#160;satoshi&#160;</string>
+
+    <string-array name="dialog_request">
+        <item>Convertir solicitud en código QR</item>
+        <item>Copiar solicitud al portapapeles</item>
+        <item>Compartir solicitud&#8230;</item>
+    </string-array>
+
+    <!-- notifications -->
+    <string name="tx_sent">Recién enviadas %1$s</string>
+    <string name="tx_received">Recién recibidas %1$s</string>
+    <string name="tx_1st_conf">1ra confirmación obtenida</string>
+    <string name="reorg">Acaba de suceder la reorganización</string>
+    <string name="tx_announce">Anunciando transacción&#8230;</string>
+    <string name="info_progress">Sincronizar: quedan %1$d bloques</string>
+    <string name="info_progress_done">La cadena de bloque está actualizada</string>
+    <string name="pass_checking">Verificando contraseña&#8230;</string>
+    <string name="pass_changing">NO CIERRE EL MONEDERO</string>
+
+    <array name="info_peers">
+        <item>Buscando nodos&#8230;</item>
+        <item>Conectado a %1$d nodo</item>
+        <item>Conectado con %1$d nodos</item>
+    </array>
+
+    <!-- activity_create, activity_restore -->
+    <string name="create_wallet_creating">Generando su monedero\nEsto puede tomar unos minutos</string>
+    <string name="restore_wallet_restoring">Restaurando su monedero\nEsto puede tomar un tiempo</string>
+    <string name="restore_mnemonic_wrong">El nemotécnico debe tener 12 palabras</string>
+    <string name="restore_hint">Su código nemotécnico</string>
+    <string name="restore_wallet">Restaurar monedero</string>
+
+    <!-- activity_request -->
+    <string name="req_generating">Generando código QR</string>
+    <string name="req_save">Compartir código QR</string>
+
+    <!-- activity_txs -->
+    <string name="txs_yes_fee">%1$s cargo</string>
+    <string name="txs_no_fee">sin cargo</string>
+    <string name="txs_received_to"><![CDATA[recibido <font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[enviado <font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
+
+    <string name="txs_no_time">tiempo desconocido</string>
+    <string name="txs_noaddr">dirección desconocida</string>
+    <string name="txs_dead">TRANSACTION IS DEAD</string>
+    <string name="txs_normal_dead">DEAD</string>
+
+    <string name="txs_copy_hash">Copiar hash al portapapeles</string>
+    <string name="txs_copy_address">Copiar dirección al portapapeles</string>
+    <string name="txs_inc"><![CDATA[<font color=#777777>hash de Transacción</font><br>%1$s<br><br><font color=#777777>Recibido para abordar</font><br>%2$s]]></string>
+    <string name="txs_out"><![CDATA[<font color=#777777>hash de Transacción</font><br>%1$s<br><br><font color=#777777>Enviado a la dirección</font><br>%2$s]]></string>
+
+    <array name="txs_total">
+        <item>sin txs</item>
+        <item>%1$s tx</item>
+        <item>%1$s txs</item>
+    </array>
+
+    <array name="txs_normal_conf">
+        <item>ESPERE</item>
+        <item>%1$s</item>
+        <item>%1$s</item>
+    </array>
+</resources>
