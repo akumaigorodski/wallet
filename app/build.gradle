@@ -12,7 +12,7 @@ android {
     defaultConfig {
         versionName "1.03"
         minSdkVersion 15
-        versionCode 9
+        versionCode 10
     }
 
     buildTypes {

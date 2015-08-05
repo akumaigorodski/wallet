@@ -30,7 +30,7 @@
     <LinearLayout
         style="@style/StandardLinearLayout"
         android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
+        android:layout_width="fill_parent"
         android:id="@+id/mainPassword"
         android:visibility="gone">
 
@@ -44,9 +44,15 @@
         <Button
             style="@style/Info"
             android:onClick="tryPass"
-            android:layout_marginTop="25dp"
+            android:layout_marginTop="10dp"
             android:text="@string/wallet_open"
             android:layout_width="wrap_content"/>
+
+        <TextView
+            style="@style/MarginInfo"
+            android:onClick="openConverter"
+            android:layout_width="wrap_content"
+            android:text="@string/main_converter"/>
 
     </LinearLayout>
 

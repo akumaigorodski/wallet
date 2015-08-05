@@ -160,23 +160,26 @@ abstract class InfoActivity extends TimerActivity { me =>
       case R.id.actionTxHistory => me goTo classOf[TxsActivity]
       case android.R.id.home => me goTo classOf[WalletActivity]
       case R.id.actionRequestPayment => mkRequestForm
-      case R.id.actionConverter => mkConverterForm
       case R.id.actionSettings => mkSettingsForm
       case R.id.actionSendMoney => mkPayForm
-      case R.id.actionRateWallet => goRate
+
+      case R.id.actionRateWallet => try {
+        val uri = Uri parse s"market://details?id=com.btcontract.wallet"
+        val marketLink = new Intent(Intent.ACTION_VIEW, uri)
+        startActivity(marketLink)
+      } catch none
+
+      case R.id.actionConverter =>
+        val (alert, inputManager) = me mkConverterForm bldPositive
+        alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
+          def paymentAmount = mkPayForm.man setAmount inputManager.result.map(_.value)
+          def onClick(view: View) = rm(alert)(paymentAmount)
+        }
     }
 
     decideActionToTake(mi.getItemId)
     super.onOptionsItemSelected(mi)
   }
-
-  // Rater
-
-  def goRate = try {
-    val uri = Uri parse s"market://details?id=com.btcontract.wallet"
-    val marketLink = new Intent(Intent.ACTION_VIEW, uri)
-    startActivity(marketLink)
-  } catch none
 
   // CRUD for informers
 
@@ -214,24 +217,12 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   // Payment dialogs
 
-  implicit def str2View(res: CharSequence): View = {
-    val view = getLayoutInflater.inflate(R.layout.frag_top_tip, null)
-    view.findViewById(R.id.actionTip).asInstanceOf[TextView] setText res
-    view
-  }
-
   def rm(prev: Dialog)(fun: => Unit) = {
     timer.schedule(me anyToRunnable fun, 45)
     prev.dismiss
   }
 
-  def mkForm(builder: Builder, title: View, content: View) = {
-    builder.setNegativeButton(dialog_cancel, null).setView(content)
-    val alertDialog = builder.setCustomTitle(title).show
-    alertDialog setCanceledOnTouchOutside false
-    alertDialog
-  }
-
+  def bldPositive = new Builder(me).setPositiveButton(dialog_next, null)
   def pass(h: Int, m: Int, t: View, y: Int, n: Int, no: => Unit)(next: String => Unit) = {
     val viewToProvideUserPasswordAsk = getLayoutInflater.inflate(R.layout.frag_changer, null)
     val secretInput = viewToProvideUserPasswordAsk.findViewById(R.id.secretInput).asInstanceOf[EditText]
@@ -249,93 +240,9 @@ abstract class InfoActivity extends TimerActivity { me =>
       case some: Address => mkPayForm setAddress some
     }
 
-  def mkConverterForm = {
-    // State changes and periodic updates
-    var loadRatesTask: TimerTask = null
-    var rates: Rates = null
-
-    // Wire up inaterface
-    val tpl = new Builder(me).setPositiveButton(dialog_next, null)
-    val content = getLayoutInflater.inflate(R.layout.frag_rates, null)
-    val alert = mkForm(tpl, getString(R.string.action_converter), content)
-    val fiatInput = content.findViewById(R.id.fiatInputAmount).asInstanceOf[EditText]
-    val fiatType = content.findViewById(R.id.fiatType).asInstanceOf[SegmentedGroup]
-
-    // Get cached data and initialize elements
-    val hintMap = Map(typeUSD -> "Dollar", typeEUR -> "Euro", typeCNY -> "Yuan")
-    val inputHintMemo = prefs.getString(AbstractKit.CURRENCY, "Dollar")
-    val cache = prefs.getString(AbstractKit.RATES_JSON, separator)
-    val denomControl = new DenomControl(prefs, content)
-    val man = new AmountInputManager(denomControl)
-
-    val btcListener = new TextChangedWatcher {
-      def convert(amt: Double) = amt * rates.typeMap(fiatType.getCheckedRadioButtonId) / 100000000L
-      def update = fiatInput.setText(man.amt map man.normMap(denomControl.m) map convert map baseFiat.format getOrElse emptyString)
-      def onTextChanged(charSequence: CharSequence, start: Int, count: Int, after: Int) = if (man.input.hasFocus) update
-    }
-
-    val fiatListener = new TextChangedWatcher {
-      def convert(amount: Double) = amount / rates.typeMap(fiatType.getCheckedRadioButtonId) * 100000000L
-      def sum = Try(fiatInput.getText.toString.replace(",", "").toDouble) map convert map (Coin valueOf _.toLong)
-      def onTextChanged(s: CharSequence, x: Int, y: Int, z: Int) = if (fiatInput.hasFocus) update
-      def update = man.setAmount(sum) orElse Try(man.input setText emptyString)
-    }
-
-    val changeListener = new OnCheckedChangeListener {
-      def onCheckedChanged(rGroup: RadioGroup, cb: Int) = {
-        val currentHint = hintMap(fiatType.getCheckedRadioButtonId)
-        prefs.edit.putString(AbstractKit.CURRENCY, currentHint).commit
-        if (man.input.hasFocus) btcListener.update else fiatListener.update
-        fiatInput setHint currentHint
-      }
-    }
-
-    // Loading and working with JSON
-    def fromJSON(rawData: String) = {
-      val json = new JSONObject(rawData)
-      val usd = json getJSONObject "USD" getDouble "last"
-      val eur = json getJSONObject "EUR" getDouble "last"
-      val cny = json getJSONObject "CNY" getDouble "last"
-      Rates(usd, eur, cny)
-    }
-
-    def getRatesData = HttpRequest.get("https://blockchain.info/ticker").body
-    def loadRates: Unit = <(getRatesData, _ => loadAgain) { json =>
-      prefs.edit.putString(AbstractKit.RATES_JSON, json).commit
-      rates = Try apply fromJSON(json) getOrElse rates
-      changeListener.onCheckedChanged(null, 100)
-      loadAgain
-    }
-
-    def loadAgain = {
-      loadRatesTask = me anyToRunnable loadRates
-      timer.schedule(loadRatesTask, 30000)
-    }
-
-    // Initialize everything
-    alert setOnDismissListener new OnDismissListener {
-      def onDismiss(dialog: DialogInterface) = loadRatesTask.cancel
-    }
-
-    alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
-      def provideAmountInPayForm = mkPayForm.man setAmount man.result.map(_.value)
-      def onClick(view: View) = rm(alert)(provideAmountInPayForm)
-    }
-
-    rates = Try apply fromJSON(cache) getOrElse Rates(0, 0, 0)
-    loadRatesTask = me anyToRunnable loadRates
-    loadRatesTask.run
-
-    man.input addTextChangedListener btcListener
-    fiatInput addTextChangedListener fiatListener
-    fiatType setOnCheckedChangeListener changeListener
-    fiatType check hintMap.map(_.swap).apply(inputHintMemo)
-  }
-
   def mkPayForm: SpendManager = {
-    val builder = new Builder(me).setPositiveButton(dialog_next, null)
     val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null)
-    val alert = mkForm(builder, me getString R.string.action_send_money, content)
+    val alert = mkForm(bldPositive, me getString R.string.action_send_money, content)
 
     // Wire up spend interface
     val denomControl = new DenomControl(prefs, content)
@@ -393,12 +300,9 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   def mkRequestForm = {
     val content = getLayoutInflater.inflate(R.layout.frag_input_receive, null)
-    val builder = new Builder(me).setPositiveButton(dialog_next, null)
-    val alert = mkForm(builder, re, content)
-
-    // Wire up request interface
     val denomController = new DenomControl(prefs, content)
     val man = new AmountInputManager(denomController)
+    val alert = mkForm(bldPositive, re, content)
     val ok = alert getButton BUTTON_POSITIVE
 
     ok setOnClickListener new View.OnClickListener {
@@ -583,11 +487,101 @@ abstract class TimerActivity extends Activity { me =>
     case Success(rs) => runOnUiThread(ok apply rs) case Failure(ex) => runOnUiThread(no apply ex)
   }
 
+  // Basis for general forms
+
+  implicit def str2View(res: CharSequence): View = {
+    val view = getLayoutInflater.inflate(R.layout.frag_top_tip, null)
+    view.findViewById(R.id.actionTip).asInstanceOf[TextView] setText res
+    view
+  }
+
+  def mkForm(builder: Builder, title: View, content: View) = {
+    builder.setNegativeButton(dialog_cancel, null).setView(content)
+    val alertDialog = builder.setCustomTitle(title).show
+    alertDialog setCanceledOnTouchOutside false
+    alertDialog
+  }
+
   // Retry or cancel dialog
   def showChoiceAlert(ok: => Unit, no: => Unit, okRes: Int, noRes: Int) = {
     val cancel = new DialogInterface.OnClickListener { def onClick(x: DialogInterface, w: Int) = no }
     val again = new DialogInterface.OnClickListener { def onClick(x: DialogInterface, w: Int) = ok }
     new Builder(me).setPositiveButton(okRes, again).setNegativeButton(noRes, cancel)
+  }
+
+  def mkConverterForm(tpl: Builder) = {
+    val content = getLayoutInflater.inflate(R.layout.frag_rates, null)
+    val alert = mkForm(tpl, getString(R.string.action_converter), content)
+    val fiatInput = content.findViewById(R.id.fiatInputAmount).asInstanceOf[EditText]
+    val fiatType = content.findViewById(R.id.fiatType).asInstanceOf[SegmentedGroup]
+    var loadRatesTask: TimerTask = null
+    var rates: Rates = null
+
+    // Get cached data and initialize elements
+    val hintMap = Map(typeUSD -> "Dollar", typeEUR -> "Euro", typeCNY -> "Yuan")
+    val inputHintMemo = prefs.getString(AbstractKit.CURRENCY, "Dollar")
+    val cache = prefs.getString(AbstractKit.RATES_JSON, separator)
+    val denomControl = new DenomControl(prefs, content)
+    val man = new AmountInputManager(denomControl)
+
+    val btcListener = new TextChangedWatcher {
+      def convert(amt: Double) = amt * rates.typeMap(fiatType.getCheckedRadioButtonId) / 100000000L
+      def update = fiatInput.setText(man.amt map man.normMap(denomControl.m) map convert map baseFiat.format getOrElse emptyString)
+      def onTextChanged(charSequence: CharSequence, start: Int, count: Int, after: Int) = if (man.input.hasFocus) update
+    }
+
+    val fiatListener = new TextChangedWatcher {
+      def convert(amount: Double) = amount / rates.typeMap(fiatType.getCheckedRadioButtonId) * 100000000L
+      def sum = Try(fiatInput.getText.toString.replace(",", "").toDouble) map convert map (Coin valueOf _.toLong)
+      def onTextChanged(s: CharSequence, x: Int, y: Int, z: Int) = if (fiatInput.hasFocus) update
+      def update = man.setAmount(sum) orElse Try(man.input setText emptyString)
+    }
+
+    val changeListener = new OnCheckedChangeListener {
+      def onCheckedChanged(rGroup: RadioGroup, cb: Int) = {
+        val currentHint = hintMap(fiatType.getCheckedRadioButtonId)
+        prefs.edit.putString(AbstractKit.CURRENCY, currentHint).commit
+        if (man.input.hasFocus) btcListener.update else fiatListener.update
+        fiatInput setHint currentHint
+      }
+    }
+
+    // Loading and working with JSON
+    def fromJSON(rawData: String) = {
+      val json = new JSONObject(rawData)
+      val usd = json getJSONObject "USD" getDouble "last"
+      val eur = json getJSONObject "EUR" getDouble "last"
+      val cny = json getJSONObject "CNY" getDouble "last"
+      Rates(usd, eur, cny)
+    }
+
+    def getRatesData = HttpRequest.get("https://blockchain.info/ticker").body
+    def loadRates: Unit = <(getRatesData, _ => loadAgain) { json =>
+      prefs.edit.putString(AbstractKit.RATES_JSON, json).commit
+      rates = Try apply fromJSON(json) getOrElse rates
+      changeListener.onCheckedChanged(null, 100)
+      loadAgain
+    }
+
+    def loadAgain = {
+      loadRatesTask = me anyToRunnable loadRates
+      timer.schedule(loadRatesTask, 30000)
+    }
+
+    // Initialize everything
+    alert setOnDismissListener new OnDismissListener {
+      def onDismiss(dialog: DialogInterface) = loadRatesTask.cancel
+    }
+
+    rates = Try apply fromJSON(cache) getOrElse Rates(0, 0, 0)
+    loadRatesTask = me anyToRunnable loadRates
+    loadRatesTask.run
+
+    man.input addTextChangedListener btcListener
+    fiatInput addTextChangedListener fiatListener
+    fiatType setOnCheckedChangeListener changeListener
+    fiatType check hintMap.map(_.swap).apply(inputHintMemo)
+    (alert, man)
   }
 
   def hideKeys(run: => Unit) = try {

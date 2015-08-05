@@ -2,6 +2,7 @@ package com.btcontract.wallet
 
 import org.bitcoinj.store.WalletProtobufSerializer
 import android.text.method.LinkMovementMethod
+import android.app.AlertDialog.Builder
 import java.io.FileInputStream
 import android.os.Bundle
 import android.view.View
@@ -110,6 +111,7 @@ class MainActivity extends TimerActivity { me =>
   def maybeStartKit = if (activityIsCurrentlyOperational) app.kit.startAsync
   def goRestoreWallet(v: View) = me goTo classOf[WalletRestoreActivity]
   def goCreateWallet(v: View) = me goTo classOf[WalletCreateActivity]
+  def openConverter(v: View) = me mkConverterForm new Builder(me)
   def check = app.kit.wallet checkPassword passWordInput
   def passWordInput = passData.getText.toString
 }
