@@ -288,7 +288,7 @@ abstract class InfoActivity extends TimerActivity { me =>
       def getAddress = Try apply new Address(app.params, spendManager.address.getText.toString)
 
       def onClick(v: View) = man.result match {
-        case Failure(amountIsEmpty) => spendManager.man.input.requestFocus
+        case Failure(emptyAmount) => spendManager.man.input.requestFocus
         case Success(res) if res.value isLessThan MIN_NONDUST_OUTPUT => toast(R.string.dialog_sum_dusty)
         case Success(res) if res.value.getValue > app.kit.currentBalance => toast(R.string.dialog_sum_big)
         case ok => getAddress map PayData.curried(ok) map tryPay getOrElse toast(R.string.dialog_addr_wrong)
