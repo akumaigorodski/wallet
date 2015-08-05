@@ -49,8 +49,10 @@
             android:layout_width="wrap_content"/>
 
         <TextView
-            style="@style/MarginInfo"
+            style="@style/Info"
+            android:clickable="true"
             android:onClick="openConverter"
+            android:layout_marginTop="125dp"
             android:layout_width="wrap_content"
             android:text="@string/main_converter"/>
 
