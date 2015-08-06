@@ -32,7 +32,7 @@
         android:layout_height="wrap_content"
         android:layout_width="fill_parent"
         android:id="@+id/mainPassword"
-        android:visibility="visible">
+        android:visibility="gone">
 
         <EditText
             style="@style/Info"
