@@ -10,7 +10,6 @@
     <string name="sets_rescan_ok">Application will be closed now and blockchain rescan will be triggered on next launch</string>
     <string name="greetings">Welcome to Visual Bitcoin Wallet!\nPlease read <a href='http://btcontract.github.io/VisualBitcoinWallet/'>wallet manual</a> first</string>
     <string name="password_info">Without password you are in constant danger of losing your money. Please pick one which is at least 8 characters long</string>
-    <string name="main_converter"><a href='#'>Currency converter</a></string>
     <string name="copied_to_buffer">Copied to clipboard</string>
     <string name="wallet_create">Create New Wallet</string>
     <string name="wallet_empty">Wallet is empty</string>

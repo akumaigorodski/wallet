@@ -10,7 +10,6 @@
     <string name="sets_rescan_ok">Сейчас кошелек будет закрыт, а повторное сканирование начнется при следующем открытии</string>
     <string name="greetings">Visual Bitcoin Wallet\nПрочитайте <a href='http://btcontract.github.io/VisualBitcoinWallet/'>инструкцию пользователя</a></string>
     <string name="password_info">Пожалуйста, подберите хороший пароль длиной не менее 8 символов, желательно содержащий в себе заглавные буквы и цифры</string>
-    <string name="main_converter"><a href='#'>Конвертер валют</a></string>
     <string name="wallet_restore">Восстановить кошелек из кода</string>
     <string name="copied_to_buffer">Скопировано в буфер</string>
     <string name="wallet_create">Создать новый кошелек</string>

@@ -32,7 +32,7 @@
         android:layout_height="wrap_content"
         android:layout_width="fill_parent"
         android:id="@+id/mainPassword"
-        android:visibility="gone">
+        android:visibility="visible">
 
         <EditText
             style="@style/Info"
@@ -50,11 +50,15 @@
 
         <TextView
             style="@style/Info"
-            android:clickable="true"
+            android:text="@string/or"
+            android:layout_margin="10dp"
+            android:layout_width="wrap_content"/>
+
+        <Button
+            style="@style/Info"
             android:onClick="openConverter"
-            android:layout_marginTop="125dp"
             android:layout_width="wrap_content"
-            android:text="@string/main_converter"/>
+            android:text="@string/action_converter"/>
 
     </LinearLayout>
 

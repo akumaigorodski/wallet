@@ -10,7 +10,6 @@
     <string name="sets_rescan_ok">应用现在将被关闭而且下次启动时将触发数据块链重扫描</string>
     <string name="greetings">视觉比特币钱包\n请首先<a href='http://btcontract.github.io/VisualBitcoinWallet/'>阅读钱包</a>手册</string>
     <string name="password_info">不设置密码的话，你会一直受到损失金钱的威胁。请选择一个至少8位字符的密码。</string>
-    <string name="main_converter"><a href='#'>货币转换器</a></string>
     <string name="copied_to_buffer">复制到剪贴板</string>
     <string name="wallet_create">创建新钱包</string>
     <string name="wallet_empty">钱包是空的</string>

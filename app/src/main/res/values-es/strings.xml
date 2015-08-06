@@ -10,7 +10,6 @@
     <string name="sets_rescan_ok">La aplicación se cerrará ahora y el reescaneo de la cadena de bloque se activará en el próximo reinicio</string>
     <string name="greetings">Bienvenido a Monedero Bitcoin Visual!\nPor favor, lea el <a href='http://btcontract.github.io/VisualBitcoinWallet/'>manual de monedero</a></string>
     <string name="password_info">Sin contraseña se expone de manera contante a perder su dinero. Por favor, elija una que tenga al menos 8 caracteres.</string>
-    <string name="main_converter"><a href='#'>Convertidor de moneda</a></string>
     <string name="copied_to_buffer">Copiado al portapapeles</string>
     <string name="wallet_empty">El monedero está vacío</string>
     <string name="wallet_create">Crear nuevo monedero</string>
