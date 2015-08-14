@@ -66,7 +66,7 @@ class TxsActivity extends InfoActivity { me =>
       setContentView(R.layout.activity_txs)
 
       // Setup adapter
-      adapter = if (scrWidth < 2.2) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_small)
+      adapter = if (scrWidth < 2.0) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_small)
         else if (scrWidth < 2.6) new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_normal)
         else if (scrWidth < 4.4) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_large)
         else new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_extra)
@@ -243,8 +243,7 @@ class TxsActivity extends InfoActivity { me =>
     override def status(tc: TransactionConfidence) = {
       val confirmationStatus = tc.getConfidenceType match {
         case TransactionConfidence.ConfidenceType.DEAD => app getString whenTransactionIsDead
-        case _ if tc.getDepthInBlocks < 1000 => app.plurOrZero(confOpts, tc.getDepthInBlocks)
-        case _ => confOpts.last format "999+"
+        case _ => if (tc.getDepthInBlocks > 999) "999+" else app.plurOrZero(confOpts, tc.getDepthInBlocks)
       }
 
       // Text status and then also a circle

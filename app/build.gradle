@@ -12,7 +12,7 @@ android {
     defaultConfig {
         versionName "1.03"
         minSdkVersion 15
-        versionCode 12
+        versionCode 14
     }
 
     buildTypes {
@@ -33,5 +33,5 @@ dependencies {
     compile 'com.github.kevinsawicki:http-request:6.0'
     compile 'info.hoang8f:android-segmented:1.0.4'
     compile 'org.scala-lang:scala-library:2.11.6'
-    compile 'org.bitcoinj:bitcoinj-core:0.13.1'
+    compile 'org.bitcoinj:bitcoinj-core:0.13.2'
 }
