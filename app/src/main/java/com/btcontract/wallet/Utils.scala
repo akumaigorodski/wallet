@@ -150,8 +150,9 @@ abstract class InfoActivity extends TimerActivity { me =>
   lazy val opts = getResources getStringArray R.array.dialog_request
   lazy val sendOpts = getResources getStringArray R.array.action_send
   lazy val re = getString(R.string.action_request_payment)
+  val iAmSack: Boolean
 
-  // Menu
+  // Menu and overrides
 
   override def onOptionsItemSelected(mi: MenuItem) = {
     val decideActionToTake: PartialFunction[Int, Unit] = {
@@ -172,6 +173,19 @@ abstract class InfoActivity extends TimerActivity { me =>
 
     decideActionToTake(mi.getItemId)
     super.onOptionsItemSelected(mi)
+  }
+
+  override def onResume = {
+    app.TransData.value match {
+      case Some(vs: BitcoinURI) => mkPayForm set vs
+      case Some(vs: Address) => mkPayForm setAddress vs
+      case _ => /* do nothing is this case */
+    }
+
+    // Record which activity to open on next app launch
+    prefs.edit.putBoolean(AbstractKit.SACK_OR_TXS, iAmSack).commit
+    app.TransData.value = None
+    super.onResume
   }
 
   // CRUD for informers
@@ -226,11 +240,6 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   // Concrete dialogs
-
-  def fillPayForm(vs: Any) = vs match {
-    case some: BitcoinURI => mkPayForm set some
-    case some: Address => mkPayForm setAddress some
-  }
 
   def mkPayForm: SpendManager = {
     val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null)

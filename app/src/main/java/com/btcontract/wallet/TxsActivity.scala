@@ -40,6 +40,7 @@ class TxsActivity extends InfoActivity { me =>
   var adapter: TxsListAdapter = null
   var useBtcDenom = true
 
+  val iAmSack = false
   val taskListener = new WalletListener
   val txsListListener = new AbstractWalletEventListener {
     override def onReorganize(w: Wallet) = me runOnUiThread adapter.notifyDataSetChanged
@@ -138,12 +139,6 @@ class TxsActivity extends InfoActivity { me =>
   override def onCreateOptionsMenu(menu: Menu) = {
     getMenuInflater.inflate(R.menu.transactions_ops, menu)
     super.onCreateOptionsMenu(menu)
-  }
-
-  override def onResume = wrap(super.onResume) {
-    prefs.edit.putBoolean(AbstractKit.SACK_OR_TXS, false).commit
-    app.TransData.value foreach fillPayForm
-    app.TransData.value = None
   }
 
   override def onDestroy = wrap(super.onDestroy) {

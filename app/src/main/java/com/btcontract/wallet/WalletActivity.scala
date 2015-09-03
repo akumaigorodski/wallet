@@ -18,12 +18,13 @@ import com.btcontract.wallet.Utils._
 
 class WalletActivity extends InfoActivity { me =>
   lazy val sack = findViewById(R.id.sack).asInstanceOf[SurfaceView]
-  private[this] val initGravity = new Vec2(0.0f, 16.0f)
-  private[this] val world = new World(initGravity)
-
-  private[this] val coinColors = List(0xFFED9D09, 0xFF3F68FC, 0xFFE0C200, 0xFFF76300,
+  val coinColors = List(0xFFED9D09, 0xFF3F68FC, 0xFFE0C200, 0xFFF76300,
     0xFFA400FC, 0xFFD6006F, 0xFF008700, 0xFFA10023, 0xFFE31300, 0xFF96B000,
     0xFF6500FC, 0xFF00A8A5, 0xFF627485, 0xFF1BA2E0)
+
+  val initGravity = new Vec2(0.0f, 16.0f)
+  val world = new World(initGravity)
+  val iAmSack = true
 
   private[this] var coins = List.empty[AbstractCoin]
   private[this] var loop: CanvasLoop = null
@@ -79,12 +80,6 @@ class WalletActivity extends InfoActivity { me =>
   override def onCreateOptionsMenu(menu: Menu) = {
     getMenuInflater.inflate(R.menu.wallet_ops, menu)
     super.onCreateOptionsMenu(menu)
-  }
-
-  override def onResume = wrap(super.onResume) {
-    prefs.edit.putBoolean(AbstractKit.SACK_OR_TXS, true).commit
-    app.TransData.value foreach fillPayForm
-    app.TransData.value = None
   }
 
   override def onDestroy = wrap(super.onDestroy) {
