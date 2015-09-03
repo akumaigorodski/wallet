@@ -37,9 +37,8 @@
     <string name="action_tx_history">查看交易</string>
     <string name="action_request_payment">付款请求</string>
     <string name="action_send_money">发送硬币到某个地址</string>
-    <string name="action_converter">货币转换器</string>
     <string name="action_scan_qr">扫描一张QR图片</string>
-    <string name="action_rate">评价应用</string>
+    <string name="action_converter">货币转换器</string>
 
     <!-- errors -->
     <string name="err_pass">交易失败因为密码不匹配。请确保你提供了正确的密码</string>

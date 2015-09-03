@@ -39,7 +39,6 @@
     <string name="action_converter">Convertidor de moneda</string>
     <string name="action_scan_qr">Escanear una imagen QR</string>
     <string name="action_send_money">Enviar monedas</string>
-    <string name="action_rate">Evaluar aplicación</string>
 
     <!-- errors -->
     <string name="err_pass">La transacción falló porque la contraseña no coincide.Por favor, asegúrese de que ha escrito la contraseña correcta</string>

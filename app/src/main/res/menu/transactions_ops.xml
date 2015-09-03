@@ -26,9 +26,4 @@
         android:id="@+id/actionSettings"
         android:showAsAction="never"/>
 
-    <item
-        android:title="@string/action_rate"
-        android:id="@+id/actionRateWallet"
-        android:showAsAction="never"/>
-
 </menu>

@@ -29,7 +29,7 @@ import Paint.ANTI_ALIAS_FLAG
 
 
 class WalletApp extends Application {
-  lazy val params = org.bitcoinj.params.MainNetParams.get
+  lazy val params = org.bitcoinj.params.TestNet3Params.get
   val mls = java.util.concurrent.TimeUnit.MILLISECONDS
   val fontPaint = new Paint(ANTI_ALIAS_FLAG)
   val coinBodyDef = new BodyDef
@@ -53,7 +53,7 @@ class WalletApp extends Application {
 
   def mgr = getSystemService(CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
   def plurOrZero(options: Strs, num: Int) = if (num > 0) plur(options, num) format num else options(0)
-  def isAlive = if (kit == null) false else kit.state match { case STARTING | RUNNING => true case _ => false }
+  def isAlive = if (null == kit) false else kit.state match { case STARTING | RUNNING => true case _ => false }
 
   def setBuffer(data: String) = {
     mgr setPrimaryClip ClipData.newPlainText(Utils.appName, data)
@@ -69,12 +69,16 @@ class WalletApp extends Application {
     fontPaint setColor 0xBBFFFFFF
   }
 
-  object PaymentInformation {
-    var input = PayData(Failure(null), null)
-    var output: Iterator[Any] = Iterator.empty
-    def setOutput(rawData: String) = output = Iterator {
-      if (rawData startsWith "bitcoin:") new BitcoinURI(params, rawData)
-      else new Address(params, rawData)
+  // TransData holds various data between activity transitions
+  // and also a list of up to 5 payment addresses
+
+  object TransData {
+    var value = Option.empty[Any]
+    var payments = List.empty[PayData]
+
+    def setValue(raw: String) = value = Option {
+      if (raw startsWith "bitcoin:") new BitcoinURI(params, raw)
+      else new Address(params, raw)
     }
 
     def onFail(err: Int => Unit): PartialFunction[Throwable, Unit] = {
@@ -105,7 +109,7 @@ class WalletApp extends Application {
 
     def useCheckPoints(time: Long) = {
       val pts = getAssets open "checkpoints.txt"
-      CheckpointManager.checkpoint(params, pts, store, time)
+      //CheckpointManager.checkpoint(params, pts, store, time)
     }
 
     def setupAndStartDownload = {

@@ -83,7 +83,8 @@ class WalletActivity extends InfoActivity { me =>
 
   override def onResume = wrap(super.onResume) {
     prefs.edit.putBoolean(AbstractKit.SACK_OR_TXS, true).commit
-    if (app.PaymentInformation.output.hasNext) fillPayForm
+    app.TransData.value foreach fillPayForm
+    app.TransData.value = None
   }
 
   override def onDestroy = wrap(super.onDestroy) {

@@ -114,8 +114,8 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   class FewBlocksTracker extends CatchUpTracker {
-    override def onBlocksDownloaded(p: Peer, b: Block, fb: FilteredBlock, left: Int) = {
-      if (left < 2) add(doneText, Informer.SYNC).timer.schedule(me del Informer.SYNC, 5000)
+    override def onBlocksDownloaded(peer: Peer, block: Block, fBlock: FilteredBlock, left: Int) = {
+      if (left < 2) add(getString(R.string.info_progress_done), Informer.SYNC).timer.schedule(me del Informer.SYNC, 5000)
       if (left < 2) app.kit.peerGroup removeEventListener this
       runOnUiThread(ui)
     }
@@ -148,9 +148,8 @@ abstract class InfoActivity extends TimerActivity { me =>
   var currentAnimation = Option.empty[TimerTask]
   val ui = anyToRunnable(getActionBar setSubtitle infos.head.value)
   lazy val opts = getResources getStringArray R.array.dialog_request
-  lazy val doneText = getString(R.string.info_progress_done)
+  lazy val sendOpts = getResources getStringArray R.array.action_send
   lazy val re = getString(R.string.action_request_payment)
-  lazy val ge = getString(R.string.action_send_money)
 
   // Menu
 
@@ -162,12 +161,6 @@ abstract class InfoActivity extends TimerActivity { me =>
       case R.id.actionRequestPayment => mkRequestForm
       case R.id.actionSettings => mkSettingsForm
       case R.id.actionSendMoney => mkPayForm
-
-      case R.id.actionRateWallet => try {
-        val uri = Uri parse s"market://details?id=com.btcontract.wallet"
-        val marketLink = new Intent(Intent.ACTION_VIEW, uri)
-        startActivity(marketLink)
-      } catch none
 
       case R.id.actionConverter =>
         val (alert, inputManager) = me mkConverterForm bldPositive
@@ -234,11 +227,10 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   // Concrete dialogs
 
-  def fillPayForm =
-    app.PaymentInformation.output.next match {
-      case some: BitcoinURI => mkPayForm set some
-      case some: Address => mkPayForm setAddress some
-    }
+  def fillPayForm(vs: Any) = vs match {
+    case some: BitcoinURI => mkPayForm set some
+    case some: Address => mkPayForm setAddress some
+  }
 
   def mkPayForm: SpendManager = {
     val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null)
@@ -319,14 +311,13 @@ abstract class InfoActivity extends TimerActivity { me =>
           sendIntent.setAction(Intent.ACTION_SEND)
         }
 
-        def copy = app setBuffer app.PaymentInformation.input.getURI
         listView setOnItemClickListener new AdapterView.OnItemClickListener {
-          def onItemClick(par: AdapterView[_], v: View, pos: Int, id: Long) = rm(dialog) {
-            pos match { case 0 => me goTo classOf[RequestActivity] case 1 => copy case _ => share }
+          def onItemClick(parent: AdapterView[_], view: View, pos: Int, itemId: Long) = rm(dialog) {
+            pos match { case 0 => me goTo classOf[RequestActivity] case 1 => app setBuffer payData.getURI case _ => share }
           }
         }
 
-        app.PaymentInformation.input = payData
+        app.TransData.value = Option(payData)
         listView setAdapter adapter
       }
     }

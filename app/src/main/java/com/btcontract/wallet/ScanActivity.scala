@@ -25,9 +25,9 @@ class ScanActivity extends TimerActivity with CAMViewListener {
 
   def tryParse(data: String) = try {
     beepSoundPlayer.playRawResource(R.raw.beep, false)
-    app.PaymentInformation setOutput data
+    app.TransData setValue data
     finish
-  } catch app.PaymentInformation.onFail { errCode =>
+  } catch app.TransData.onFail { errCode =>
     val alert = showChoiceAlert(cam.start, finish, err_again, dialog_cancel)
     alert.setMessage(errCode).show setCanceledOnTouchOutside false
     Toast.makeText(app, data, Toast.LENGTH_LONG).show

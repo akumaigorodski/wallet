@@ -142,7 +142,8 @@ class TxsActivity extends InfoActivity { me =>
 
   override def onResume = wrap(super.onResume) {
     prefs.edit.putBoolean(AbstractKit.SACK_OR_TXS, false).commit
-    if (app.PaymentInformation.output.hasNext) fillPayForm
+    app.TransData.value foreach fillPayForm
+    app.TransData.value = None
   }
 
   override def onDestroy = wrap(super.onDestroy) {
@@ -155,7 +156,7 @@ class TxsActivity extends InfoActivity { me =>
 
   class TxsListAdapter(makeHolder: View => TxViewHolder, resId: Int) extends BaseAdapter {
     def getItemId(txPosition: Int) = getItem(txPosition).getHash.getBytes match { case bytes =>
-      bytes(31) & 0xFFl | bytes(30).&(0xFFl) << 8 | bytes(29).&(0xFFl) << 16 | bytes(28).&(0xFFl) << 24 |
+      bytes(31).&(0xFFl) | bytes(30).&(0xFFl) << 8 | bytes(29).&(0xFFl) << 16 | bytes(28).&(0xFFl) << 24 |
         bytes(27).&(0xFFl) << 32 | bytes(26).&(0xFFl) << 40 | bytes(25).&(0xFFl) << 48 | bytes(23).&(0xFFl) << 56
     }
 

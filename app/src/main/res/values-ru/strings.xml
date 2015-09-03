@@ -39,7 +39,6 @@
     <string name="action_scan_qr">Отсканировать QR-код</string>
     <string name="action_send_money">Отправить деньги</string>
     <string name="action_converter">Конвертер валют</string>
-    <string name="action_rate">Оценить приложение</string>
 
     <!-- errors -->
     <string name="err_pass">Перевод не прошел потому что пароль не подошел. Убедитесь, что вы ввели правильный пароль</string>

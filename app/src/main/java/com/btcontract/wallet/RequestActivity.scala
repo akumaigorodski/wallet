@@ -10,7 +10,6 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.qrcode.QRCodeWriter
 import android.app.AlertDialog.Builder
 import android.content.Intent
-import android.text.Html
 import android.view.View
 import android.net.Uri
 import java.util
@@ -35,9 +34,9 @@ object QRGen {
         case true => Color.BLACK case false => Color.WHITE
       }
 
-    val map = Bitmap.createBitmap(wid, height, ARGB_8888)
-    map.setPixels(pixles, 0, wid, 0, 0, wid, height)
-    map
+    val qrBitmap = Bitmap.createBitmap(wid, height, ARGB_8888)
+    qrBitmap.setPixels(pixles, 0, wid, 0, 0, wid, height)
+    qrBitmap
   }
 }
 
@@ -54,26 +53,28 @@ class RequestActivity extends TimerActivity { me =>
   {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_request)
-    val info = app.PaymentInformation.input
 
-    // Generate QR code and update UI
-    <(QRGen.get(info.getURI, qrSize), qrError) { bits =>
-      reqShare setOnClickListener new View.OnClickListener {
-        def shareQRCodeImage = <(saveImage(bits), qrError) { file =>
-          val share = new Intent setAction Intent.ACTION_SEND setType "image/png"
-          me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile file)
+    app.TransData.value match {
+      case Some(info: PayData) =>
+        <(QRGen.get(info.getURI, qrSize), qrError) { bits =>
+          reqShare setOnClickListener new View.OnClickListener {
+            def shareQRCodeImage = <(saveImage(bits), qrError) { file =>
+              val share = new Intent setAction Intent.ACTION_SEND setType "image/png"
+              me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile file)
+            }
+
+            def onClick(v: View) = {
+              timer.schedule(enableShare, 2000)
+              reqShare setEnabled false
+              shareQRCodeImage
+            }
+          }
+
+          address setText info.html("", "#1BA2E0")
+          image setImageBitmap bits
+          enableShare.run
         }
-
-        def onClick(v: View) = {
-          timer.schedule(enableShare, 2000)
-          reqShare setEnabled false
-          shareQRCodeImage
-        }
-      }
-
-      address setText info.html("", "#1BA2E0")
-      image setImageBitmap bits
-      enableShare.run
+      case _ => finish
     }
   }
 
