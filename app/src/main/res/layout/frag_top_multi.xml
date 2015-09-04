@@ -1,0 +1,25 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+    android:layout_height="match_parent" android:layout_width="match_parent">
+
+    <View
+        android:layout_height="1dp"
+        android:background="#33999999"
+        android:layout_width="fill_parent"/>
+
+    <Button
+        style="@style/TransButton"
+        android:id="@+id/viewTxDetails"
+        android:text="@string/send_details"/>
+
+    <Button
+        style="@style/TransButton"
+        android:id="@+id/addNewAddress"
+        android:text="@string/plus_address"/>
+
+    <Button
+        style="@style/TransButton"
+        android:id="@+id/scanQRPicture"
+        android:text="@string/action_scan_qr"/>
+
+</LinearLayout>

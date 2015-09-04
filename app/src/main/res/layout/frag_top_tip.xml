@@ -3,7 +3,7 @@
     android:layout_height="match_parent" android:layout_width="match_parent">
 
     <TextView
-        android:maxWidth="240dp"
+        android:maxWidth="245sp"
         style="@style/MarginInfo"
         android:id="@+id/actionTip"
         android:layout_width="wrap_content"/>

@@ -10,6 +10,7 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.qrcode.QRCodeWriter
 import android.app.AlertDialog.Builder
 import android.content.Intent
+import android.text.Html
 import android.view.View
 import android.net.Uri
 import java.util
@@ -41,11 +42,11 @@ object QRGen {
 }
 
 class RequestActivity extends TimerActivity { me =>
-  def qrError(err: Throwable): Unit = new Builder(me).setMessage(R.string.err_qr_gen).show
+  def qrError(e: Throwable): Unit = new Builder(me).setMessage(R.string.err_qr_gen).show
   lazy val qrSize = getResources getDimensionPixelSize R.dimen.bitmap_qr_size
   lazy val address = findViewById(R.id.reqAddress).asInstanceOf[TextView]
+  lazy val reqCode = findViewById(R.id.reqCode).asInstanceOf[ImageView]
   lazy val reqShare = findViewById(R.id.reqShare).asInstanceOf[Button]
-  lazy val image = findViewById(R.id.reqCode).asInstanceOf[ImageView]
   lazy val enableShare = anyToRunnable(reqShare setEnabled true)
 
   // Initialize this activity, method is run once
@@ -56,9 +57,9 @@ class RequestActivity extends TimerActivity { me =>
 
     app.TransData.value match {
       case Some(info: PayData) =>
-        <(QRGen.get(info.getURI, qrSize), qrError) { bits =>
+        <(QRGen.get(info.getURI, qrSize), qrError) { bitMap =>
           reqShare setOnClickListener new View.OnClickListener {
-            def shareQRCodeImage = <(saveImage(bits), qrError) { file =>
+            def shareQRCodeImage = <(saveImage(bitMap), qrError) { file =>
               val share = new Intent setAction Intent.ACTION_SEND setType "image/png"
               me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile file)
             }
@@ -70,17 +71,20 @@ class RequestActivity extends TimerActivity { me =>
             }
           }
 
-          address setText info.html("", "#1BA2E0")
-          image setImageBitmap bits
+          address setText Html.fromHtml(info text "#1BA2E0")
+          reqCode setImageBitmap bitMap
           enableShare.run
         }
+
+      // Just go to prev activity
+      // Should never happen anyway
       case _ => finish
     }
   }
 
   def saveImage(bits: Bitmap) = {
     val path = Environment.getExternalStorageDirectory
-    val dir = new File(path.getAbsolutePath + "/" + Utils.appName)
+    val dir = new File(s"${path.getAbsolutePath}/${Utils.appName}")
     dir.mkdirs
 
     // Save file

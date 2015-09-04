@@ -5,7 +5,7 @@
 
     <TextView
         style="@style/ReqItem"
-        android:maxWidth="240dp"
+        android:maxWidth="245sp"
         android:id="@+id/reqAddress"/>
 
     <TextView

@@ -63,8 +63,10 @@ class WalletApp extends Application {
   override def onCreate = Utils.wrap(super.onCreate) {
     walletFile = new File(getFilesDir, s"${Utils.appName}.wallet")
     chainFile = new File(getFilesDir, s"${Utils.appName}.spvchain")
-    AbstractCoin.bitLogo = decodeResource(getResources, R.drawable.bitwhite2)
     fontPaint setTypeface Typeface.create("Droid Sans", Typeface.NORMAL)
+    AbstractCoin.bitLogo = decodeResource(getResources, R.drawable.bitwhite2)
+    Utils.btcTemplate = getString(R.string.input_alt_sat)
+    Utils.satTemplate = getString(R.string.input_alt_btc)
     coinBodyDef setType BodyType.DYNAMIC
     fontPaint setColor 0xBBFFFFFF
   }

@@ -18,8 +18,8 @@ import scala.concurrent.Future
 import org.json.JSONObject
 import android.net.Uri
 
-import R.string.{input_hint_btc, input_hint_sat, input_tip_sat, input_tip_btc, input_alt_sat, input_alt_btc, tx_1st_conf}
 import R.string.{dialog_ok, dialog_next, dialog_cancel, dialog_back, err_again, wallet_password, password_old}
+import R.string.{input_hint_btc, input_hint_sat, input_tip_sat, input_tip_btc, tx_1st_conf}
 import R.id.{amtInSat, amtInBtc, inputAmount, inputBottom, typeUSD, typeEUR, typeCNY}
 
 import android.content.DialogInterface.{OnDismissListener, BUTTON_POSITIVE}
@@ -73,11 +73,17 @@ object Utils {
   val passType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
   val textType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
 
+  // Value will be privded on startup
+  var satTemplate, btcTemplate: String = null
+  def inpInBtc(sat: Double) = baseBtc format sat / 100000000
+  def tipInBtc(sat: Double) = satTemplate format inpInBtc(sat)
+  def tipInSat(sat: Double) = btcTemplate format baseSat.format(sat)
+  def fmt(sat: Long) = "฿\u00A0" + inpInBtc(sat.toDouble)
+
   def none: PartialFunction[Any, Unit] = { case _ => }
   def wrap(run: => Unit)(go: => Unit) = try go catch none finally run
   def randBtw(start: Float, end: Float) = start + rand.nextFloat * (end - start)
   def humanAddr(address: String) = address grouped 4 mkString separator
-  def fmt(sat: Long) = s"฿\u00A0${baseBtc format sat / 100000000D}"
 }
 
 // Info stack manager
@@ -149,8 +155,6 @@ abstract class InfoActivity extends TimerActivity { me =>
   val ui = anyToRunnable(getActionBar setSubtitle infos.head.value)
   lazy val opts = getResources getStringArray R.array.dialog_request
   lazy val sendOpts = getResources getStringArray R.array.action_send
-  lazy val re = getString(R.string.action_request_payment)
-  val iAmSack: Boolean
 
   // Menu and overrides
 
@@ -166,8 +170,7 @@ abstract class InfoActivity extends TimerActivity { me =>
       case R.id.actionConverter =>
         val (alert, inputManager) = me mkConverterForm bldPositive
         alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
-          def paymentAmount = mkPayForm.man setAmount inputManager.result.map(_.value)
-          def onClick(view: View) = rm(alert)(paymentAmount)
+          def onClick(v: View) = rm(alert)(mkPayForm.man setAmount inputManager.result)
         }
     }
 
@@ -177,13 +180,12 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   override def onResume = {
     app.TransData.value match {
+      case Some(vs: Address) => mkPayForm setAddressValue vs
       case Some(vs: BitcoinURI) => mkPayForm set vs
-      case Some(vs: Address) => mkPayForm setAddress vs
-      case _ => /* do nothing is this case */
+      case _ =>
     }
 
-    // Record which activity to open on next app launch
-    prefs.edit.putBoolean(AbstractKit.SACK_OR_TXS, iAmSack).commit
+    // Clear value to prevent from popup
     app.TransData.value = None
     super.onResume
   }
@@ -242,8 +244,9 @@ abstract class InfoActivity extends TimerActivity { me =>
   // Concrete dialogs
 
   def mkPayForm: SpendManager = {
+    val paymentTitleText = me getString R.string.action_send_money
     val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null)
-    val alert = mkForm(bldPositive, me getString R.string.action_send_money, content)
+    val alert = mkForm(bldPositive, paymentTitleText, content)
 
     // Wire up spend interface
     val denomControl = new DenomControl(prefs, content)
@@ -252,14 +255,14 @@ abstract class InfoActivity extends TimerActivity { me =>
 
     // If the input is sane...
     def tryPay(pay: PayData) = rm(alert) {
-      val title = pay.html(s"${me getString R.string.action_send_money}<br><br>", "#e31300")
+      val title = Html fromHtml s"$paymentTitleText<br><br>${pay text "#e31300"}"
       pass(wallet_password, passType, title, dialog_ok, dialog_back, mkPayForm set pay) { pass =>
         add(me getString R.string.tx_announce, Informer.DECSEND).ui.run
         <(sendMoney, react)(none)
 
         def sendMoney = {
-          val all = pay.res.get.value.getValue > app.kit.currentBalance - 10000
-          val request = if (all) emptyWallet(pay.adr) else to(pay.adr, pay.res.get.value)
+          val all = pay.tc.get.getValue > app.kit.currentBalance - 10000
+          val request = if (all) emptyWallet(pay.adr) else to(pay.adr, pay.tc.get)
           request.aesKey = app.kit.wallet.getKeyCrypter deriveKey pass
           request.feePerKb = feePerKb(feeBase)
 
@@ -270,9 +273,9 @@ abstract class InfoActivity extends TimerActivity { me =>
         }
 
         def react(exception: Throwable) = exception match {
-          case e: NoFunds => onError(app getString R.string.err_low_funds format pay.res.get.txtSat)
           case e: CouldNotAdjustDownwards => onError(app getString R.string.err_empty_shrunk)
           case e: TxTooLarge => onError(app getString R.string.err_transaction_too_large)
+          case e: NoFunds => onError(app getString R.string.err_low_funds format pay.tc)
           case e: KeyCrypterException => onError(app getString R.string.err_pass)
           case e: Throwable => onError(app getString R.string.err_general)
         }
@@ -290,8 +293,8 @@ abstract class InfoActivity extends TimerActivity { me =>
 
       def onClick(v: View) = man.result match {
         case Failure(emptyAmount) => spendManager.man.input.requestFocus
-        case Success(res) if res.value isLessThan MIN_NONDUST_OUTPUT => toast(R.string.dialog_sum_dusty)
-        case Success(res) if res.value.getValue > app.kit.currentBalance => toast(R.string.dialog_sum_big)
+        case Success(coin) if coin isLessThan MIN_NONDUST_OUTPUT => toast(R.string.dialog_sum_dusty)
+        //case Success(res) if res.value.getValue > app.kit.currentBalance => toast(R.string.dialog_sum_big)
         case ok => getAddress map PayData.curried(ok) map tryPay getOrElse toast(R.string.dialog_addr_wrong)
       }
     }
@@ -300,33 +303,39 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   def mkRequestForm = {
+    val requestText = getString(R.string.action_request_payment)
     val content = getLayoutInflater.inflate(R.layout.frag_input_receive, null)
+    val alert = mkForm(bldPositive, requestText, content)
+    val ok = alert getButton BUTTON_POSITIVE
+
+    // Wire up request interface
     val denomController = new DenomControl(prefs, content)
     val man = new AmountInputManager(denomController)
-    val alert = mkForm(bldPositive, re, content)
-    val ok = alert getButton BUTTON_POSITIVE
 
     ok setOnClickListener new View.OnClickListener {
       def onClick(positiveButtonView: View) = rm(alert) {
-        val payData = PayData(man.result, app.kit.currentAddress)
+        val pay = PayData(man.result, app.kit.currentAddress)
+        val titleText = s"$requestText<br><br>${pay text "#1BA2E0"}"
+
+        // Wire up options list adapter
         val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null)
         val listView = listCon.findViewById(R.id.textCenterView).asInstanceOf[ListView]
         val adapter = new ArrayAdapter(me, R.layout.frag_center_text, R.id.textItem, opts)
-        val dialog = mkForm(new Builder(me), payData.html(s"$re<br><br>", "#1BA2E0"), listCon)
+        val dialog = mkForm(new Builder(me), Html fromHtml titleText, listCon)
 
         def share = startActivity {
           val sendIntent = new Intent setType "text/plain"
-          sendIntent.putExtra(Intent.EXTRA_TEXT, payData.getURI)
+          sendIntent.putExtra(Intent.EXTRA_TEXT, pay.getURI)
           sendIntent.setAction(Intent.ACTION_SEND)
         }
 
         listView setOnItemClickListener new AdapterView.OnItemClickListener {
           def onItemClick(parent: AdapterView[_], view: View, pos: Int, itemId: Long) = rm(dialog) {
-            pos match { case 0 => me goTo classOf[RequestActivity] case 1 => app setBuffer payData.getURI case _ => share }
+            pos match { case 0 => me goTo classOf[RequestActivity] case 1 => app setBuffer pay.getURI case _ => share }
           }
         }
 
-        app.TransData.value = Option(payData)
+        app.TransData.value = Option(pay)
         listView setAdapter adapter
       }
     }
@@ -489,10 +498,10 @@ abstract class TimerActivity extends Activity { me =>
 
   // Basis for general forms
 
-  implicit def str2View(res: CharSequence): View = {
+  implicit def str2View(res: CharSequence): LinearLayout = {
     val view = getLayoutInflater.inflate(R.layout.frag_top_tip, null)
     view.findViewById(R.id.actionTip).asInstanceOf[TextView] setText res
-    view
+    view.asInstanceOf[LinearLayout]
   }
 
   def mkForm(builder: Builder, title: View, content: View) = {
@@ -511,7 +520,7 @@ abstract class TimerActivity extends Activity { me =>
 
   def mkConverterForm(tpl: Builder) = {
     val content = getLayoutInflater.inflate(R.layout.frag_rates, null)
-    val alert = mkForm(tpl, getString(R.string.action_converter), content)
+    val alert = mkForm(tpl, me getString R.string.action_converter, content)
     val fiatInput = content.findViewById(R.id.fiatInputAmount).asInstanceOf[EditText]
     val fiatType = content.findViewById(R.id.fiatType).asInstanceOf[SegmentedGroup]
     var loadRatesTask: TimerTask = null
@@ -608,20 +617,12 @@ class AmountInputManager(val dc: DenomControl) {
   val tipBaseMap = Map(amtInBtc -> input_tip_sat, amtInSat -> input_tip_btc)
   val hintMap = Map(amtInBtc -> input_hint_btc, amtInSat -> input_hint_sat)
   val charMap = Map(amtInBtc -> ".0123456789", amtInSat -> ",0123456789")
-
   val input = dc.v.findViewById(inputAmount).asInstanceOf[EditText]
   val alt = dc.v.findViewById(inputBottom).asInstanceOf[TextView]
-  val satTemplate = dc.v.getResources getString input_alt_btc
-  val btcTemplate = dc.v.getResources getString input_alt_sat
 
-  // Manage user selection, set input results
-  def result = amt map normMap(dc.m) map mkResult
   def amt = Try(input.getText.toString.replace(",", "").toDouble)
+  def result: TryCoin = amt map normMap(dc.m) map (_.toLong) map Coin.valueOf
   def setAmount(tc: TryCoin) = tc map (_.getValue.toDouble) map inputMap(dc.m) map input.setText
-  def mkResult(sat: Double) = Result(tipInBtc(sat), tipInSat(sat), Coin valueOf sat.toLong)
-  def tipInSat(sat: Double) = btcTemplate format baseSat.format(sat)
-  def tipInBtc(sat: Double) = satTemplate format inpInBtc(sat)
-  def inpInBtc(sat: Double) = baseBtc format sat / 100000000
 
   input addTextChangedListener new TextChangedWatcher {
     override def onTextChanged(s: CharSequence, x: Int, y: Int, z: Int) = tip getOrElse base
@@ -650,28 +651,28 @@ class DenomControl(prefs: SharedPreferences, val v: View) {
   def m = radios.getCheckedRadioButtonId
 }
 
-class SpendManager(val man: AmountInputManager) { me =>
+class SpendManager(val man: AmountInputManager) {
   val address = man.dc.v.findViewById(R.id.addressData).asInstanceOf[EditText]
-  def setAddress(addr: Address) = address setText addr.toString
+  def setAddressValue: Address => Unit = address setText _.toString
 
   def set(uri: BitcoinURI) = {
+    this setAddressValue uri.getAddress
     man setAmount Try(uri.getAmount)
-    me setAddress uri.getAddress
   }
 
   def set(data: PayData) = {
-    man setAmount data.getCoin
-    me setAddress data.adr
+    this setAddressValue data.adr
+    man setAmount data.tc
   }
 }
 
-case class PayData(res: Try[Result], adr: Address) {
-  def getURI = BitcoinURI.convertToBitcoinURI(adr, getCoin getOrElse null, null, null)
-  def getCoin = for (realCoinResult <- res) yield realCoinResult.value
+case class PayData(tc: TryCoin, adr: Address) {
+  def getURI = BitcoinURI.convertToBitcoinURI(adr, tc getOrElse null, null, null)
+  def sumText(vs: Double) = s"${Utils tipInBtc vs}<br>${Utils tipInSat vs}"
 
-  def html(plus: String, color: String) = {
-    val base = s"$plus<font color=$color>${Utils humanAddr adr.toString}</font>"
-    Html fromHtml res.map(vs => s"$base<br><br>${vs.txtBtc}<br>${vs.txtSat}").getOrElse(base)
+  def text(addrColor: String) = {
+    val base = s"<font color=$addrColor>${Utils humanAddr adr.toString}</font>"
+    tc map (_.getValue.toDouble) map sumText map (vs => s"$base<br><br>$vs") getOrElse base
   }
 }
 
@@ -679,7 +680,6 @@ case class Rates(usd: Double, eur: Double, cny: Double) {
   val typeMap = Map(typeUSD -> usd, typeEUR -> eur, typeCNY -> cny)
 }
 
-case class Result(txtBtc: String, txtSat: String, value: Coin)
 abstract class AnimListener extends ValueAnimator
 with ValueAnimator.AnimatorUpdateListener
 with Animator.AnimatorListener

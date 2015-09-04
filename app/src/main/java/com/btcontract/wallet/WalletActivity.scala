@@ -24,7 +24,6 @@ class WalletActivity extends InfoActivity { me =>
 
   val initGravity = new Vec2(0.0f, 16.0f)
   val world = new World(initGravity)
-  val iAmSack = true
 
   private[this] var coins = List.empty[AbstractCoin]
   private[this] var loop: CanvasLoop = null
@@ -80,6 +79,10 @@ class WalletActivity extends InfoActivity { me =>
   override def onCreateOptionsMenu(menu: Menu) = {
     getMenuInflater.inflate(R.menu.wallet_ops, menu)
     super.onCreateOptionsMenu(menu)
+  }
+
+  override def onResume = wrap(super.onResume) {
+    prefs.edit.putBoolean(AbstractKit.SACK_OR_TXS, true).commit
   }
 
   override def onDestroy = wrap(super.onDestroy) {
