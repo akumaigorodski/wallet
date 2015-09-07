@@ -42,31 +42,18 @@
     <string name="action_converter">Currency converter</string>
     <string name="action_scan_qr">Scan a QR picture</string>
 
-    <string-array name="action_send">
+    <array name="action_send">
         <item>@string/action_send_money</item>
         <item>Send coins to 2nd address</item>
         <item>Send coins to 3rd address</item>
-        <item>Send coins to 4th address</item>
-        <item>Send coins to 5th address</item>
-        <item>Send coins to 6th address</item>
-        <item>Send coins to 7th address</item>
-        <item>Send coins to 8th address</item>
-        <item>Send coins to 9th address</item>
-        <item>Send coins to 10th address</item>
-    </string-array>
+        <item>Send coins to %1$sth address</item>
+    </array>
 
-    <string-array name="action_send_check">
+    <array name="action_send_memo">
         <item>@string/action_send_money</item>
-        <item>Send coins to two addresses</item>
-        <item>Send coins to three addresses</item>
-        <item>Send coins to four addresses</item>
-        <item>Send coins to five addresses</item>
-        <item>Send coins to six addresses</item>
-        <item>Send coins to seven addresses</item>
-        <item>Send coins to eight addresses</item>
-        <item>Send coins to nine addresses</item>
-        <item>Send coins to ten addresses</item>
-    </string-array>
+        <item>Send coins to %1$s address</item>
+        <item>Send coins to %1$s addresses</item>
+    </array>
 
     <!-- errors -->
     <string name="err_pass">Transaction failed because password did not match. Please make sure you have provided a correct password</string>
@@ -99,6 +86,7 @@
     <string name="input_tip_btc">same amount in bitcoins</string>
     <string name="dialog_addr_wrong">Bitcoin address is invalid</string>
     <string name="dialog_sum_big">Amount exceeds wallet balance</string>
+    <string name="dialog_sum_empty">Please provide an amount</string>
     <string name="dialog_sum_dusty">Current amount is dusty</string>
     <string name="spend_address_tip">where to send money</string>
     <string name="spend_address_hint">Bitcoin address</string>
@@ -124,8 +112,8 @@
 
     <array name="info_peers">
         <item>Searching for peers&#8230;</item>
-        <item>Connected to %1$d peer</item>
-        <item>Connected to %1$d peers</item>
+        <item>Connected to %1$s peer</item>
+        <item>Connected to %1$s peers</item>
     </array>
 
     <!-- activity_create, activity_restore -->

@@ -36,9 +36,21 @@
     <string name="action_settings">Настройки кошелька</string>
     <string name="action_tx_history">История переводов</string>
     <string name="action_request_payment">Запросить платеж</string>
+    <string name="action_send_money">Передать деньги на адрес</string>
     <string name="action_scan_qr">Отсканировать QR-код</string>
-    <string name="action_send_money">Отправить деньги</string>
     <string name="action_converter">Конвертер валют</string>
+
+    <array name="action_send">
+        <item>@string/action_send_money</item>
+        <item>Передать деньги на %1$sй адрес</item>
+    </array>
+
+    <array name="action_send_memo">
+        <item>@string/action_send_money</item>
+        <item>Передать деньги на %1$s адрес</item>
+        <item>Передать деньги на %1$s адреса</item>
+        <item>Передать деньги на %1$s адресов</item>
+    </array>
 
     <!-- errors -->
     <string name="err_pass">Перевод не прошел потому что пароль не подошел. Убедитесь, что вы ввели правильный пароль</string>
@@ -96,9 +108,9 @@
 
     <array name="info_peers">
         <item>Поиск узлов&#8230;</item>
-        <item>Подключен к %1$d узлу</item>
-        <item>Подключены %1$d узла</item>
-        <item>Подключен к %1$d узлам</item>
+        <item>Подключен %1$s узел</item>
+        <item>Подключены %1$s узла</item>
+        <item>Подключено %1$s узлов</item>
     </array>
 
     <!-- activity_create, activity_restore -->

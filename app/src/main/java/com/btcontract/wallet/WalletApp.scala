@@ -12,7 +12,6 @@ import org.bitcoinj.wallet.Protos
 import android.app.Application
 import android.widget.Toast
 import android.os.Vibrator
-import scala.util.Failure
 import java.io.File
 
 import org.bitcoinj.uri.{RequiredFieldValidationException, OptionalFieldValidationException}
@@ -70,9 +69,6 @@ class WalletApp extends Application {
     coinBodyDef setType BodyType.DYNAMIC
     fontPaint setColor 0xBBFFFFFF
   }
-
-  // TransData holds various data between activity transitions
-  // and also a list of up to 5 payment addresses
 
   object TransData {
     var value = Option.empty[Any]
