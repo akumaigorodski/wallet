@@ -233,13 +233,6 @@ abstract class InfoActivity extends TimerActivity { me =>
     timer.schedule(currentAnimation.get, 0, 125)
   }
 
-  // Payment dialogs
-
-  def rm(prev: Dialog)(fun: => Unit) = {
-    timer.schedule(me anyToRunnable fun, 45)
-    prev.dismiss
-  }
-
   // Concrete dialogs
 
   def mkPayForm = {
@@ -284,23 +277,19 @@ abstract class InfoActivity extends TimerActivity { me =>
     // Prepare payment info in readable forms
     val number = app.plurOrZero(sendMemo, pays.size)
     val totalSum = (0L /: pays)(_ + _.tc.get.value).toDouble
+    val txAnnounce = me getString R.string.tx_announce
     val inSatBtc = humanSum(totalSum)
     val inSat = tipInSat(totalSum)
 
     // Make all the needed views
-    val con: LinearLayout = Html fromHtml s"$number<br><br>$inSatBtc"
-    val passAsk = getLayoutInflater.inflate(R.layout.frag_changer, null)
-    val secret = passAsk.findViewById(R.id.secretInput).asInstanceOf[EditText]
+    val con = str2View(Html fromHtml s"$number<br><br>$inSatBtc")
+    val (passAsk, secret) = generatePasswordPromptView(passType, wallet_password)
     val dialog = showChoiceAlert(confirm, emptify, dialog_ok, dialog_cancel)
     val alert = dialog.setCustomTitle(con).setView(passAsk).show
-    val txAnnounce = me getString R.string.tx_announce
 
     // Wire everything up
-    passAsk.findViewById(R.id.secretTip).asInstanceOf[TextView] setText wallet_password
-    con addView getLayoutInflater.inflate(R.layout.frag_top_send, null)
     alert setCanceledOnTouchOutside false
-    secret setInputType passType
-
+    con addView getLayoutInflater.inflate(R.layout.frag_top_send, null)
     val addNewAddress = con.findViewById(R.id.addNewAddress).asInstanceOf[Button]
     val scanQRPicture = con.findViewById(R.id.scanQRPicture).asInstanceOf[Button]
     val viewTxDetails = con.findViewById(R.id.viewTxDetails).asInstanceOf[Button]
@@ -358,7 +347,7 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   def mkRequestForm = {
-    val requestText = getString(R.string.action_request_payment)
+    val requestText = me getString R.string.action_request_payment
     val content = getLayoutInflater.inflate(R.layout.frag_input_receive, null)
     val alert = mkForm(negPosBld(dialog_cancel, dialog_next), requestText, content)
     val ok = alert getButton BUTTON_POSITIVE
@@ -370,7 +359,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     ok setOnClickListener new OnClickListener {
       def onClick(positiveButtonView: View) = rm(alert) {
         val pay = PayData(man.result, app.kit.currentAddress)
-        val titleText = s"$requestText<br><br>${pay text "#1BA2E0"}"
+        val titleText = requestText + "<br><br>" + pay.text("#1BA2E0")
 
         // Wire up options list adapter
         val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null)
@@ -508,31 +497,25 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
 
     def passPlus(next: String => Unit) = {
-      val passAsk = getLayoutInflater.inflate(R.layout.frag_changer, null)
-      val secret = passAsk.findViewById(R.id.secretInput).asInstanceOf[EditText]
+      val (passAsk, secretView) = generatePasswordPromptView(passType, password_old)
       val dialog = showChoiceAlert(informUserAndRunNext, none, dialog_next, dialog_cancel)
-      passAsk.findViewById(R.id.secretTip).asInstanceOf[TextView] setText password_old
       dialog.setView(passAsk).show setCanceledOnTouchOutside false
-      secret setInputType passType
 
       def informUserAndRunNext = {
         add(app getString pass_checking, Informer.CODECHANGE).ui.run
         timer.schedule(me del Informer.CODECHANGE, 2500)
-        next apply secret.getText.toString
+        next apply secretView.getText.toString
       }
     }
 
     def shortCheck(txt: Int, short: Int)(next: String => Unit) = {
-      val passAsk = getLayoutInflater.inflate(R.layout.frag_changer, null)
-      val secret = passAsk.findViewById(R.id.secretInput).asInstanceOf[EditText]
+      val (passAsk, secretView) = generatePasswordPromptView(textType, txt)
       val dialog = showChoiceAlert(checkInputLength, none, dialog_ok, dialog_cancel)
-      passAsk.findViewById(R.id.secretTip).asInstanceOf[TextView] setText txt
       dialog.setView(passAsk).show setCanceledOnTouchOutside false
-      secret setInputType textType
 
       def checkInputLength =
-        if (secret.getText.length < 8) toast(short)
-        else next(secret.getText.toString)
+        if (secretView.getText.length < 8) toast(short)
+        else next(secretView.getText.toString)
     }
   }
 
@@ -575,6 +558,19 @@ abstract class TimerActivity extends Activity { me =>
     val view = getLayoutInflater.inflate(R.layout.frag_top_tip, null)
     view.findViewById(R.id.actionTip).asInstanceOf[TextView] setText res
     view.asInstanceOf[LinearLayout]
+  }
+
+  def rm(prev: Dialog)(fun: => Unit) = {
+    timer.schedule(me anyToRunnable fun, 45)
+    prev.dismiss
+  }
+
+  def generatePasswordPromptView(txType: Int, txt: Int) = {
+    val passAsk = getLayoutInflater.inflate(R.layout.frag_changer, null)
+    val secret = passAsk.findViewById(R.id.secretInput).asInstanceOf[EditText]
+    passAsk.findViewById(R.id.secretTip).asInstanceOf[TextView] setText txt
+    secret setInputType txType
+    (passAsk, secret)
   }
 
   def negBld(neg: Int) = new Builder(me).setNegativeButton(neg, null)
