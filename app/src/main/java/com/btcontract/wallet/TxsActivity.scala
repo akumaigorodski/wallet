@@ -12,7 +12,8 @@ import scala.collection.mutable
 import android.os.Bundle
 import android.text.Html
 
-import R.string.{txs_sum_in, txs_sum_out, txs_received_to, txs_sent_to, err_tx_load}
+import R.string.{txs_received_to, txs_sent_to, err_tx_load}
+import R.string.{txs_sum_in, txs_sum_out, dialog_cancel}
 import Utils.{humanAddr, wrap, fmt, Outputs, baseSat}
 import android.view.{View, ViewGroup, Menu}
 import scala.util.{Success, Try}
@@ -120,7 +121,7 @@ class TxsActivity extends InfoActivity { me =>
             val rawDetails = getString(res).format(humanAddr(hash.toString), entry.prettyAddress)
             copyHash setOnClickListener new OnClickListener { def onClick(v: View) = app setBuffer hash.toString }
             copyAddress setOnClickListener new OnClickListener { def onClick(v: View) = app setBuffer toAddress }
-            mkForm(new Builder(me), Html fromHtml sum, form)
+            mkForm(me negBld dialog_cancel, Html fromHtml sum, form)
             details.setText(Html fromHtml rawDetails)
           }
         }

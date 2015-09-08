@@ -19,10 +19,10 @@ import org.json.JSONObject
 import android.net.Uri
 
 import R.string.{dialog_ok, dialog_next, dialog_cancel, dialog_back, err_again, wallet_password, password_old}
-import R.string.{input_hint_btc, input_hint_sat, input_tip_sat, input_tip_btc, tx_1st_conf}
+import R.string.{input_hint_btc, input_hint_sat, input_tip_sat, input_tip_btc, tx_1st_conf, pass_checking}
 import R.id.{amtInSat, amtInBtc, inputAmount, inputBottom, typeUSD, typeEUR, typeCNY}
 
-import android.content.DialogInterface.{OnDismissListener, BUTTON_POSITIVE}
+import android.content.DialogInterface.{OnDismissListener, BUTTON_POSITIVE, BUTTON_NEGATIVE}
 import android.content.{DialogInterface, SharedPreferences, Context, Intent}
 import org.bitcoinj.core.Wallet.{ExceededMaxTransactionSize => TxTooLarge}
 import org.bitcoinj.core.Wallet.{CouldNotAdjustDownwards, SendRequest}
@@ -32,7 +32,6 @@ import android.animation.{ValueAnimator, Animator}
 import java.util.{Locale, Timer, TimerTask}
 import scala.util.{Failure, Success, Try}
 import android.app.{Dialog, Activity}
-import SendRequest.{emptyWallet, to}
 
 import com.btcontract.wallet.Utils._
 import org.bitcoinj.core._
@@ -51,6 +50,7 @@ import Context.INPUT_METHOD_SERVICE
 object Utils {
   type TryCoin = Try[Coin]
   type Strs = Array[String]
+  type PayDatas = List[PayData]
   type Coins = List[AbstractCoin]
   type Outputs = mutable.Buffer[TransactionOutput]
 
@@ -170,8 +170,8 @@ abstract class InfoActivity extends TimerActivity { me =>
       case R.id.actionSendMoney => mkPayForm
 
       case R.id.actionConverter =>
-        val container = new Builder(me).setPositiveButton(dialog_next, null)
-        val (alert, inputManager) = me mkConverterForm container
+        val bld = negPosBld(dialog_cancel, dialog_next)
+        val (alert, inputManager) = me mkConverterForm bld
 
         // Convinient way to open a pay form with an amount from converter
         alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
@@ -240,111 +240,127 @@ abstract class InfoActivity extends TimerActivity { me =>
     prev.dismiss
   }
 
-  def pass(h: Int, m: Int, t: View, y: Int, n: Int, no: => Unit)(next: String => Unit) = {
-    val viewToProvideUserPasswordAsk = getLayoutInflater.inflate(R.layout.frag_changer, null)
-    val secretInput = viewToProvideUserPasswordAsk.findViewById(R.id.secretInput).asInstanceOf[EditText]
-    val alert = showChoiceAlert(next apply secretInput.getText.toString, no, y, n).setCustomTitle(t)
-    viewToProvideUserPasswordAsk.findViewById(R.id.secretTip).asInstanceOf[TextView] setText h
-    alert.setView(viewToProvideUserPasswordAsk).show setCanceledOnTouchOutside false
-    secretInput setInputType m
-  }
-
   // Concrete dialogs
 
-  def mkPayForm: SpendManager = {
+  def mkPayForm = {
     def size = app.TransData.payments.size
+    def checkout = confirmPay(app.TransData.payments)
+
+    // Prepare form elements
     val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null)
     val txt = if (size < sendNum.length) sendNum(size) else sendNum.last format size + 1
-    val raw: Builder = if (size < 1) showChoiceAlert(recordData, none, dialog_next, dialog_cancel)
-      else showChoiceAlert(recordData, confirmPay, dialog_next, dialog_back)
+    val alert = if (size < 1) makeForm(dialog_cancel, null) else makeForm(dialog_back, checkout)
 
     // Wire up interface
-    val alert = raw.setView(content).setCustomTitle(txt).show
     val denomControl = new DenomControl(prefs, content)
     val man = new AmountInputManager(denomControl)
     val spendManager = new SpendManager(man)
-    alert setCanceledOnTouchOutside false
+
+    def makeForm(res: Int, no: => Unit) = {
+      val alrt = mkForm(negPosBld(res, dialog_next), txt, content)
+      alrt getButton BUTTON_POSITIVE setOnClickListener new OnClickListener { def onClick(v: View) = recordData }
+      alrt getButton BUTTON_NEGATIVE setOnClickListener new OnClickListener { def onClick(v: View) = no }
+      alrt
+    }
 
     def recordData = man.result match {
       case Failure(emptyAmount) => toast(R.string.dialog_sum_empty)
       case Success(coin) if coin.value > app.kit.currentBalance => toast(R.string.dialog_sum_big)
       case Success(coin) if coin.isLessThan(MIN_NONDUST_OUTPUT) => toast(R.string.dialog_sum_dusty)
-      case tc => if (savePay(tc).isSuccess) confirmPay else toast(R.string.dialog_addr_wrong)
+      case tc if savePay(tc).isSuccess => rm(alert)(checkout)
+      case _ => toast(R.string.dialog_addr_wrong)
     }
 
     def savePay(tc: TryCoin) = Try {
-      // Distinct to rule out unintentional duplication
-      // If address doesn't checksum Try will fail without recording anything
+      // Address checksum may fail and nothing will be recorded
       val addr = new Address(app.params, spendManager.address.getText.toString)
       app.TransData.payments = (PayData(tc, addr) :: app.TransData.payments).distinct
-    }
-
-    def confirmPay: Unit = rm(alert) {
-      val addrsToSend = app.plurOrZero(sendMemo, size)
-      val totalSum = (0L /: app.TransData.payments)(_ + _.tc.get.value).toDouble
-      val con: LinearLayout = Html fromHtml s"$addrsToSend<br><br>${Utils humanSum totalSum}"
-      val inSat = Utils tipInSat totalSum
-
-      con addView getLayoutInflater.inflate(R.layout.frag_top_send, null)
-      val addNewAddress = con.findViewById(R.id.addNewAddress).asInstanceOf[Button]
-      val scanQRPicture = con.findViewById(R.id.scanQRPicture).asInstanceOf[Button]
-      val viewTxDetails = con.findViewById(R.id.viewTxDetails).asInstanceOf[Button]
-
-      addNewAddress setOnClickListener new OnClickListener {
-        override def onClick(v: View): Unit = rm(alert)(mkPayForm)
-      }
-
-      scanQRPicture setOnClickListener new OnClickListener {
-        override def onClick(v: View): Unit = rm(alert)(me goTo scanner)
-        def scanner = classOf[ScanActivity]
-      }
-
-      viewTxDetails setOnClickListener new OnClickListener {
-        override def onClick(v: View): Unit = rm(alert)(none)
-      }
-
-      // Ask for password to decrypt the wallet and announce a transaction
-      pass(wallet_password, passType, con, dialog_ok, dialog_cancel, emptify) { pass =>
-        add(me getString R.string.tx_announce, Informer.DECSEND).ui.run
-        <(sendMoney, react)(none)
-
-        def sendMoney = {
-          // If no money will be left and only one recipient then empty this wallet
-          val all = totalSum > app.kit.currentBalance - feePerKb(feeBase).value
-          if (all & size == 1) emptyWallet(app.TransData.payments.head.adr)
-
-//          request.aesKey = app.kit.wallet.getKeyCrypter deriveKey pass
-//          request.feePerKb = feePerKb(feeBase)
-//
-//          // Make signed transaction
-//          app.kit.wallet completeTx request
-//          // Block until at least 1 peer confirms this transaction
-//          app.kit.peerGroup.broadcastTransaction(request.tx, 1).broadcast.get
-        }
-
-        def react(exception: Throwable) = exception match {
-          case e: CouldNotAdjustDownwards => onError(app getString R.string.err_empty_shrunk)
-          case e: TxTooLarge => onError(app getString R.string.err_transaction_too_large)
-          case e: NoFunds => onError(app getString R.string.err_low_funds format inSat)
-          case e: KeyCrypterException => onError(app getString R.string.err_pass)
-          case e: Throwable => onError(app getString R.string.err_general)
-        }
-
-        def onError(msg: String) = try {
-          val info = showChoiceAlert(confirmPay, none, err_again, dialog_cancel)
-          info.setMessage(msg).show setCanceledOnTouchOutside false
-          del(Informer.DECSEND).run
-        } catch none
-      }
     }
 
     spendManager
   }
 
+  def confirmPay(pays: PayDatas): Unit = {
+    // Prepare payment info in readable forms
+    val number = app.plurOrZero(sendMemo, pays.size)
+    val totalSum = (0L /: pays)(_ + _.tc.get.value).toDouble
+    val inSatBtc = humanSum(totalSum)
+    val inSat = tipInSat(totalSum)
+
+    // Make all the needed views
+    val con: LinearLayout = Html fromHtml s"$number<br><br>$inSatBtc"
+    val passAsk = getLayoutInflater.inflate(R.layout.frag_changer, null)
+    val secret = passAsk.findViewById(R.id.secretInput).asInstanceOf[EditText]
+    val dialog = showChoiceAlert(confirm, emptify, dialog_ok, dialog_cancel)
+    val alert = dialog.setCustomTitle(con).setView(passAsk).show
+    val txAnnounce = me getString R.string.tx_announce
+
+    // Wire everything up
+    passAsk.findViewById(R.id.secretTip).asInstanceOf[TextView] setText wallet_password
+    con addView getLayoutInflater.inflate(R.layout.frag_top_send, null)
+    alert setCanceledOnTouchOutside false
+    secret setInputType passType
+
+    val addNewAddress = con.findViewById(R.id.addNewAddress).asInstanceOf[Button]
+    val scanQRPicture = con.findViewById(R.id.scanQRPicture).asInstanceOf[Button]
+    val viewTxDetails = con.findViewById(R.id.viewTxDetails).asInstanceOf[Button]
+
+    addNewAddress setOnClickListener new OnClickListener {
+      override def onClick(v: View): Unit = rm(alert)(mkPayForm)
+    }
+
+    scanQRPicture setOnClickListener new OnClickListener {
+      override def onClick(v: View): Unit = rm(alert)(me goTo scanner)
+      def scanner = classOf[ScanActivity]
+    }
+
+    viewTxDetails setOnClickListener new OnClickListener {
+      override def onClick(v: View): Unit = rm(alert)(none)
+    }
+
+    def confirm = {
+      add(txAnnounce, Informer.DECSEND).ui.run
+      <(sendMoney, react)(none)
+      emptify
+    }
+
+    def sendMoney = {
+      // If no money left & one payee then empty this wallet
+      val all = totalSum > app.kit.currentBalance - feePerKb(feeBase).value
+      val request = if (all & pays.size < 2) SendRequest.emptyWallet(pays.head.adr) else makeReq
+      request.aesKey = app.kit.wallet.getKeyCrypter deriveKey secret.getText.toString
+      request.feePerKb = feePerKb(feeBase)
+
+      // Make signed transaction
+      app.kit.wallet completeTx request
+      // Block until at least 1 peer confirms this transaction
+      app.kit.peerGroup.broadcastTransaction(request.tx, 1).broadcast.get
+    }
+
+    def makeReq = new Transaction(app.params) match { case txn =>
+      for (PayData(Success(cn), adr) <- pays) txn.addOutput(cn, adr)
+      SendRequest forTx txn
+    }
+
+    def react(exception: Throwable) = exception match {
+      case e: CouldNotAdjustDownwards => onError(app getString R.string.err_empty_shrunk)
+      case e: TxTooLarge => onError(app getString R.string.err_transaction_too_large)
+      case e: NoFunds => onError(app getString R.string.err_low_funds format inSat)
+      case e: KeyCrypterException => onError(app getString R.string.err_pass)
+      case e: Throwable => onError(app getString R.string.err_general)
+    }
+
+    def onError(msg: String) = try {
+      val info = showChoiceAlert(confirmPay(pays), none, err_again, dialog_cancel)
+      info.setMessage(msg).show setCanceledOnTouchOutside false
+      del(Informer.DECSEND).run
+    } catch none
+  }
+
   def mkRequestForm = {
     val requestText = getString(R.string.action_request_payment)
     val content = getLayoutInflater.inflate(R.layout.frag_input_receive, null)
-    val alert = mkForm(new Builder(me).setPositiveButton(dialog_next, null), requestText, content)
+    val alert = mkForm(negPosBld(dialog_cancel, dialog_next), requestText, content)
     val ok = alert getButton BUTTON_POSITIVE
 
     // Wire up request interface
@@ -360,7 +376,7 @@ abstract class InfoActivity extends TimerActivity { me =>
         val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null)
         val listView = listCon.findViewById(R.id.textCenterView).asInstanceOf[ListView]
         val adapter = new ArrayAdapter(me, R.layout.frag_center_text, R.id.textItem, opts)
-        val dialog = mkForm(new Builder(me), Html fromHtml titleText, listCon)
+        val dialog = mkForm(me negBld dialog_cancel, Html fromHtml titleText, listCon)
 
         def share = startActivity {
           val sendIntent = new Intent setType "text/plain"
@@ -383,8 +399,10 @@ abstract class InfoActivity extends TimerActivity { me =>
   def mkSettingsForm = {
     val fee = fmt(feePerKb(feeBase).getValue)
     val feeTitle = me getString R.string.sets_fee
+    val title = me getString R.string.action_settings
     val form = getLayoutInflater.inflate(R.layout.frag_settings, null)
-    val dialog = mkForm(new Builder(me), me getString R.string.action_settings, form)
+    val dialog = mkForm(me negBld dialog_cancel, title, form)
+
     val rescanChain = form.findViewById(R.id.rescanBlockchain).asInstanceOf[Button]
     val askForPass = form.findViewById(R.id.askForPassword).asInstanceOf[CheckBox]
     val viewMnemonic = form.findViewById(R.id.viewMnemonic).asInstanceOf[Button]
@@ -433,7 +451,7 @@ abstract class InfoActivity extends TimerActivity { me =>
         app.kit.store = new SPVBlockStore(app.params, app.chainFile)
         app.kit useCheckPoints app.kit.wallet.getEarliestKeyCreationTime
         app.kit.wallet saveToFile app.walletFile
-      } catch none finally System.exit(0)
+      } catch none finally System exit 0
     }
 
     setCode setOnClickListener new OnClickListener {
@@ -485,20 +503,36 @@ abstract class InfoActivity extends TimerActivity { me =>
       def onClick(view: View) = me startActivity new Intent(Intent.ACTION_VIEW, site)
     }
 
-    def passPlus(next: String => Unit) =
-      pass(password_old, passType, null, dialog_next, dialog_cancel, none) { txt =>
-        add(app getString R.string.pass_checking, Informer.CODECHANGE).ui.run
-        timer.schedule(me del Informer.CODECHANGE, 2500)
-        next apply txt
-      }
-
     def checkPass(no: => Unit)(next: String => Unit) = passPlus { txt =>
       <(app.kit.wallet checkPassword txt, _ => no)(if (_) try next(txt) catch none else no)
     }
 
+    def passPlus(next: String => Unit) = {
+      val passAsk = getLayoutInflater.inflate(R.layout.frag_changer, null)
+      val secret = passAsk.findViewById(R.id.secretInput).asInstanceOf[EditText]
+      val dialog = showChoiceAlert(informUserAndRunNext, none, dialog_next, dialog_cancel)
+      passAsk.findViewById(R.id.secretTip).asInstanceOf[TextView] setText password_old
+      dialog.setView(passAsk).show setCanceledOnTouchOutside false
+      secret setInputType passType
+
+      def informUserAndRunNext = {
+        add(app getString pass_checking, Informer.CODECHANGE).ui.run
+        timer.schedule(me del Informer.CODECHANGE, 2500)
+        next apply secret.getText.toString
+      }
+    }
+
     def shortCheck(txt: Int, short: Int)(next: String => Unit) = {
-      def process(res: String) = if (res.length < 8) toast(short) else next(res)
-      pass(txt, textType, null, dialog_ok, dialog_cancel, none)(process)
+      val passAsk = getLayoutInflater.inflate(R.layout.frag_changer, null)
+      val secret = passAsk.findViewById(R.id.secretInput).asInstanceOf[EditText]
+      val dialog = showChoiceAlert(checkInputLength, none, dialog_ok, dialog_cancel)
+      passAsk.findViewById(R.id.secretTip).asInstanceOf[TextView] setText txt
+      dialog.setView(passAsk).show setCanceledOnTouchOutside false
+      secret setInputType textType
+
+      def checkInputLength =
+        if (secret.getText.length < 8) toast(short)
+        else next(secret.getText.toString)
     }
   }
 
@@ -535,7 +569,7 @@ abstract class TimerActivity extends Activity { me =>
     case Success(rs) => runOnUiThread(ok apply rs) case Failure(ex) => runOnUiThread(no apply ex)
   }
 
-  // Basis for general forms
+  // Basis for dialog forms
 
   implicit def str2View(res: CharSequence): LinearLayout = {
     val view = getLayoutInflater.inflate(R.layout.frag_top_tip, null)
@@ -543,9 +577,11 @@ abstract class TimerActivity extends Activity { me =>
     view.asInstanceOf[LinearLayout]
   }
 
+  def negBld(neg: Int) = new Builder(me).setNegativeButton(neg, null)
+  def negPosBld(neg: Int, pos: Int) = negBld(neg).setPositiveButton(pos, null)
+
   def mkForm(builder: Builder, title: View, content: View) = {
-    builder.setNegativeButton(dialog_cancel, null).setView(content)
-    val alertDialog = builder.setCustomTitle(title).show
+    val alertDialog = builder.setCustomTitle(title).setView(content).show
     alertDialog setCanceledOnTouchOutside false
     alertDialog
   }
@@ -555,6 +591,8 @@ abstract class TimerActivity extends Activity { me =>
     val again = new DialogInterface.OnClickListener { def onClick(x: DialogInterface, w: Int) = ok }
     new Builder(me).setPositiveButton(okRes, again).setNegativeButton(noRes, cancel)
   }
+
+  // Currency converter
 
   def mkConverterForm(tpl: Builder) = {
     val content = getLayoutInflater.inflate(R.layout.frag_rates, null)
@@ -567,7 +605,7 @@ abstract class TimerActivity extends Activity { me =>
     // Get cached data and initialize elements
     val hintMap = Map(typeUSD -> "Dollar", typeEUR -> "Euro", typeCNY -> "Yuan")
     val inputHintMemo = prefs.getString(AbstractKit.CURRENCY, "Dollar")
-    val cache = prefs.getString(AbstractKit.RATES_JSON, separator)
+    val cache = prefs.getString(AbstractKit.RATES_JSON, emptyString)
     val denomControl = new DenomControl(prefs, content)
     val man = new AmountInputManager(denomControl)
 

@@ -17,18 +17,18 @@ import java.io.File
 import org.bitcoinj.uri.{RequiredFieldValidationException, OptionalFieldValidationException}
 import org.bitcoinj.uri.{BitcoinURIParseException, BitcoinURI}
 import android.content.{ClipData, ClipboardManager, Context}
+import com.btcontract.wallet.Utils.{Strs, PayDatas}
 import org.jbox2d.dynamics.{BodyType, BodyDef}
 import android.graphics.{Typeface, Paint}
 import State.{STARTING, RUNNING}
 import org.bitcoinj.core._
 
-import com.btcontract.wallet.Utils.Strs
 import Context.CLIPBOARD_SERVICE
 import Paint.ANTI_ALIAS_FLAG
 
 
 class WalletApp extends Application {
-  lazy val params = org.bitcoinj.params.TestNet3Params.get
+  lazy val params = org.bitcoinj.params.MainNetParams.get
   val mls = java.util.concurrent.TimeUnit.MILLISECONDS
   val fontPaint = new Paint(ANTI_ALIAS_FLAG)
   val coinBodyDef = new BodyDef
@@ -71,8 +71,8 @@ class WalletApp extends Application {
   }
 
   object TransData {
-    var value = Option.empty[Any]
-    var payments = List.empty[PayData]
+    var payments: PayDatas = Nil
+    var value: Option[Any] = None
 
     def setValue(raw: String) = value = Option {
       if (raw startsWith "bitcoin:") new BitcoinURI(params, raw)
@@ -107,7 +107,7 @@ class WalletApp extends Application {
 
     def useCheckPoints(time: Long) = {
       val pts = getAssets open "checkpoints.txt"
-      //CheckpointManager.checkpoint(params, pts, store, time)
+      CheckpointManager.checkpoint(params, pts, store, time)
     }
 
     def setupAndStartDownload = {
