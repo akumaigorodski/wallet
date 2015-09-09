@@ -12,7 +12,6 @@
     <string name="password_info">Without password you are in constant danger of losing your money. Please pick one which is at least 8 characters long</string>
     <string name="copied_to_buffer">Copied to clipboard</string>
     <string name="plus_address">Add another address</string>
-    <string name="send_details">View detailed info</string>
     <string name="wallet_create">Create New Wallet</string>
     <string name="wallet_empty">Wallet is empty</string>
     <string name="wallet_password">Password</string>
@@ -44,9 +43,10 @@
 
     <array name="action_send">
         <item>@string/action_send_money</item>
-        <item>Send coins to 2nd address</item>
-        <item>Send coins to 3rd address</item>
-        <item>Send coins to %1$sth address</item>
+        <item>Send coins to second address</item>
+        <item>Send coins to third address</item>
+        <item>Send coins to 4th address</item>
+        <item>Send coins to 5th address</item>
     </array>
 
     <array name="action_send_memo">

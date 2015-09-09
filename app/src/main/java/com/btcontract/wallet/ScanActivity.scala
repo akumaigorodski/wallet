@@ -28,7 +28,7 @@ class ScanActivity extends TimerActivity with CAMViewListener {
     app.TransData setValue data
     finish
   } catch app.TransData.onFail { errCode =>
-    val alert = showChoiceAlert(cam.start, finish, err_again, dialog_cancel)
+    val alert = mkChoiceDialog(cam.start, finish, err_again, dialog_cancel)
     alert.setMessage(errCode).show setCanceledOnTouchOutside false
     Toast.makeText(app, data, Toast.LENGTH_LONG).show
   } finally cam.stop

@@ -34,8 +34,7 @@ class MainActivity extends TimerActivity { me =>
     Try(getIntent.getDataString) match {
       case ok@Success(dataNotNull: String) =>
         ok map app.TransData.setValue map (_ => next) recover app.TransData.onFail { errCode =>
-          val alert = showChoiceAlert(next, finish, dialog_ok, dialog_cancel) setMessage errCode
-          alert.show setCanceledOnTouchOutside false
+          mkForm(mkChoiceDialog(next, finish, dialog_ok, dialog_cancel) setMessage errCode, null, null)
         }
       case _ => next
     }

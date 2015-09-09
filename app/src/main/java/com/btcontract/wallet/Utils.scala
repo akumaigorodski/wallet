@@ -18,7 +18,8 @@ import scala.concurrent.Future
 import org.json.JSONObject
 import android.net.Uri
 
-import R.string.{dialog_ok, dialog_next, dialog_cancel, dialog_back, err_again, wallet_password, password_old}
+import R.string.{tx_announce, wallet_password, password_old}
+import R.string.{dialog_ok, dialog_next, dialog_cancel, dialog_back, err_again}
 import R.string.{input_hint_btc, input_hint_sat, input_tip_sat, input_tip_btc, tx_1st_conf, pass_checking}
 import R.id.{amtInSat, amtInBtc, inputAmount, inputBottom, typeUSD, typeEUR, typeCNY}
 
@@ -157,6 +158,7 @@ abstract class InfoActivity extends TimerActivity { me =>
   lazy val opts = getResources getStringArray R.array.dialog_request
   lazy val sendNum = getResources getStringArray R.array.action_send
   lazy val sendMemo = getResources getStringArray R.array.action_send_memo
+  lazy val plusAddr = me getString R.string.plus_address
 
   // Menu and overrides
 
@@ -185,18 +187,19 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   override def onResume = {
     app.TransData.value match {
-      case Some(vs: Address) => mkPayForm setAddressValue vs
-      case Some(vs: BitcoinURI) => mkPayForm set vs
-      case _ =>
+      case Some(addr: Address) => mkPayForm setAddressValue addr
+      case Some(uri: BitcoinURI) => mkPayForm set uri
+      case _ => checkout
     }
 
-    // Clear value to prevent form popup
+    // Clear value right away
     app.TransData.value = None
     super.onResume
   }
 
   // Empty stack if user switches pages or closes a form
   override def onBackPressed = wrap(super.onBackPressed)(emptify)
+  def checkout = if (app.TransData.payments.nonEmpty) new PayPass(app.TransData.payments)
   def emptify = app.TransData.payments = Nil
 
   // CRUD for informers
@@ -236,63 +239,54 @@ abstract class InfoActivity extends TimerActivity { me =>
   // Concrete dialogs
 
   def mkPayForm = {
-    def size = app.TransData.payments.size
-    def checkout = confirmPay(app.TransData.payments)
-
-    // Prepare form elements
+    val size = app.TransData.payments.size
+    val cancelTxt = if (size < 1) dialog_cancel else dialog_back
+    val txt = if (size < sendNum.length) sendNum(size) else plusAddr
     val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null)
-    val txt = if (size < sendNum.length) sendNum(size) else sendNum.last format size + 1
-    val alert = if (size < 1) makeForm(dialog_cancel, null) else makeForm(dialog_back, checkout)
+    val alert = mkForm(negPosBld(cancelTxt, dialog_next), txt, content)
 
     // Wire up interface
     val denomControl = new DenomControl(prefs, content)
     val man = new AmountInputManager(denomControl)
     val spendManager = new SpendManager(man)
 
-    def makeForm(res: Int, no: => Unit) = {
-      val alrt = mkForm(negPosBld(res, dialog_next), txt, content)
-      alrt getButton BUTTON_POSITIVE setOnClickListener new OnClickListener { def onClick(v: View) = recordData }
-      alrt getButton BUTTON_NEGATIVE setOnClickListener new OnClickListener { def onClick(v: View) = no }
-      alrt
-    }
-
     def recordData = man.result match {
       case Failure(emptyAmount) => toast(R.string.dialog_sum_empty)
       case Success(coin) if coin.value > app.kit.currentBalance => toast(R.string.dialog_sum_big)
-      case Success(coin) if coin.isLessThan(MIN_NONDUST_OUTPUT) => toast(R.string.dialog_sum_dusty)
-      case tc if savePay(tc).isSuccess => rm(alert)(checkout)
-      case _ => toast(R.string.dialog_addr_wrong)
+      case Success(coin) if coin isLessThan MIN_NONDUST_OUTPUT => toast(R.string.dialog_sum_dusty)
+      case addressMayFail => savePay(addressMayFail)
     }
 
     def savePay(tc: TryCoin) = Try {
-      // Address checksum may fail and nothing will be recorded
       val addr = new Address(app.params, spendManager.address.getText.toString)
       app.TransData.payments = (PayData(tc, addr) :: app.TransData.payments).distinct
+    } match {
+      case Success(addressIsOK) => rm(alert)(checkout)
+      case _ => toast(R.string.dialog_addr_wrong)
     }
 
+    // We may need to fill in the data so SpendManager instance must be returned
+    alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener { def onClick(v: View) = recordData }
+    alert getButton BUTTON_NEGATIVE setOnClickListener new OnClickListener { def onClick(v: View) = checkout }
     spendManager
   }
 
-  def confirmPay(pays: PayDatas): Unit = {
+  class PayPass(pays: PayDatas) {
     // Prepare payment info in readable forms
     val number = app.plurOrZero(sendMemo, pays.size)
     val totalSum = (0L /: pays)(_ + _.tc.get.value).toDouble
-    val txAnnounce = me getString R.string.tx_announce
     val inSatBtc = humanSum(totalSum)
     val inSat = tipInSat(totalSum)
 
     // Make all the needed views
     val con = str2View(Html fromHtml s"$number<br><br>$inSatBtc")
     val (passAsk, secret) = generatePasswordPromptView(passType, wallet_password)
-    val dialog = showChoiceAlert(confirm, emptify, dialog_ok, dialog_cancel)
-    val alert = dialog.setCustomTitle(con).setView(passAsk).show
+    val alert = mkForm(mkChoiceDialog(confirm, emptify, dialog_ok, dialog_cancel), con, passAsk)
 
     // Wire everything up
-    alert setCanceledOnTouchOutside false
     con addView getLayoutInflater.inflate(R.layout.frag_top_send, null)
     val addNewAddress = con.findViewById(R.id.addNewAddress).asInstanceOf[Button]
     val scanQRPicture = con.findViewById(R.id.scanQRPicture).asInstanceOf[Button]
-    val viewTxDetails = con.findViewById(R.id.viewTxDetails).asInstanceOf[Button]
 
     addNewAddress setOnClickListener new OnClickListener {
       override def onClick(v: View): Unit = rm(alert)(mkPayForm)
@@ -303,17 +297,12 @@ abstract class InfoActivity extends TimerActivity { me =>
       def scanner = classOf[ScanActivity]
     }
 
-    viewTxDetails setOnClickListener new OnClickListener {
-      override def onClick(v: View): Unit = rm(alert)(none)
+    def confirm = wrap(emptify) {
+      add(me getString tx_announce, Informer.DECSEND).ui.run
+      <(announceMultisendTransaction, react)(none)
     }
 
-    def confirm = {
-      add(txAnnounce, Informer.DECSEND).ui.run
-      <(sendMoney, react)(none)
-      emptify
-    }
-
-    def sendMoney = {
+    def announceMultisendTransaction = {
       // If no money left & one payee then empty this wallet
       val all = totalSum > app.kit.currentBalance - feePerKb(feeBase).value
       val request = if (all & pays.size < 2) SendRequest.emptyWallet(pays.head.adr) else makeReq
@@ -340,7 +329,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
 
     def onError(msg: String) = try {
-      val info = showChoiceAlert(confirmPay(pays), none, err_again, dialog_cancel)
+      val info = mkChoiceDialog(new PayPass(pays), none, err_again, dialog_cancel)
       info.setMessage(msg).show setCanceledOnTouchOutside false
       del(Informer.DECSEND).run
     } catch none
@@ -357,7 +346,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     val man = new AmountInputManager(denomController)
 
     ok setOnClickListener new OnClickListener {
-      def onClick(positiveButtonView: View) = rm(alert) {
+      def onClick(posButtonView: View) = rm(alert) {
         val pay = PayData(man.result, app.kit.currentAddress)
         val titleText = requestText + "<br><br>" + pay.text("#1BA2E0")
 
@@ -418,7 +407,7 @@ abstract class InfoActivity extends TimerActivity { me =>
         }
 
         def go = prefs.edit.putInt(AbstractKit.FEE_FACTOR, feePerKilobytePicker.getValue).commit
-        val pickerAlert = showChoiceAlert(go, none, dialog_ok, dialog_cancel) setView feePerKilobytePicker
+        val pickerAlert = mkChoiceDialog(go, none, dialog_ok, dialog_cancel) setView feePerKilobytePicker
         pickerAlert.setCustomTitle(feeTitle).show setInverseBackgroundForced false
         feePerKilobytePicker setDescendantFocusability FOCUS_BLOCK_DESCENDANTS
         feePerKilobytePicker setValue rawFeeFactor
@@ -430,7 +419,7 @@ abstract class InfoActivity extends TimerActivity { me =>
       def onClick(view: View) = rm(dialog)(openForm)
 
       def openForm: Unit = checkPass(wrong) { _ =>
-        val alert = showChoiceAlert(go, none, dialog_ok, dialog_cancel)
+        val alert = mkChoiceDialog(go, none, dialog_ok, dialog_cancel)
         alert.setMessage(R.string.sets_rescan_ok).show setInverseBackgroundForced false
       }
 
@@ -493,13 +482,13 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
 
     def checkPass(no: => Unit)(next: String => Unit) = passPlus { txt =>
-      <(app.kit.wallet checkPassword txt, _ => no)(if (_) try next(txt) catch none else no)
+      def process(res: Boolean) = if (res) try next(txt) catch none else no
+      <(app.kit.wallet checkPassword txt, _ => no)(process)
     }
 
     def passPlus(next: String => Unit) = {
       val (passAsk, secretView) = generatePasswordPromptView(passType, password_old)
-      val dialog = showChoiceAlert(informUserAndRunNext, none, dialog_next, dialog_cancel)
-      dialog.setView(passAsk).show setCanceledOnTouchOutside false
+      mkForm(mkChoiceDialog(informUserAndRunNext, none, dialog_next, dialog_cancel), null, passAsk)
 
       def informUserAndRunNext = {
         add(app getString pass_checking, Informer.CODECHANGE).ui.run
@@ -510,12 +499,12 @@ abstract class InfoActivity extends TimerActivity { me =>
 
     def shortCheck(txt: Int, short: Int)(next: String => Unit) = {
       val (passAsk, secretView) = generatePasswordPromptView(textType, txt)
-      val dialog = showChoiceAlert(checkInputLength, none, dialog_ok, dialog_cancel)
-      dialog.setView(passAsk).show setCanceledOnTouchOutside false
+      mkForm(mkChoiceDialog(checkLength, none, dialog_ok, dialog_cancel), null, passAsk)
 
-      def checkInputLength =
+      def checkLength = {
         if (secretView.getText.length < 8) toast(short)
         else next(secretView.getText.toString)
+      }
     }
   }
 
@@ -542,6 +531,7 @@ abstract class TimerActivity extends Activity { me =>
   }
 
   // Navigation related methods and timer cancel
+
   override def onDestroy = wrap(super.onDestroy)(timer.cancel)
   def toast(message: Int) = Toast.makeText(app, message, Toast.LENGTH_LONG).show
   implicit def anyToRunnable(process: => Unit): Runnable = new Runnable { def run = process }
@@ -582,7 +572,7 @@ abstract class TimerActivity extends Activity { me =>
     alertDialog
   }
 
-  def showChoiceAlert(ok: => Unit, no: => Unit, okRes: Int, noRes: Int) = {
+  def mkChoiceDialog(ok: => Unit, no: => Unit, okRes: Int, noRes: Int) = {
     val cancel = new DialogInterface.OnClickListener { def onClick(x: DialogInterface, w: Int) = no }
     val again = new DialogInterface.OnClickListener { def onClick(x: DialogInterface, w: Int) = ok }
     new Builder(me).setPositiveButton(okRes, again).setNegativeButton(noRes, cancel)

@@ -9,11 +9,6 @@
 
     <Button
         style="@style/TransButton"
-        android:id="@+id/viewTxDetails"
-        android:text="@string/send_details"/>
-
-    <Button
-        style="@style/TransButton"
         android:id="@+id/addNewAddress"
         android:text="@string/plus_address"/>
 
