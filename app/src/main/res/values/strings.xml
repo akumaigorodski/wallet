@@ -70,7 +70,6 @@
     <string name="err_address">Failed because Bitcoin address in a given request is not valid</string>
     <string name="err_neg">Failed because request contains a negative sum amount</string>
     <string name="err_general">Failed because an unexpected error has occurred</string>
-    <string name="err_again">Retry</string>
 
     <!-- loading errors -->
     <string name="err_tx_load">Could not load transactions</string>

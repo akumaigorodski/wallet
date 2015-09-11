@@ -68,7 +68,6 @@
     <string name="err_uri">Ошибка: запрос содержит неправильно оформленный URI</string>
     <string name="err_neg">Ошибка: в запросе сожержится негативная сумма денег</string>
     <string name="err_general">Произошла непредвиденная ошибка</string>
-    <string name="err_again">Еще раз</string>
 
     <!-- loading errors -->
     <string name="err_tx_load">С транзакциями что-то пошло не так</string>

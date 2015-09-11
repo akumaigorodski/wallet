@@ -52,7 +52,6 @@
     <string name="err_general">失败，出现未知错误。失败发生了未知错误</string>
     <string name="err_address">失败 因为在给定请求中的比特币地址无效</string>
     <string name="err_neg">失败 因为请求包含了一个负的总额度</string>
-    <string name="err_again">再试一次</string>
 
     <!-- loading errors -->
     <string name="err_tx_load">无法加载交易</string>

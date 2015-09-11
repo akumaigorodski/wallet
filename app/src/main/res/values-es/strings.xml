@@ -52,7 +52,6 @@
     <string name="err_address">Falló porque la dirección Bitcoin en la solicitud no es válida</string>
     <string name="err_neg">Falló porque la solicitud contiene una cantidad negativa</string>
     <string name="err_general">Falló porque ha ocurrido un error inesperado</string>
-    <string name="err_again">Intertar de nuevo</string>
 
     <!-- loading errors -->
     <string name="err_tx_load">No se pudieron cargar las transacciones</string>
