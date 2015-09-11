@@ -1,0 +1,25 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+    android:layout_height="match_parent" android:layout_width="match_parent">
+
+    <Button
+        style="@style/TransButton"
+        android:id="@+id/addNewAddress"
+        android:text="@string/paydata_newaddr"/>
+
+    <Button
+        style="@style/TransButton"
+        android:id="@+id/scanQRPicture"
+        android:text="@string/action_scan_qr"/>
+
+    <Button
+        style="@style/TransButton"
+        android:id="@+id/viewPayDetail"
+        android:text="@string/paydata_details"/>
+
+    <View
+        android:layout_height="1dp"
+        android:background="#33999999"
+        android:layout_width="fill_parent"/>
+
+</LinearLayout>

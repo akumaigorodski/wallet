@@ -224,7 +224,8 @@ class TxsActivity extends InfoActivity { me =>
     def fillView(tx: Transaction) = {
       val entry = getCache(tx.getHash) {
         val sum = tx.getValue(app.kit.wallet)
-        TxCache(ga(tx.getOutputs, sum.isPositive), sum)
+        val addrOpt = ga(tx.getOutputs, sum.isPositive)
+        TxCache(addrOpt, sum)
       }
 
       transactWhen setText when(System.currentTimeMillis, tx.getUpdateTime.getTime)

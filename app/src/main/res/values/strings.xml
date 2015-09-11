@@ -11,7 +11,6 @@
     <string name="greetings">Welcome to Visual Bitcoin Wallet!\nPlease read <a href='http://btcontract.github.io/VisualBitcoinWallet/'>wallet manual</a> first</string>
     <string name="password_info">Without password you are in constant danger of losing your money. Please pick one which is at least 8 characters long</string>
     <string name="copied_to_buffer">Copied to clipboard</string>
-    <string name="plus_address">Add another address</string>
     <string name="wallet_create">Create New Wallet</string>
     <string name="wallet_empty">Wallet is empty</string>
     <string name="wallet_password">Password</string>
@@ -36,10 +35,14 @@
     <!-- menu -->
     <string name="action_settings">Wallet settings</string>
     <string name="action_tx_history">View transactions</string>
-    <string name="action_request_payment">Request for a payment</string>
+    <string name="action_request_payment">Request for payment</string>
     <string name="action_send_money">Send coins to address</string>
     <string name="action_converter">Currency converter</string>
     <string name="action_scan_qr">Scan a QR picture</string>
+
+    <string name="paydata_clear">Reset payment stack</string>
+    <string name="paydata_newaddr">Add another address</string>
+    <string name="paydata_details">View payment details</string>
 
     <array name="action_send">
         <item>@string/action_send_money</item>

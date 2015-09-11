@@ -13,7 +13,6 @@
     <string name="wallet_restore">Восстановить кошелек из кода</string>
     <string name="copied_to_buffer">Скопировано в буфер</string>
     <string name="wallet_create">Создать новый кошелек</string>
-    <string name="plus_address">Добавить еще адрес</string>
     <string name="wallet_empty">Кошелек пуст</string>
     <string name="wallet_password">Пароль</string>
     <string name="wallet_open">Открыть</string>
@@ -47,6 +46,7 @@
         <item>Передать деньги на третий адрес</item>
         <item>Передать деньги на 4й адрес</item>
         <item>Передать деньги на 5й адрес</item>
+        <item>Добавить еще адрес адрес</item>
     </array>
 
     <array name="action_send_memo">

@@ -153,54 +153,52 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   var infos = List.empty[Informer]
+  var scanClass = classOf[ScanActivity]
   var currentAnimation = Option.empty[TimerTask]
   val ui = anyToRunnable(getActionBar setSubtitle infos.head.value)
-  lazy val opts = getResources getStringArray R.array.dialog_request
-  lazy val sendNum = getResources getStringArray R.array.action_send
-  lazy val sendMemo = getResources getStringArray R.array.action_send_memo
-  lazy val plusAddr = me getString R.string.plus_address
+  lazy val addrOpts = getResources getStringArray R.array.dialog_request
+  lazy val sMemo = getResources getStringArray R.array.action_send_memo
+  lazy val aSend = getResources getStringArray R.array.action_send
+  lazy val newAddr = me getString R.string.paydata_newaddr
 
   // Menu and overrides
 
-  override def onOptionsItemSelected(mi: MenuItem) = {
-    val decideActionToTake: PartialFunction[Int, Unit] = {
-      case R.id.actionScanQRCode => me goTo classOf[ScanActivity]
-      case R.id.actionTxHistory => me goTo classOf[TxsActivity]
-      case android.R.id.home => me goTo classOf[WalletActivity]
-      case R.id.actionRequestPayment => mkRequestForm
-      case R.id.actionSettings => mkSettingsForm
-      case R.id.actionSendMoney => mkPayForm
+  val decideActionToTake: PartialFunction[Int, Unit] = {
+    case R.id.actionTxHistory => me goTo classOf[TxsActivity]
+    case android.R.id.home => me goTo classOf[WalletActivity]
+    case R.id.actionRequestPayment => mkRequestForm
+    case R.id.actionScanQRCode => me goTo scanClass
+    case R.id.actionSettings => mkSettingsForm
+    case R.id.actionSendMoney => mkPayForm
 
-      case R.id.actionConverter =>
-        val bld = negPosBld(dialog_cancel, dialog_next)
-        val (alert, inputManager) = me mkConverterForm bld
+    case R.id.actionConverter =>
+      val bld = negPosBld(dialog_cancel, dialog_next)
+      val (alert, inputManager) = me mkConverterForm bld
 
-        // Convinient way to open a pay form with an amount from converter
-        alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
-          def onClick(v: View) = rm(alert)(mkPayForm.man setAmount inputManager.result)
-        }
-    }
+      // Convinient way to open a pay form with an amount from converter
+      alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
+        def onClick(v: View) = rm(alert)(mkPayForm.man setAmount inputManager.result)
+      }
+  }
 
+  // One callback used for both activities
+  override def onOptionsItemSelected(mi: MenuItem) =
+  {
     decideActionToTake(mi.getItemId)
     super.onOptionsItemSelected(mi)
   }
 
   override def onResume = {
     app.TransData.value match {
-      case Some(addr: Address) => mkPayForm setAddressValue addr
-      case Some(uri: BitcoinURI) => mkPayForm set uri
-      case _ => checkout
+      case Some(vs: Address) => mkPayForm setAddressValue vs
+      case Some(vs: BitcoinURI) => mkPayForm set vs
+      case _ =>
     }
 
     // Clear value right away
     app.TransData.value = None
     super.onResume
   }
-
-  // Empty stack if user switches pages or closes a form
-  override def onBackPressed = wrap(super.onBackPressed)(emptify)
-  def checkout = if (app.TransData.payments.nonEmpty) new PayPass(app.TransData.payments)
-  def emptify = app.TransData.payments = Nil
 
   // CRUD for informers
 
@@ -238,66 +236,87 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   // Concrete dialogs
 
-  def mkPayForm = {
+  def attachClear(next: => Unit, con: LinearLayout) = {
+    con addView getLayoutInflater.inflate(R.layout.frag_top_clear, null)
+    val clearPayments = con.findViewById(R.id.clearPayments).asInstanceOf[Button]
+
+    clearPayments setOnClickListener new OnClickListener {
+      // First clear the payments and then run some arbitrary code
+      def onClick(v: View) = wrap(next)(app.TransData.payments = Nil)
+    }
+  }
+
+  def mkPayForm: SpendManager = {
     val size = app.TransData.payments.size
-    val cancelTxt = if (size < 1) dialog_cancel else dialog_back
-    val txt = if (size < sendNum.length) sendNum(size) else plusAddr
-    val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null)
-    val alert = mkForm(negPosBld(cancelTxt, dialog_next), txt, content)
+    val top: LinearLayout = if (size < aSend.size) aSend(size) else newAddr
+    val contents = getLayoutInflater.inflate(R.layout.frag_input_spend, null)
+    val alert = mkForm(negPosBld(dialog_cancel, dialog_next), top, contents)
+    if (size > 0) attachClear(rm(alert)(mkPayForm), top)
 
     // Wire up interface
-    val denomControl = new DenomControl(prefs, content)
-    val man = new AmountInputManager(denomControl)
+    val denomCon = new DenomControl(prefs, contents)
+    val man = new AmountInputManager(denomCon)
     val spendManager = new SpendManager(man)
-
-    def recordData = man.result match {
-      case Failure(emptyAmount) => toast(R.string.dialog_sum_empty)
-      case Success(coin) if coin.value > app.kit.currentBalance => toast(R.string.dialog_sum_big)
-      case Success(coin) if coin isLessThan MIN_NONDUST_OUTPUT => toast(R.string.dialog_sum_dusty)
-      case addressMayFail => savePay(addressMayFail)
-    }
 
     def savePay(tc: TryCoin) = Try {
       val addr = new Address(app.params, spendManager.address.getText.toString)
-      app.TransData.payments = (PayData(tc, addr) :: app.TransData.payments).distinct
+      val newPays = PayData(tc, addr) :: app.TransData.payments
+      app.TransData.payments = newPays.distinct
     } match {
-      case Success(addressIsOK) => rm(alert)(checkout)
+      case Success(addrIsOK) => rm(alert)(new PayPass)
       case _ => toast(R.string.dialog_addr_wrong)
     }
 
-    // We may need to fill in the data so SpendManager instance must be returned
-    alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener { def onClick(v: View) = recordData }
-    alert getButton BUTTON_NEGATIVE setOnClickListener new OnClickListener { def onClick(v: View) = checkout }
+    val ok = alert getButton BUTTON_POSITIVE
+    ok setOnClickListener new OnClickListener {
+      def onClick(recordDataView: View) = man.result match {
+        case Failure(emptyAmount) => toast(R.string.dialog_sum_empty)
+        case Success(coin) if coin.value > app.kit.currentBalance => toast(R.string.dialog_sum_big)
+        case Success(coin) if coin isLessThan MIN_NONDUST_OUTPUT => toast(R.string.dialog_sum_dusty)
+        case addressMayFail => savePay(addressMayFail)
+      }
+    }
+
     spendManager
   }
 
-  class PayPass(pays: PayDatas) {
-    // Prepare payment info in readable forms
-    val number = app.plurOrZero(sendMemo, pays.size)
+  class PayPass {
+    // Make a local copy of payments, we may need it later
+    val pays = for (pay <- app.TransData.payments) yield pay
     val totalSum = (0L /: pays)(_ + _.tc.get.value).toDouble
-    val inSatBtc = humanSum(totalSum)
+    val addrsNum = app.plurOrZero(sMemo, pays.size)
     val inSat = tipInSat(totalSum)
 
     // Make all the needed views
-    val con = str2View(Html fromHtml s"$number<br><br>$inSatBtc")
     val (passAsk, secret) = generatePasswordPromptView(passType, wallet_password)
-    val alert = mkForm(mkChoiceDialog(confirm, emptify, dialog_ok, dialog_cancel), con, passAsk)
+    val con = me str2View Html.fromHtml(s"$addrsNum<br><br>${Utils humanSum totalSum}")
+    val alert = mkForm(mkChoiceDialog(confirm, null, dialog_ok, dialog_cancel), con, passAsk)
 
     // Wire everything up
-    con addView getLayoutInflater.inflate(R.layout.frag_top_send, null)
+    attachClear(rm(alert)(mkPayForm), con)
+    passAsk.addView(getLayoutInflater.inflate(R.layout.frag_top_acts, null), 0)
     val addNewAddress = con.findViewById(R.id.addNewAddress).asInstanceOf[Button]
     val scanQRPicture = con.findViewById(R.id.scanQRPicture).asInstanceOf[Button]
+    val viewPayDetail = con.findViewById(R.id.viewPayDetail).asInstanceOf[Button]
 
     addNewAddress setOnClickListener new OnClickListener {
       override def onClick(v: View): Unit = rm(alert)(mkPayForm)
     }
 
     scanQRPicture setOnClickListener new OnClickListener {
-      override def onClick(v: View): Unit = rm(alert)(me goTo scanner)
-      def scanner = classOf[ScanActivity]
+      override def onClick(v: View): Unit = rm(alert)(me goTo scanClass)
     }
 
-    def confirm = wrap(emptify) {
+    viewPayDetail setOnClickListener new OnClickListener {
+      override def onClick(viewPayDetailButton: View): Unit = {
+        val texts = for (pay <- pays) yield Html.fromHtml(pay text "#e31300")
+        val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
+        listCon setAdapter new ArrayAdapter(me, R.layout.frag_center_text, R.id.textItem, texts.toArray)
+        mkForm(me negBld dialog_back, addrsNum, listCon)
+      }
+    }
+
+    def confirm = wrap(app.TransData.payments = Nil) {
       add(me getString tx_announce, Informer.DECSEND).ui.run
       <(announceMultisendTransaction, react)(none)
     }
@@ -320,7 +339,7 @@ abstract class InfoActivity extends TimerActivity { me =>
       SendRequest forTx txn
     }
 
-    def react(exception: Throwable) = exception match {
+    def react(exc: Throwable): Unit = exc match {
       case e: CouldNotAdjustDownwards => onError(app getString R.string.err_empty_shrunk)
       case e: TxTooLarge => onError(app getString R.string.err_transaction_too_large)
       case e: NoFunds => onError(app getString R.string.err_low_funds format inSat)
@@ -328,9 +347,10 @@ abstract class InfoActivity extends TimerActivity { me =>
       case e: Throwable => onError(app getString R.string.err_general)
     }
 
-    def onError(msg: String) = try {
-      val info = mkChoiceDialog(new PayPass(pays), none, err_again, dialog_cancel)
-      info.setMessage(msg).show setCanceledOnTouchOutside false
+    def onError(errMsg: String) = try {
+      val info = mkChoiceDialog(new PayPass, none, err_again, dialog_cancel)
+      info.setMessage(errMsg).show setCanceledOnTouchOutside false
+      app.TransData.payments = pays
       del(Informer.DECSEND).run
     } catch none
   }
@@ -349,11 +369,8 @@ abstract class InfoActivity extends TimerActivity { me =>
       def onClick(posButtonView: View) = rm(alert) {
         val pay = PayData(man.result, app.kit.currentAddress)
         val titleText = requestText + "<br><br>" + pay.text("#1BA2E0")
-
-        // Wire up options list adapter
-        val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null)
-        val listView = listCon.findViewById(R.id.textCenterView).asInstanceOf[ListView]
-        val adapter = new ArrayAdapter(me, R.layout.frag_center_text, R.id.textItem, opts)
+        val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
+        val adapter = new ArrayAdapter(me, R.layout.frag_center_text, R.id.textItem, addrOpts)
         val dialog = mkForm(me negBld dialog_cancel, Html fromHtml titleText, listCon)
 
         def share = startActivity {
@@ -362,14 +379,14 @@ abstract class InfoActivity extends TimerActivity { me =>
           sendIntent.setAction(Intent.ACTION_SEND)
         }
 
-        listView setOnItemClickListener new AdapterView.OnItemClickListener {
+        listCon setOnItemClickListener new AdapterView.OnItemClickListener {
           def onItemClick(parent: AdapterView[_], view: View, pos: Int, itemId: Long) = rm(dialog) {
-            pos match { case 0 => me goTo classOf[RequestActivity] case 1 => app setBuffer pay.getURI case _ => share }
+            pos match { case 0 => me goTo classOf[RequestActivity] case 1 => app setBuffer pay.getURI case 2 => share }
           }
         }
 
         app.TransData.value = Option(pay)
-        listView setAdapter adapter
+        listCon setAdapter adapter
       }
     }
   }
@@ -471,7 +488,7 @@ abstract class InfoActivity extends TimerActivity { me =>
         val crypter = app.kit.wallet.getKeyCrypter
         val builder = new Builder(me).setCustomTitle(me getString R.string.sets_noscreen)
         <(app.kit.wallet.getKeyChainSeed.decrypt(crypter, txt, crypter deriveKey txt), _ => wrong) {
-          chainSeed => builder.setMessage(TextUtils.join(separator, chainSeed.getMnemonicCode).toUpperCase).show
+          seed => builder.setMessage(TextUtils.join(separator, seed.getMnemonicCode).toUpperCase).show
         }
       }
     }
@@ -487,24 +504,20 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
 
     def passPlus(next: String => Unit) = {
-      val (passAsk, secretView) = generatePasswordPromptView(passType, password_old)
+      val (passAsk, secret) = generatePasswordPromptView(passType, password_old)
       mkForm(mkChoiceDialog(informUserAndRunNext, none, dialog_next, dialog_cancel), null, passAsk)
 
       def informUserAndRunNext = {
         add(app getString pass_checking, Informer.CODECHANGE).ui.run
         timer.schedule(me del Informer.CODECHANGE, 2500)
-        next apply secretView.getText.toString
+        next apply secret.getText.toString
       }
     }
 
-    def shortCheck(txt: Int, short: Int)(next: String => Unit) = {
-      val (passAsk, secretView) = generatePasswordPromptView(textType, txt)
-      mkForm(mkChoiceDialog(checkLength, none, dialog_ok, dialog_cancel), null, passAsk)
-
-      def checkLength = {
-        if (secretView.getText.length < 8) toast(short)
-        else next(secretView.getText.toString)
-      }
+    def shortCheck(txtRes: Int, short: Int)(next: String => Unit) = {
+      val (passwordAsk, secret) = generatePasswordPromptView(textType, txtRes)
+      def check = if (secret.getText.length < 8) toast(short) else next(secret.getText.toString)
+      mkForm(mkChoiceDialog(check, none, dialog_ok, dialog_cancel), null, passwordAsk)
     }
   }
 
@@ -551,25 +564,25 @@ abstract class TimerActivity extends Activity { me =>
   }
 
   def rm(prev: Dialog)(fun: => Unit) = {
-    timer.schedule(me anyToRunnable fun, 45)
+    timer.schedule(me anyToRunnable fun, 50)
     prev.dismiss
   }
 
   def generatePasswordPromptView(txType: Int, txt: Int) = {
-    val passAsk = getLayoutInflater.inflate(R.layout.frag_changer, null)
-    val secret = passAsk.findViewById(R.id.secretInput).asInstanceOf[EditText]
+    val passAsk = getLayoutInflater.inflate(R.layout.frag_changer, null).asInstanceOf[LinearLayout]
+    val secretInputField = passAsk.findViewById(R.id.secretInput).asInstanceOf[EditText]
     passAsk.findViewById(R.id.secretTip).asInstanceOf[TextView] setText txt
-    secret setInputType txType
-    (passAsk, secret)
+    secretInputField setInputType txType
+    (passAsk, secretInputField)
   }
 
   def negBld(neg: Int) = new Builder(me).setNegativeButton(neg, null)
   def negPosBld(neg: Int, pos: Int) = negBld(neg).setPositiveButton(pos, null)
 
   def mkForm(builder: Builder, title: View, content: View) = {
-    val alertDialog = builder.setCustomTitle(title).setView(content).show
-    alertDialog setCanceledOnTouchOutside false
-    alertDialog
+    val dialog = builder.setCustomTitle(title).setView(content).show
+    dialog setCanceledOnTouchOutside false
+    dialog
   }
 
   def mkChoiceDialog(ok: => Unit, no: => Unit, okRes: Int, noRes: Int) = {

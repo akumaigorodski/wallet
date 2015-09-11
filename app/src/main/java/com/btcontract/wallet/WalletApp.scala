@@ -28,7 +28,7 @@ import Paint.ANTI_ALIAS_FLAG
 
 
 class WalletApp extends Application {
-  lazy val params = org.bitcoinj.params.MainNetParams.get
+  lazy val params = org.bitcoinj.params.TestNet3Params.get
   val mls = java.util.concurrent.TimeUnit.MILLISECONDS
   val fontPaint = new Paint(ANTI_ALIAS_FLAG)
   val coinBodyDef = new BodyDef
@@ -91,7 +91,6 @@ class WalletApp extends Application {
   }
 
   abstract class WalletKit extends AbstractKit {
-    def autoSaveOff = wallet.shutdownAutosaveAndWait
     def autoSaveOn = wallet.autosaveToFile(walletFile, 500, mls, null)
     def freshOuts = wallet.calculateAllSpendCandidates(false, true).asScala
     def currentAddress = wallet.currentAddress(KeyPurpose.RECEIVE_FUNDS)
@@ -107,7 +106,7 @@ class WalletApp extends Application {
 
     def useCheckPoints(time: Long) = {
       val pts = getAssets open "checkpoints.txt"
-      CheckpointManager.checkpoint(params, pts, store, time)
+      //CheckpointManager.checkpoint(params, pts, store, time)
     }
 
     def setupAndStartDownload = {
