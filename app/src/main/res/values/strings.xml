@@ -40,17 +40,9 @@
     <string name="action_converter">Currency converter</string>
     <string name="action_scan_qr">Scan a QR picture</string>
 
-    <string name="paydata_clear">Reset payment stack</string>
+    <string name="paydata_clear">Clear payment stack</string>
     <string name="paydata_newaddr">Add another address</string>
-    <string name="paydata_details">View payment details</string>
-
-    <array name="action_send">
-        <item>@string/action_send_money</item>
-        <item>Send coins to second address</item>
-        <item>Send coins to third address</item>
-        <item>Send coins to 4th address</item>
-        <item>Send coins to 5th address</item>
-    </array>
+    <string name="paydata_details">View detailed information</string>
 
     <array name="action_send_memo">
         <item>@string/action_send_money</item>

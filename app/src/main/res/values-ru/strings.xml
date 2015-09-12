@@ -40,15 +40,6 @@
     <string name="action_scan_qr">Отсканировать QR-код</string>
     <string name="action_converter">Конвертер валют</string>
 
-    <array name="action_send">
-        <item>@string/action_send_money</item>
-        <item>Передать деньги на второй адрес</item>
-        <item>Передать деньги на третий адрес</item>
-        <item>Передать деньги на 4й адрес</item>
-        <item>Передать деньги на 5й адрес</item>
-        <item>Добавить еще адрес адрес</item>
-    </array>
-
     <array name="action_send_memo">
         <item>@string/action_send_money</item>
         <item>Передать деньги на %1$s адрес</item>

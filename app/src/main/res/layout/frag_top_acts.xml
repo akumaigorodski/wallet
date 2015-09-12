@@ -4,6 +4,11 @@
 
     <Button
         style="@style/TransButton"
+        android:id="@+id/viewPayDetail"
+        android:text="@string/paydata_details"/>
+
+    <Button
+        style="@style/TransButton"
         android:id="@+id/addNewAddress"
         android:text="@string/paydata_newaddr"/>
 
@@ -11,11 +16,6 @@
         style="@style/TransButton"
         android:id="@+id/scanQRPicture"
         android:text="@string/action_scan_qr"/>
-
-    <Button
-        style="@style/TransButton"
-        android:id="@+id/viewPayDetail"
-        android:text="@string/paydata_details"/>
 
     <View
         android:layout_height="1dp"
