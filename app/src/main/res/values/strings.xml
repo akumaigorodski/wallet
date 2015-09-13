@@ -40,9 +40,9 @@
     <string name="action_converter">Currency converter</string>
     <string name="action_scan_qr">Scan a QR picture</string>
 
-    <string name="paydata_clear">Clear payment stack</string>
+    <string name="paydata_clear">Reset payment data</string>
     <string name="paydata_newaddr">Add another address</string>
-    <string name="paydata_details">View detailed information</string>
+    <string name="paydata_details">View transaction details</string>
 
     <array name="action_send_memo">
         <item>@string/action_send_money</item>
@@ -72,8 +72,8 @@
     <string name="dialog_next">Next</string>
     <string name="dialog_back">Back</string>
     <string name="dialog_cancel">Cancel</string>
-    <string name="input_hint_sat">amount in sat</string>
-    <string name="input_hint_btc">amount in btc</string>
+    <string name="input_hint_sat">sum in sat</string>
+    <string name="input_hint_btc">sum in btc</string>
     <string name="input_alt_sat">%1$s in satoshi</string>
     <string name="input_alt_btc">%1$s in bitcoins</string>
     <string name="input_tip_sat">same amount in satoshi</string>
@@ -134,8 +134,7 @@
     <string name="txs_dead">TRANSACTION IS DEAD</string>
     <string name="txs_normal_dead">DEAD</string>
 
-    <string name="txs_copy_hash">Copy hash to clipboard</string>
-    <string name="txs_copy_address">Copy address to clipboard</string>
+    <string name="txs_copy_hash">Copy transaction hash</string>
     <string name="txs_inc"><![CDATA[<font color=#777777>Transaction hash</font><br>%1$s<br><br><font color=#777777>Received coins to address</font><br>%2$s]]></string>
     <string name="txs_out"><![CDATA[<font color=#777777>Transaction hash</font><br>%1$s<br><br><font color=#777777>Sent coins to address</font><br>%2$s]]></string>
 

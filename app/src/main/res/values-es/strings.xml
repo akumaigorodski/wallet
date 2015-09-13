@@ -62,12 +62,12 @@
     <string name="dialog_back">Atrás</string>
     <string name="dialog_next">Siguiente</string>
     <string name="dialog_cancel">Cancelar</string>
+    <string name="input_hint_sat">suma en sat</string>
+    <string name="input_hint_btc">suma en btc</string>
     <string name="input_alt_sat">%1$s en satoshi</string>
     <string name="input_alt_btc">%1$s en bitcoins</string>
-    <string name="input_hint_sat">cantidad en sat</string>
-    <string name="input_hint_btc">cantidad en btc</string>
-    <string name="input_tip_sat">misma cantidad en satoshi</string>
-    <string name="input_tip_btc">misma cantidad en bitcoins</string>
+    <string name="input_tip_sat">misma suma en satoshi</string>
+    <string name="input_tip_btc">misma suma en bitcoins</string>
     <string name="dialog_addr_wrong">La dirección Bitcoin no es válida</string>
     <string name="dialog_sum_big">La cantidad excede el balance del monedero</string>
     <string name="dialog_sum_dusty">La cantidad actual es polvorienta</string>
@@ -124,7 +124,6 @@
     <string name="txs_normal_dead">DEAD</string>
 
     <string name="txs_copy_hash">Copiar hash al portapapeles</string>
-    <string name="txs_copy_address">Copiar dirección al portapapeles</string>
     <string name="txs_inc"><![CDATA[<font color=#777777>hash de Transacción</font><br>%1$s<br><br><font color=#777777>Recibido para abordar</font><br>%2$s]]></string>
     <string name="txs_out"><![CDATA[<font color=#777777>hash de Transacción</font><br>%1$s<br><br><font color=#777777>Enviado a la dirección</font><br>%2$s]]></string>
 

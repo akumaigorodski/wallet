@@ -132,7 +132,6 @@
     <string name="txs_normal_dead">МЕРТВ</string>
 
     <string name="txs_copy_hash">Скопировать хэш в буфер</string>
-    <string name="txs_copy_address">Скопировать адрес в буфер</string>
     <string name="txs_inc"><![CDATA[<font color=#777777>Хэш перевода</font><br>%1$s<br><br><font color=#777777>Получено на адрес</font><br>%2$s]]></string>
     <string name="txs_out"><![CDATA[<font color=#777777>Хэш перевода</font><br>%1$s<br><br><font color=#777777>Отправлено на адрес</font><br>%2$s]]></string>
 

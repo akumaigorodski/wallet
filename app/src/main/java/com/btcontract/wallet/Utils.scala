@@ -41,6 +41,7 @@ import android.view._
 import android.text._
 
 import concurrent.ExecutionContext.Implicits.global
+import ViewGroup.LayoutParams.WRAP_CONTENT
 import scala.language.implicitConversions
 import InputMethodManager.HIDE_NOT_ALWAYS
 import ViewGroup.FOCUS_BLOCK_DESCENDANTS
@@ -168,7 +169,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     case android.R.id.home => me goTo classOf[WalletActivity]
     case R.id.actionRequestPayment => mkRequestForm
     case R.id.actionScanQRCode => me goTo scanClass
-    case R.id.actionSettings => mkSettingsForm
+    case R.id.actionSettings => mkSetsForm
 
     case R.id.actionSendMoney =>
       val noPays = app.TransData.payments.isEmpty
@@ -317,7 +318,7 @@ abstract class InfoActivity extends TimerActivity { me =>
         listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, texts.toArray)
 
         rm(alert) {
-          val dialog = mkForm(negBld(dialog_back), addrsNum, listCon)
+          val dialog = mkForm(me negBld dialog_back, addrsNum, listCon)
           dialog getButton BUTTON_NEGATIVE setOnClickListener new OnClickListener {
             def onClick(removeDetailedViewAndGetBackToForm: View) = rm(dialog)(new PayPass)
           }
@@ -401,7 +402,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
   }
 
-  def mkSettingsForm = {
+  def mkSetsForm: Unit = {
     val fee = fmt(feePerKb(feeBase).getValue)
     val feeTitle = me getString R.string.sets_fee
     val title = me getString R.string.action_settings
@@ -419,7 +420,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     setFee setText Html.fromHtml(s"$feeTitle <font color=#e31300>$fee</font>")
     askForPass setChecked prefs.getBoolean(AbstractKit.PASSWORD_ASK_STARTUP, false)
     askForPass setOnCheckedChangeListener new CompoundButton.OnCheckedChangeListener {
-      def onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) = update(isChecked)
+      def onCheckedChanged(button: CompoundButton, isChecked: Boolean) = update(isChecked)
       def update = prefs.edit.putBoolean(AbstractKit.PASSWORD_ASK_STARTUP, _: Boolean).commit
     }
 
@@ -434,8 +435,8 @@ abstract class InfoActivity extends TimerActivity { me =>
         }
 
         def go = prefs.edit.putInt(AbstractKit.FEE_FACTOR, feePerKilobytePicker.getValue).commit
-        val pickerAlert = mkChoiceDialog(go, none, dialog_ok, dialog_cancel) setView feePerKilobytePicker
-        pickerAlert.setCustomTitle(feeTitle).show setInverseBackgroundForced false
+        val feeDialog = mkChoiceDialog(go, mkSetsForm, dialog_ok, dialog_back) setView feePerKilobytePicker
+        feeDialog.setCustomTitle(feeTitle).show setInverseBackgroundForced false
         feePerKilobytePicker setDescendantFocusability FOCUS_BLOCK_DESCENDANTS
         feePerKilobytePicker setValue rawFeeFactor
       }
@@ -446,7 +447,7 @@ abstract class InfoActivity extends TimerActivity { me =>
       def onClick(view: View) = rm(dialog)(openForm)
 
       def openForm: Unit = checkPass(wrong) { _ =>
-        val alert = mkChoiceDialog(go, none, dialog_ok, dialog_cancel)
+        val alert = mkChoiceDialog(go, mkSetsForm, dialog_ok, dialog_back)
         alert.setMessage(R.string.sets_rescan_ok).show setInverseBackgroundForced false
       }
 
@@ -515,9 +516,9 @@ abstract class InfoActivity extends TimerActivity { me =>
 
     def passPlus(next: String => Unit) = {
       val (passAsk, secret) = generatePasswordPromptView(passType, password_old)
-      mkForm(mkChoiceDialog(informUserAndRunNext, none, dialog_next, dialog_cancel), null, passAsk)
+      mkForm(mkChoiceDialog(infoAndNext, mkSetsForm, dialog_next, dialog_back), null, passAsk)
 
-      def informUserAndRunNext = {
+      def infoAndNext = {
         add(app getString pass_checking, Informer.CODECHANGE).ui.run
         timer.schedule(me del Informer.CODECHANGE, 2500)
         next apply secret.getText.toString
@@ -527,7 +528,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     def shortCheck(txtRes: Int, short: Int)(next: String => Unit) = {
       val (passwordAsk, secret) = generatePasswordPromptView(textType, txtRes)
       def check = if (secret.getText.length < 8) toast(short) else next(secret.getText.toString)
-      mkForm(mkChoiceDialog(check, none, dialog_ok, dialog_cancel), null, passwordAsk)
+      mkForm(mkChoiceDialog(check, mkSetsForm, dialog_ok, dialog_back), null, passwordAsk)
     }
   }
 
@@ -545,10 +546,11 @@ abstract class TimerActivity extends Activity { me =>
   val exitTo: Class[_] => Unit = goto => wrap(finish)(goTo apply goto)
   lazy val prefs = app.getSharedPreferences("prefs", Context.MODE_PRIVATE)
   lazy val app = getApplication.asInstanceOf[WalletApp]
+  lazy val metrics = new DisplayMetrics
   val timer = new Timer
 
-  // Scaled screen width
-  lazy val scrWidth = new DisplayMetrics match { case metrics =>
+  lazy val scrWidth = {
+    // Screen width in inches
     getWindowManager.getDefaultDisplay getMetrics metrics
     metrics.widthPixels.toDouble / metrics.densityDpi
   }
@@ -590,9 +592,11 @@ abstract class TimerActivity extends Activity { me =>
   def negPosBld(neg: Int, pos: Int) = negBld(neg).setPositiveButton(pos, null)
 
   def mkForm(builder: Builder, title: View, content: View) = {
-    val dialog = builder.setCustomTitle(title).setView(content).show
-    dialog setCanceledOnTouchOutside false
-    dialog
+    val alertDialog = builder.setCustomTitle(title).setView(content).show
+    // On a tablets we do not want an alert to be too wide so make it 2 inches max
+    if (scrWidth > 2.3) alertDialog.getWindow.setLayout(metrics.densityDpi * 2, WRAP_CONTENT)
+    alertDialog setCanceledOnTouchOutside false
+    alertDialog
   }
 
   def mkChoiceDialog(ok: => Unit, no: => Unit, okRes: Int, noRes: Int) = {

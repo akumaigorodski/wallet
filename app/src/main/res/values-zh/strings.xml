@@ -126,7 +126,6 @@
     <string name="txs_dead">交易已结束</string>
 
     <string name="txs_copy_hash">复制哈希到剪贴板</string>
-    <string name="txs_copy_address">复制地址到剪贴板</string>
     <string name="txs_inc"><![CDATA[<font color=#777777>交易 哈希</font><br>%1$s<br><br><font color=#777777>已接收硬币到地址</font><br>%2$s]]></string>
     <string name="txs_out"><![CDATA[<font color=#777777>交易 哈希</font><br>%1$s<br><br><font color=#777777>已发送硬币到地址</font><br>%2$s]]></string>
 

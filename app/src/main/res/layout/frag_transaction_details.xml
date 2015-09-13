@@ -18,9 +18,4 @@
         android:id="@+id/copyHash"
         android:text="@string/txs_copy_hash"/>
 
-    <Button
-        style="@style/TransButton"
-        android:id="@+id/copyAddress"
-        android:text="@string/txs_copy_address"/>
-
 </LinearLayout>

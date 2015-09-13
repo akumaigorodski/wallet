@@ -102,9 +102,8 @@ class TxsActivity extends InfoActivity { me =>
 
         // pos - 1 because header is present in list
         list setOnItemClickListener new AdapterView.OnItemClickListener {
-          def onItemClick(par: AdapterView[_], view: View, pos: Int, id: Long) = {
+          def onItemClick(par: AdapterView[_], v: View, pos: Int, id: Long) = {
             val form = getLayoutInflater.inflate(R.layout.frag_transaction_details, null)
-            val copyAddress = form.findViewById(R.id.copyAddress).asInstanceOf[Button]
             val details = form.findViewById(R.id.txDetails).asInstanceOf[TextView]
             val copyHash = form.findViewById(R.id.copyHash).asInstanceOf[Button]
             val transaction = adapter getItem pos - 1
@@ -116,11 +115,9 @@ class TxsActivity extends InfoActivity { me =>
               case _ => s"${entry.transactionAmount}<br><small>${sdf format transaction.getUpdateTime}</small>"
             }
 
-            val toAddress = entry.adr getOrElse addrUnknown
             val res = if (entry.value.isPositive) R.string.txs_inc else R.string.txs_out
-            val rawDetails = getString(res).format(humanAddr(hash.toString), entry.prettyAddress)
+            val rawDetails = getString(res).format(Utils humanAddr hash.toString, entry.prettyAddress)
             copyHash setOnClickListener new OnClickListener { def onClick(v: View) = app setBuffer hash.toString }
-            copyAddress setOnClickListener new OnClickListener { def onClick(v: View) = app setBuffer toAddress }
             mkForm(me negBld dialog_cancel, Html fromHtml sum, form)
             details.setText(Html fromHtml rawDetails)
           }
