@@ -1,0 +1,152 @@
+<resources>
+    <string name="lang">ukr</string>
+
+    <!-- app wide -->
+    <string name="or">або</string>
+    <string name="app_name">Bitcoin</string>
+    <string name="sets_noscreen">Не робіть скріншот</string>
+    <string name="sets_password_ok">Новий пароль успішно встановлено</string>
+    <string name="sets_destruct_ok">Встановлено новий код знищення: «%1$s»</string>
+    <string name="sets_rescan_ok">Зараз гаманець буде закритий, а повторне сканування почнеться коли ви відкриєте його наступного разу</string>
+    <string name="greetings">Visual Bitcoin Wallet\nПрочитайте <a href='http://btcontract.github.io/VisualBitcoinWallet/'>інструкцію користувача</a></string>
+    <string name="password_info">Будь ласка, підберіть пароль довжиною не менше 8 ніж символів, бажано такий що містить в собі великі літери і цифри</string>
+    <string name="wallet_restore">Відновити гаманець з коду</string>
+    <string name="wallet_create">Створити новий гаманець</string>
+    <string name="copied_to_buffer">Скопійовано у буфер</string>
+    <string name="wallet_empty">Гаманець порожній</string>
+    <string name="wallet_password">Пароль</string>
+    <string name="wallet_open">Відчинити</string>
+
+    <string name="sets_pass_ask">Питати пароль при вході</string>
+    <string name="sets_destruct_set">Встановити код знищення</string>
+    <string name="sets_pass_change">Змінити пароль гаманця</string>
+    <string name="sets_rescan">Пересканувати блокчейн</string>
+    <string name="sets_mnemonic">Подивитись мнемо-код</string>
+    <string name="sets_about">Почитати інструкцію</string>
+    <string name="sets_fee">Плата за кілобайт</string>
+
+    <string name="password_new">Новий пароль</string>
+    <string name="destruct_new">Код знищення</string>
+    <string name="password_old">Поточний пароль</string>
+    <string name="password_wrong">Введено невірний пароль</string>
+    <string name="password_too_short">Пароль занадто короткий</string>
+    <string name="destruct_too_short">Код знищення занадто короткий</string>
+
+    <!-- menu -->
+    <string name="action_tx_history">Історія переказів</string>
+    <string name="action_settings">Налаштувати гаманець</string>
+    <string name="action_request_payment">Запросити платіж</string>
+    <string name="action_send_money">Передати гроші на адресу</string>
+    <string name="paydata_clear">Видалити дані платежу</string>
+    <string name="action_scan_qr">Відсканувати QR-код</string>
+    <string name="action_converter">Конвертер валют</string>
+
+    <array name="action_send_memo">
+        <item>@string/action_send_money</item>
+        <item>Додати другу адресу</item>
+        <item>Додати третю адресу</item>
+        <item>Додати %1$s адресу</item>
+    </array>
+
+    <!-- errors -->
+    <string name="err_pass">Платіж не пройшов тому що пароль не підійшов. Переконайтеся, що ви ввели правильний пароль</string>
+    <string name="err_low_funds">Платіж не пройшов тому що %1$s перевищує баланс цього гаманця. Ви можете додати грошей або обрати меншу суму</string>
+    <string name="err_empty_shrunk">Платіж не пройшов тому що не вдалося підібрати потрібну суму комісії. Ви можете додати грошей в гаманець і спробувати еше раз</string>
+    <string name="err_transaction_too_large">Платіж не пройшов тому що розмір транзакції виявився занадто великим: Біткоін-мережа не зможе її обробити. Спробуйте розбити переказ на кілька транзакцій з меншою сумою</string>
+    <string name="err_required_field">Помилка: запит містить обов\'язковий параметр, значення якого невідомо</string>
+    <string name="err_different_net">Помилка: у запиті міститься адреса, що належить іншої мережі</string>
+    <string name="err_optional_field">Помилка: запит містить неправильно оформлену суму грошей</string>
+    <string name="err_address">Помилка: запит містить неправильну Біткоін-адресу</string>
+    <string name="err_uri">Помилка: запит містить неправильно оформлений URI</string>
+    <string name="err_neg">Помилка: у запиті міститься негативна сума грошей</string>
+    <string name="err_general">Сталася якась неочікувана помилка</string>
+
+    <!-- loading errors -->
+    <string name="err_tx_load">З транзакціями щось пішло не так</string>
+    <string name="err_qr_gen">Не вдалося згенерувати картинку</string>
+
+    <!-- dialogs -->
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_next">Далі</string>
+    <string name="dialog_back">Назад</string>
+    <string name="dialog_pay">Заплатити</string>
+    <string name="dialog_cancel">Скасувати</string>
+    <string name="input_hint_sat">сума в sat</string>
+    <string name="input_hint_btc">сума в btc</string>
+    <string name="input_alt_sat">%1$s у сатоші</string>
+    <string name="input_alt_btc">%1$s у біткоiнах</string>
+    <string name="input_tip_sat">вона ж у сатоші</string>
+    <string name="input_tip_btc">вона ж у біткоiнах</string>
+    <string name="dialog_addr_wrong">Неправильна Біткоін-адреса</string>
+    <string name="dialog_sum_big">Сума перевищує баланс гаманця</string>
+    <string name="dialog_sum_empty">Будь ласка, вкажіть суму</string>
+    <string name="spend_address_tip">куди підуть гроші</string>
+    <string name="dialog_sum_dusty">Сума занадто мала</string>
+    <string name="spend_address_hint">Біткоін-адреса</string>
+    <string name="input_btc">&#160;біткоіни&#160;</string>
+    <string name="input_sat">&#160;сатоші&#160;</string>
+
+    <array name="dialog_request">
+        <item>Перетворити запит у QR-код</item>
+        <item>Скопіювати запит у буфер</item>
+        <item>Інші варіанти&#8230;</item>
+    </array>
+
+    <!-- notifications -->
+    <string name="reorg">Стався реорг</string>
+    <string name="info_progress">Залишилось %1$d блоків</string>
+    <string name="info_progress_done">Блокчейн синхронизировано</string>
+    <string name="tx_1st_conf">Отримане 1ше підтверждення</string>
+    <string name="pass_checking">Перевіряю пароль&#8230;</string>
+    <string name="pass_changing">НЕ ЗАЧИНЯЙТЕ ГАМАНЕЦЬ</string>
+    <string name="tx_announce">Оголошую платіж&#8230;</string>
+    <string name="tx_received">Отримано %1$s</string>
+    <string name="tx_sent">Відправлено %1$s</string>
+
+    <array name="info_peers">
+        <item>Пошук вузлів&#8230;</item>
+        <item>Подключено %1$s вузол</item>
+        <item>Подключені %1$s вузла</item>
+        <item>Подключено %1$s вузлів</item>
+    </array>
+
+    <!-- activity_create, activity_restore -->
+    <string name="restore_wallet_restoring">Відновлюю гаманець</string>
+    <string name="create_wallet_creating">Генерую ваш гаманець</string>
+    <string name="restore_mnemonic_wrong">Повинно бути 12 слів</string>
+    <string name="restore_wallet">Bідновити гаманець</string>
+    <string name="restore_hint">Ваш мнемонічний код</string>
+
+    <!-- activity_request -->
+    <string name="req_generating">Генерую QR-код</string>
+    <string name="req_save">Поділитися картинкою</string>
+
+    <!-- activity_txs -->
+    <string name="txs_yes_fee">%1$s &#160;</string>
+    <string name="txs_no_fee">безкоштовно&#160;</string>
+    <string name="txs_many_received_to"><![CDATA[отрим <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_many_sent_to"><![CDATA[відправ <font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_received_to"><![CDATA[отрим <font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[відправ <font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_view_outside">Дивитись на Block Explorer</string>
+    <string name="txs_copy_hash">Скопіювати хеш транзакції</string>
+    <string name="txs_noaddr">якась невідома адреса</string>
+    <string name="txs_dead">ТРАНЗАКЦІЯ МЕРТВА</string>
+    <string name="txs_normal_dead">✕✕✕</string>
+
+    <array name="txs_total">
+        <item>no txs</item>
+        <item>%1$s tx</item>
+        <item>%1$s txs</item>
+        <item>%1$s txs</item>
+    </array>
+
+    <array name="txs_normal_conf">
+        <item>WAIT</item>
+        <item>%1$s</item>
+        <item>%1$s</item>
+        <item>%1$s</item>
+    </array>
+</resources>
