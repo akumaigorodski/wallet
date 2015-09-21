@@ -23,6 +23,7 @@
         android:textColor="#FF777777"/>
 
     <TextView
+        android:maxLines="1"
         style="@style/StdText"
         android:layout_weight="7"
         android:layout_width="0dp"

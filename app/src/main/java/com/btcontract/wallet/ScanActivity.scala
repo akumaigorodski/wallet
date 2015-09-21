@@ -1,8 +1,8 @@
 package com.btcontract.wallet
 
 import R.string.{dialog_cancel, dialog_ok}
-import eu.livotov.labs.android.camview.CAMView
 import eu.livotov.zxscan.decoder.zxing.ZXDecoder
+import eu.livotov.labs.android.camview.CAMView
 import eu.livotov.zxscan.util.SoundPlayer
 import CAMView.CAMViewListener
 import android.widget.Toast

@@ -18,12 +18,11 @@ import scala.concurrent.Future
 import org.json.JSONObject
 import android.net.Uri
 
-import R.string.{dialog_ok, dialog_next, dialog_cancel, dialog_back}
-import R.string.{tx_announce, wallet_password, password_old, pass_checking}
+import R.string.{dialog_ok, dialog_next, dialog_cancel, dialog_back, dialog_pay}
+import R.string.{tx_announce, wallet_password, password_old, pass_checking, txs_sum_out}
 import R.string.{input_hint_btc, input_hint_sat, input_tip_sat, input_tip_btc, tx_1st_conf}
-import R.id.{amtInSat, amtInBtc, inputAmount, inputBottom, typeUSD, typeEUR, typeCNY}
-
 import android.content.DialogInterface.{OnDismissListener, BUTTON_POSITIVE, BUTTON_NEGATIVE}
+import R.id.{amtInSat, amtInBtc, inputAmount, inputBottom, typeUSD, typeEUR, typeCNY}
 import android.content.{DialogInterface, SharedPreferences, Context, Intent}
 import org.bitcoinj.core.Wallet.{ExceededMaxTransactionSize => TxTooLarge}
 import org.bitcoinj.core.Wallet.{CouldNotAdjustDownwards, SendRequest}
@@ -52,14 +51,13 @@ import Context.INPUT_METHOD_SERVICE
 object Utils {
   type TryCoin = Try[Coin]
   type Strs = Array[String]
-  type PayDatas = List[PayData]
   type Coins = List[AbstractCoin]
+  type PayDatas = mutable.Buffer[PayData]
   type Outputs = mutable.Buffer[TransactionOutput]
 
   val separator = " "
   val appName = "Bitcoin"
   val emptyString = new String
-
   val rand = new scala.util.Random
   val locale = new Locale("en", "US")
   val symbols = new DecimalFormatSymbols(locale)
@@ -75,7 +73,7 @@ object Utils {
   val passType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
   val textType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
 
-  // Value will be privded on startup
+  // Value will be provided on startup
   var satTemplate, btcTemplate: String = null
   def inpInBtc(sat: Double) = baseBtc format sat / 100000000
   def tipInBtc(sat: Double) = satTemplate format inpInBtc(sat)
@@ -86,7 +84,7 @@ object Utils {
   def none: PartialFunction[Any, Unit] = { case _ => }
   def wrap(run: => Unit)(go: => Unit) = try go catch none finally run
   def randBtw(start: Float, end: Float) = start + rand.nextFloat * (end - start)
-  def humanAddr(address: String) = address grouped 4 mkString separator
+  def humanAddr(adr: Address) = adr.toString grouped 4 mkString separator
 }
 
 // Info stack manager
@@ -157,10 +155,8 @@ abstract class InfoActivity extends TimerActivity { me =>
   var scanClass = classOf[ScanActivity]
   var currentAnimation = Option.empty[TimerTask]
   val ui = anyToRunnable(getActionBar setSubtitle infos.head.value)
+  lazy val memo = getResources getStringArray R.array.action_send_memo
   lazy val addrOpts = getResources getStringArray R.array.dialog_request
-  lazy val sMemo = getResources getStringArray R.array.action_send_memo
-  lazy val addAnotherAddr = me getString R.string.paydata_newaddr
-  lazy val sendToAddr = me getString R.string.action_send_money
 
   // Menu and overrides
 
@@ -179,7 +175,7 @@ abstract class InfoActivity extends TimerActivity { me =>
       val bld = negPosBld(dialog_cancel, dialog_next)
       val (alert, inputManager) = me mkConverterForm bld
 
-      // Convinient way to open a pay form with an amount from converter
+      // Convenient way to open a pay form with an amount from converter
       alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
         def onClick(v: View) = rm(alert)(mkPayForm.man setAmount inputManager.result)
       }
@@ -225,7 +221,7 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   class Anim(amt: Long, curText: String) extends Runnable {
     val txt = if (amt > 0) fmt(amt) else getString(R.string.wallet_empty)
-    val max = Math.max(txt.length, curText.length)
+    val max = scala.math.max(txt.length, curText.length)
     var index = 1
 
     override def run = {
@@ -240,33 +236,36 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   // Concrete dialogs
 
-  def attachClear(alert: Dialog, con: LinearLayout) = {
-    con addView getLayoutInflater.inflate(R.layout.frag_top_clear, null)
-    val clearPayments = con.findViewById(R.id.clearPayments).asInstanceOf[Button]
-    clearPayments setOnClickListener new OnClickListener { def onClick(v: View) = clear }
+  def makeClear(alert: Dialog) = {
+    val container = getLayoutInflater.inflate(R.layout.frag_top_clear, null)
+    val clear = container.findViewById(R.id.clearPayments).asInstanceOf[Button]
+    clear setOnClickListener new OnClickListener { def onClick(v: View) = remove }
+    def process = wrap(mkPayForm)(app.TransData.payments.clear)
+    def remove = rm(alert)(process)
+    container
+  }
 
-    def clear = {
-      app.TransData.payments = Nil
-      rm(alert)(mkPayForm)
-    }
+  def getMemo = app.TransData.payments.size match {
+    case size if size < memo.length - 1 => memo(size)
+    case size => memo.last format size + 1
   }
 
   def mkPayForm: SpendManager = {
-    val hasPays = app.TransData.payments.nonEmpty
-    val top: LinearLayout = if (hasPays) addAnotherAddr else sendToAddr
-    val contents = getLayoutInflater.inflate(R.layout.frag_input_spend, null)
-    val alert = mkForm(negPosBld(dialog_cancel, dialog_next), top, contents)
-    if (hasPays) attachClear(alert, top)
+    val title: LinearLayout = getMemo
+    val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null, false)
+    val alert = mkForm(negPosBld(dialog_cancel, dialog_next), title, content)
+    if (app.TransData.payments.nonEmpty) title addView makeClear(alert)
 
     // Wire up interface
-    val denomCon = new DenomControl(prefs, contents)
+    val denomCon = new DenomControl(prefs, content)
     val man = new AmountInputManager(denomCon)
     val spendManager = new SpendManager(man)
 
     def savePay(tc: TryCoin) = Try {
-      val addr = new Address(app.params, spendManager.address.getText.toString)
-      val newPays = PayData(tc, addr) :: app.TransData.payments
-      app.TransData.payments = newPays.distinct
+      val addr = spendManager.address.getText.toString
+      val pay = PayData(new Address(app.params, addr), tc)
+      val isAlready = app.TransData.payments contains pay
+      if (!isAlready) app.TransData.payments prepend pay
     } match {
       case Success(addrIsOK) => rm(alert)(new PayPass)
       case _ => toast(R.string.dialog_addr_wrong)
@@ -286,57 +285,46 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   class PayPass {
-    val pays = app.TransData.payments
-    val totalSum = pays.foldLeft(0L)(_ + _.tc.get.value).toDouble
-    val totalHuman = getString(R.string.txs_sum_out) format humanSum(totalSum)
-    val addrsNum = app.plurOrZero(sMemo, pays.size)
+    // Make a local copy of payments
+    val pays = app.TransData.payments map identity
+    val totalSum = (0L /: pays)(_ + _.tc.get.value).toDouble
     val inSat = tipInSat(totalSum)
 
-    // Make all the needed views
-    val top = str2View(Html fromHtml s"$addrsNum<br><br>$totalHuman")
-    val (passAsk, secret) = generatePasswordPromptView(passType, wallet_password)
-    val alert = mkForm(mkChoiceDialog(confirm, none, dialog_ok, dialog_cancel), top, passAsk)
+    // Create all the needed views
+    val txt = for (pay <- pays) yield Html.fromHtml(pay text "#e31300")
+    val (passAsk, secretField) = generatePasswordPromptView(passType, wallet_password)
+    val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
+    val alert = mkForm(mkChoiceDialog(confirm, none, dialog_pay, dialog_cancel), passAsk, listCon)
 
-    attachClear(alert, top)
+    // Activate all the views
     passAsk.addView(getLayoutInflater.inflate(R.layout.frag_top_acts, null), 0)
+    listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, txt.toArray)
+    listCon addHeaderView makeClear(alert)
+
+    // Wire buttons up
     val addNewAddress = passAsk.findViewById(R.id.addNewAddress).asInstanceOf[Button]
     val scanQRPicture = passAsk.findViewById(R.id.scanQRPicture).asInstanceOf[Button]
-    val viewPayDetail = passAsk.findViewById(R.id.viewPayDetail).asInstanceOf[Button]
 
+    addNewAddress setText getMemo
     addNewAddress setOnClickListener new OnClickListener {
-      override def onClick(v: View): Unit = rm(alert)(mkPayForm)
+      def onClick(addNewAddressButton: View) = rm(alert)(mkPayForm)
     }
 
     scanQRPicture setOnClickListener new OnClickListener {
-      override def onClick(v: View): Unit = rm(alert)(me goTo scanClass)
-    }
-
-    viewPayDetail setOnClickListener new OnClickListener {
-      override def onClick(viewPayDetailButton: View): Unit = {
-        val texts = for (pay <- pays) yield Html.fromHtml(pay text "#e31300")
-        val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
-        listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, texts.toArray)
-
-        rm(alert) {
-          val dialog = mkForm(me negBld dialog_back, addrsNum, listCon)
-          dialog getButton BUTTON_NEGATIVE setOnClickListener new OnClickListener {
-            def onClick(removeDetailedViewAndGetBackToForm: View) = rm(dialog)(new PayPass)
-          }
-        }
-      }
+      def onClick(scanQRPictureButton: View) = rm(alert)(me goTo scanClass)
     }
 
     def confirm = {
       add(me getString tx_announce, Informer.DECSEND).ui.run
       <(announceMultiTransaction, react)(none)
-      app.TransData.payments = Nil
+      app.TransData.payments.clear
     }
 
     def announceMultiTransaction = {
       // If no money left & one payee then empty this wallet
       val all = totalSum > app.kit.currentBalance - feePerKb(feeBase).value
       val request = if (all & pays.size < 2) SendRequest.emptyWallet(pays.head.adr) else makeReq
-      request.aesKey = app.kit.wallet.getKeyCrypter deriveKey secret.getText.toString
+      request.aesKey = app.kit.wallet.getKeyCrypter deriveKey secretField.getText.toString
       request.feePerKb = feePerKb(feeBase)
 
       // Make signed transaction
@@ -346,7 +334,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
 
     def makeReq = new Transaction(app.params) match { case txn =>
-      for (PayData(Success(cn), adr) <- pays) txn.addOutput(cn, adr)
+      for (PayData(address, tc) <- pays) txn.addOutput(tc.get, address)
       SendRequest forTx txn
     }
 
@@ -361,7 +349,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     def onError(errMsg: String) = try {
       val info = mkChoiceDialog(new PayPass, none, dialog_ok, dialog_cancel)
       info.setMessage(errMsg).show setCanceledOnTouchOutside false
-      app.TransData.payments = pays
+      app.TransData.payments ++= pays
       del(Informer.DECSEND).run
     } catch none
   }
@@ -378,7 +366,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     val ok = alert getButton BUTTON_POSITIVE
     ok setOnClickListener new OnClickListener {
       def onClick(posButtonView: View) = rm(alert) {
-        val pay = PayData(man.result, app.kit.currentAddress)
+        val pay = PayData(app.kit.currentAddress, man.result)
         val titleText = requestText + "<br><br>" + pay.text("#1BA2E0")
         val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
         val adapter = new ArrayAdapter(me, R.layout.frag_center_text, R.id.textItem, addrOpts)
@@ -417,7 +405,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     val setFee = form.findViewById(R.id.setFee).asInstanceOf[Button]
     val about = form.findViewById(R.id.about).asInstanceOf[Button]
 
-    setFee setText Html.fromHtml(s"$feeTitle <font color=#e31300>$fee</font>")
+    setFee setText Html.fromHtml(s"$feeTitle <font color=#E31300>$fee</font>")
     askForPass setChecked prefs.getBoolean(AbstractKit.PASSWORD_ASK_STARTUP, false)
     askForPass setOnCheckedChangeListener new CompoundButton.OnCheckedChangeListener {
       def onCheckedChanged(button: CompoundButton, isChecked: Boolean) = update(isChecked)
@@ -546,6 +534,7 @@ abstract class TimerActivity extends Activity { me =>
   val exitTo: Class[_] => Unit = goto => wrap(finish)(goTo apply goto)
   lazy val prefs = app.getSharedPreferences("prefs", Context.MODE_PRIVATE)
   lazy val app = getApplication.asInstanceOf[WalletApp]
+  lazy val maxDialog = metrics.densityDpi * 2.1
   lazy val metrics = new DisplayMetrics
   val timer = new Timer
 
@@ -593,8 +582,7 @@ abstract class TimerActivity extends Activity { me =>
 
   def mkForm(builder: Builder, title: View, content: View) = {
     val alertDialog = builder.setCustomTitle(title).setView(content).show
-    // On a tablets we do not want an alert to be too wide so make it 2 inches max
-    if (scrWidth > 2.3) alertDialog.getWindow.setLayout(metrics.densityDpi * 2, WRAP_CONTENT)
+    if (scrWidth > 2.3) alertDialog.getWindow.setLayout(maxDialog.toInt, WRAP_CONTENT)
     alertDialog setCanceledOnTouchOutside false
     alertDialog
   }
@@ -732,11 +720,10 @@ class AmountInputManager(val dc: DenomControl) {
   dc.radios check dc.nowMode
 }
 
-class DenomControl(prefs: SharedPreferences, val v: View) {
+class DenomControl(sp: SharedPreferences, val v: View) {
   val radios = v.findViewById(R.id.inputType).asInstanceOf[SegmentedGroup]
-  def updMode = prefs.edit.putBoolean(AbstractKit.BTC_OR_SATOSHI, amtInBtc == m).commit
-  def nowIsBtc = prefs.getBoolean(AbstractKit.BTC_OR_SATOSHI, true)
-  def nowMode = if (nowIsBtc) amtInBtc else amtInSat
+  def updMode = sp.edit.putBoolean(AbstractKit.BTC_OR_SATOSHI, amtInBtc equals m).commit
+  def nowMode = sp.getBoolean(AbstractKit.BTC_OR_SATOSHI, true) match { case true => amtInBtc case _ => amtInSat }
   def m = radios.getCheckedRadioButtonId
 }
 
@@ -755,13 +742,13 @@ class SpendManager(val man: AmountInputManager) {
   }
 }
 
-case class PayData(tc: TryCoin, adr: Address) {
+case class PayData(adr: Address, tc: TryCoin) {
   // https://medium.com/message/hello-future-pastebin-readers-39d9b4eb935f
   // Do not use labels or memos because your history will bite you otherwise
   def getURI = BitcoinURI.convertToBitcoinURI(adr, tc getOrElse null, null, null)
 
   def text(addrColor: String) = {
-    val base = s"<font color=$addrColor>${Utils humanAddr adr.toString}</font>"
+    val base = s"<font color=$addrColor>${Utils humanAddr adr}</font>"
     tc map (_.getValue.toDouble) map humanSum map (vs => s"$base<br><br>$vs") getOrElse base
   }
 }

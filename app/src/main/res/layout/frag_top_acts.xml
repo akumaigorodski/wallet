@@ -4,13 +4,7 @@
 
     <Button
         style="@style/TransButton"
-        android:id="@+id/viewPayDetail"
-        android:text="@string/paydata_details"/>
-
-    <Button
-        style="@style/TransButton"
-        android:id="@+id/addNewAddress"
-        android:text="@string/paydata_newaddr"/>
+        android:id="@+id/addNewAddress"/>
 
     <Button
         style="@style/TransButton"

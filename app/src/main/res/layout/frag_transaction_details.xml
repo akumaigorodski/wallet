@@ -2,20 +2,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
     android:layout_height="fill_parent" android:layout_width="fill_parent">
 
-    <TextView
-        android:padding="15dp"
-        style="@style/BaseText"
-        android:id="@+id/txDetails"
-        android:layout_width="wrap_content"/>
-
-    <View
-        android:layout_height="1dp"
-        android:background="#33999999"
-        android:layout_width="fill_parent"/>
+    <Button
+        style="@style/TransButton"
+        android:id="@+id/copyTxHash"
+        android:text="@string/txs_copy_hash"/>
 
     <Button
         style="@style/TransButton"
-        android:id="@+id/copyHash"
-        android:text="@string/txs_copy_hash"/>
+        android:id="@+id/viewTxOutside"
+        android:text="@string/txs_view_outside"/>
 
 </LinearLayout>

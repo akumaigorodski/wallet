@@ -37,14 +37,15 @@
     <string name="action_tx_history">История переводов</string>
     <string name="action_request_payment">Запросить платеж</string>
     <string name="action_send_money">Передать деньги на адрес</string>
+    <string name="paydata_clear">Сбросить данные платежа</string>
     <string name="action_scan_qr">Отсканировать QR-код</string>
     <string name="action_converter">Конвертер валют</string>
 
     <array name="action_send_memo">
         <item>@string/action_send_money</item>
-        <item>Передать деньги на %1$s адрес</item>
-        <item>Передать деньги на %1$s адреса</item>
-        <item>Передать деньги на %1$s адресов</item>
+        <item>Добавить второй адрес</item>
+        <item>Добавить третий адрес</item>
+        <item>Добавить %1$sй адрес</item>
     </array>
 
     <!-- errors -->
@@ -57,7 +58,7 @@
     <string name="err_optional_field">Ошибка: запрос содержит неправильно оформленную сумму денег</string>
     <string name="err_address">Ошибка: запрос содержит неправильный Биткоин-адрес</string>
     <string name="err_uri">Ошибка: запрос содержит неправильно оформленный URI</string>
-    <string name="err_neg">Ошибка: в запросе сожержится негативная сумма денег</string>
+    <string name="err_neg">Ошибка: в запросе содержится негативная сумма денег</string>
     <string name="err_general">Произошла непредвиденная ошибка</string>
 
     <!-- loading errors -->
@@ -68,6 +69,7 @@
     <string name="dialog_ok">OK</string>
     <string name="dialog_next">Далее</string>
     <string name="dialog_back">Назад</string>
+    <string name="dialog_pay">Заплатить</string>
     <string name="dialog_cancel">Отмена</string>
     <string name="input_hint_sat">сумма в sat</string>
     <string name="input_hint_btc">сумма в btc</string>
@@ -77,17 +79,18 @@
     <string name="input_tip_btc">она же в биткоинах</string>
     <string name="dialog_addr_wrong">Неправильный Биткоин-адрес</string>
     <string name="dialog_sum_big">Сумма превышает баланс кошелька</string>
+    <string name="dialog_sum_empty">Пожалуйста, укажите сумму</string>
     <string name="spend_address_tip">куда пойдут деньги</string>
     <string name="dialog_sum_dusty">Сумма слишком мала</string>
     <string name="spend_address_hint">Биткоин-адрес</string>
     <string name="input_btc">&#160;биткоины&#160;</string>
     <string name="input_sat">&#160;сатоши&#160;</string>
 
-    <string-array name="dialog_request">
+    <array name="dialog_request">
         <item>Сделать QR-код запроса</item>
         <item>Скопировать запрос в буфер</item>
         <item>Другие варианты&#8230;</item>
-    </string-array>
+    </array>
 
     <!-- notifications -->
     <string name="reorg">Случился реорг</string>
@@ -119,21 +122,19 @@
     <string name="req_save">Поделиться картинкой</string>
 
     <!-- activity_txs -->
+    <string name="txs_no_fee">бесплатно&#160;</string>
+    <string name="txs_yes_fee">%1$s fee&#160;</string>
+    <string name="txs_many_received_to"><![CDATA[получ <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_many_sent_to"><![CDATA[отправ <font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_received_to"><![CDATA[получ <font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_sent_to"><![CDATA[отправ <font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_yes_fee">%1$s fee</string>
-    <string name="txs_no_fee">нет fee</string>
-
-    <string name="txs_no_time">время неизвестно</string>
-    <string name="txs_noaddr">адрес неизвестен</string>
-    <string name="txs_dead">ПЕРЕВОД МЕРТВ</string>
-    <string name="txs_normal_dead">МЕРТВ</string>
-
-    <string name="txs_copy_hash">Скопировать хэш в буфер</string>
-    <string name="txs_inc"><![CDATA[<font color=#777777>Хэш перевода</font><br>%1$s<br><br><font color=#777777>Получено на адрес</font><br>%2$s]]></string>
-    <string name="txs_out"><![CDATA[<font color=#777777>Хэш перевода</font><br>%1$s<br><br><font color=#777777>Отправлено на адрес</font><br>%2$s]]></string>
+    <string name="txs_view_outside">Смотреть на Block Explorer</string>
+    <string name="txs_copy_hash">Скопировать хэш транзакции</string>
+    <string name="txs_noaddr">адрес не найден</string>
+    <string name="txs_dead">ТРАНЗАКЦИЯ МЕРТВА</string>
+    <string name="txs_normal_dead">✕✕✕</string>
 
     <array name="txs_total">
         <item>no txs</item>

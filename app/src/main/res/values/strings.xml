@@ -10,6 +10,7 @@
     <string name="sets_rescan_ok">Application will be closed now and blockchain rescan will be triggered on next launch</string>
     <string name="greetings">Welcome to Visual Bitcoin Wallet!\nPlease read <a href='http://btcontract.github.io/VisualBitcoinWallet/'>wallet manual</a> first</string>
     <string name="password_info">Without password you are in constant danger of losing your money. Please pick one which is at least 8 characters long</string>
+    <string name="wallet_restore">Restore Wallet From Code</string>
     <string name="copied_to_buffer">Copied to clipboard</string>
     <string name="wallet_create">Create New Wallet</string>
     <string name="wallet_empty">Wallet is empty</string>
@@ -28,7 +29,6 @@
     <string name="destruct_new">Destruction code</string>
     <string name="password_old">Current password</string>
     <string name="password_wrong">Wrong wallet password</string>
-    <string name="wallet_restore">Restore Wallet From Code</string>
     <string name="password_too_short">Password is too short</string>
     <string name="destruct_too_short">Destruction code is too short</string>
 
@@ -39,15 +39,13 @@
     <string name="action_send_money">Send coins to address</string>
     <string name="action_converter">Currency converter</string>
     <string name="action_scan_qr">Scan a QR picture</string>
-
     <string name="paydata_clear">Reset payment data</string>
-    <string name="paydata_newaddr">Add another address</string>
-    <string name="paydata_details">View transaction details</string>
 
     <array name="action_send_memo">
         <item>@string/action_send_money</item>
-        <item>Send coins to %1$s address</item>
-        <item>Send coins to %1$s addresses</item>
+        <item>Add a second address</item>
+        <item>Add a third address</item>
+        <item>Add a %1$sth address</item>
     </array>
 
     <!-- errors -->
@@ -56,7 +54,7 @@
     <string name="err_empty_shrunk">Transaction failed because an output could not be shrunken for fees without violating a protocol rules. Please add some funds and then try again</string>
     <string name="err_transaction_too_large">Transaction failed because it is too big for Bitcoin network to process. Please try breaking it into a number of smaller transactions</string>
     <string name="err_different_net">Failed because request contains an address that belongs to a different network</string>
-    <string name="err_optional_field">Failed because requset contains a malformed amount which could not be parsed</string>
+    <string name="err_optional_field">Failed because request contains a malformed amount which could not be parsed</string>
     <string name="err_required_field">Failed because request contains a required parameter of unknown meaning</string>
     <string name="err_uri">Failed because request contains a malformed URI which could not be parsed</string>
     <string name="err_address">Failed because Bitcoin address in a given request is not valid</string>
@@ -72,6 +70,7 @@
     <string name="dialog_next">Next</string>
     <string name="dialog_back">Back</string>
     <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_pay">Send coins</string>
     <string name="input_hint_sat">sum in sat</string>
     <string name="input_hint_btc">sum in btc</string>
     <string name="input_alt_sat">%1$s in satoshi</string>
@@ -87,11 +86,11 @@
     <string name="input_btc">&#160;bitcoins&#160;</string>
     <string name="input_sat">&#160;satoshi&#160;</string>
 
-    <string-array name="dialog_request">
+    <array name="dialog_request">
         <item>Turn request into QR code</item>
         <item>Copy request to clipboard</item>
         <item>Share request&#8230;</item>
-    </string-array>
+    </array>
 
     <!-- notifications -->
     <string name="reorg">Reorg just happened</string>
@@ -122,21 +121,19 @@
     <string name="req_save">Share QR code</string>
 
     <!-- activity_txs -->
-    <string name="txs_yes_fee">%1$s fee</string>
-    <string name="txs_no_fee">without fee</string>
+    <string name="txs_no_fee">zero fee&#160;</string>
+    <string name="txs_yes_fee">%1$s fee&#160;</string>
+    <string name="txs_many_received_to"><![CDATA[rcvd to <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_many_sent_to"><![CDATA[sent to <font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_received_to"><![CDATA[rcvd to <font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_sent_to"><![CDATA[sent to <font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
-
-    <string name="txs_no_time">time unknown</string>
-    <string name="txs_noaddr">unknown address</string>
-    <string name="txs_dead">TRANSACTION IS DEAD</string>
-    <string name="txs_normal_dead">DEAD</string>
-
+    <string name="txs_view_outside">View on Block Explorer</string>
     <string name="txs_copy_hash">Copy transaction hash</string>
-    <string name="txs_inc"><![CDATA[<font color=#777777>Transaction hash</font><br>%1$s<br><br><font color=#777777>Received coins to address</font><br>%2$s]]></string>
-    <string name="txs_out"><![CDATA[<font color=#777777>Transaction hash</font><br>%1$s<br><br><font color=#777777>Sent coins to address</font><br>%2$s]]></string>
+    <string name="txs_noaddr">some unknown address</string>
+    <string name="txs_dead">TRANSACTION IS DEAD</string>
+    <string name="txs_normal_dead">✕✕✕</string>
 
     <array name="txs_total">
         <item>no txs</item>

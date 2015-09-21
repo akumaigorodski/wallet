@@ -28,15 +28,15 @@ object QRGen {
   def get(txt: String, size: Int) = {
     val bitMatrix = writer.encode(txt, BarcodeFormat.QR_CODE, size, size, hints)
     val (wid, height) = (bitMatrix.getWidth, bitMatrix.getHeight)
-    val pixles = new Array[Int](wid * height)
+    val pixels = new Array[Int](wid * height)
 
     for (y <- 0 until height) for (x <- 0 until wid)
-      pixles(y * wid + x) = bitMatrix.get(x, y) match {
+      pixels(y * wid + x) = bitMatrix.get(x, y) match {
         case true => Color.BLACK case false => Color.WHITE
       }
 
     val qrBitmap = Bitmap.createBitmap(wid, height, ARGB_8888)
-    qrBitmap.setPixels(pixles, 0, wid, 0, 0, wid, height)
+    qrBitmap.setPixels(pixels, 0, wid, 0, 0, wid, height)
     qrBitmap
   }
 }
@@ -76,18 +76,18 @@ class RequestActivity extends TimerActivity { me =>
           enableShare.run
         }
 
-      // Just go to prev activity
-      // Should never happen anyway
+      // Just go back
       case _ => finish
     }
   }
 
   def saveImage(bits: Bitmap) = {
     val path = Environment.getExternalStorageDirectory
-    val dir = new File(s"${path.getAbsolutePath}/${Utils.appName}")
+    val fileName = s"${path.getAbsolutePath}/${Utils.appName}"
+    val dir = new File(fileName)
     dir.mkdirs
 
-    // Save file
+    // Save PNG compressed file
     val imageFile = new File(dir, "qr.png")
     val outStream = new FileOutputStream(imageFile)
     bits.compress(Bitmap.CompressFormat.PNG, 90, outStream)

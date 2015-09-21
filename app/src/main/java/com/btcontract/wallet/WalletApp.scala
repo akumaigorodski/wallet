@@ -9,6 +9,7 @@ import org.bitcoinj.core.Wallet.BalanceType
 import org.bitcoinj.crypto.KeyCrypterScrypt
 import com.google.protobuf.ByteString
 import org.bitcoinj.wallet.Protos
+import scala.collection.mutable
 import android.app.Application
 import android.widget.Toast
 import android.os.Vibrator
@@ -21,14 +22,13 @@ import com.btcontract.wallet.Utils.{Strs, PayDatas}
 import org.jbox2d.dynamics.{BodyType, BodyDef}
 import android.graphics.{Typeface, Paint}
 import State.{STARTING, RUNNING}
-import org.bitcoinj.core._
 
 import Context.CLIPBOARD_SERVICE
 import Paint.ANTI_ALIAS_FLAG
-
+import org.bitcoinj.core._
 
 class WalletApp extends Application {
-  lazy val params = org.bitcoinj.params.TestNet3Params.get
+  lazy val params = org.bitcoinj.params.MainNetParams.get
   val mls = java.util.concurrent.TimeUnit.MILLISECONDS
   val fontPaint = new Paint(ANTI_ALIAS_FLAG)
   val coinBodyDef = new BodyDef
@@ -71,12 +71,12 @@ class WalletApp extends Application {
   }
 
   object TransData {
-    var payments: PayDatas = Nil
-    var value: Option[Any] = None
+    var value: Option[Any] = Option.empty
+    val payments: PayDatas = mutable.Buffer.empty
 
-    def setValue(raw: String) = value = Option {
-      if (raw startsWith "bitcoin:") new BitcoinURI(params, raw)
-      else new Address(params, raw)
+    def setValue(vs: String) = value = Option {
+      if (vs startsWith "bitcoin:") new BitcoinURI(params, vs)
+      else new Address(params, vs)
     }
 
     def onFail(err: Int => Unit): PartialFunction[Throwable, Unit] = {
@@ -106,7 +106,7 @@ class WalletApp extends Application {
 
     def useCheckPoints(time: Long) = {
       val pts = getAssets open "checkpoints.txt"
-      //CheckpointManager.checkpoint(params, pts, store, time)
+      CheckpointManager.checkpoint(params, pts, store, time)
     }
 
     def setupAndStartDownload = {

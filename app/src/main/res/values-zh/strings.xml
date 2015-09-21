@@ -11,6 +11,7 @@
     <string name="greetings">视觉比特币钱包\n请首先<a href='http://btcontract.github.io/VisualBitcoinWallet/'>阅读钱包</a>手册</string>
     <string name="password_info">不设置密码的话，你会一直受到损失金钱的威胁。请选择一个至少8位字符的密码。</string>
     <string name="copied_to_buffer">复制到剪贴板</string>
+    <string name="wallet_restore">从代码还原钱包</string>
     <string name="wallet_create">创建新钱包</string>
     <string name="wallet_empty">钱包是空的</string>
     <string name="wallet_password">密码</string>
@@ -28,7 +29,6 @@
     <string name="destruct_new">销毁代码</string>
     <string name="password_old">当前密码密码</string>
     <string name="password_wrong">错误的钱包密码</string>
-    <string name="wallet_restore">从代码还原钱包</string>
     <string name="password_too_short">密码太短了</string>
     <string name="destruct_too_short">销毁代码太短</string>
 
@@ -39,6 +39,14 @@
     <string name="action_send_money">发送硬币到某个地址</string>
     <string name="action_scan_qr">扫描一张QR图片</string>
     <string name="action_converter">货币转换器</string>
+    <string name="paydata_clear">复位付款数据</string>
+
+    <array name="action_send_memo">
+        <item>@string/action_send_money</item>
+        <item>添加第二个地址</item>
+        <item>添加第三个地址</item>
+        <item>添加%1$s个地址</item>
+    </array>
 
     <!-- errors -->
     <string name="err_pass">交易失败因为密码不匹配。请确保你提供了正确的密码</string>
@@ -59,31 +67,30 @@
 
     <!-- dialogs -->
     <string name="dialog_ok">好的</string>
+    <string name="dialog_pay">寄钱</string>
     <string name="dialog_back">返回</string>
     <string name="dialog_next">下一步</string>
     <string name="dialog_cancel">取消</string>
     <string name="input_hint_btc">量比特币</string>
     <string name="input_hint_sat">量satoshi</string>
-
-    <string name="input_tip_btc">比特币</string>
     <string name="input_tip_sat">同样额度的satoshi</string>
-    <string name="input_alt_sat">%1$s satoshi</string>
-    <string name="input_alt_btc">%1$s比特币</string>
-
     <string name="dialog_sum_dusty">当前数量是灰暗的</string>
     <string name="dialog_addr_wrong">比特币地址无效</string>
+    <string name="input_sat">&#160;satoshi&#160;</string>
     <string name="dialog_sum_big">额度超过钱包结余</string>
     <string name="spend_address_tip">发送钱的地方</string>
     <string name="spend_address_hint">比特币地址</string>
-
-    <string name="input_sat">&#160;satoshi&#160;</string>
     <string name="input_btc">&#160;比特币&#160;</string>
+    <string name="input_alt_sat">%1$s satoshi</string>
+    <string name="dialog_sum_empty">请提供量</string>
+    <string name="input_alt_btc">%1$s比特币</string>
+    <string name="input_tip_btc">比特币</string>
 
-    <string-array name="dialog_request">
+    <array name="dialog_request">
         <item>将请求转换为QR代码</item>
         <item>复制请求到剪贴板</item>
         <item>分享请求&#8230;</item>
-    </string-array>
+    </array>
 
     <!-- notifications -->
     <string name="info_progress_done">数据块链已更新到最新</string>
@@ -113,21 +120,19 @@
     <string name="req_save">分享QR代码</string>
 
     <!-- activity_txs -->
-    <string name="txs_no_fee">无费用</string>
-    <string name="txs_yes_fee">%1$s费用</string>
+    <string name="txs_no_fee">无费用&#160;</string>
+    <string name="txs_yes_fee">%1$s费用&#160;</string>
+    <string name="txs_many_received_to"><![CDATA[收到 <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_many_sent_to"><![CDATA[已发送到 <font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_received_to"><![CDATA[收到 <font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_sent_to"><![CDATA[已发送到 <font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
-
-    <string name="txs_normal_dead">结束</string>
-    <string name="txs_no_time">时间未知</string>
+    <string name="txs_view_outside">观BlockExplorer</string>
+    <string name="txs_copy_hash">复制哈希到剪贴板</string>
+    <string name="txs_normal_dead">✕✕✕</string>
     <string name="txs_noaddr">未知地址</string>
     <string name="txs_dead">交易已结束</string>
-
-    <string name="txs_copy_hash">复制哈希到剪贴板</string>
-    <string name="txs_inc"><![CDATA[<font color=#777777>交易 哈希</font><br>%1$s<br><br><font color=#777777>已接收硬币到地址</font><br>%2$s]]></string>
-    <string name="txs_out"><![CDATA[<font color=#777777>交易 哈希</font><br>%1$s<br><br><font color=#777777>已发送硬币到地址</font><br>%2$s]]></string>
 
     <array name="txs_total">
         <item>无交易</item>

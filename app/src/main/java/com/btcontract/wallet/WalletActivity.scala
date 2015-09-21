@@ -199,7 +199,7 @@ class WalletActivity extends InfoActivity { me =>
   class OnceCallback extends HolderCallback {
     override def surfaceCreated(holder: SurfaceHolder) = {
       val (w, h) = (holder.getSurfaceFrame.width, holder.getSurfaceFrame.height)
-      scale = Math.sqrt(w * w + h * h).toFloat / scrWidth.toFloat / 5.4f
+      scale = scala.math.sqrt(w * w + h * h).toFloat / scrWidth.toFloat / 5.4f
       scaleHeight = h / scale
       scaleWidth = w / scale
 
