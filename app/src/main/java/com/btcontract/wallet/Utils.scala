@@ -236,7 +236,7 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   // Concrete dialogs
 
-  def makeClear(alert: Dialog) = {
+  def mkClear(alert: Dialog) = {
     val container = getLayoutInflater.inflate(R.layout.frag_top_clear, null)
     val clear = container.findViewById(R.id.clearPayments).asInstanceOf[Button]
     clear setOnClickListener new OnClickListener { def onClick(v: View) = remove }
@@ -254,7 +254,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     val title: LinearLayout = getMemo
     val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null, false)
     val alert = mkForm(negPosBld(dialog_cancel, dialog_next), title, content)
-    if (app.TransData.payments.nonEmpty) title addView makeClear(alert)
+    if (app.TransData.payments.nonEmpty) title.addView(mkClear(alert), 0)
 
     // Wire up interface
     val denomCon = new DenomControl(prefs, content)
@@ -291,19 +291,21 @@ abstract class InfoActivity extends TimerActivity { me =>
     val inSat = tipInSat(totalSum)
 
     // Create all the needed views
-    val txt = for (pay <- pays) yield Html.fromHtml(pay text "#e31300")
+    val txt = for (pay <- pays.toArray) yield Html.fromHtml(pay text "#E31300")
     val (passAsk, secretField) = generatePasswordPromptView(passType, wallet_password)
+    val payActs = getLayoutInflater.inflate(R.layout.frag_top_acts, null).asInstanceOf[LinearLayout]
+    val divider = getLayoutInflater.inflate(R.layout.frag_divider, null).asInstanceOf[LinearLayout]
     val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
-    val alert = mkForm(mkChoiceDialog(confirm, none, dialog_pay, dialog_cancel), passAsk, listCon)
-
-    // Activate all the views
-    passAsk.addView(getLayoutInflater.inflate(R.layout.frag_top_acts, null), 0)
-    listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, txt.toArray)
-    listCon addHeaderView makeClear(alert)
+    val alert = mkForm(mkChoiceDialog(confirm, none, dialog_pay, dialog_cancel), null, passAsk)
+    listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, txt)
+    payActs.addView(mkClear(alert), 0)
+    passAsk addView(payActs, 0)
+    divider addView listCon
+    passAsk addView divider
 
     // Wire buttons up
-    val addNewAddress = passAsk.findViewById(R.id.addNewAddress).asInstanceOf[Button]
-    val scanQRPicture = passAsk.findViewById(R.id.scanQRPicture).asInstanceOf[Button]
+    val addNewAddress = payActs.findViewById(R.id.addNewAddress).asInstanceOf[Button]
+    val scanQRPicture = payActs.findViewById(R.id.scanQRPicture).asInstanceOf[Button]
 
     addNewAddress setText getMemo
     addNewAddress setOnClickListener new OnClickListener {

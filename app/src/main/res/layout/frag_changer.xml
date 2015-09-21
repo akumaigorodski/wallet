@@ -4,7 +4,7 @@
 
     <EditText
         style="@style/Info"
-        android:hint="**********"
+        android:hint="*********"
         android:paddingTop="35dp"
         android:id="@+id/secretInput"
         android:layout_width="wrap_content"/>

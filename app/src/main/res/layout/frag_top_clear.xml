@@ -1,6 +1,6 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
-    android:layout_height="match_parent" android:layout_width="match_parent" android:background="#2233B5E5">
+    android:layout_height="match_parent" android:layout_width="match_parent" android:background="#44E31300">
 
     <Button
         style="@style/TransButton"
