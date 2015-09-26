@@ -67,10 +67,10 @@
 
     <!-- dialogs -->
     <string name="dialog_ok">OK</string>
+    <string name="dialog_pay">Pay</string>
     <string name="dialog_next">Next</string>
     <string name="dialog_back">Back</string>
     <string name="dialog_cancel">Cancel</string>
-    <string name="dialog_pay">Send coins</string>
     <string name="input_hint_sat">sum in sat</string>
     <string name="input_hint_btc">sum in btc</string>
     <string name="input_alt_sat">%1$s in satoshi</string>
@@ -78,7 +78,6 @@
     <string name="input_tip_sat">same amount in satoshi</string>
     <string name="input_tip_btc">same amount in bitcoins</string>
     <string name="dialog_addr_wrong">Bitcoin address is invalid</string>
-    <string name="dialog_sum_big">Amount exceeds wallet balance</string>
     <string name="dialog_sum_empty">Please provide an amount</string>
     <string name="dialog_sum_dusty">Current amount is dusty</string>
     <string name="spend_address_tip">where to send money</string>

@@ -61,7 +61,7 @@ class MainActivity extends TimerActivity { me =>
 
   def tryPass(view: View) = hideKeys {
     if (passWordInput == destructCode) replaceWallet
-    else <(check, _ => wrong)(if (_) maybeStartKit else wrong)
+    else <(check, _ => wrong) { if (_) maybeStartKit else wrong }
     progress setVisibility VISIBLE
     password setVisibility GONE
 

@@ -77,7 +77,6 @@
     <string name="dialog_sum_dusty">当前数量是灰暗的</string>
     <string name="dialog_addr_wrong">比特币地址无效</string>
     <string name="input_sat">&#160;satoshi&#160;</string>
-    <string name="dialog_sum_big">额度超过钱包结余</string>
     <string name="spend_address_tip">发送钱的地方</string>
     <string name="spend_address_hint">比特币地址</string>
     <string name="input_btc">&#160;比特币&#160;</string>

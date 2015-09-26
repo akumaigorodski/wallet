@@ -78,7 +78,6 @@
     <string name="input_tip_sat">misma suma en satoshi</string>
     <string name="input_tip_btc">misma suma en bitcoins</string>
     <string name="dialog_addr_wrong">La dirección Bitcoin no es válida</string>
-    <string name="dialog_sum_big">La cantidad excede el balance del monedero</string>
     <string name="dialog_sum_dusty">La cantidad actual es polvorienta</string>
     <string name="dialog_sum_empty">Por favor, proporcione un monto</string>
     <string name="spend_address_tip">dónde enviar dinero</string>

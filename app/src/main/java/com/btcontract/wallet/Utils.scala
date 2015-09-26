@@ -274,9 +274,8 @@ abstract class InfoActivity extends TimerActivity { me =>
     val ok = alert getButton BUTTON_POSITIVE
     ok setOnClickListener new OnClickListener {
       def onClick(recordDataView: View) = man.result match {
-        case Failure(emptyAmount) => toast(R.string.dialog_sum_empty)
-        case Success(coin) if coin.value > app.kit.currentBalance => toast(R.string.dialog_sum_big)
         case Success(coin) if coin isLessThan MIN_NONDUST_OUTPUT => toast(R.string.dialog_sum_dusty)
+        case Failure(emptyAmountProvided) => toast(R.string.dialog_sum_empty)
         case addressMayFail => savePay(addressMayFail)
       }
     }
@@ -299,22 +298,18 @@ abstract class InfoActivity extends TimerActivity { me =>
     val alert = mkForm(mkChoiceDialog(confirm, none, dialog_pay, dialog_cancel), null, passAsk)
     listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, txt)
     payActs.addView(mkClear(alert), 0)
-    passAsk addView(payActs, 0)
+    passAsk.addView(payActs, 0)
     divider addView listCon
     passAsk addView divider
 
     // Wire buttons up
+    def rePay = rm(alert)(mkPayForm)
+    def reScan = rm(alert)(me goTo scanClass)
     val addNewAddress = payActs.findViewById(R.id.addNewAddress).asInstanceOf[Button]
     val scanQRPicture = payActs.findViewById(R.id.scanQRPicture).asInstanceOf[Button]
-
+    scanQRPicture setOnClickListener new OnClickListener { def onClick(v: View) = reScan }
+    addNewAddress setOnClickListener new OnClickListener { def onClick(v: View) = rePay }
     addNewAddress setText getMemo
-    addNewAddress setOnClickListener new OnClickListener {
-      def onClick(addNewAddressButton: View) = rm(alert)(mkPayForm)
-    }
-
-    scanQRPicture setOnClickListener new OnClickListener {
-      def onClick(scanQRPictureButton: View) = rm(alert)(me goTo scanClass)
-    }
 
     def confirm = {
       add(me getString tx_announce, Informer.DECSEND).ui.run

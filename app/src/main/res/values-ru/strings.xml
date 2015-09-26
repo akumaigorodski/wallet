@@ -78,7 +78,6 @@
     <string name="input_tip_sat">она же в сатоши</string>
     <string name="input_tip_btc">она же в биткоинах</string>
     <string name="dialog_addr_wrong">Неправильный Биткоин-адрес</string>
-    <string name="dialog_sum_big">Сумма превышает баланс кошелька</string>
     <string name="dialog_sum_empty">Пожалуйста, укажите сумму</string>
     <string name="spend_address_tip">куда пойдут деньги</string>
     <string name="dialog_sum_dusty">Сумма слишком мала</string>
