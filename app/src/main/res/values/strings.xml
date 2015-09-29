@@ -109,6 +109,7 @@
     </array>
 
     <!-- activity_create, activity_restore -->
+    <string name="restore_when">When was your wallet created?\nLeave date as is if not sure</string>
     <string name="create_wallet_creating">Generating your wallet\nIt may take up to a few minutes</string>
     <string name="restore_wallet_restoring">Restoring your wallet\nIt may take a while</string>
     <string name="restore_mnemonic_wrong">Mnemonic must be 12 words long</string>

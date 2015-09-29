@@ -109,6 +109,7 @@
     </array>
 
     <!-- activity_create, activity_restore -->
+    <string name="restore_when">Cuando se creó la billetera?\nNo cambie si no estoy seguro</string>
     <string name="create_wallet_creating">Generando su monedero\nEsto puede tomar unos minutos</string>
     <string name="restore_wallet_restoring">Restaurando su monedero\nEsto puede tomar un tiempo</string>
     <string name="restore_mnemonic_wrong">El nemotécnico debe tener 12 palabras</string>

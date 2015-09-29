@@ -110,6 +110,7 @@
     </array>
 
     <!-- activity_create, activity_restore -->
+    <string name="restore_when">Когда был создан ваш кошелек?\nНе меняйте дату если не помните</string>
     <string name="restore_wallet_restoring">Восстанавливаю кошелек</string>
     <string name="create_wallet_creating">Генерирую ваш кошелек</string>
     <string name="restore_mnemonic_wrong">Должно быть 12 слов</string>

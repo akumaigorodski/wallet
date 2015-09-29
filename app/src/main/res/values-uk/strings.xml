@@ -110,8 +110,9 @@
     </array>
 
     <!-- activity_create, activity_restore -->
-    <string name="restore_wallet_restoring">Відновлюю гаманець</string>
-    <string name="create_wallet_creating">Генерую ваш гаманець</string>
+    <string name="restore_when">Коли гаманець був створений?\nЗалиште як є якщо не впевненi</string>
+    <string name="restore_wallet_restoring">Зачекайте, будь ласка\nВідновлюю ваш гаманець</string>
+    <string name="create_wallet_creating">Зачекайте, будь ласка\nГенерую ваш гаманець</string>
     <string name="restore_mnemonic_wrong">Повинно бути 12 слів</string>
     <string name="restore_wallet">Bідновити гаманець</string>
     <string name="restore_hint">Ваш мнемонічний код</string>

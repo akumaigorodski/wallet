@@ -108,6 +108,7 @@
     </array>
 
     <!-- activity_create, activity_restore -->
+    <string name="restore_when">如果是你的钱包产生的?\n如果没有把握不要改变</string>
     <string name="create_wallet_creating">生成你的钱包中\n这可能需要几分钟</string>
     <string name="restore_wallet_restoring">还原你的钱包\n可能需要一会</string>
     <string name="restore_mnemonic_wrong">助记符必须是12个字符长度</string>

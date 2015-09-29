@@ -8,6 +8,17 @@
         android:layout_width="wrap_content"
         android:id="@+id/restoreInfo">
 
+        <TextView
+            style="@style/Info"
+            android:layout_width="wrap_content"
+            android:text="@string/restore_when"/>
+
+        <Button
+            style="@style/MarginInfo"
+            android:onClick="setWhen"
+            android:id="@+id/restoreWhen"
+            android:layout_width="wrap_content"/>
+
         <EditText
             style="@style/Info"
             android:id="@+id/restoreCode"
@@ -24,7 +35,6 @@
 
         <TextView
             style="@style/Info"
-            android:layout_marginBottom="25dp"
             android:layout_width="wrap_content"
             android:text="@string/password_info"/>
 
@@ -33,6 +43,7 @@
             android:enabled="false"
             android:onClick="recWallet"
             android:id="@+id/restoreWallet"
+            android:layout_marginTop="25dp"
             android:layout_width="wrap_content"
             android:text="@string/restore_wallet"/>
 
