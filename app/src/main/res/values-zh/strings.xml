@@ -61,10 +61,6 @@
     <string name="err_address">失败 因为在给定请求中的比特币地址无效</string>
     <string name="err_neg">失败 因为请求包含了一个负的总额度</string>
 
-    <!-- loading errors -->
-    <string name="err_tx_load">无法加载交易</string>
-    <string name="err_qr_gen">无法生成图片</string>
-
     <!-- dialogs -->
     <string name="dialog_ok">好的</string>
     <string name="dialog_pay">寄钱</string>
@@ -119,7 +115,7 @@
     <string name="req_generating">生成QR代码中</string>
     <string name="req_save">分享QR代码</string>
 
-    <!-- activity_txs -->
+    <!-- activity_list_view -->
     <string name="txs_no_fee">无费用&#160;</string>
     <string name="txs_yes_fee">%1$s费用&#160;</string>
     <string name="txs_many_received_to"><![CDATA[收到 <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>

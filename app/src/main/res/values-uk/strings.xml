@@ -61,10 +61,6 @@
     <string name="err_neg">Помилка: у запиті міститься негативна сума грошей</string>
     <string name="err_general">Сталася якась неочікувана помилка</string>
 
-    <!-- loading errors -->
-    <string name="err_tx_load">З транзакціями щось пішло не так</string>
-    <string name="err_qr_gen">Не вдалося згенерувати картинку</string>
-
     <!-- dialogs -->
     <string name="dialog_ok">OK</string>
     <string name="dialog_next">Далі</string>
@@ -121,7 +117,7 @@
     <string name="req_generating">Генерую QR-код</string>
     <string name="req_save">Поділитися картинкою</string>
 
-    <!-- activity_txs -->
+    <!-- activity_list_view -->
     <string name="txs_yes_fee">%1$s &#160;</string>
     <string name="txs_no_fee">безкоштовно&#160;</string>
     <string name="txs_many_received_to"><![CDATA[отрим <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>

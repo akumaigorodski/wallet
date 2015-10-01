@@ -7,7 +7,6 @@ import org.bitcoinj.core.TransactionConfidence
 import android.view.View.OnClickListener
 import android.app.AlertDialog.Builder
 import android.text.format.DateUtils
-import java.text.SimpleDateFormat
 import scala.collection.mutable
 import android.content.Intent
 import scala.util.Success
@@ -16,20 +15,20 @@ import android.text.Html
 import android.net.Uri
 import java.util.Date
 
-import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_tx_load}
+import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_general}
 import R.string.{txs_sum_in, txs_sum_out, txs_yes_fee, txs_no_fee, txs_noaddr, dialog_ok}
 import Utils.{humanAddr, wrap, fmt, Outputs, PayDatas, baseSat, none}
-import android.view.{View, ViewGroup, Menu}
+import android.view.{MenuItem, View, ViewGroup, Menu}
 import OnScrollListener.SCROLL_STATE_IDLE
 import org.bitcoinj.core._
 import android.widget._
 
 
 class TxsActivity extends InfoActivity { me =>
-  def onFail(exc: Throwable): Unit = new Builder(me).setMessage(err_tx_load).show
+  def onFail(exc: Throwable): Unit = new Builder(me).setMessage(err_general).show
   lazy val head = getLayoutInflater.inflate(R.layout.frag_transaction_head, null)
   lazy val txsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
-  lazy val list = findViewById(R.id.txslist).asInstanceOf[ListView]
+  lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
   lazy val dc = new DenomControl(prefs, head)
 
   // Confirmation rings and total number of transactions
@@ -74,7 +73,7 @@ class TxsActivity extends InfoActivity { me =>
     if (app.isAlive) {
       add(constantListener.mkTxt, Informer.PEERS).ui.run
       new Anim(app.kit.currentBalance, Utils.appName)
-      setContentView(R.layout.activity_txs)
+      setContentView(R.layout.activity_list_view)
 
       // Setup adapter here because scrWidth is not available on start
       adapter = if (scrWidth < 2.0) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_small)
@@ -148,7 +147,11 @@ class TxsActivity extends InfoActivity { me =>
     } else this exitTo classOf[MainActivity]
   }
 
-  // Activity lifecycle
+  // Activity lifecycle listeners management
+  override def onOptionsItemSelected(mi: MenuItem) = mi.getItemId match { case act =>
+    if (android.R.id.home == act) me goTo classOf[WalletActivity] else decideActionToTake(act)
+    super.onOptionsItemSelected(mi)
+  }
 
   override def onCreateOptionsMenu(menu: Menu) = {
     getMenuInflater.inflate(R.menu.transactions_ops, menu)

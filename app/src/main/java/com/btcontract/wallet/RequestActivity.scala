@@ -17,6 +17,7 @@ import java.util
 
 import scala.language.implicitConversions
 import Bitmap.Config.ARGB_8888
+import R.string.err_general
 
 
 object QRGen {
@@ -42,7 +43,7 @@ object QRGen {
 }
 
 class RequestActivity extends TimerActivity { me =>
-  def qrError(e: Throwable): Unit = new Builder(me).setMessage(R.string.err_qr_gen).show
+  def qrError(e: Throwable): Unit = new Builder(me).setMessage(err_general).show
   lazy val qrSize = getResources getDimensionPixelSize R.dimen.bitmap_qr_size
   lazy val address = findViewById(R.id.reqAddress).asInstanceOf[TextView]
   lazy val reqCode = findViewById(R.id.reqCode).asInstanceOf[ImageView]

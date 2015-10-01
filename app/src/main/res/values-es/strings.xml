@@ -60,10 +60,6 @@
     <string name="err_address">Falló porque la dirección Bitcoin en la solicitud no es válida</string>
     <string name="err_neg">Falló porque la solicitud contiene una cantidad negativa</string>
     <string name="err_general">Falló porque ha ocurrido un error inesperado</string>
-
-    <!-- loading errors -->
-    <string name="err_tx_load">No se pudieron cargar las transacciones</string>
-    <string name="err_qr_gen">No se pudo generar una imagen</string>
     
     <!-- dialogs -->
     <string name="dialog_ok">OK</string>
@@ -120,7 +116,7 @@
     <string name="req_generating">Generando código QR</string>
     <string name="req_save">Compartir código QR</string>
 
-    <!-- activity_txs -->
+    <!-- activity_list_view -->
     <string name="txs_no_fee">sin cargo&#160;</string>
     <string name="txs_yes_fee">%1$s fee&#160;</string>
     <string name="txs_many_received_to"><![CDATA[recibido <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>

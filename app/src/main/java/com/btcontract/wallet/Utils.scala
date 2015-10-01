@@ -152,19 +152,18 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   var infos = List.empty[Informer]
-  var scanClass = classOf[ScanActivity]
   var currentAnimation = Option.empty[TimerTask]
   val ui = anyToRunnable(getActionBar setSubtitle infos.head.value)
   lazy val memo = getResources getStringArray R.array.action_send_memo
   lazy val addrOpts = getResources getStringArray R.array.dialog_request
 
   // Menu and overrides
-
+  // android.R.id.home option is handled
+  // by activities that actually have it visible
   val decideActionToTake: PartialFunction[Int, Unit] = {
+    case R.id.actionScanQRCode => me goTo classOf[ScanActivity]
     case R.id.actionTxHistory => me goTo classOf[TxsActivity]
-    case android.R.id.home => me goTo classOf[WalletActivity]
     case R.id.actionRequestPayment => mkRequestForm
-    case R.id.actionScanQRCode => me goTo scanClass
     case R.id.actionSettings => mkSetsForm
 
     case R.id.actionSendMoney =>
@@ -179,13 +178,6 @@ abstract class InfoActivity extends TimerActivity { me =>
       alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
         def onClick(v: View) = rm(alert)(mkPayForm.man setAmount inputManager.result)
       }
-  }
-
-  // One callback used for both activities
-  override def onOptionsItemSelected(mi: MenuItem) =
-  {
-    decideActionToTake(mi.getItemId)
-    super.onOptionsItemSelected(mi)
   }
 
   override def onResume = {
@@ -304,7 +296,7 @@ abstract class InfoActivity extends TimerActivity { me =>
 
     // Wire buttons up
     def rePay = rm(alert)(mkPayForm)
-    def reScan = rm(alert)(me goTo scanClass)
+    def reScan = rm(alert)(me decideActionToTake R.id.actionScanQRCode)
     val addNewAddress = payActs.findViewById(R.id.addNewAddress).asInstanceOf[Button]
     val scanQRPicture = payActs.findViewById(R.id.scanQRPicture).asInstanceOf[Button]
     scanQRPicture setOnClickListener new OnClickListener { def onClick(v: View) = reScan }

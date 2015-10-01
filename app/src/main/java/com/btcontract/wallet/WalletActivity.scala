@@ -9,11 +9,11 @@ import android.content.Context
 import org.jbox2d.common.Vec2
 import android.os.Bundle
 
-import android.view.{SurfaceView, View, Menu, MotionEvent, GestureDetector, SurfaceHolder}
+import com.btcontract.wallet.Utils.{Outputs, Coins, wrap, randBtw}
 import org.jbox2d.dynamics.{BodyDef, FixtureDef, BodyType, World}
 import android.animation.{ValueAnimator, Animator}
 import android.graphics.{Paint, Color, Canvas}
-import com.btcontract.wallet.Utils._
+import android.view._
 
 
 class WalletActivity extends InfoActivity { me =>
@@ -74,7 +74,12 @@ class WalletActivity extends InfoActivity { me =>
     } else this exitTo classOf[MainActivity]
   }
 
-  // Listeners management
+  // Activity lifecycle listeners management
+  override def onOptionsItemSelected(mi: MenuItem) =
+  {
+    decideActionToTake(mi.getItemId)
+    super.onOptionsItemSelected(mi)
+  }
 
   override def onCreateOptionsMenu(menu: Menu) = {
     getMenuInflater.inflate(R.menu.wallet_ops, menu)
