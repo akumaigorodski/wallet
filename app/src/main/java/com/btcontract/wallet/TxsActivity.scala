@@ -26,7 +26,7 @@ import android.widget._
 
 class TxsActivity extends InfoActivity { me =>
   def onFail(exc: Throwable): Unit = new Builder(me).setMessage(err_general).show
-  lazy val head = getLayoutInflater.inflate(R.layout.frag_transaction_head, null)
+  lazy val head = getLayoutInflater.inflate(R.layout.frag_denom_and_count_head, null)
   lazy val txsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
   lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
   lazy val dc = new DenomControl(prefs, head)
@@ -212,15 +212,14 @@ class TxsActivity extends InfoActivity { me =>
 
   def getOuts(outs: Outputs, acc: PayDatas, way: Boolean) = {
     for (out <- outs if out.isMine(app.kit.wallet) == way) try {
-      val address = out.getScriptPubKey.getToAddress(app.params, true)
-      acc += PayData(address, Success apply out.getValue)
+      acc += PayData(app.kit toAdr out, Success apply out.getValue)
     } catch none
     acc
   }
 
-  def makeCache(trans: Transaction) = trans getValue app.kit.wallet match { case sum =>
-    val goodOuts = getOuts(trans.getOutputs, mutable.Buffer.empty, sum.isPositive)
-    TxCache(goodOuts, trans.getFee, sum)
+  def makeCache(txs: Transaction) = txs getValue app.kit.wallet match { case sum =>
+    val goodOuts = getOuts(txs.getOutputs, mutable.Buffer.empty, sum.isPositive)
+    TxCache(goodOuts, txs.getFee, sum)
   }
 
   // Transaction cache item and view holders

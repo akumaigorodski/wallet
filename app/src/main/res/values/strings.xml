@@ -137,6 +137,12 @@
         <item>%1$s txs</item>
     </array>
 
+    <array name="addr_total">
+        <item>no addresses</item>
+        <item>%1$s address</item>
+        <item>%1$s addresses</item>
+    </array>
+
     <array name="txs_normal_conf">
         <item>WAIT</item>
         <item>%1$s</item>

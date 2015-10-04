@@ -15,21 +15,22 @@ import android.widget.Toast
 import android.os.Vibrator
 import java.io.File
 
-import org.bitcoinj.uri.{RequiredFieldValidationException, OptionalFieldValidationException}
-import org.bitcoinj.uri.{BitcoinURIParseException, BitcoinURI}
+import org.bitcoinj.uri.{BitcoinURIParseException, OptionalFieldValidationException}
+import org.bitcoinj.uri.{RequiredFieldValidationException, BitcoinURI}
 import android.content.{ClipData, ClipboardManager, Context}
 import com.btcontract.wallet.Utils.{Strs, PayDatas}
 import org.jbox2d.dynamics.{BodyType, BodyDef}
 import android.graphics.{Typeface, Paint}
 import State.{STARTING, RUNNING}
 
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import Context.CLIPBOARD_SERVICE
 import Paint.ANTI_ALIAS_FLAG
 import org.bitcoinj.core._
 
+
 class WalletApp extends Application {
   lazy val params = org.bitcoinj.params.MainNetParams.get
-  val mls = java.util.concurrent.TimeUnit.MILLISECONDS
   val fontPaint = new Paint(ANTI_ALIAS_FLAG)
   val coinBodyDef = new BodyDef
 
@@ -91,7 +92,8 @@ class WalletApp extends Application {
   }
 
   abstract class WalletKit extends AbstractKit {
-    def autoSaveOn = wallet.autosaveToFile(walletFile, 500, mls, null)
+    def toAdr(out: TransactionOutput) = out.getScriptPubKey.getToAddress(params, true)
+    def autoSaveOn = wallet.autosaveToFile(walletFile, 500, MILLISECONDS, null)
     def freshOuts = wallet.calculateAllSpendCandidates(false, true).asScala
     def currentAddress = wallet.currentAddress(KeyPurpose.RECEIVE_FUNDS)
     def currentBalance = wallet.getBalance(BalanceType.ESTIMATED).value
@@ -99,8 +101,8 @@ class WalletApp extends Application {
 
     def encryptWallet(pass: CharSequence) = {
       val randSalt8Bytes = ByteString copyFrom KeyCrypterScrypt.randomSalt
-      val scrypt = Protos.ScryptParameters.newBuilder setSalt randSalt8Bytes setN 65536
-      val cr = new KeyCrypterScrypt(scrypt.build)
+      val scryptBuilder = Protos.ScryptParameters.newBuilder setSalt randSalt8Bytes setN 65536
+      val cr = new KeyCrypterScrypt(scryptBuilder.build)
       wallet.encrypt(cr, cr deriveKey pass)
     }
 
