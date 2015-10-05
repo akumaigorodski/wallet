@@ -3,15 +3,15 @@
     android:paddingLeft="10dp" android:paddingRight="10dp" android:paddingTop="10dp" android:paddingBottom="15dp">
 
     <TextView
+        style="@style/StdText"
         android:id="@+id/amount"
-        android:layout_weight="4"
-        android:layout_width="0dp"
-        style="@style/StdText"/>
+        android:layout_weight="1"
+        android:layout_width="0dp"/>
 
     <TextView
+        style="@style/StdText"
         android:id="@+id/address"
-        android:layout_weight="12"
-        android:layout_width="0dp"
-        style="@style/StdText"/>
+        android:layout_weight="1"
+        android:layout_width="0dp"/>
 
 </LinearLayout>

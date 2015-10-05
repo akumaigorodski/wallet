@@ -74,13 +74,6 @@ class WalletActivity extends InfoActivity { me =>
     } else this exitTo classOf[MainActivity]
   }
 
-  // Activity lifecycle listeners management
-  override def onOptionsItemSelected(mi: MenuItem) =
-  {
-    decideActionToTake(mi.getItemId)
-    super.onOptionsItemSelected(mi)
-  }
-
   override def onCreateOptionsMenu(menu: Menu) = {
     getMenuInflater.inflate(R.menu.wallet_ops, menu)
     super.onCreateOptionsMenu(menu)

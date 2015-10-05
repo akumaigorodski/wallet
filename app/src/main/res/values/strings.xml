@@ -34,6 +34,7 @@
 
     <!-- menu -->
     <string name="action_settings">Wallet settings</string>
+    <string name="action_address">View my addresses</string>
     <string name="action_tx_history">View transactions</string>
     <string name="action_request_payment">Request for payment</string>
     <string name="action_send_money">Send coins to address</string>

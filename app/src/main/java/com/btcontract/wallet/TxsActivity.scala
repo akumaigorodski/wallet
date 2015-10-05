@@ -17,8 +17,9 @@ import java.util.Date
 
 import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_general}
 import R.string.{txs_sum_in, txs_sum_out, txs_yes_fee, txs_no_fee, txs_noaddr, dialog_ok}
-import Utils.{humanAddr, wrap, fmt, Outputs, PayDatas, baseSat, none}
-import android.view.{MenuItem, View, ViewGroup, Menu}
+import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none}
+import android.view.{View, ViewGroup, Menu}
+
 import OnScrollListener.SCROLL_STATE_IDLE
 import org.bitcoinj.core._
 import android.widget._
@@ -29,21 +30,21 @@ class TxsActivity extends InfoActivity { me =>
   lazy val head = getLayoutInflater.inflate(R.layout.frag_denom_and_count_head, null)
   lazy val txsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
   lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
-  lazy val dc = new DenomControl(prefs, head)
+  implicit lazy val dc = new DenomControl(prefs, head)
 
   // Confirmation rings and total number of transactions
   lazy val confOpts = getResources getStringArray R.array.txs_normal_conf
   lazy val txsOpts = getResources getStringArray R.array.txs_total
 
   // Sent/received templates and fee
-  lazy val sumIn = me getString txs_sum_in
-  lazy val sumOut = me getString txs_sum_out
-  lazy val addrUnknown = me getString txs_noaddr
   lazy val rcvdManyTo = me getString txs_many_received_to
   lazy val sentManyTo = me getString txs_many_sent_to
   lazy val rcvdTo = me getString txs_received_to
+  lazy val addrUnknown = me getString txs_noaddr
   lazy val sentTo = me getString txs_sent_to
   lazy val yesFee = me getString txs_yes_fee
+  lazy val sumOut = me getString txs_sum_out
+  lazy val sumIn = me getString txs_sum_in
   lazy val noFee = me getString txs_no_fee
 
   // Local state
@@ -147,12 +148,6 @@ class TxsActivity extends InfoActivity { me =>
     } else this exitTo classOf[MainActivity]
   }
 
-  // Activity lifecycle listeners management
-  override def onOptionsItemSelected(mi: MenuItem) = mi.getItemId match { case act =>
-    if (android.R.id.home == act) me goTo classOf[WalletActivity] else decideActionToTake(act)
-    super.onOptionsItemSelected(mi)
-  }
-
   override def onCreateOptionsMenu(menu: Menu) = {
     getMenuInflater.inflate(R.menu.transactions_ops, menu)
     super.onCreateOptionsMenu(menu)
@@ -197,7 +192,6 @@ class TxsActivity extends InfoActivity { me =>
     else Html fromHtml time(date)
   }
 
-  def denom(coin: Coin) = if (dc.m == R.id.amtInBtc) fmt(coin.getValue) else baseSat format coin.getValue
   def time(date: Date) = String.format("%1$tb %1$te&#x200b;,&#160;%1$tY&#x200b;,&#160;%1$tR", date)
   def feeString(fee: Coin) = if (null == fee || fee.isZero) noFee else yesFee format denom(fee)
 

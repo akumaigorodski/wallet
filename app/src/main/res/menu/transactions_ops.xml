@@ -1,6 +1,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:title="@string/action_address"
+        android:id="@+id/actionAddresses"
+        android:showAsAction="never"/>
+
+    <item
         android:title="@string/action_request_payment"
         android:id="@+id/actionRequestPayment"
         android:icon="@drawable/ic_action"

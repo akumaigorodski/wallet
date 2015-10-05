@@ -81,6 +81,9 @@ object Utils {
   def humanSum(sat: Double) = tipInBtc(sat) + "<br>" + tipInSat(sat)
   def fmt(sat: Long) = "฿\u00A0" + inpInBtc(sat.toDouble)
 
+  def denom(cn: Coin)(implicit dec: DenomControl) =
+    if (dec.m == R.id.amtInBtc) fmt(cn.getValue) else baseSat format cn.getValue
+
   def none: PartialFunction[Any, Unit] = { case _ => }
   def wrap(run: => Unit)(go: => Unit) = try go catch none finally run
   def randBtw(start: Float, end: Float) = start + rand.nextFloat * (end - start)
@@ -97,11 +100,9 @@ abstract class InfoActivity extends TimerActivity { me =>
     override def onCoinsSent(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) =
       say(app getString R.string.tx_sent format fmt(pb.subtract(nb).getValue), Informer.DECSEND)
 
+    override def onReorganize(w: Wallet) = say(app getString R.string.reorg, Informer.REORG)
     override def onCoinsReceived(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb)
       say(app getString R.string.tx_received format fmt(nb.subtract(pb).getValue), Informer.RECEIVED)
-
-    override def onReorganize(w: Wallet) =
-      say(app getString R.string.reorg, Informer.REORG)
 
     def say(text: String, infoType: Int) = {
       new Anim(app.kit.currentBalance, getActionBar.getTitle.toString)
@@ -162,7 +163,9 @@ abstract class InfoActivity extends TimerActivity { me =>
   // by activities that actually have it visible
   val decideActionToTake: PartialFunction[Int, Unit] = {
     case R.id.actionScanQRCode => me goTo classOf[ScanActivity]
+    case R.id.actionAddresses => me goTo classOf[AdrsActivity]
     case R.id.actionTxHistory => me goTo classOf[TxsActivity]
+    case android.R.id.home => me goTo classOf[WalletActivity]
     case R.id.actionRequestPayment => mkRequestForm
     case R.id.actionSettings => mkSetsForm
 
@@ -178,6 +181,13 @@ abstract class InfoActivity extends TimerActivity { me =>
       alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
         def onClick(v: View) = rm(alert)(mkPayForm.man setAmount inputManager.result)
       }
+  }
+
+  // Activity lifecycle listeners management
+  override def onOptionsItemSelected(mi: MenuItem) =
+  {
+    decideActionToTake(mi.getItemId)
+    super.onOptionsItemSelected(mi)
   }
 
   override def onResume = {
