@@ -57,29 +57,30 @@ class RequestActivity extends TimerActivity { me =>
     setContentView(R.layout.activity_request)
 
     app.TransData.value match {
-      case Some(info: PayData) =>
-        <(QRGen.get(info.getURI, qrSize), qrError) { bitMap =>
-          reqShare setOnClickListener new View.OnClickListener {
-            def shareQRCodeImage = <(saveImage(bitMap), qrError) { file =>
-              val share = new Intent setAction Intent.ACTION_SEND setType "image/png"
-              me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile file)
-            }
-
-            def onClick(v: View) = {
-              timer.schedule(enableShare, 2000)
-              reqShare setEnabled false
-              shareQRCodeImage
-            }
-          }
-
-          address setText Html.fromHtml(info text "#1BA2E0")
-          reqCode setImageBitmap bitMap
-          enableShare.run
-        }
-
-      // Just go back
+      case Some(cache: AdrsActivity#AdrCache) => show(cache.address.toString, cache.human)
+      case Some(info: PayData) => show(info.getURI, info text "#1BA2E0")
       case _ => finish
     }
+  }
+
+  def show(content: String, fancy: String) =
+    <(QRGen.get(content, qrSize), qrError) { bitMap =>
+    reqShare setOnClickListener new View.OnClickListener {
+      def shareQRCodeImage = <(saveImage(bitMap), qrError) { file =>
+        val share = new Intent setAction Intent.ACTION_SEND setType "image/png"
+        me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile file)
+      }
+
+      def onClick(v: View) = {
+        timer.schedule(enableShare, 2000)
+        reqShare setEnabled false
+        shareQRCodeImage
+      }
+    }
+
+    address setText Html.fromHtml(fancy)
+    reqCode setImageBitmap bitMap
+    enableShare.run
   }
 
   def saveImage(bits: Bitmap) = {

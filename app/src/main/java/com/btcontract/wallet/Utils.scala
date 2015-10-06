@@ -81,8 +81,8 @@ object Utils {
   def humanSum(sat: Double) = tipInBtc(sat) + "<br>" + tipInSat(sat)
   def fmt(sat: Long) = "฿\u00A0" + inpInBtc(sat.toDouble)
 
-  def denom(cn: Coin)(implicit dec: DenomControl) =
-    if (dec.m == R.id.amtInBtc) fmt(cn.getValue) else baseSat format cn.getValue
+  def denom(cn: Coin)(implicit dec: DenomControl, zero: CharSequence) =
+    if (0 == cn.value) zero else if (dec.m == R.id.amtInBtc) fmt(cn.value) else baseSat format cn.value
 
   def none: PartialFunction[Any, Unit] = { case _ => }
   def wrap(run: => Unit)(go: => Unit) = try go catch none finally run
@@ -156,7 +156,7 @@ abstract class InfoActivity extends TimerActivity { me =>
   var currentAnimation = Option.empty[TimerTask]
   val ui = anyToRunnable(getActionBar setSubtitle infos.head.value)
   lazy val memo = getResources getStringArray R.array.action_send_memo
-  lazy val addrOpts = getResources getStringArray R.array.dialog_request
+  lazy val requestOpts = getResources getStringArray R.array.dialog_request
 
   // Menu and overrides
   // android.R.id.home option is handled
@@ -368,19 +368,12 @@ abstract class InfoActivity extends TimerActivity { me =>
         val pay = PayData(app.kit.currentAddress, man.result)
         val titleText = requestText + "<br><br>" + pay.text("#1BA2E0")
         val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
-        val adapter = new ArrayAdapter(me, R.layout.frag_center_text, R.id.textItem, addrOpts)
+        val adapter = new ArrayAdapter(me, R.layout.frag_center_text, R.id.textItem, requestOpts)
         val dialog = mkForm(me negBld dialog_cancel, Html fromHtml titleText, listCon)
 
-        def share = startActivity {
-          val sendIntent = new Intent setType "text/plain"
-          sendIntent.putExtra(Intent.EXTRA_TEXT, pay.getURI)
-          sendIntent.setAction(Intent.ACTION_SEND)
-        }
-
         listCon setOnItemClickListener new AdapterView.OnItemClickListener {
-          def onItemClick(parent: AdapterView[_], view: View, pos: Int, itemId: Long) = rm(dialog) {
-            pos match { case 0 => me goTo classOf[RequestActivity] case 1 => app setBuffer pay.getURI case 2 => share }
-          }
+          def onItemClick(par: AdapterView[_], view: View, pos: Int, id: Long) =
+            rm(dialog) _ apply choose(pos, pay.getURI)
         }
 
         app.TransData.value = Option(pay)
@@ -544,7 +537,6 @@ abstract class TimerActivity extends Activity { me =>
   }
 
   // Navigation related methods and timer cancel
-
   override def onDestroy = wrap(super.onDestroy)(timer.cancel)
   def toast(message: Int) = Toast.makeText(app, message, Toast.LENGTH_LONG).show
   implicit def anyToRunnable(process: => Unit): Runnable = new Runnable { def run = process }
@@ -555,8 +547,20 @@ abstract class TimerActivity extends Activity { me =>
     case Success(rs) => runOnUiThread(ok apply rs) case Failure(ex) => runOnUiThread(no apply ex)
   }
 
-  // Basis for dialog forms
+  // React to request and address options
+  def choose(pos: Int, txt: String) = pos match {
+    case 0 => me goTo classOf[RequestActivity]
+    case 1 => app setBuffer txt
+    case 2 => share(txt)
+  }
 
+  def share(text: String) = startActivity {
+    val sendIntent = new Intent setType "text/plain"
+    sendIntent.putExtra(Intent.EXTRA_TEXT, text)
+    sendIntent.setAction(Intent.ACTION_SEND)
+  }
+
+  // Basis for dialog forms
   implicit def str2View(res: CharSequence): LinearLayout = {
     val view = getLayoutInflater.inflate(R.layout.frag_top_tip, null)
     view.findViewById(R.id.actionTip).asInstanceOf[TextView] setText res
@@ -593,7 +597,6 @@ abstract class TimerActivity extends Activity { me =>
   }
 
   // Currency converter
-
   def mkConverterForm(tpl: Builder) = {
     val content = getLayoutInflater.inflate(R.layout.frag_rates, null)
     val alert = mkForm(tpl, me getString R.string.action_converter, content)

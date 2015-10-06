@@ -16,7 +16,7 @@ import android.net.Uri
 import java.util.Date
 
 import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_general}
-import R.string.{txs_sum_in, txs_sum_out, txs_yes_fee, txs_no_fee, txs_noaddr, dialog_ok}
+import R.string.{txs_sum_in, txs_sum_out, txs_yes_fee, txs_no_fee, txs_noaddr, dialog_ok, no_funds}
 import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none}
 import android.view.{View, ViewGroup, Menu}
 
@@ -30,7 +30,10 @@ class TxsActivity extends InfoActivity { me =>
   lazy val head = getLayoutInflater.inflate(R.layout.frag_denom_and_count_head, null)
   lazy val txsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
   lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
+
+  // Implicits for denom
   implicit lazy val dc = new DenomControl(prefs, head)
+  implicit lazy val noFunds = me getString no_funds
 
   // Confirmation rings and total number of transactions
   lazy val confOpts = getResources getStringArray R.array.txs_normal_conf
@@ -196,10 +199,10 @@ class TxsActivity extends InfoActivity { me =>
   def feeString(fee: Coin) = if (null == fee || fee.isZero) noFee else yesFee format denom(fee)
 
   def summary(outs: PayDatas, incoming: Boolean) = outs match {
-    case mutable.Buffer(pay, _, _*) if incoming => rcvdManyTo.format(humanAddr(pay.adr), outs.size - 1)
-    case mutable.Buffer(pay, _, _*) => sentManyTo.format(humanAddr(pay.adr), outs.size - 1)
-    case mutable.Buffer(pay) if incoming => rcvdTo format humanAddr(pay.adr)
-    case mutable.Buffer(pay) => sentTo format humanAddr(pay.adr)
+    case Seq(pay, _, _*) if incoming => rcvdManyTo.format(humanAddr(pay.adr), outs.size - 1)
+    case Seq(pay, _, _*) => sentManyTo.format(humanAddr(pay.adr), outs.size - 1)
+    case Seq(pay) if incoming => rcvdTo format humanAddr(pay.adr)
+    case Seq(pay) => sentTo format humanAddr(pay.adr)
     case _ if incoming => rcvdTo format addrUnknown
     case _ => sentTo format addrUnknown
   }
