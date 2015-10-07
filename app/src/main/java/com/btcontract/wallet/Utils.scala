@@ -18,12 +18,12 @@ import scala.concurrent.Future
 import org.json.JSONObject
 import android.net.Uri
 
+import R.string.{tx_announce, wallet_password, password_old, pass_checking}
 import R.string.{dialog_ok, dialog_next, dialog_cancel, dialog_back, dialog_pay}
-import R.string.{tx_announce, wallet_password, password_old, pass_checking, txs_sum_out}
 import R.string.{input_hint_btc, input_hint_sat, input_tip_sat, input_tip_btc, tx_1st_conf}
-import android.content.DialogInterface.{OnDismissListener, BUTTON_POSITIVE, BUTTON_NEGATIVE}
 import R.id.{amtInSat, amtInBtc, inputAmount, inputBottom, typeUSD, typeEUR, typeCNY}
 import android.content.{DialogInterface, SharedPreferences, Context, Intent}
+import android.content.DialogInterface.{OnDismissListener, BUTTON_POSITIVE}
 import org.bitcoinj.core.Wallet.{ExceededMaxTransactionSize => TxTooLarge}
 import org.bitcoinj.core.Wallet.{CouldNotAdjustDownwards, SendRequest}
 import org.bitcoinj.core.{InsufficientMoneyException => NoFunds}

@@ -1,25 +1,17 @@
 package com.btcontract.wallet
 
-import java.util
-
-import android.content.Intent
-import android.text.Html
-import org.bitcoinj.core._
-
 import android.widget.RadioGroup.OnCheckedChangeListener
-import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.immutable.{Iterable, IndexedSeq, ListMap}
-import android.widget._
 import android.app.AlertDialog.Builder
 import android.os.Bundle
-import Utils.{ wrap, denom, Outputs }
+import android.text.Html
 
-import android.view.{ViewGroup, View}
+import android.widget.{TextView, ListView, BaseAdapter, RadioGroup, AdapterView, ArrayAdapter}
+import org.bitcoinj.core.{AbstractWalletEventListener, Wallet, Transaction, Coin, Address}
 import R.string.{txs_sum_in, err_general, no_funds, dialog_cancel}
+import Utils.{wrap, denom, Outputs}
 
 import collection.JavaConversions._
-import scala.collection.mutable
-import scala.util.Failure
+import android.view._
 
 
 class AdrsActivity extends TimerActivity { me =>

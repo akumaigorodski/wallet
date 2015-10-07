@@ -31,13 +31,11 @@ class TxsActivity extends InfoActivity { me =>
   lazy val txsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
   lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
 
-  // Implicits for denom
-  implicit lazy val dc = new DenomControl(prefs, head)
-  implicit lazy val noFunds = me getString no_funds
-
-  // Confirmation rings and total number of transactions
+  // Confirmation rings, number of txs and implicits for denom
   lazy val confOpts = getResources getStringArray R.array.txs_normal_conf
   lazy val txsOpts = getResources getStringArray R.array.txs_total
+  implicit lazy val dc = new DenomControl(prefs, head)
+  implicit lazy val noFunds = me getString no_funds
 
   // Sent/received templates and fee
   lazy val rcvdManyTo = me getString txs_many_received_to

@@ -99,11 +99,11 @@ class WalletApp extends Application {
     def currentBalance = wallet.getBalance(BalanceType.ESTIMATED).value
     override def shutDown = if (peerGroup.isRunning) peerGroup.stop
 
-    def encryptWallet(pass: CharSequence) = {
+    def encryptWallet(password: CharSequence) = {
       val randSalt8Bytes = ByteString copyFrom KeyCrypterScrypt.randomSalt
       val scryptBuilder = Protos.ScryptParameters.newBuilder setSalt randSalt8Bytes setN 65536
       val cr = new KeyCrypterScrypt(scryptBuilder.build)
-      wallet.encrypt(cr, cr deriveKey pass)
+      wallet.encrypt(cr, cr deriveKey password)
     }
 
     def useCheckPoints(time: Long) = {
