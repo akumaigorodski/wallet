@@ -65,7 +65,7 @@
             android:name="AdrsActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
-            android:theme="@android:style/Theme.Holo.Light.NoActionBar"/>
+            android:theme="@style/LiteNoBar"/>
 
         <activity
             android:name="ScanActivity"

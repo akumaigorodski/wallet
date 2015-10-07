@@ -65,23 +65,23 @@ class RequestActivity extends TimerActivity { me =>
 
   def show(content: String, fancy: String) =
     <(QRGen.get(content, qrSize), qrError) { bitMap =>
-    reqShare setOnClickListener new View.OnClickListener {
-      def shareQRCodeImage = <(saveImage(bitMap), qrError) { file =>
-        val share = new Intent setAction Intent.ACTION_SEND setType "image/png"
-        me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile file)
+      reqShare setOnClickListener new View.OnClickListener {
+        def shareQRCodeImage = <(saveImage(bitMap), qrError) { file =>
+          val share = new Intent setAction Intent.ACTION_SEND setType "image/png"
+          me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile file)
+        }
+
+        def onClick(v: View) = {
+          timer.schedule(enableShare, 2000)
+          reqShare setEnabled false
+          shareQRCodeImage
+        }
       }
 
-      def onClick(v: View) = {
-        timer.schedule(enableShare, 2000)
-        reqShare setEnabled false
-        shareQRCodeImage
-      }
+      address setText Html.fromHtml(fancy)
+      reqCode setImageBitmap bitMap
+      enableShare.run
     }
-
-    address setText Html.fromHtml(fancy)
-    reqCode setImageBitmap bitMap
-    enableShare.run
-  }
 
   def saveImage(bits: Bitmap) = {
     val path = Environment.getExternalStorageDirectory

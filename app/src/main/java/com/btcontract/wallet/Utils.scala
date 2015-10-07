@@ -159,8 +159,6 @@ abstract class InfoActivity extends TimerActivity { me =>
   lazy val requestOpts = getResources getStringArray R.array.dialog_request
 
   // Menu and overrides
-  // android.R.id.home option is handled
-  // by activities that actually have it visible
   val decideActionToTake: PartialFunction[Int, Unit] = {
     case R.id.actionScanQRCode => me goTo classOf[ScanActivity]
     case R.id.actionAddresses => me goTo classOf[AdrsActivity]

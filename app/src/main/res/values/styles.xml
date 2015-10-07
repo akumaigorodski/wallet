@@ -64,11 +64,15 @@
         <item name="android:windowBackground">@android:color/black</item>
     </style>
 
-    <style name="DarkBar" parent="@android:style/Theme.Holo">
+    <style name="LiteNoBar" parent="@android:style/Theme.Holo.Light.NoActionBar">
         <item name="android:backgroundDimEnabled">false</item>
     </style>
 
     <style name="LiteBar" parent="@android:style/Theme.Holo.Light">
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
+    <style name="DarkBar" parent="@android:style/Theme.Holo">
         <item name="android:backgroundDimEnabled">false</item>
     </style>
 
