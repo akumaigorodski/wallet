@@ -34,6 +34,7 @@
 
     <!-- menu -->
     <string name="action_settings">钱包设置</string>
+    <string name="action_address">查看我的地址</string>
     <string name="action_tx_history">查看交易</string>
     <string name="action_request_payment">付款请求</string>
     <string name="action_send_money">发送硬币到某个地址</string>
@@ -87,6 +88,12 @@
         <item>分享请求&#8230;</item>
     </array>
 
+    <array name="dialog_address">
+        <item>Turn address into QR code</item>
+        <item>Copy address to clipboard</item>
+        <item>Share address&#8230;</item>
+    </array>
+
     <!-- notifications -->
     <string name="info_progress_done">数据块链已更新到最新</string>
     <string name="info_progress">同步: %1$d 块剩下</string>
@@ -116,6 +123,7 @@
     <string name="req_save">分享QR代码</string>
 
     <!-- activity_list_view -->
+    <string name="no_funds">没有资金</string>
     <string name="txs_no_fee">无费用&#160;</string>
     <string name="txs_yes_fee">%1$s费用&#160;</string>
     <string name="txs_many_received_to"><![CDATA[收到 <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
@@ -133,6 +141,11 @@
     <array name="txs_total">
         <item>无交易</item>
         <item>%1$s交易</item>
+    </array>
+
+    <array name="addr_total">
+        <item>没有地址</item>
+        <item>%1$s 地址</item>
     </array>
 
     <array name="txs_normal_conf">

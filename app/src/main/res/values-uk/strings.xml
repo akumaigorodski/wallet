@@ -33,6 +33,7 @@
     <string name="destruct_too_short">Код знищення занадто короткий</string>
 
     <!-- menu -->
+    <string name="action_address">Список моїх адрес</string>
     <string name="action_tx_history">Історія переказів</string>
     <string name="action_settings">Налаштувати гаманець</string>
     <string name="action_request_payment">Запросити платіж</string>
@@ -87,6 +88,12 @@
         <item>Інші варіанти&#8230;</item>
     </array>
 
+    <array name="dialog_address">
+        <item>Перетворити адресу в QR-код</item>
+        <item>Скопіювати адресу в буфер</item>
+        <item>Інші варіанти&#8230;</item>
+    </array>
+
     <!-- notifications -->
     <string name="reorg">Стався реорг</string>
     <string name="info_progress">Залишилось %1$d блоків</string>
@@ -118,6 +125,7 @@
     <string name="req_save">Поділитися картинкою</string>
 
     <!-- activity_list_view -->
+    <string name="no_funds">Немає грошей</string>
     <string name="txs_yes_fee">%1$s &#160;</string>
     <string name="txs_no_fee">безкоштовно&#160;</string>
     <string name="txs_many_received_to"><![CDATA[отрим <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
@@ -137,6 +145,13 @@
         <item>%1$s tx</item>
         <item>%1$s txs</item>
         <item>%1$s txs</item>
+    </array>
+
+    <array name="addr_total">
+        <item>немає адрес</item>
+        <item>%1$s адреса</item>
+        <item>%1$s адреси</item>
+        <item>%1$s адрес</item>
     </array>
 
     <array name="txs_normal_conf">
