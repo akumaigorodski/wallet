@@ -1,11 +1,5 @@
 package com.btcontract.wallet
 
-import com.google.zxing.{BarcodeFormat, EncodeHintType}
-import android.widget.{TextView, Button, ImageView}
-import java.io.{FileOutputStream, File}
-import android.os.{Environment, Bundle}
-import android.graphics.{Color, Bitmap}
-
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.qrcode.QRCodeWriter
 import android.app.AlertDialog.Builder
@@ -14,6 +8,13 @@ import android.text.Html
 import android.view.View
 import android.net.Uri
 import java.util
+
+import com.google.zxing.{BarcodeFormat, EncodeHintType}
+import android.widget.{TextView, Button, ImageView}
+import java.io.{FileOutputStream, File}
+import android.os.{Environment, Bundle}
+import android.graphics.{Color, Bitmap}
+import Utils.{sumIn, appName}
 
 import scala.language.implicitConversions
 import Bitmap.Config.ARGB_8888
@@ -58,7 +59,7 @@ class RequestActivity extends TimerActivity { me =>
 
     app.TransData.value match {
       case Some(cache: AdrsActivity#AdrCache) => show(cache.address.toString, cache.human)
-      case Some(info: PayData) => show(info.getURI, info text "#1BA2E0")
+      case Some(payData: PayData) => show(payData.getURI, payData pretty sumIn)
       case _ => finish
     }
   }
@@ -84,9 +85,8 @@ class RequestActivity extends TimerActivity { me =>
     }
 
   def saveImage(bits: Bitmap) = {
-    val path = Environment.getExternalStorageDirectory
-    val fileName = s"${path.getAbsolutePath}/${Utils.appName}"
-    val dir = new File(fileName)
+    val path = Environment.getExternalStorageDirectory.getAbsolutePath
+    val dir = new File(s"$path/$appName")
     dir.mkdirs
 
     // Save PNG compressed file

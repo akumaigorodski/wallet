@@ -1,5 +1,6 @@
 package com.btcontract.wallet
 
+import concurrent.ExecutionContext.Implicits.global
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.RadioGroup.OnCheckedChangeListener
 import info.hoang8f.android.segmented.SegmentedGroup
@@ -39,7 +40,6 @@ import android.widget._
 import android.view._
 import android.text._
 
-import concurrent.ExecutionContext.Implicits.global
 import ViewGroup.LayoutParams.WRAP_CONTENT
 import scala.language.implicitConversions
 import InputMethodManager.HIDE_NOT_ALWAYS
@@ -74,7 +74,7 @@ object Utils {
   val textType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
 
   // Value will be provided on startup
-  var satTemplate, btcTemplate: String = null
+  var satTemplate, btcTemplate, sumIn, sumOut: String = null
   def inpInBtc(sat: Double) = baseBtc format sat / 100000000
   def tipInBtc(sat: Double) = satTemplate format inpInBtc(sat)
   def tipInSat(sat: Double) = btcTemplate format baseSat.format(sat)
@@ -290,7 +290,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     val inSat = tipInSat(totalSum)
 
     // Create all the needed views
-    val txt = for (pay <- pays.toArray) yield Html.fromHtml(pay text "#E31300")
+    val txt = for (pay <- pays.toArray) yield Html.fromHtml(pay pretty sumOut)
     val (passAsk, secretField) = generatePasswordPromptView(passType, wallet_password)
     val payActs = getLayoutInflater.inflate(R.layout.frag_top_acts, null).asInstanceOf[LinearLayout]
     val divider = getLayoutInflater.inflate(R.layout.frag_divider, null).asInstanceOf[LinearLayout]
@@ -364,7 +364,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     ok setOnClickListener new OnClickListener {
       def onClick(posButtonView: View) = rm(alert) {
         val pay = PayData(app.kit.currentAddress, man.result)
-        val titleText = requestText + "<br><br>" + pay.text("#1BA2E0")
+        val titleText = requestText + "<br><br>" + pay.pretty(sumIn)
         val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
         val adapter = new ArrayAdapter(me, R.layout.frag_center_text, R.id.textItem, requestOpts)
         val dialog = mkForm(me negBld dialog_cancel, Html fromHtml titleText, listCon)
@@ -746,10 +746,8 @@ case class PayData(adr: Address, tc: TryCoin) {
   // https://medium.com/message/hello-future-pastebin-readers-39d9b4eb935f
   // Do not use labels or memos because your history will bite you otherwise
   def getURI = BitcoinURI.convertToBitcoinURI(adr, tc getOrElse null, null, null)
-
-  def text(addrColor: String) = {
-    val base = s"<font color=$addrColor>${Utils humanAddr adr}</font>"
-    tc map (_.getValue.toDouble) map humanSum map (vs => s"$base<br><br>$vs") getOrElse base
+  def pretty(sumRoute: String) = sumRoute format humanAddr(adr) match { case base =>
+    tc map (_.getValue.toDouble) map humanSum map (base + "<br><br>" + _) getOrElse base
   }
 }
 

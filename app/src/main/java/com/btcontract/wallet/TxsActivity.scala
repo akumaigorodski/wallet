@@ -15,11 +15,10 @@ import android.text.Html
 import android.net.Uri
 import java.util.Date
 
+import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none, sumIn, sumOut}
 import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_general}
-import R.string.{txs_sum_in, txs_sum_out, txs_yes_fee, txs_no_fee, txs_noaddr, dialog_ok, no_funds}
-import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none}
+import R.string.{txs_yes_fee, txs_no_fee, txs_noaddr, dialog_ok, no_funds}
 import android.view.{View, ViewGroup, Menu}
-
 import OnScrollListener.SCROLL_STATE_IDLE
 import org.bitcoinj.core._
 import android.widget._
@@ -44,8 +43,6 @@ class TxsActivity extends InfoActivity { me =>
   lazy val addrUnknown = me getString txs_noaddr
   lazy val sentTo = me getString txs_sent_to
   lazy val yesFee = me getString txs_yes_fee
-  lazy val sumOut = me getString txs_sum_out
-  lazy val sumIn = me getString txs_sum_in
   lazy val noFee = me getString txs_no_fee
 
   // Local state
@@ -123,18 +120,14 @@ class TxsActivity extends InfoActivity { me =>
               case _ => s"${entry.transactAmount}<br><small>${me time transaction.getUpdateTime}</small>"
             }
 
-            outside setOnClickListener new OnClickListener {
-              def site = Uri parse s"https://blockexplorer.com/tx/$hash"
-              def onClick(v: View) = me startActivity new Intent(Intent.ACTION_VIEW, site)
-            }
-
-            copy setOnClickListener new OnClickListener {
-              def onClick(v: View) = app setBuffer hash.toString
-            }
+            // Wire up controls buttons
+            def site = new Intent(Intent.ACTION_VIEW, Uri parse s"https://blockexplorer.com/tx/$hash")
+            outside setOnClickListener new OnClickListener { def onClick(v: View) = me startActivity site }
+            copy setOnClickListener new OnClickListener { def onClick(v: View) = app setBuffer hash.toString }
 
             // Prepare data and wire everything up
-            val color = if (entry.value.isPositive) "#1BA2E0" else "#E31300"
-            val txt = for (payment <- entry.pays) yield Html.fromHtml(payment text color)
+            val way = if (entry.value.isPositive) sumIn else sumOut
+            val txt = for (payment <- entry.pays) yield Html.fromHtml(payment pretty way)
             listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, txt.toArray)
             mkForm(me negBld dialog_ok, Html fromHtml totalSum, listCon)
             listCon addHeaderView detailsForm

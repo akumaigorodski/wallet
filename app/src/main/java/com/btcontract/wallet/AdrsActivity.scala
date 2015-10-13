@@ -7,8 +7,8 @@ import android.text.Html
 
 import android.widget.{TextView, ListView, BaseAdapter, RadioGroup, AdapterView, ArrayAdapter}
 import org.bitcoinj.core.{AbstractWalletEventListener, Wallet, Transaction, Coin, Address}
-import R.string.{txs_sum_in, err_general, no_funds, dialog_cancel}
-import Utils.{wrap, denom, Outputs}
+import R.string.{err_general, no_funds, dialog_cancel}
+import Utils.{wrap, denom, Outputs, sumIn}
 
 import collection.JavaConversions._
 import android.view._
@@ -19,7 +19,6 @@ class AdrsActivity extends TimerActivity { me =>
   lazy val head = getLayoutInflater.inflate(R.layout.frag_denom_and_count_head, null)
   lazy val adrsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
   lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
-  lazy val sumIn = me getString txs_sum_in
 
   // Implicits for denom
   implicit lazy val dc = new DenomControl(prefs, head)
@@ -100,7 +99,7 @@ class AdrsActivity extends TimerActivity { me =>
   // Address cache
 
   case class AdrCache(address: Address, amount: Coin) {
-    lazy val human = sumIn format Utils.humanAddr(address)
+    lazy val human = sumIn.format(Utils humanAddr address)
   }
 
   // View holder

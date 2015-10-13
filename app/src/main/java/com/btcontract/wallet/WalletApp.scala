@@ -1,6 +1,6 @@
 package com.btcontract.wallet
 
-import scala.collection.JavaConverters.asScalaBufferConverter
+import collection.JavaConverters.asScalaBufferConverter
 import com.google.common.util.concurrent.Service.State
 import android.graphics.BitmapFactory.decodeResource
 import org.bitcoinj.net.discovery.DnsDiscovery
@@ -9,10 +9,10 @@ import org.bitcoinj.core.Wallet.BalanceType
 import org.bitcoinj.crypto.KeyCrypterScrypt
 import com.google.protobuf.ByteString
 import org.bitcoinj.wallet.Protos
-import scala.collection.mutable
 import android.app.Application
 import android.widget.Toast
 import android.os.Vibrator
+import collection.mutable
 import java.io.File
 
 import org.bitcoinj.uri.{BitcoinURIParseException, OptionalFieldValidationException}
@@ -67,6 +67,8 @@ class WalletApp extends Application {
     AbstractCoin.bitLogo = decodeResource(getResources, R.drawable.bitwhite2)
     Utils.btcTemplate = getString(R.string.input_alt_sat)
     Utils.satTemplate = getString(R.string.input_alt_btc)
+    Utils.sumOut = getString(R.string.txs_sum_out)
+    Utils.sumIn = getString(R.string.txs_sum_in)
     coinBodyDef setType BodyType.DYNAMIC
     fontPaint setColor 0xBBFFFFFF
   }
