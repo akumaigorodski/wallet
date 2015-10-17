@@ -18,9 +18,12 @@ class MainActivity extends TimerActivity { me =>
   lazy val destructCode = prefs.getString(AbstractKit.DESTRUCT_CODE, null)
   lazy val sack = prefs.getBoolean(AbstractKit.SACK_OR_TXS, true)
 
+  // Sections
   lazy val password = findViewById(R.id.mainPassword).asInstanceOf[LinearLayout]
   lazy val progress = findViewById(R.id.mainProgess).asInstanceOf[LinearLayout]
   lazy val choice = findViewById(R.id.mainChoice).asInstanceOf[LinearLayout]
+
+  // UI elements
   lazy val passData = findViewById(R.id.mainPassData).asInstanceOf[EditText]
   lazy val spin = findViewById(R.id.mainSpin).asInstanceOf[TextView]
   var activityIsCurrentlyOperational = true
@@ -30,6 +33,8 @@ class MainActivity extends TimerActivity { me =>
   {
     super.onCreate(savedInstState)
     setContentView(R.layout.activity_main)
+    val mainGreetings = findViewById(R.id.mainGreetings).asInstanceOf[TextView]
+    mainGreetings setMovementMethod LinkMovementMethod.getInstance
 
     Try(getIntent.getDataString) match {
       case ok@Success(dataNotNull: String) =>
@@ -43,11 +48,7 @@ class MainActivity extends TimerActivity { me =>
   def next = if (app.walletFile.exists) {
     timer.scheduleAtFixedRate(new Spinner(spin), 1000, 1000)
     if (app.isAlive) walletOrHistory else warmUp
-  } else {
-    val mg = findViewById(R.id.mainGreetings).asInstanceOf[TextView]
-    mg setMovementMethod LinkMovementMethod.getInstance
-    choice setVisibility VISIBLE
-  }
+  } else choice setVisibility VISIBLE
 
   def warmUp = {
     progress setVisibility VISIBLE

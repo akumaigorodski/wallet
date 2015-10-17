@@ -421,7 +421,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
 
     rescanChain setOnClickListener new OnClickListener {
-      def wrong = wrap(openForm)(me toast R.string.password_wrong)
+      def wrong = wrap(me toast R.string.password_wrong)(openForm)
       def onClick(view: View) = rm(dialog)(openForm)
 
       def openForm: Unit = checkPass(wrong) { _ =>
@@ -439,7 +439,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
 
     setCode setOnClickListener new OnClickListener {
-      def wrong = wrap(openForm)(me toast R.string.password_wrong)
+      def wrong = wrap(me toast R.string.password_wrong)(openForm)
       def onClick(setCodeView: View) = rm(dialog)(openForm)
 
       def openForm: Unit = checkPass(wrong) { _ =>
@@ -452,7 +452,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
 
     changePass setOnClickListener new OnClickListener {
-      def wrong = wrap(openForm)(me toast R.string.password_wrong)
+      def wrong = wrap(me toast R.string.password_wrong)(openForm)
       def onClick(changePassView: View) = rm(dialog)(openForm)
 
       def openForm: Unit = checkPass(wrong) { oldPass =>
@@ -470,13 +470,13 @@ abstract class InfoActivity extends TimerActivity { me =>
     }
 
     viewMnemonic setOnClickListener new OnClickListener {
-      def wrong = wrap(openForm)(me toast R.string.password_wrong)
+      def wrong = wrap(me toast R.string.password_wrong)(openForm)
       def onClick(viewMnemonicView: View) = rm(dialog)(openForm)
 
-      def openForm: Unit = passPlus { txt =>
+      def openForm: Unit = passPlus { sec =>
         val crypter = app.kit.wallet.getKeyCrypter
-        val builder = new Builder(me).setCustomTitle(me getString R.string.sets_noscreen)
-        <(app.kit.wallet.getKeyChainSeed.decrypt(crypter, txt, crypter deriveKey txt), _ => wrong) {
+        val builder = new Builder(me) setCustomTitle getString(R.string.sets_noscreen)
+        <(app.kit.wallet.getKeyChainSeed.decrypt(crypter, sec, crypter deriveKey sec), _ => wrong) {
           seed => builder.setMessage(TextUtils.join(separator, seed.getMnemonicCode).toUpperCase).show
         }
       }
