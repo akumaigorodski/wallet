@@ -9,6 +9,7 @@
     <string name="sets_destruct_ok">销毁代码已设置«%1$s»</string>
     <string name="sets_rescan_ok">应用现在将被关闭而且下次启动时将触发数据块链重扫描</string>
     <string name="greetings">视觉比特币钱包\n请首先<a href='http://btcontract.github.io/VisualBitcoinWallet/'>阅读钱包</a>手册</string>
+    <string name="mnemonic_info">助记码是非常重要的！\n<a href='http://btcontract.github.io/VisualBitcoinWallet/#mnemonic-code'>阅读关于它</a>，然后再继续</string>
     <string name="password_info">不设置密码的话，你会一直受到损失金钱的威胁。请选择一个至少8位字符的密码。</string>
     <string name="copied_to_buffer">复制到剪贴板</string>
     <string name="wallet_restore">从代码还原钱包</string>
@@ -115,6 +116,7 @@
     <string name="create_wallet_creating">生成你的钱包中\n这可能需要几分钟</string>
     <string name="restore_wallet_restoring">还原你的钱包\n可能需要一会</string>
     <string name="restore_mnemonic_wrong">助记符必须是12个字符长度</string>
+    <string name="restore_wallet_ready">新的钱包准备好</string>
     <string name="restore_hint">你的助记代码</string>
     <string name="restore_wallet">还原钱包</string>
 

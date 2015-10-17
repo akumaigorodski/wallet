@@ -9,6 +9,7 @@
     <string name="sets_destruct_ok">Встановлено новий код знищення: «%1$s»</string>
     <string name="sets_rescan_ok">Зараз гаманець буде закритий, а повторне сканування почнеться коли ви відкриєте його наступного разу</string>
     <string name="greetings">Visual Bitcoin Wallet\nПрочитайте <a href='http://btcontract.github.io/VisualBitcoinWallet/'>інструкцію користувача</a></string>
+    <string name="mnemonic_info">Мнемонічний код дуже важливий!\n<a href='http://btcontract.github.io/VisualBitcoinWallet/#mnemonic-code'>Почитайте про нього</a>, будь ласка</string>
     <string name="password_info">Будь ласка, підберіть пароль довжиною не менше 8 ніж символів, бажано такий що містить в собі великі літери і цифри</string>
     <string name="wallet_restore">Відновити гаманець з коду</string>
     <string name="wallet_create">Створити новий гаманець</string>
@@ -117,6 +118,7 @@
     <string name="restore_wallet_restoring">Зачекайте, будь ласка\nВідновлюю ваш гаманець</string>
     <string name="create_wallet_creating">Зачекайте, будь ласка\nГенерую ваш гаманець</string>
     <string name="restore_mnemonic_wrong">Повинно бути 12 слів</string>
+    <string name="restore_wallet_ready">Ваш гаманець готовий</string>
     <string name="restore_wallet">Bідновити гаманець</string>
     <string name="restore_hint">Ваш мнемонічний код</string>
 

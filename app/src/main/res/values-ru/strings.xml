@@ -9,6 +9,7 @@
     <string name="sets_destruct_ok">Установлен новый код уничтожения: «%1$s»</string>
     <string name="sets_rescan_ok">Сейчас кошелек будет закрыт, а повторное сканирование начнется при следующем открытии</string>
     <string name="greetings">Visual Bitcoin Wallet\nПрочитайте <a href='http://btcontract.github.io/VisualBitcoinWallet/'>инструкцию пользователя</a></string>
+    <string name="mnemonic_info">Мнемонический код очень важен!\n<a href='http://btcontract.github.io/VisualBitcoinWallet/#mnemonic-code'>Почитайте про нього</a>, будь ласка</string>
     <string name="password_info">Пожалуйста, подберите хороший пароль длиной не менее 8 символов, желательно содержащий в себе заглавные буквы и цифры</string>
     <string name="wallet_restore">Восстановить кошелек из кода</string>
     <string name="copied_to_buffer">Скопировано в буфер</string>
@@ -117,6 +118,7 @@
     <string name="restore_wallet_restoring">Восстанавливаю кошелек</string>
     <string name="create_wallet_creating">Генерирую ваш кошелек</string>
     <string name="restore_mnemonic_wrong">Должно быть 12 слов</string>
+    <string name="restore_wallet_ready">Ваш кошелек готов</string>
     <string name="restore_wallet">Восстановить кошелек</string>
     <string name="restore_hint">Ваш мнемонический код</string>
 

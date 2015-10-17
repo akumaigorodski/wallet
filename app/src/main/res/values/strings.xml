@@ -117,7 +117,7 @@
     <string name="create_wallet_creating">Generating your wallet\nIt may take up to a few minutes</string>
     <string name="restore_wallet_restoring">Restoring your wallet\nIt may take a while</string>
     <string name="restore_mnemonic_wrong">Mnemonic must be 12 words long</string>
-    <string name="restore_wallet_ready">New wallet is ready</string>
+    <string name="restore_wallet_ready">Your wallet is ready</string>
     <string name="restore_hint">Your mnemonic code</string>
     <string name="restore_wallet">Restore Wallet</string>
 
