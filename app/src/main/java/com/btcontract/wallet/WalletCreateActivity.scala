@@ -42,20 +42,9 @@ class WalletCreateActivity extends TimerActivity { me =>
 
   def doCreateNewWallet =
     app.kit = new app.WalletKit {
-      val spinner = new Spinner(spin)
       val pass = createPass.getText.toString
-      timer.scheduleAtFixedRate(spinner, 1000, 1000)
-      createProgess setVisibility View.VISIBLE
-      createInfo setVisibility View.GONE
+      me viewWork new Spinner(spin)
       startAsync
-
-      def updateView = wallet.getKeyCrypter match { case crypter =>
-        val seed = wallet.getKeyChainSeed.decrypt(crypter, pass, crypter deriveKey pass)
-        val mnemonic = TextUtils.join(separator, seed.getMnemonicCode).toUpperCase
-        createProgess setVisibility View.GONE
-        createDone setVisibility View.VISIBLE
-        mnemonicText setText mnemonic
-      }
 
       override def startUp = {
         wallet = new Wallet(app.params)
@@ -67,13 +56,30 @@ class WalletCreateActivity extends TimerActivity { me =>
         blockChain = new BlockChain(app.params, wallet, store)
         peerGroup = new PeerGroup(app.params, blockChain)
 
+        // Generate mnemonic code
+        val keyCrypter = wallet.getKeyCrypter
+        val seed = wallet.getKeyChainSeed.decrypt(keyCrypter, pass, keyCrypter deriveKey pass)
+        val mnemonicData = TextUtils.join(separator, seed.getMnemonicCode).toUpperCase
+
         if (app.isAlive) {
           setupAndStartDownload
           wallet saveToFile app.walletFile
-          me runOnUiThread updateView
+          me runOnUiThread viewDone(mnemonicData)
         }
       }
     }
+
+  def viewWork(spinner: Spinner) = {
+    timer.scheduleAtFixedRate(spinner, 1000, 1000)
+    createProgess setVisibility View.VISIBLE
+    createInfo setVisibility View.GONE
+  }
+
+  def viewDone(text: String) = {
+    createProgess setVisibility View.GONE
+    createDone setVisibility View.VISIBLE
+    mnemonicText setText text
+  }
 
   def showMnemo(view: View) = {
     mnemonicText setVisibility View.VISIBLE
