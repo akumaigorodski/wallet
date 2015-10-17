@@ -40,7 +40,7 @@ class WalletCreateActivity extends TimerActivity { me =>
       override def startUp = {
         wallet = new Wallet(app.params)
         store = new SPVBlockStore(app.params, app.chainFile)
-        useCheckPoints(time = wallet.getEarliestKeyCreationTime)
+        useCheckPoints(wallet.getEarliestKeyCreationTime)
         app.kit encryptWallet createPass.getText
 
         // Must be initialized after checkpoints

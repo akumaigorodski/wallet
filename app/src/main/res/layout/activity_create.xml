@@ -54,4 +54,43 @@
             android:text="@string/create_wallet_creating"/>
 
     </LinearLayout>
+
+    <LinearLayout
+        style="@style/StandardLinearLayout"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:id="@+id/createDone"
+        android:visibility="gone">
+
+        <TextView
+            style="@style/Info"
+            android:layout_width="wrap_content"
+            android:text="@string/restore_wallet_ready"/>
+
+        <Button
+            style="@style/MarginInfo"
+            android:onClick="showMnemo"
+            android:id="@+id/createShowMnemo"
+            android:layout_width="wrap_content"
+            android:text="@string/sets_mnemonic"/>
+
+        <TextView
+            style="@style/MarginInfo"
+            android:visibility="gone"
+            android:id="@+id/createMnemo"
+            android:layout_width="wrap_content"/>
+
+        <TextView
+            style="@style/Info"
+            android:layout_width="wrap_content"
+            android:text="@string/mnemonic_info"/>
+
+        <Button
+            style="@style/Info"
+            android:onClick="openWallet"
+            android:layout_marginTop="25dp"
+            android:text="@string/wallet_open"
+            android:layout_width="wrap_content"/>
+
+    </LinearLayout>
 </LinearLayout>

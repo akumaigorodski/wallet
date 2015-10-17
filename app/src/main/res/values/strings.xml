@@ -9,6 +9,7 @@
     <string name="sets_destruct_ok">Destruction code has been set to «%1$s»</string>
     <string name="sets_rescan_ok">Application will be closed now and blockchain rescan will be triggered on next launch</string>
     <string name="greetings">Welcome to Visual Bitcoin Wallet!\nPlease read <a href='http://btcontract.github.io/VisualBitcoinWallet/'>wallet manual</a> first</string>
+    <string name="mnemonic_info">Mnemonic code is super important!\n<a href='http://btcontract.github.io/VisualBitcoinWallet/#mnemonic-code'>Read about it</a> before proceeding</string>
     <string name="password_info">Without password you are in constant danger of losing your money. Please pick one which is at least 8 characters long</string>
     <string name="wallet_restore">Restore Wallet From Code</string>
     <string name="copied_to_buffer">Copied to clipboard</string>
@@ -116,6 +117,7 @@
     <string name="create_wallet_creating">Generating your wallet\nIt may take up to a few minutes</string>
     <string name="restore_wallet_restoring">Restoring your wallet\nIt may take a while</string>
     <string name="restore_mnemonic_wrong">Mnemonic must be 12 words long</string>
+    <string name="restore_wallet_ready">New wallet is ready</string>
     <string name="restore_hint">Your mnemonic code</string>
     <string name="restore_wallet">Restore Wallet</string>
 
