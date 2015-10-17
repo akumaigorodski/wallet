@@ -50,11 +50,11 @@ class WalletCreateActivity extends TimerActivity { me =>
         wallet = new Wallet(app.params)
         store = new SPVBlockStore(app.params, app.chainFile)
         useCheckPoints(wallet.getEarliestKeyCreationTime)
-        app.kit encryptWallet pass
 
-        // Must be initialized after checkpoints
+        // These should be initialized after checkpoints
         blockChain = new BlockChain(app.params, wallet, store)
         peerGroup = new PeerGroup(app.params, blockChain)
+        app.kit encryptWallet pass
 
         // Generate mnemonic code
         val keyCrypter = wallet.getKeyCrypter
