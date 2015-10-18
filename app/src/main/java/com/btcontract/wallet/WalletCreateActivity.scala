@@ -19,6 +19,7 @@ class WalletCreateActivity extends TimerActivity { me =>
   // UI elements
   lazy val mnemonicShow = findViewById(R.id.mnemonicShow).asInstanceOf[Button]
   lazy val mnemonicText = findViewById(R.id.mnemonicText).asInstanceOf[TextView]
+  lazy val walletReady = findViewById(R.id.walletReady).asInstanceOf[TextView]
   lazy val createPass = findViewById(R.id.createPass).asInstanceOf[EditText]
   lazy val create = findViewById(R.id.createWallet).asInstanceOf[Button]
   lazy val spin = findViewById(R.id.createSpin).asInstanceOf[TextView]
@@ -76,12 +77,13 @@ class WalletCreateActivity extends TimerActivity { me =>
   }
 
   def viewDone(text: String) = {
-    createProgess setVisibility View.GONE
     createDone setVisibility View.VISIBLE
+    createProgess setVisibility View.GONE
     mnemonicText setText text
   }
 
   def showMnemo(view: View) = {
+    walletReady setText R.string.sets_noscreen
     mnemonicText setVisibility View.VISIBLE
     mnemonicShow setVisibility View.GONE
   }

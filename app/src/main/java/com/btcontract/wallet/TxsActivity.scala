@@ -182,7 +182,7 @@ class TxsActivity extends InfoActivity { me =>
   }
 
   def when(date: Date, now: Long) = date.getTime match { case ago =>
-    if (now - ago < 60480000) DateUtils.getRelativeTimeSpanString(ago, now, 0)
+    if (now - ago < 691200000) DateUtils.getRelativeTimeSpanString(ago, now, 0)
     else Html fromHtml time(date)
   }
 

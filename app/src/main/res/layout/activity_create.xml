@@ -64,6 +64,7 @@
 
         <TextView
             style="@style/Info"
+            android:id="@+id/walletReady"
             android:layout_width="wrap_content"
             android:text="@string/restore_wallet_ready"/>
 
@@ -77,6 +78,7 @@
         <TextView
             style="@style/MarginInfo"
             android:visibility="gone"
+            android:textColor="#9999FF"
             android:id="@+id/mnemonicText"
             android:layout_width="wrap_content"/>
 
