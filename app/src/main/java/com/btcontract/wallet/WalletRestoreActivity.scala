@@ -1,11 +1,11 @@
 package com.btcontract.wallet
 
 import org.bitcoinj.store.SPVBlockStore
-import java.util.{Date, Calendar}
 import android.os.Bundle
 import android.view.View
 import Utils.wrap
 
+import java.util.{Date, Calendar}
 import org.bitcoinj.wallet.{KeyChainGroup, DeterministicSeed}
 import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}
 import android.app.{DatePickerDialog, DialogFragment}
@@ -26,10 +26,9 @@ class WalletRestoreActivity extends TimerActivity { me =>
 
   class WhenPicker extends DialogFragment with android.app.DatePickerDialog.OnDateSetListener {
     def onDateSet(dp: DatePicker, yr: Int, mn: Int, dt: Int) = wrap(updateWhen) _ apply when.set(yr, mn, dt)
-    def dp = new DatePickerDialog(me, this, when get YEAR, when get MONTH, when get DATE)
+    val dialog = new DatePickerDialog(me, this, when get YEAR, when get MONTH, when get DATE)
 
-    override def onCreateDialog(state: Bundle) = dp match { case dialog =>
-      dialog.getDatePicker setMinDate new Date(may1st2014).getTime
+    override def onCreateDialog(state: Bundle) = {
       dialog.getDatePicker setMaxDate (new Date).getTime
       dialog
     }
@@ -88,7 +87,7 @@ class WalletRestoreActivity extends TimerActivity { me =>
       }
     }
 
-  def recWallet(recoverWalletView: View) = hideKeys(doRecoverWallet)
+  def recWallet(v: View) = hideKeys(doRecoverWallet)
   def setWhen(v: View) = (new WhenPicker).show(getFragmentManager, "whenCreatedTime")
   def updateWhen = restoreWhen setText String.format("%1$tB %1$te, %1$tY", when)
   override def onBackPressed = wrap(super.onBackPressed)(app.kit.stopAsync)

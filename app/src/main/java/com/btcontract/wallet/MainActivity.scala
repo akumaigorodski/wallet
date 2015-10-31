@@ -46,7 +46,7 @@ class MainActivity extends TimerActivity { me =>
   }
 
   def next = if (app.walletFile.exists) {
-    timer.scheduleAtFixedRate(new Spinner(spin), 1000, 1000)
+    timer.scheduleAtFixedRate(new Spinner(spin), 4000, 1000)
     if (app.isAlive) walletOrHistory else warmUp
   } else choice setVisibility VISIBLE
 
@@ -62,7 +62,7 @@ class MainActivity extends TimerActivity { me =>
 
   def tryPass(view: View) = hideKeys {
     if (passWordInput == destructCode) replaceWallet
-    else <(check, _ => wrong) { if (_) maybeStartKit else wrong }
+    else <(check, _ => wrong)(if (_) maybeStartKit else wrong)
     progress setVisibility VISIBLE
     password setVisibility GONE
 

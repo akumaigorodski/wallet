@@ -34,5 +34,5 @@ dependencies {
     compile 'com.github.kevinsawicki:http-request:6.0'
     compile 'info.hoang8f:android-segmented:1.0.4'
     compile 'org.scala-lang:scala-library:2.11.7'
-    compile 'org.bitcoinj:bitcoinj-core:0.13.2'
+    compile 'org.bitcoinj:bitcoinj-core:0.13.3'
 }
