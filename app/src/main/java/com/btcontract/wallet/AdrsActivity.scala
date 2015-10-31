@@ -9,7 +9,6 @@ import android.widget.{TextView, ListView, BaseAdapter, RadioGroup, AdapterView,
 import org.bitcoinj.core.{AbstractWalletEventListener, Wallet, Transaction, Coin, Address}
 import R.string.{err_general, no_funds, dialog_cancel}
 import Utils.{wrap, denom, Outputs, sumIn}
-
 import collection.JavaConversions._
 import android.view._
 
