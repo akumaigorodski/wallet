@@ -30,7 +30,7 @@ import org.bitcoinj.core._
 
 
 class WalletApp extends Application {
-  lazy val params = org.bitcoinj.params.MainNetParams.get
+  lazy val params = org.bitcoinj.params.TestNet3Params.get
   val fontPaint = new Paint(ANTI_ALIAS_FLAG)
   val coinBodyDef = new BodyDef
 
@@ -110,7 +110,7 @@ class WalletApp extends Application {
 
     def useCheckPoints(time: Long) = {
       val pts = getAssets open "checkpoints.txt"
-      CheckpointManager.checkpoint(params, pts, store, time)
+      //CheckpointManager.checkpoint(params, pts, store, time)
     }
 
     def setupAndStartDownload = {
@@ -133,7 +133,7 @@ class WalletApp extends Application {
 
     def vibrate(vibrationPattern: Pattern) = {
       val vib = getSystemService(Context.VIBRATOR_SERVICE).asInstanceOf[Vibrator]
-      if (vib.hasVibrator) vib.vibrate(vibrationPattern, -1)
+      if (null != vib && vib.hasVibrator) vib.vibrate(vibrationPattern, -1)
     }
 
     val confirmed = Array(0L, 75, 250, 75, 250)

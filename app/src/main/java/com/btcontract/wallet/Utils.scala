@@ -166,7 +166,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     case android.R.id.home => me goTo classOf[WalletActivity]
     case R.id.actionRequestPayment => mkRequestForm
     case R.id.actionSettings => mkSetsForm
-
+      
     case R.id.actionSendMoney =>
       val noPays = app.TransData.payments.isEmpty
       if (noPays) mkPayForm else new PayPass
