@@ -30,7 +30,7 @@ import org.bitcoinj.core._
 
 
 class WalletApp extends Application {
-  lazy val params = org.bitcoinj.params.TestNet3Params.get
+  lazy val params = org.bitcoinj.params.MainNetParams.get
   val fontPaint = new Paint(ANTI_ALIAS_FLAG)
   val coinBodyDef = new BodyDef
 
@@ -110,7 +110,7 @@ class WalletApp extends Application {
 
     def useCheckPoints(time: Long) = {
       val pts = getAssets open "checkpoints.txt"
-      //CheckpointManager.checkpoint(params, pts, store, time)
+      CheckpointManager.checkpoint(params, pts, store, time)
     }
 
     def setupAndStartDownload = {

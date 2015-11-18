@@ -1,40 +1,44 @@
 package com.btcontract.wallet
 
 import R.string.{dialog_cancel, dialog_ok}
-import eu.livotov.zxscan.decoder.zxing.ZXDecoder
-import eu.livotov.labs.android.camview.CAMView
+import com.dlazaro66.qrcodereaderview.QRCodeReaderView.OnQRCodeReadListener
+import com.dlazaro66.qrcodereaderview.QRCodeReaderView
 import eu.livotov.zxscan.util.SoundPlayer
-import CAMView.CAMViewListener
 import android.widget.Toast
 import android.os.Bundle
 
 
-class ScanActivity extends TimerActivity with CAMViewListener {
-  lazy val cam = findViewById(R.id.zxScanCamera).asInstanceOf[CAMView]
+class ScanActivity extends TimerActivity with OnQRCodeReadListener {
+  lazy val reader = findViewById(R.id.reader).asInstanceOf[QRCodeReaderView]
   lazy val beepSoundPlayer = new SoundPlayer(this)
-  lazy val qrDecoder = new ZXDecoder
+  type Points = Array[android.graphics.PointF]
 
   // Initialize this activity, method is run once
   override def onCreate(savedInstState: Bundle) =
   {
     super.onCreate(savedInstState)
     setContentView(R.layout.activity_scan)
-    cam setCamViewListener this
-    cam.start
+    reader setOnQRCodeReadListener this
   }
 
-  def tryParse(data: String) = try {
+  def tryParse(text: String) = try {
     beepSoundPlayer.playRawResource(R.raw.beep, false)
-    app.TransData setValue data
+    lastAttempt = System.currentTimeMillis
+    app.TransData setValue text
     finish
   } catch app.TransData.onFail { errCode =>
-    val alert = mkChoiceDialog(cam.start, finish, dialog_ok, dialog_cancel)
+    val alert = mkChoiceDialog(reader.getCameraManager.startPreview, finish, dialog_ok, dialog_cancel)
     alert.setMessage(errCode).show setCanceledOnTouchOutside false
-    Toast.makeText(app, data, Toast.LENGTH_LONG).show
-  } finally cam.stop
+    Toast.makeText(app, text, Toast.LENGTH_LONG).show
+    reader.getCameraManager.stopPreview
+  }
 
-  // decode may return null, hence Option
-  override def onDestroy = Utils.wrap(super.onDestroy)(cam.stop)
-  def onPreviewData(imageBytes: Array[Byte], width: Int, height: Int) =
-    Option apply qrDecoder.decode(imageBytes, width, height) foreach tryParse
+  var lastAttempt = System.currentTimeMillis
+  override def onQRCodeRead(text: String, points: Points) =
+    if (System.currentTimeMillis - lastAttempt > 4000) tryParse(text)
+
+  override def QRCodeNotFoundOnCamImage = { /* do nothing */ }
+  override def onResume = Utils.wrap(reader.getCameraManager.startPreview)(super.onResume)
+  override def onPause = Utils.wrap(reader.getCameraManager.stopPreview)(super.onPause)
+  override def cameraNotFound = finish
 }

@@ -29,8 +29,8 @@ android {
 }
 
 dependencies {
-    compile files('libs/zxing-core-3.1.0.jar')
     compile files('libs/jbox2d-library-2.3.1-SNAPSHOT.jar')
+    compile 'com.dlazaro66.qrcodereaderview:qrcodereaderview:1.0.0'
     compile 'com.github.kevinsawicki:http-request:6.0'
     compile 'info.hoang8f:android-segmented:1.0.4'
     compile 'org.scala-lang:scala-library:2.11.7'

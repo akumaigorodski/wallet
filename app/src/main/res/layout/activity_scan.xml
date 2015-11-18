@@ -1,10 +1,10 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent">
 
-    <eu.livotov.labs.android.camview.CAMView
+    <com.dlazaro66.qrcodereaderview.QRCodeReaderView
         android:layout_height="match_parent"
         android:layout_width="match_parent"
-        android:id="@+id/zxScanCamera"/>
+        android:id="@+id/reader"/>
 
     <ImageView
         android:layout_gravity="center"
