@@ -55,6 +55,10 @@ object Utils {
   type PayDatas = mutable.Buffer[PayData]
   type Outputs = mutable.Buffer[TransactionOutput]
 
+  val interpolator = new AccelerateDecelerateInterpolator
+  val passType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
+  val textType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+
   val separator = " "
   val appName = "Bitcoin"
   val emptyString = new String
@@ -69,20 +73,17 @@ object Utils {
   baseSat setDecimalFormatSymbols symbols
   baseBtc setDecimalFormatSymbols symbols
 
-  val interpolator = new AccelerateDecelerateInterpolator
-  val passType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
-  val textType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-
   // Value will be provided on startup
   var satTemplate, btcTemplate, sumIn, sumOut: String = null
-  def inpInBtc(sat: Double) = baseBtc format sat / 100000000
-  def tipInBtc(sat: Double) = satTemplate format inpInBtc(sat)
-  def tipInSat(sat: Double) = btcTemplate format baseSat.format(sat)
-  def humanSum(sat: Double) = tipInBtc(sat) + "<br>" + tipInSat(sat)
-  def fmt(sat: Long) = "฿\u00A0" + inpInBtc(sat.toDouble)
+  def tipInBtc(coin: Coin) = satTemplate format inpInBtc(coin)
+  def tipInSat(coin: Coin) = btcTemplate format inpInSat(coin)
+  def humanSum(coin: Coin) = tipInBtc(coin) + "<br>" + tipInSat(coin)
+  def inpInBtc(coin: Coin) = baseBtc format BigDecimal(coin.value) / 100000000
+  def inpInSat(coin: Coin) = baseSat format coin.value
+  def fmt(coin: Coin) = "฿\u00A0" + inpInBtc(coin)
 
   def denom(cn: Coin)(implicit dec: DenomControl, zero: CharSequence) =
-    if (0 == cn.value) zero else if (dec.m == R.id.amtInBtc) fmt(cn.value) else baseSat format cn.value
+    if (cn.isZero) zero else if (dec.m == R.id.amtInBtc) fmt(cn) else inpInSat(cn)
 
   def none: PartialFunction[Any, Unit] = { case _ => }
   def wrap(run: => Unit)(go: => Unit) = try go catch none finally run
@@ -98,11 +99,11 @@ abstract class InfoActivity extends TimerActivity { me =>
       if (tx.getConfidence.getDepthInBlocks == 1) say(app getString tx_1st_conf, Informer.TXCONFIRMED)
 
     override def onCoinsSent(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) =
-      say(app getString R.string.tx_sent format fmt(pb.subtract(nb).getValue), Informer.DECSEND)
+      say(app getString R.string.tx_sent format fmt(pb subtract nb), Informer.DECSEND)
 
-    override def onReorganize(w: Wallet) = say(app getString R.string.reorg, Informer.REORG)
+    override def onReorganize(wallet: Wallet) = say(app getString R.string.reorg, Informer.REORG)
     override def onCoinsReceived(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb)
-      say(app getString R.string.tx_received format fmt(nb.subtract(pb).getValue), Informer.RECEIVED)
+      say(app getString R.string.tx_received format fmt(nb subtract pb), Informer.RECEIVED)
 
     def say(text: String, infoType: Int) = {
       new Anim(app.kit.currentBalance, getActionBar.getTitle.toString)
@@ -177,7 +178,7 @@ abstract class InfoActivity extends TimerActivity { me =>
 
       // Convenient way to open a pay form with an amount from converter
       alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
-        def onClick(v: View) = rm(alert)(mkPayForm.man setAmount inputManager.result)
+        def onClick(v: View) = rm(alert)(mkPayForm.man setSum inputManager.result)
       }
   }
 
@@ -219,8 +220,8 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   // Balance animation
 
-  class Anim(amt: Long, curText: String) extends Runnable {
-    val txt = if (amt > 0) fmt(amt) else getString(R.string.wallet_empty)
+  class Anim(amt: Coin, curText: String) extends Runnable {
+    val txt = if (amt.isZero) getString(R.string.wallet_empty) else fmt(amt)
     val max = scala.math.max(txt.length, curText.length)
     var index = 1
 
@@ -286,7 +287,7 @@ abstract class InfoActivity extends TimerActivity { me =>
   class PayPass {
     // Make a local copy of payments
     val pays = app.TransData.payments map identity
-    val totalSum = (0L /: pays)(_ + _.tc.get.value).toDouble
+    val totalSum = (Coin.ZERO /: pays)(_ add _.tc.get)
     val inSat = tipInSat(totalSum)
 
     // Create all the needed views
@@ -319,7 +320,7 @@ abstract class InfoActivity extends TimerActivity { me =>
 
     def announceMultiTransaction = {
       // If no money left & one payee then empty this wallet
-      val all = totalSum > app.kit.currentBalance - feePerKb(feeBase).value
+      val all = app.kit.currentBalance subtract feePerKb(feeBase) isLessThan totalSum
       val request = if (all & pays.size < 2) SendRequest.emptyWallet(pays.head.adr) else makeReq
       request.aesKey = app.kit.wallet.getKeyCrypter deriveKey secretField.getText.toString
       request.feePerKb = feePerKb(feeBase)
@@ -381,7 +382,7 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   def mkSetsForm: Unit = {
-    val fee = fmt(feePerKb(feeBase).getValue)
+    val fee = fmt(me feePerKb feeBase)
     val feeTitle = me getString R.string.sets_fee
     val title = me getString R.string.action_settings
     val form = getLayoutInflater.inflate(R.layout.frag_settings, null)
@@ -407,7 +408,7 @@ abstract class InfoActivity extends TimerActivity { me =>
         val feePerKilobytePicker = new NumberPicker(me)
 
         feePerKilobytePicker setFormatter new NumberPicker.Formatter {
-          def format(feeFactor: Int) = fmt(feePerKb(feeFactor).getValue)
+          def format(chosenFeeFactor: Int) = fmt(me feePerKb chosenFeeFactor)
           feePerKilobytePicker setMaxValue 10
           feePerKilobytePicker setMinValue 1
         }
@@ -611,16 +612,16 @@ abstract class TimerActivity extends Activity { me =>
     val man = new AmountInputManager(denomControl)
 
     val btcListener = new TextChangedWatcher {
-      def convert(amt: Double) = amt * rates.typeMap(fiatType.getCheckedRadioButtonId) / 100000000
-      def update = fiatInput.setText(man.amt map man.normMap(denomControl.m) map convert map baseFiat.format getOrElse emptyString)
-      def onTextChanged(charSequence: CharSequence, start: Int, count: Int, after: Int) = if (man.input.hasFocus) update
+      def convert(amt: Long) = amt * rates.typeMap(fiatType.getCheckedRadioButtonId) / 100000000
+      def update = fiatInput.setText(man.result map(_.value) map convert map baseFiat.format getOrElse emptyString)
+      def onTextChanged(s: CharSequence, start: Int, count: Int, after: Int) = if (man.input.hasFocus) update
     }
 
     val fiatListener = new TextChangedWatcher {
       def convert(amount: Double) = amount / rates.typeMap(fiatType.getCheckedRadioButtonId) * 100000000
       def sum = Try(fiatInput.getText.toString.replace(",", "").toDouble) map convert map (Coin valueOf _.toLong)
-      def onTextChanged(s: CharSequence, x: Int, y: Int, z: Int) = if (fiatInput.hasFocus) update
-      def update = man.setAmount(sum) orElse Try(man.input setText emptyString)
+      def onTextChanged(s: CharSequence, start: Int, count: Int, after: Int) = if (fiatInput.hasFocus) update
+      def update = man setSum sum getOrElse man.input.setText(emptyString)
     }
 
     val changeListener = new OnCheckedChangeListener {
@@ -688,29 +689,30 @@ class Spinner(tv: TextView) extends Runnable {
 // Amount and Spend managers
 
 class AmountInputManager(val dc: DenomControl) {
-  val inputMap: Map[Int, Double => String] = Map(amtInSat -> baseSat.format, amtInBtc -> inpInBtc)
-  val normMap: Map[Int, Double => Double] = Map(amtInBtc -> (_ * 100000000), amtInSat -> identity)
-  val tipMap: Map[Int, Double => String] = Map(amtInBtc -> tipInSat, amtInSat -> tipInBtc)
+  val inputMap: Map[Int, Coin => String] = Map(amtInSat -> inpInSat, amtInBtc -> inpInBtc)
+  val tipMap: Map[Int, Coin => String] = Map(amtInSat -> tipInBtc, amtInBtc -> tipInSat)
   val tipBaseMap = Map(amtInBtc -> input_tip_sat, amtInSat -> input_tip_btc)
   val hintMap = Map(amtInBtc -> input_hint_btc, amtInSat -> input_hint_sat)
   val charMap = Map(amtInBtc -> ".0123456789", amtInSat -> ",0123456789")
   val input = dc.v.findViewById(inputAmount).asInstanceOf[EditText]
   val alt = dc.v.findViewById(inputBottom).asInstanceOf[TextView]
+  val setSum = (_: TryCoin) map inputMap(dc.m) map input.setText
+  def result = Try apply norm(dc.m)
 
-  def amt = Try(input.getText.toString.replace(",", "").toDouble)
-  def result: TryCoin = amt map normMap(dc.m) map (_.toLong) map Coin.valueOf
-  def setAmount(tc: TryCoin) = tc map (_.getValue.toDouble) map inputMap(dc.m) map input.setText
+  def norm(state: Int) = input.getText.toString.replace(",", "") match {
+    case rawClearString if amtInBtc == state => Coin parseCoin rawClearString
+    case rawClearString => Coin valueOf rawClearString.toLong
+  }
 
   input addTextChangedListener new TextChangedWatcher {
-    override def onTextChanged(s: CharSequence, x: Int, y: Int, z: Int) = tip getOrElse base
-    def tip = amt map normMap(dc.m) map tipMap(dc.m) map alt.setText
-    def base = alt setText tipBaseMap(dc.m)
+    override def onTextChanged(s: CharSequence, x: Int, y: Int, z: Int) =
+      result map tipMap(dc.m) map alt.setText getOrElse alt.setText(tipBaseMap apply dc.m)
   }
 
   dc.radios setOnCheckedChangeListener new OnCheckedChangeListener {
     def onCheckedChanged(radioGroup: RadioGroup, checkedButton: Int) = {
-      input.setText(amt map normMap(dc.nowMode) map inputMap(dc.m) getOrElse null)
       input setKeyListener DigitsKeyListener.getInstance(charMap apply dc.m)
+      input.setText(Try apply norm(dc.nowMode) map inputMap(dc.m) getOrElse null)
       input setHint hintMap(dc.m)
       dc.updMode
     }
@@ -722,8 +724,9 @@ class AmountInputManager(val dc: DenomControl) {
 
 class DenomControl(sp: SharedPreferences, val v: View) {
   val radios = v.findViewById(R.id.inputType).asInstanceOf[SegmentedGroup]
-  def updMode = sp.edit.putBoolean(AbstractKit.BTC_OR_SATOSHI, amtInBtc equals m).commit
-  def nowMode = sp.getBoolean(AbstractKit.BTC_OR_SATOSHI, true) match { case true => amtInBtc case _ => amtInSat }
+  def updMode = sp.edit.putBoolean(AbstractKit.BTC_OR_SATOSHI, amtInBtc == m).commit
+  def savedAsBtc = sp.getBoolean(AbstractKit.BTC_OR_SATOSHI, true)
+  def nowMode = if (savedAsBtc) amtInBtc else amtInSat
   def m = radios.getCheckedRadioButtonId
 }
 
@@ -733,22 +736,19 @@ class SpendManager(val man: AmountInputManager) {
 
   def set(uri: BitcoinURI) = {
     this setAddressValue uri.getAddress
-    man setAmount Try(uri.getAmount)
+    man setSum Try(uri.getAmount)
   }
 
   def set(data: PayData) = {
     this setAddressValue data.adr
-    man setAmount data.tc
+    man setSum data.tc
   }
 }
 
 case class PayData(adr: Address, tc: TryCoin) {
-  // https://medium.com/message/hello-future-pastebin-readers-39d9b4eb935f
-  // Do not use labels or memos because your history will bite you otherwise
   def getURI = BitcoinURI.convertToBitcoinURI(adr, tc getOrElse null, null, null)
-  def pretty(sumRoute: String) = sumRoute format humanAddr(adr) match { case base =>
-    tc map (_.getValue.toDouble) map humanSum map (base + "<br><br>" + _) getOrElse base
-  }
+  def pretty(sum: String) = tc map humanSum map (route(sum) + "<br><br>" + _) getOrElse route(sum)
+  def route(sum: String) = sum format humanAddr(adr)
 }
 
 case class Rates(usd: Double, eur: Double, cny: Double) {
