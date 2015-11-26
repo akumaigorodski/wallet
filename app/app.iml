@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module external.linked.project.id=":app" external.linked.project.path="$MODULE_DIR$" external.root.project.path="$MODULE_DIR$/.." external.system.id="GRADLE" external.system.module.group="Wallet" external.system.module.version="unspecified" type="JAVA_MODULE" version="4">
+<module external.linked.project.id=":app" external.linked.project.path="$MODULE_DIR$" external.root.project.path="$MODULE_DIR$/.." external.system.id="GRADLE" external.system.module.group="VisualBitcoinWallet" external.system.module.version="unspecified" type="JAVA_MODULE" version="4">
   <component name="FacetManager">
     <facet type="android-gradle" name="Android-Gradle">
       <configuration>
@@ -75,7 +75,7 @@
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/dependency-cache" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/dex" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/dex-cache" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/exploded-aar/com.dlazaro66.qrcodereaderview/qrcodereaderview/1.0.0/jars" />
+      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/exploded-aar/com.journeyapps/zxing-android-embedded/3.0.3/jars" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/exploded-aar/info.hoang8f/android-segmented/1.0.4/jars" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/incremental" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/jacoco" />
@@ -94,22 +94,23 @@
     </content>
     <orderEntry type="jdk" jdkName="Android API 23 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" exported="" name="okio-1.2.0" level="project" />
-    <orderEntry type="library" exported="" name="okhttp-2.2.0" level="project" />
-    <orderEntry type="library" exported="" name="android-segmented-1.0.4" level="project" />
-    <orderEntry type="library" exported="" name="jcip-annotations-1.0" level="project" />
-    <orderEntry type="library" exported="" name="jbox2d-library-2.3.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="qrcodereaderview-1.0.0" level="project" />
-    <orderEntry type="library" exported="" name="scala-library-2.11.7" level="project" />
     <orderEntry type="library" exported="" name="http-request-6.0" level="project" />
-    <orderEntry type="library" exported="" name="slf4j-api-1.7.7" level="project" />
+    <orderEntry type="library" exported="" name="orchid-1.1.1" level="project" />
+    <orderEntry type="library" exported="" name="jcip-annotations-1.0" level="project" />
+    <orderEntry type="library" exported="" name="zxing-android-embedded-3.0.3" level="project" />
     <orderEntry type="library" exported="" name="guava-16.0.1" level="project" />
     <orderEntry type="library" exported="" name="bitcoinj-core-0.13.3" level="project" />
-    <orderEntry type="library" exported="" name="protobuf-java-2.5.0" level="project" />
-    <orderEntry type="library" exported="" name="jsr305-2.0.1" level="project" />
     <orderEntry type="library" exported="" name="scrypt-1.4.0" level="project" />
-    <orderEntry type="library" exported="" name="orchid-1.1.1" level="project" />
+    <orderEntry type="library" exported="" name="protobuf-java-2.5.0" level="project" />
+    <orderEntry type="library" exported="" name="scala-library-2.11.7" level="project" />
+    <orderEntry type="library" exported="" name="core-3.2.0" level="project" />
+    <orderEntry type="library" exported="" name="okhttp-2.2.0" level="project" />
     <orderEntry type="library" exported="" name="core-1.51.0.0" level="project" />
-    <orderEntry type="library" name="scala-sdk-2.11.6 (2)" level="application" />
+    <orderEntry type="library" exported="" name="android-segmented-1.0.4" level="project" />
+    <orderEntry type="library" exported="" name="jbox2d-library-2.3.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" exported="" name="jsr305-2.0.1" level="project" />
+    <orderEntry type="library" exported="" name="slf4j-api-1.7.7" level="project" />
+    <orderEntry type="library" exported="" name="okio-1.2.0" level="project" />
+    <orderEntry type="library" name="scala-sdk-2.9.1.final" level="application" />
   </component>
 </module>

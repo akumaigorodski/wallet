@@ -15,6 +15,8 @@ import android.os.Vibrator
 import collection.mutable
 import java.io.File
 
+import org.bitcoinj.core.{Address, WrongNetworkException, AddressFormatException, CheckpointManager}
+import org.bitcoinj.core.{TransactionOutput, AbstractWalletEventListener, Wallet, Transaction, Coin}
 import org.bitcoinj.uri.{BitcoinURIParseException, OptionalFieldValidationException}
 import org.bitcoinj.uri.{RequiredFieldValidationException, BitcoinURI}
 import android.content.{ClipData, ClipboardManager, Context}
@@ -26,7 +28,6 @@ import State.{STARTING, RUNNING}
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import Context.CLIPBOARD_SERVICE
 import Paint.ANTI_ALIAS_FLAG
-import org.bitcoinj.core._
 
 
 class WalletApp extends Application {
