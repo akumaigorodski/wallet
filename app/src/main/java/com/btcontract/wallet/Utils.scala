@@ -166,20 +166,12 @@ abstract class InfoActivity extends TimerActivity { me =>
     case R.id.actionTxHistory => me goTo classOf[TxsActivity]
     case android.R.id.home => me goTo classOf[WalletActivity]
     case R.id.actionRequestPayment => mkRequestForm
+    case R.id.actionConverter => mkConverterForm
     case R.id.actionSettings => mkSetsForm
       
     case R.id.actionSendMoney =>
       val noPays = app.TransData.payments.isEmpty
       if (noPays) mkPayForm else new PayPass
-
-    case R.id.actionConverter =>
-      val bld = negPosBld(dialog_cancel, dialog_next)
-      val (alert, inputManager) = me mkConverterForm bld
-
-      // Convenient way to open a pay form with an amount from converter
-      alert getButton BUTTON_POSITIVE setOnClickListener new OnClickListener {
-        def onClick(v: View) = rm(alert)(mkPayForm.man setSum inputManager.result)
-      }
   }
 
   // Activity lifecycle listeners management
@@ -596,9 +588,9 @@ abstract class TimerActivity extends Activity { me =>
   }
 
   // Currency converter
-  def mkConverterForm(tpl: Builder) = {
+  def mkConverterForm = {
     val content = getLayoutInflater.inflate(R.layout.frag_rates, null)
-    val alert = mkForm(tpl, me getString R.string.action_converter, content)
+    val alert = mkForm(negBld(dialog_cancel), getString(R.string.action_converter), content)
     val fiatInput = content.findViewById(R.id.fiatInputAmount).asInstanceOf[EditText]
     val fiatType = content.findViewById(R.id.fiatType).asInstanceOf[SegmentedGroup]
     var loadRatesTask: TimerTask = null
@@ -668,7 +660,6 @@ abstract class TimerActivity extends Activity { me =>
     fiatInput addTextChangedListener fiatListener
     fiatType setOnCheckedChangeListener changeListener
     fiatType check hintMap.map(_.swap).apply(inputHintMemo)
-    (alert, man)
   }
 
   def hideKeys(run: => Unit) = try {

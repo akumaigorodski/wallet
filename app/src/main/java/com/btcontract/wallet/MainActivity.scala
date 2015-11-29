@@ -111,9 +111,10 @@ class MainActivity extends TimerActivity { me =>
   override def onBackPressed = Utils.wrap(super.onBackPressed) { activityIsCurrentlyOperational = false }
   def walletOrHistory = if (sack) me exitTo classOf[WalletActivity] else me exitTo classOf[TxsActivity]
   def maybeStartKit = if (activityIsCurrentlyOperational) app.kit.startAsync
-  def openConverter(v: View) = me mkConverterForm negBld(dialog_cancel)
   def goRestoreWallet(v: View) = me goTo classOf[WalletRestoreActivity]
   def goCreateWallet(v: View) = me goTo classOf[WalletCreateActivity]
+  def openConverter(v: View) = mkConverterForm
+
   def check = app.kit.wallet checkPassword passWordInput
   def passWordInput = passData.getText.toString
 }
