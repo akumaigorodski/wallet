@@ -60,7 +60,7 @@ class WalletCreateActivity extends TimerActivity { me =>
         // Generate mnemonic code
         val keyCrypter = wallet.getKeyCrypter
         val seed = wallet.getKeyChainSeed.decrypt(keyCrypter, pass, keyCrypter deriveKey pass)
-        val mnemonicData = TextUtils.join(separator, seed.getMnemonicCode).toUpperCase
+        val mnemonicData = TextUtils.join(separator, seed.getMnemonicCode)
 
         if (app.isAlive) {
           setupAndStartDownload

@@ -66,8 +66,8 @@ class WalletRestoreActivity extends TimerActivity { me =>
       startAsync
 
       def startUp = {
-        val mnemo = restoreCode.getText.toString
         val whenTime = when.getTimeInMillis / 1000
+        val mnemo = restoreCode.getText.toString.toLowerCase
         val ds = new DeterministicSeed(mnemo, null, "", whenTime)
         val keyChainGroup = new KeyChainGroup(app.params, ds)
         store = new SPVBlockStore(app.params, app.chainFile)
