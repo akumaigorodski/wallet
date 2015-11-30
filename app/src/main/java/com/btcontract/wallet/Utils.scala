@@ -1,5 +1,7 @@
 package com.btcontract.wallet
 
+import org.bitcoinj.wallet.DeterministicSeed
+
 import concurrent.ExecutionContext.Implicits.global
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.RadioGroup.OnCheckedChangeListener
@@ -468,10 +470,14 @@ abstract class InfoActivity extends TimerActivity { me =>
 
       def openForm: Unit = passPlus { sec =>
         val crypter = app.kit.wallet.getKeyCrypter
-        val builder = new Builder(me) setCustomTitle getString(R.string.sets_noscreen)
-        <(app.kit.wallet.getKeyChainSeed.decrypt(crypter, sec, crypter deriveKey sec), _ => wrong) {
-          seed => builder.setMessage(TextUtils.join(separator, seed.getMnemonicCode).toUpperCase).show
-        }
+        <(app.kit.wallet.getKeyChainSeed.decrypt(crypter, sec,
+          crypter deriveKey sec), _ => wrong)(showMnemonic)
+      }
+
+      def showMnemonic(seed: DeterministicSeed): Unit = {
+        val builder = new Builder(me).setCustomTitle(me getString R.string.sets_noscreen)
+        val mnemonic = TextUtils.join(separator, seed.getMnemonicCode)
+        builder.setMessage(mnemonic).show
       }
     }
 
