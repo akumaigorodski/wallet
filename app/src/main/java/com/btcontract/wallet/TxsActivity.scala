@@ -37,10 +37,10 @@ class TxsActivity extends InfoActivity { me =>
   implicit lazy val noFunds = me getString no_funds
 
   // Sent/received templates and fee
+  lazy val addrUnknown = me getString txs_noaddr
   lazy val rcvdManyTo = me getString txs_many_received_to
   lazy val sentManyTo = me getString txs_many_sent_to
   lazy val rcvdTo = me getString txs_received_to
-  lazy val addrUnknown = me getString txs_noaddr
   lazy val sentTo = me getString txs_sent_to
   lazy val yesFee = me getString txs_yes_fee
   lazy val noFee = me getString txs_no_fee
@@ -72,7 +72,8 @@ class TxsActivity extends InfoActivity { me =>
     if (app.isAlive) {
       add(constantListener.mkTxt, Informer.PEERS).ui.run
       new Anim(app.kit.currentBalance, Utils.appName)
-      setContentView(R.layout.activity_list_view)
+      setContentView(R.layout.activity_txs)
+      wireUpBottomMenu
 
       // Setup adapter here because scrWidth is not available on start
       adapter = if (scrWidth < 2.0) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_small)

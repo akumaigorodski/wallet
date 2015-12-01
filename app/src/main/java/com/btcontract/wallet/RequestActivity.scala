@@ -58,7 +58,7 @@ class RequestActivity extends TimerActivity { me =>
     setContentView(R.layout.activity_request)
 
     app.TransData.value match {
-      case Some(cache: AdrsActivity#AdrCache) => show(cache.address.toString, cache.human)
+      case Some(cache: AdrCache) => show(cache.address.toString, cache.human)
       case Some(payData: PayData) => show(payData.getURI, payData pretty sumIn)
       case _ => finish
     }

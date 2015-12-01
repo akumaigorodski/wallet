@@ -34,17 +34,18 @@
     <string name="destruct_too_short">销毁代码太短</string>
 
     <!-- menu -->
+    <string name="paydata_clear">丢弃付款</string>
     <string name="action_settings">钱包设置</string>
     <string name="action_address">查看我的地址</string>
     <string name="action_tx_history">查看交易</string>
-    <string name="action_request_payment">付款请求</string>
-    <string name="action_send_money">发送硬币到某个地址</string>
-    <string name="action_scan_qr">扫描一张QR图片</string>
     <string name="action_converter">货币转换器</string>
-    <string name="paydata_clear">复位付款数据</string>
+    <string name="action_scan_qr">扫描一张QR图片</string>
+    <string name="action_request_payment">请求支付</string>
+    <string name="action_receive_payment">接收</string>
+    <string name="action_send_money">发送</string>
 
     <array name="action_send_memo">
-        <item>@string/action_send_money</item>
+        <item>发送比特币</item>
         <item>添加第二个地址</item>
         <item>添加第三个地址</item>
         <item>添加%1$s个地址</item>
@@ -124,9 +125,9 @@
     <string name="req_generating">生成QR代码中</string>
     <string name="req_save">分享QR代码</string>
 
-    <!-- activity_list_view -->
+    <!-- activity_txs -->
     <string name="no_funds">没有资金</string>
-    <string name="txs_no_fee">无费用&#160;</string>
+    <string name="txs_no_fee">传入事务&#160;</string>
     <string name="txs_yes_fee">%1$s费用&#160;</string>
     <string name="txs_many_received_to"><![CDATA[收到 <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_many_sent_to"><![CDATA[已发送到 <font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
@@ -134,7 +135,7 @@
     <string name="txs_sent_to"><![CDATA[已发送到 <font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_view_outside">观BlockExplorer</string>
+    <string name="txs_view_outside">观 BlockExplorer.com</string>
     <string name="txs_copy_hash">复制哈希到剪贴板</string>
     <string name="txs_normal_dead">✕✕✕</string>
     <string name="txs_noaddr">未知地址</string>

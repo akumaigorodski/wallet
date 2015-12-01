@@ -34,17 +34,18 @@
     <string name="destruct_too_short">El código de destrucción es muy corto</string>
 
     <!-- menu -->
+    <string name="paydata_clear">Descarte pago</string>
     <string name="action_address">Ver mis direcciones</string>
     <string name="action_settings">Ajustes de monedero</string>
     <string name="action_tx_history">Ver transacciones</string>
-    <string name="action_request_payment">Solicitar un pago</string>
+    <string name="action_request_payment">Solicitar pago</string>
     <string name="action_converter">Convertidor de moneda</string>
     <string name="action_scan_qr">Escanear una imagen QR</string>
-    <string name="action_send_money">Enviar monedas</string>
-    <string name="paydata_clear">Restablecer datos</string>
+    <string name="action_receive_payment">RECIBIR</string>
+    <string name="action_send_money">ENVIAR</string>
 
     <array name="action_send_memo">
-        <item>@string/action_send_money</item>
+        <item>Enviar bitcoins</item>
         <item>+ segunda dirección</item>
         <item>+ tercera dirección</item>
         <item>+ una dirección de %1$s</item>
@@ -125,9 +126,9 @@
     <string name="req_generating">Generando código QR</string>
     <string name="req_save">Compartir código QR</string>
 
-    <!-- activity_list_view -->
+    <!-- activity_txs -->
     <string name="no_funds">Sin fondos</string>
-    <string name="txs_no_fee">sin cargo&#160;</string>
+    <string name="txs_no_fee">Entrante&#160;</string>
     <string name="txs_yes_fee">%1$s fee&#160;</string>
     <string name="txs_many_received_to"><![CDATA[recibido <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_many_sent_to"><![CDATA[enviado <font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
@@ -136,15 +137,15 @@
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_copy_hash">Copiar hash al portapapeles</string>
-    <string name="txs_view_outside">Ver en Block Explorer</string>
+    <string name="txs_view_outside">Ver en BlockExplorer.com</string>
     <string name="txs_noaddr">dirección desconocida</string>
     <string name="txs_dead">TRANSACTION IS DEAD</string>
     <string name="txs_normal_dead">✕✕✕</string>
 
     <array name="txs_total">
-        <item>sin txs</item>
-        <item>%1$s tx</item>
-        <item>%1$s txs</item>
+        <item>Sin historia</item>
+        <item>%1$s transacción</item>
+        <item>%1$s operaciones</item>
     </array>
 
     <array name="addr_total">

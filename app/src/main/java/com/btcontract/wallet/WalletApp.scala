@@ -7,6 +7,7 @@ import org.bitcoinj.net.discovery.DnsDiscovery
 import org.bitcoinj.wallet.KeyChain.KeyPurpose
 import org.bitcoinj.core.Wallet.BalanceType
 import org.bitcoinj.crypto.KeyCrypterScrypt
+import com.btcontract.wallet.Utils.PayDatas
 import com.google.protobuf.ByteString
 import org.bitcoinj.wallet.Protos
 import android.app.Application
@@ -20,7 +21,6 @@ import org.bitcoinj.core.{TransactionOutput, AbstractWalletEventListener, Wallet
 import org.bitcoinj.uri.{BitcoinURIParseException, OptionalFieldValidationException}
 import org.bitcoinj.uri.{RequiredFieldValidationException, BitcoinURI}
 import android.content.{ClipData, ClipboardManager, Context}
-import com.btcontract.wallet.Utils.{Strs, PayDatas}
 import org.jbox2d.dynamics.{BodyType, BodyDef}
 import android.graphics.{Typeface, Paint}
 import State.{STARTING, RUNNING}
@@ -40,9 +40,9 @@ class WalletApp extends Application {
   var kit: WalletKit = null
 
   lazy val plur = getString(R.string.lang) match {
-    case "eng" | "esp" => (opts: Strs, num: Int) => if (num == 1) opts(1) else opts(2)
-    case "chn" => (phraseOptions: Strs, num: Int) => phraseOptions(1)
-    case "rus" | "ukr" => (phraseOptions: Strs, num: Int) =>
+    case "eng" | "esp" => (opts: Array[String], num: Int) => if (num == 1) opts(1) else opts(2)
+    case "chn" => (phraseOptions: Array[String], num: Int) => phraseOptions(1)
+    case "rus" | "ukr" => (phraseOptions: Array[String], num: Int) =>
 
       val reminder100 = num % 100
       val reminder10 = reminder100 % 10
@@ -53,7 +53,7 @@ class WalletApp extends Application {
   }
 
   def mgr = getSystemService(CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
-  def plurOrZero(options: Strs, num: Int) = if (num > 0) plur(options, num) format num else options(0)
+  def plurOrZero(options: Array[String], num: Int) = if (num > 0) plur(options, num) format num else options(0)
   def isAlive = if (null == kit) false else kit.state match { case STARTING | RUNNING => true case _ => false }
 
   def setBuffer(data: String) = {

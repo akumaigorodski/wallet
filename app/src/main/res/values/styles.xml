@@ -48,6 +48,17 @@
         <item name="android:layout_margin">0dp</item>
     </style>
 
+    <style name="BottomMenuTransButton">
+        <item name="android:background">?android:selectableItemBackground</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:paddingRight">15dp</item>
+        <item name="android:paddingLeft">10dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
     <!-- for request page -->
     <style name="ReqItem" parent="StdText">
         <item name="android:layout_centerHorizontal">true</item>
@@ -64,16 +75,8 @@
         <item name="android:windowBackground">@android:color/black</item>
     </style>
 
-    <style name="LiteNoBar" parent="@android:style/Theme.Holo.Light.NoActionBar">
-        <item name="android:backgroundDimEnabled">false</item>
-    </style>
-
-    <style name="LiteBar" parent="@android:style/Theme.Holo.Light">
-        <item name="android:backgroundDimEnabled">false</item>
-    </style>
-
-    <style name="DarkBar" parent="@android:style/Theme.Holo">
-        <item name="android:backgroundDimEnabled">false</item>
-    </style>
+    <style name="LiteNoBar" parent="@android:style/Theme.Holo.Light.NoActionBar"/>
+    <style name="LiteBar" parent="@android:style/Theme.Holo.Light"/>
+    <style name="DarkBar" parent="@android:style/Theme.Holo"/>
 
 </resources>

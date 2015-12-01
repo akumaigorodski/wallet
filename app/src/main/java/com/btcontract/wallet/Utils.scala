@@ -1,7 +1,6 @@
 package com.btcontract.wallet
 
 import org.bitcoinj.wallet.DeterministicSeed
-
 import concurrent.ExecutionContext.Implicits.global
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.RadioGroup.OnCheckedChangeListener
@@ -52,7 +51,6 @@ import Context.INPUT_METHOD_SERVICE
 
 object Utils {
   type TryCoin = Try[Coin]
-  type Strs = Array[String]
   type Coins = List[AbstractCoin]
   type PayDatas = mutable.Buffer[PayData]
   type Outputs = mutable.Buffer[TransactionOutput]
@@ -161,6 +159,20 @@ abstract class InfoActivity extends TimerActivity { me =>
   lazy val memo = getResources getStringArray R.array.action_send_memo
   lazy val requestOpts = getResources getStringArray R.array.dialog_request
 
+  def wireUpBottomMenu = {
+    val SEND = findViewById(R.id.send).asInstanceOf[Button]
+    val RECEIVE = findViewById(R.id.receive).asInstanceOf[Button]
+    SEND setOnClickListener new OnClickListener { def onClick(view: View) = doSend }
+    RECEIVE setOnClickListener new OnClickListener { def onClick(view: View) = doReceive }
+    def doSend = if (app.TransData.payments.isEmpty) mkPayForm else new PayPass
+
+    def doReceive = Failure(null) match { case fail =>
+      val data = PayData(app.kit.currentAddress, fail)
+      app.TransData.value = Option apply data
+      me goTo classOf[RequestActivity]
+    }
+  }
+
   // Menu and overrides
   val decideActionToTake: PartialFunction[Int, Unit] = {
     case R.id.actionScanQRCode => me goTo classOf[ScanActivity]
@@ -170,10 +182,6 @@ abstract class InfoActivity extends TimerActivity { me =>
     case R.id.actionRequestPayment => mkRequestForm
     case R.id.actionConverter => mkConverterForm
     case R.id.actionSettings => mkSetsForm
-      
-    case R.id.actionSendMoney =>
-      val noPays = app.TransData.payments.isEmpty
-      if (noPays) mkPayForm else new PayPass
   }
 
   // Activity lifecycle listeners management
@@ -232,21 +240,20 @@ abstract class InfoActivity extends TimerActivity { me =>
   // Concrete dialogs
 
   def mkClear(alert: Dialog) = {
+    def remove = rm(alert)(process)
+    def process = wrap(mkPayForm)(app.TransData.payments.clear)
     val container = getLayoutInflater.inflate(R.layout.frag_top_clear, null)
     val clear = container.findViewById(R.id.clearPayments).asInstanceOf[Button]
-    clear setOnClickListener new OnClickListener { def onClick(v: View) = remove }
-    def process = wrap(mkPayForm)(app.TransData.payments.clear)
-    def remove = rm(alert)(process)
+    clear setOnClickListener new OnClickListener { def onClick(view: View) = remove }
     container
   }
 
   def getMemo = app.TransData.payments.size match {
-    case size if size < memo.length - 1 => memo(size)
-    case size => memo.last format size + 1
+    case hasRoom if hasRoom < memo.length - 1 => memo(hasRoom)
+    case noRoom => memo.last format noRoom + 1
   }
 
-  def mkPayForm: SpendManager = {
-    val title: LinearLayout = getMemo
+  def mkPayForm: SpendManager = (getMemo: LinearLayout) match { case title =>
     val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null, false)
     val alert = mkForm(negPosBld(dialog_cancel, dialog_next), title, content)
     if (app.TransData.payments.nonEmpty) title.addView(mkClear(alert), 0)
@@ -634,10 +641,9 @@ abstract class TimerActivity extends Activity { me =>
     // Loading and working with JSON
     def fromJSON(rawData: String) = {
       val json = new JSONObject(rawData)
-      val usd = json getJSONObject "USD" getDouble "last"
-      val eur = json getJSONObject "EUR" getDouble "last"
-      val cny = json getJSONObject "CNY" getDouble "last"
-      Rates(usd, eur, cny)
+      Rates(json getJSONObject "USD" getDouble "last",
+        json getJSONObject "EUR" getDouble "last",
+        json getJSONObject "CNY" getDouble "last")
     }
 
     def getRatesData = HttpRequest.get("https://blockchain.info/ticker").body
@@ -742,10 +748,14 @@ class SpendManager(val man: AmountInputManager) {
   }
 }
 
+case class AdrCache(address: Address, amount: Coin) {
+  lazy val human = sumIn format humanAddr(address)
+}
+
 case class PayData(adr: Address, tc: TryCoin) {
   def getURI = BitcoinURI.convertToBitcoinURI(adr, tc getOrElse null, null, null)
-  def pretty(sum: String) = tc map humanSum map (route(sum) + "<br><br>" + _) getOrElse route(sum)
-  def route(sum: String) = sum format humanAddr(adr)
+  def pretty(way: String) = tc map humanSum map (route(way) + "<br><br>" + _) getOrElse route(way)
+  def route(way: String) = way format humanAddr(adr)
 }
 
 case class Rates(usd: Double, eur: Double, cny: Double) {

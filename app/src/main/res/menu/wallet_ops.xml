@@ -17,11 +17,6 @@
         android:showAsAction="never"/>
 
     <item
-        android:title="@string/action_send_money"
-        android:id="@+id/actionSendMoney"
-        android:showAsAction="never"/>
-
-    <item
         android:title="@string/action_scan_qr"
         android:id="@+id/actionScanQRCode"
         android:showAsAction="never"/>

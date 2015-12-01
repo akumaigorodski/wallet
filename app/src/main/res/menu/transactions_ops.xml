@@ -8,12 +8,6 @@
     <item
         android:title="@string/action_request_payment"
         android:id="@+id/actionRequestPayment"
-        android:icon="@drawable/ic_action"
-        android:showAsAction="ifRoom"/>
-
-    <item
-        android:title="@string/action_send_money"
-        android:id="@+id/actionSendMoney"
         android:showAsAction="never"/>
 
     <item

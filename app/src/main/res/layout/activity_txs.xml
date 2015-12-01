@@ -2,11 +2,17 @@
     xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
     android:layout_height="fill_parent" android:layout_width="fill_parent">
 
-    <SurfaceView
-        android:layout_width="match_parent"
+    <ListView
         android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:id="@+id/sack"/>
+        android:layout_width="match_parent"
+        android:id="@+id/itemsList"
+        android:layout_weight="1"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:background="#33999999"
+        android:layout_height="1dp"
+        android:layout_weight="0"/>
 
     <LinearLayout
         android:layout_height="wrap_content"
@@ -14,13 +20,13 @@
         android:layout_weight="0">
 
         <Button
-            android:drawableLeft="@drawable/ic_arrow_downward_white_18dp"
+            android:drawableLeft="@drawable/ic_arrow_downward_black_18dp"
             android:text="@string/action_receive_payment"
             style="@style/BottomMenuTransButton"
             android:id="@+id/receive"/>
 
         <Button
-            android:drawableLeft="@drawable/ic_arrow_upward_white_18dp"
+            android:drawableLeft="@drawable/ic_arrow_upward_black_18dp"
             android:text="@string/action_send_money"
             style="@style/BottomMenuTransButton"
             android:id="@+id/send"/>

@@ -8,13 +8,15 @@ import android.text.Html
 import android.widget.{TextView, ListView, BaseAdapter, RadioGroup, AdapterView, ArrayAdapter}
 import org.bitcoinj.core.{AbstractWalletEventListener, Wallet, Transaction, Coin, Address}
 import R.string.{err_general, no_funds, dialog_cancel}
-import Utils.{wrap, denom, Outputs, sumIn}
+import Utils.{wrap, denom, Outputs}
+
 import collection.JavaConversions._
 import android.view._
 
 
 class AdrsActivity extends TimerActivity { me =>
   def onFail(exc: Throwable): Unit = new Builder(me).setMessage(err_general).show
+  override def onDestroy = wrap(super.onDestroy)(app.kit.wallet removeEventListener addressListener)
   lazy val head = getLayoutInflater.inflate(R.layout.frag_denom_and_count_head, null)
   lazy val adrsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
   lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
@@ -55,8 +57,9 @@ class AdrsActivity extends TimerActivity { me =>
   override def onCreate(savedInstanceState: Bundle) =
   {
     super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_list_view)
+    setContentView(R.layout.activity_adrs)
     app.kit.wallet addEventListener addressListener
+    // Generate fresh address if there is none yet
     app.kit.currentAddress
 
     // Setup selector
@@ -89,16 +92,6 @@ class AdrsActivity extends TimerActivity { me =>
       list.addHeaderView(head, null, true)
       list setAdapter adapter
     }
-  }
-
-  override def onDestroy = wrap(super.onDestroy) {
-    app.kit.wallet removeEventListener addressListener
-  }
-
-  // Address cache
-
-  case class AdrCache(address: Address, amount: Coin) {
-    lazy val human = sumIn.format(Utils humanAddr address)
   }
 
   // View holder
