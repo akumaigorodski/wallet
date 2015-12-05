@@ -171,6 +171,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     me goTo classOf[RequestActivity]
   }
 
+  def goQRScan(view: View) = me goTo classOf[ScanActivity]
   def goCoins(view: View) = me exitTo classOf[WalletActivity]
   def goHistory(view: View) = me exitTo classOf[TxsActivity]
 
@@ -182,7 +183,6 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   // Menu and overrides
   val decideActionToTake: PartialFunction[Int, Unit] = {
-    case R.id.actionScanQRCode => me goTo classOf[ScanActivity]
     case R.id.actionAddresses => me goTo classOf[AdrsActivity]
     case R.id.actionRequestPayment => mkRequestForm
     case R.id.actionConverter => mkConverterForm
@@ -315,7 +315,7 @@ abstract class InfoActivity extends TimerActivity { me =>
 
     // Wire buttons up
     def rePay = rm(alert)(mkPayForm)
-    def reScan = rm(alert)(me decideActionToTake R.id.actionScanQRCode)
+    def reScan = rm(alert)(me goQRScan null)
     val addNewAddress = payActs.findViewById(R.id.addNewAddress).asInstanceOf[Button]
     val scanQRPicture = payActs.findViewById(R.id.scanQRPicture).asInstanceOf[Button]
     scanQRPicture setOnClickListener new OnClickListener { def onClick(v: View) = reScan }

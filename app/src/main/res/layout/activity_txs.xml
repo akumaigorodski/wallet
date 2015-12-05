@@ -32,6 +32,12 @@
             style="@style/BottomMenuTransButton"
             android:onClick="doSend"/>
 
+        <Button
+            android:drawableLeft="@drawable/ic_fullscreen_black_18dp"
+            style="@style/BottomMenuTransButton"
+            android:onClick="goQRScan"
+            android:text="QR"/>
+
         <ImageButton
             style="@style/BottomMenuTransImageButton"
             android:src="@drawable/ic_grain_black_24dp"
