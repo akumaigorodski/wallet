@@ -1,15 +1,15 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:icon="@drawable/ic_lock_outline_white_24dp"
+        android:id="@+id/lockWalletRightNow"
+        android:title="@string/action_lock"
+        android:showAsAction="always"/>
+
+    <item
         android:title="@string/action_address"
         android:id="@+id/actionAddresses"
         android:showAsAction="never"/>
-
-    <item
-        android:icon="@drawable/ic_action_tx_history"
-        android:title="@string/action_tx_history"
-        android:id="@+id/actionTxHistory"
-        android:showAsAction="ifRoom"/>
 
     <item
         android:title="@string/action_request_payment"

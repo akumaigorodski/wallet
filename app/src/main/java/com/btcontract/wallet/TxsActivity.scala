@@ -17,7 +17,7 @@ import java.util.Date
 
 import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none, sumIn, sumOut}
 import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_general}
-import R.string.{txs_yes_fee, txs_no_fee, txs_noaddr, dialog_ok, no_funds}
+import R.string.{txs_yes_fee, txs_incoming, txs_noaddr, dialog_ok, no_funds}
 import android.view.{View, ViewGroup, Menu}
 import OnScrollListener.SCROLL_STATE_IDLE
 import org.bitcoinj.core._
@@ -26,24 +26,25 @@ import android.widget._
 
 class TxsActivity extends InfoActivity { me =>
   def onFail(exc: Throwable): Unit = new Builder(me).setMessage(err_general).show
-  lazy val head = getLayoutInflater.inflate(R.layout.frag_denom_and_count_head, null)
-  lazy val txsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
-  lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
+  lazy private[this] val time = String.format("%1$tb %1$te&#x200b;,&#160;%1$tY&#x200b;,&#160;%1$tR", _: Date)
+  lazy private[this] val head = getLayoutInflater.inflate(R.layout.frag_denom_and_count_head, null)
+  lazy private[this] val txsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
+  lazy private[this] val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
 
   // Confirmation rings, number of txs and implicits for denom
-  lazy val confOpts = getResources getStringArray R.array.txs_normal_conf
-  lazy val txsOpts = getResources getStringArray R.array.txs_total
-  implicit lazy val dc = new DenomControl(prefs, head)
-  implicit lazy val noFunds = me getString no_funds
+  lazy private[this] val confOpts = getResources getStringArray R.array.txs_normal_conf
+  lazy private[this] val txsOpts = getResources getStringArray R.array.txs_total
+  implicit lazy private[this] val dc = new DenomControl(prefs, head)
+  implicit lazy private[this] val noFunds = me getString no_funds
 
   // Sent/received templates and fee
-  lazy val addrUnknown = me getString txs_noaddr
-  lazy val rcvdManyTo = me getString txs_many_received_to
-  lazy val sentManyTo = me getString txs_many_sent_to
-  lazy val rcvdTo = me getString txs_received_to
-  lazy val sentTo = me getString txs_sent_to
-  lazy val yesFee = me getString txs_yes_fee
-  lazy val noFee = me getString txs_no_fee
+  lazy private[this] val yesFee = me getString txs_yes_fee
+  lazy private[this] val incoming = me getString txs_incoming
+  lazy private[this] val addrUnknown = me getString txs_noaddr
+  lazy private[this] val rcvdManyTo = me getString txs_many_received_to
+  lazy private[this] val sentManyTo = me getString txs_many_sent_to
+  lazy private[this] val rcvdTo = me getString txs_received_to
+  lazy private[this] val sentTo = me getString txs_sent_to
 
   // Local state
   var cache = mutable.Map.empty[Sha256Hash, TxCache]
@@ -53,10 +54,10 @@ class TxsActivity extends InfoActivity { me =>
   val txsListListener = new AbstractWalletEventListener {
     override def onReorganize(w: Wallet) = me runOnUiThread adapter.notifyDataSetChanged
     override def onTransactionConfidenceChanged(w: Wallet, tx: Transaction) = if (tx.getConfidence.getDepthInBlocks < 6) onReorganize(w)
-    override def onCoinsReceived(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb) me runOnUiThread add(tx)
-    override def onCoinsSent(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = me runOnUiThread add(tx)
+    override def onCoinsReceived(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb) me runOnUiThread say(tx)
+    override def onCoinsSent(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = me runOnUiThread say(tx)
 
-    def add(freshTransaction: Transaction) = {
+    def say(freshTransaction: Transaction) = {
       adapter.transactions.add(0, freshTransaction)
       txsNum setText app.plurOrZero(txsOpts, adapter.getCount)
       adapter.notifyDataSetChanged
@@ -67,13 +68,11 @@ class TxsActivity extends InfoActivity { me =>
   override def onCreate(savedInstanceState: Bundle) =
   {
     super.onCreate(savedInstanceState)
-    getActionBar setDisplayHomeAsUpEnabled true
 
     if (app.isAlive) {
       add(constantListener.mkTxt, Informer.PEERS).ui.run
       new Anim(app.kit.currentBalance, Utils.appName)
       setContentView(R.layout.activity_txs)
-      wireUpBottomMenu
 
       // Setup adapter here because scrWidth is not available on start
       adapter = if (scrWidth < 2.0) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_small)
@@ -127,8 +126,7 @@ class TxsActivity extends InfoActivity { me =>
             copy setOnClickListener new OnClickListener { def onClick(v: View) = app setBuffer hash.toString }
 
             // Prepare data and wire everything up
-            val way = if (entry.value.isPositive) sumIn else sumOut
-            val txt = for (payment <- entry.pays) yield Html.fromHtml(payment pretty way)
+            val txt = for (payment <- entry.pays) yield Html.fromHtml(payment pretty entry.sumDirection)
             listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, txt.toArray)
             mkForm(me negBld dialog_ok, Html fromHtml totalSum, listCon)
             listCon addHeaderView detailsForm
@@ -187,8 +185,11 @@ class TxsActivity extends InfoActivity { me =>
     else Html fromHtml time(date)
   }
 
-  def time(date: Date) = String.format("%1$tb %1$te&#x200b;,&#160;%1$tY&#x200b;,&#160;%1$tR", date)
-  def feeString(fee: Coin) = if (null == fee || fee.isZero) noFee else yesFee format denom(fee)
+  def feeString(entry: TxCache) = entry.fee match {
+    case canNotDetermine if entry.value.isPositive => incoming
+    case fee if null == fee || fee.isZero => yesFee format denom(Coin.ZERO)
+    case fee => yesFee format denom(fee)
+  }
 
   def summary(outs: PayDatas, incoming: Boolean) = outs match {
     case Seq(pay, _, _*) if incoming => rcvdManyTo.format(humanAddr(pay.adr), outs.size - 1)
@@ -206,9 +207,9 @@ class TxsActivity extends InfoActivity { me =>
     acc
   }
 
-  def makeCache(txs: Transaction) = txs getValue app.kit.wallet match { case sum =>
-    val goodOuts = getOuts(txs.getOutputs, mutable.Buffer.empty, sum.isPositive)
-    TxCache(goodOuts, txs.getFee, sum)
+  def makeCache(txn: Transaction) = txn getValue app.kit.wallet match { case sum =>
+    val goodOuts = getOuts(txn.getOutputs, mutable.Buffer.empty, sum.isPositive)
+    TxCache(goodOuts, txn.getFee, sum)
   }
 
   // Transaction cache item and view holders
@@ -236,7 +237,7 @@ class TxsActivity extends InfoActivity { me =>
       val entry = cache.getOrElseUpdate(txn.getHash, me makeCache txn)
       transactWhen setText when(txn.getUpdateTime, System.currentTimeMillis)
       transactSum setText Html.fromHtml(entry.transactAmount)
-      feeAmount setText feeString(entry.fee)
+      feeAmount setText feeString(entry)
       address setText entry.htmlSummary
       status(txn.getConfidence)
     }

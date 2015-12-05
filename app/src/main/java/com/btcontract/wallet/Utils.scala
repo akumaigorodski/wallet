@@ -159,29 +159,38 @@ abstract class InfoActivity extends TimerActivity { me =>
   lazy val memo = getResources getStringArray R.array.action_send_memo
   lazy val requestOpts = getResources getStringArray R.array.dialog_request
 
-  def wireUpBottomMenu = {
-    val SEND = findViewById(R.id.send).asInstanceOf[Button]
-    val RECEIVE = findViewById(R.id.receive).asInstanceOf[Button]
-    SEND setOnClickListener new OnClickListener { def onClick(view: View) = doSend }
-    RECEIVE setOnClickListener new OnClickListener { def onClick(view: View) = doReceive }
-    def doSend = if (app.TransData.payments.isEmpty) mkPayForm else new PayPass
-
-    def doReceive = Failure(null) match { case fail =>
-      val data = PayData(app.kit.currentAddress, fail)
-      app.TransData.value = Option apply data
-      me goTo classOf[RequestActivity]
-    }
+  // Bottom menu actions
+  def doSend(view: View) = {
+    val hasPays = app.TransData.payments.isEmpty
+    if (hasPays) mkPayForm else new PayPass
   }
+
+  def doReceive(view: View) = Failure(null) match { case fail =>
+    val payData = PayData(app.kit.currentAddress, fail)
+    app.TransData.value = Option apply payData
+    me goTo classOf[RequestActivity]
+  }
+
+  def goCoins(view: View) = me exitTo classOf[WalletActivity]
+  def goHistory(view: View) = me exitTo classOf[TxsActivity]
+
+  // Fee settings and calculation, ask pass on startup
+  def rawFeeFactor = prefs.getInt(AbstractKit.FEE_FACTOR, 2)
+  def feePerKb(base: Int) = SendRequest.DEFAULT_FEE_PER_KB multiply base * 5
+  def feeBase = rawFeeFactor match { case raw => if (raw < 1 | raw > 10) 2 else raw }
+  def setPassAsk = prefs.edit.putBoolean(AbstractKit.PASSWORD_ASK_STARTUP, _: Boolean).commit
 
   // Menu and overrides
   val decideActionToTake: PartialFunction[Int, Unit] = {
     case R.id.actionScanQRCode => me goTo classOf[ScanActivity]
     case R.id.actionAddresses => me goTo classOf[AdrsActivity]
-    case R.id.actionTxHistory => me goTo classOf[TxsActivity]
-    case android.R.id.home => me goTo classOf[WalletActivity]
     case R.id.actionRequestPayment => mkRequestForm
     case R.id.actionConverter => mkConverterForm
     case R.id.actionSettings => mkSetsForm
+
+    case R.id.lockWalletRightNow =>
+      wrap(app.kit.stopAsync)(me setPassAsk true)
+      me exitTo classOf[MainActivity]
   }
 
   // Activity lifecycle listeners management
@@ -387,7 +396,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     val feeTitle = me getString R.string.sets_fee
     val title = me getString R.string.action_settings
     val form = getLayoutInflater.inflate(R.layout.frag_settings, null)
-    val dialog = mkForm(me negBld dialog_cancel, title, form)
+    val dialog = mkForm(me negBld dialog_back, title, form)
 
     val rescanChain = form.findViewById(R.id.rescanBlockchain).asInstanceOf[Button]
     val askForPass = form.findViewById(R.id.askForPassword).asInstanceOf[CheckBox]
@@ -400,8 +409,7 @@ abstract class InfoActivity extends TimerActivity { me =>
     setFee setText Html.fromHtml(s"$feeTitle <font color=#E31300>$fee</font>")
     askForPass setChecked prefs.getBoolean(AbstractKit.PASSWORD_ASK_STARTUP, false)
     askForPass setOnCheckedChangeListener new CompoundButton.OnCheckedChangeListener {
-      def onCheckedChanged(button: CompoundButton, isChecked: Boolean) = update(isChecked)
-      def update = prefs.edit.putBoolean(AbstractKit.PASSWORD_ASK_STARTUP, _: Boolean).commit
+      def onCheckedChanged(button: CompoundButton, isChecked: Boolean) = setPassAsk(isChecked)
     }
 
     setFee setOnClickListener new OnClickListener {
@@ -515,11 +523,6 @@ abstract class InfoActivity extends TimerActivity { me =>
       mkForm(mkChoiceDialog(check, mkSetsForm, dialog_ok, dialog_back), null, passwordAsk)
     }
   }
-
-  // Fee settings and calculation
-  def rawFeeFactor = prefs.getInt(AbstractKit.FEE_FACTOR, 2)
-  def feeBase = rawFeeFactor match { case raw => if (raw < 1 | raw > 10) 2 else raw }
-  def feePerKb(base: Int) = SendRequest.DEFAULT_FEE_PER_KB multiply base * 5
 }
 
 // Timer manager
@@ -692,13 +695,13 @@ class Spinner(tv: TextView) extends Runnable {
 // Amount and Spend managers
 
 class AmountInputManager(val dc: DenomControl) {
-  val inputMap: Map[Int, Coin => String] = Map(amtInSat -> inpInSat, amtInBtc -> inpInBtc)
-  val tipMap: Map[Int, Coin => String] = Map(amtInSat -> tipInBtc, amtInBtc -> tipInSat)
-  val tipBaseMap = Map(amtInBtc -> input_tip_sat, amtInSat -> input_tip_btc)
-  val hintMap = Map(amtInBtc -> input_hint_btc, amtInSat -> input_hint_sat)
-  val charMap = Map(amtInBtc -> ".0123456789", amtInSat -> ",0123456789")
+  private[this] val inputMap: Map[Int, Coin => String] = Map(amtInSat -> inpInSat, amtInBtc -> inpInBtc)
+  private[this] val tipMap: Map[Int, Coin => String] = Map(amtInSat -> tipInBtc, amtInBtc -> tipInSat)
+  private[this] val tipBaseMap = Map(amtInBtc -> input_tip_sat, amtInSat -> input_tip_btc)
+  private[this] val hintMap = Map(amtInBtc -> input_hint_btc, amtInSat -> input_hint_sat)
+  private[this] val charMap = Map(amtInBtc -> ".0123456789", amtInSat -> ",0123456789")
+  private[this] val alt = dc.v.findViewById(inputBottom).asInstanceOf[TextView]
   val input = dc.v.findViewById(inputAmount).asInstanceOf[EditText]
-  val alt = dc.v.findViewById(inputBottom).asInstanceOf[TextView]
   val setSum = (_: TryCoin) map inputMap(dc.m) map input.setText
   def result = Try apply norm(dc.m)
 

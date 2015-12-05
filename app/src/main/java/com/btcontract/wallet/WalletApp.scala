@@ -95,7 +95,6 @@ class WalletApp extends Application {
   }
 
   abstract class WalletKit extends AbstractKit {
-    override def shutDown = if (peerGroup.isRunning) peerGroup.stop
     def toAdr(out: TransactionOutput) = out.getScriptPubKey.getToAddress(params, true)
     def autoSaveOn = wallet.autosaveToFile(walletFile, 500, MILLISECONDS, null)
     def freshOuts = wallet.calculateAllSpendCandidates(false, true).asScala
@@ -124,6 +123,11 @@ class WalletApp extends Application {
       peerGroup addWallet wallet
       startDownload
       autoSaveOn
+    }
+
+    override def shutDown = {
+      if (peerGroup.isRunning) peerGroup.stop
+      kit = null
     }
   }
 

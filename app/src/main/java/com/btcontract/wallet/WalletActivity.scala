@@ -64,7 +64,6 @@ class WalletActivity extends InfoActivity { me =>
       add(constantListener.mkTxt, Informer.PEERS).ui.run
       new Anim(app.kit.currentBalance, Utils.appName)
       setContentView(R.layout.activity_wallet)
-      wireUpBottomMenu
 
       // Wallet, peers and coins callbacks
       app.kit.peerGroup addEventListener new CatchUpTracker

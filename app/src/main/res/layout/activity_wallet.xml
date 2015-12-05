@@ -17,13 +17,18 @@
             android:drawableLeft="@drawable/ic_arrow_downward_white_18dp"
             android:text="@string/action_receive_payment"
             style="@style/BottomMenuTransButton"
-            android:id="@+id/receive"/>
+            android:onClick="doReceive"/>
 
         <Button
             android:drawableLeft="@drawable/ic_arrow_upward_white_18dp"
             android:text="@string/action_send_money"
             style="@style/BottomMenuTransButton"
-            android:id="@+id/send"/>
+            android:onClick="doSend"/>
+
+        <ImageButton
+            style="@style/BottomMenuTransImageButton"
+            android:src="@drawable/ic_history_white_24dp"
+            android:onClick="goHistory"/>
 
     </LinearLayout>
 </LinearLayout>

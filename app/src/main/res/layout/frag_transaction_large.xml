@@ -10,7 +10,7 @@
 
     <TextView
         android:id="@+id/address"
-        android:layout_weight="10"
+        android:layout_weight="11"
         android:layout_width="0dp"
         style="@style/OneLinerText"/>
 

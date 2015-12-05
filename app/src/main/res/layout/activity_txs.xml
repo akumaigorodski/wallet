@@ -10,11 +10,12 @@
 
     <View
         android:layout_width="match_parent"
-        android:background="#33999999"
+        android:background="#33AAAAAA"
         android:layout_height="1dp"
         android:layout_weight="0"/>
 
     <LinearLayout
+        android:background="#33CCCCCC"
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:layout_weight="0">
@@ -23,13 +24,18 @@
             android:drawableLeft="@drawable/ic_arrow_downward_black_18dp"
             android:text="@string/action_receive_payment"
             style="@style/BottomMenuTransButton"
-            android:id="@+id/receive"/>
+            android:onClick="doReceive"/>
 
         <Button
             android:drawableLeft="@drawable/ic_arrow_upward_black_18dp"
             android:text="@string/action_send_money"
             style="@style/BottomMenuTransButton"
-            android:id="@+id/send"/>
+            android:onClick="doSend"/>
+
+        <ImageButton
+            style="@style/BottomMenuTransImageButton"
+            android:src="@drawable/ic_grain_black_24dp"
+            android:onClick="goCoins"/>
 
     </LinearLayout>
 </LinearLayout>
