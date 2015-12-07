@@ -72,10 +72,6 @@
     <string name="dialog_cancel">Cancelar</string>
     <string name="input_hint_sat">suma en sat</string>
     <string name="input_hint_btc">suma en btc</string>
-    <string name="input_alt_sat">%1$s en satoshi</string>
-    <string name="input_alt_btc">%1$s en bitcoins</string>
-    <string name="input_tip_sat">misma suma en satoshi</string>
-    <string name="input_tip_btc">misma suma en bitcoins</string>
     <string name="dialog_addr_wrong">La dirección Bitcoin no es válida</string>
     <string name="dialog_sum_dusty">La cantidad actual es polvorienta</string>
     <string name="dialog_sum_empty">Por favor, proporcione un monto</string>

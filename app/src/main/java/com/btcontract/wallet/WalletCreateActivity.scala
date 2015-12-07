@@ -8,7 +8,7 @@ import android.view.View
 
 import android.widget.{EditText, Button, TextView, LinearLayout}
 import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}
-import Utils.{wrap, separator}
+import Utils.{wrap, app, separator}
 
 
 class WalletCreateActivity extends TimerActivity { me =>

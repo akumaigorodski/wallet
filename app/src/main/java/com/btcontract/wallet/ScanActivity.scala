@@ -4,8 +4,9 @@ import eu.livotov.zxscan.util.SoundPlayer
 import android.widget.Toast
 import android.os.Bundle
 
+import com.journeyapps.barcodescanner.{BarcodeCallback, BarcodeView, BarcodeResult}
 import R.string.{dialog_cancel, dialog_ok}
-import com.journeyapps.barcodescanner._
+import Utils.{wrap, app}
 
 
 class ScanActivity extends TimerActivity with BarcodeCallback {
@@ -22,8 +23,8 @@ class ScanActivity extends TimerActivity with BarcodeCallback {
 
   type Points = java.util.List[com.google.zxing.ResultPoint]
   override def possibleResultPoints(points: Points) = { /* nothing */ }
-  override def onResume = Utils.wrap(super.onResume)(reader.resume)
-  override def onPause = Utils.wrap(super.onPause)(reader.pause)
+  override def onResume = wrap(super.onResume)(reader.resume)
+  override def onPause = wrap(super.onPause)(reader.pause)
 
   def tryParse(text: String) = try {
     beepSoundPlayer.playRawResource(R.raw.beep, false)

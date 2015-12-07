@@ -9,7 +9,7 @@ import android.content.Context
 import org.jbox2d.common.Vec2
 import android.os.Bundle
 
-import com.btcontract.wallet.Utils.{Outputs, Coins, wrap, randBtw}
+import com.btcontract.wallet.Utils.{Outputs, Coins, wrap, randBtw, app}
 import org.jbox2d.dynamics.{BodyDef, FixtureDef, BodyType, World}
 import android.animation.{ValueAnimator, Animator}
 import android.graphics.{Paint, Color, Canvas}

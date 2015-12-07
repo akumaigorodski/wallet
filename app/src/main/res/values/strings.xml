@@ -72,10 +72,6 @@
     <string name="dialog_cancel">Cancel</string>
     <string name="input_hint_sat">amount in sat</string>
     <string name="input_hint_btc">amount in btc</string>
-    <string name="input_alt_sat">%1$s in satoshi</string>
-    <string name="input_alt_btc">%1$s in bitcoins</string>
-    <string name="input_tip_sat">same amount in satoshi</string>
-    <string name="input_tip_btc">same amount in bitcoins</string>
     <string name="dialog_addr_wrong">Bitcoin address is invalid</string>
     <string name="dialog_sum_empty">Please provide an amount</string>
     <string name="dialog_sum_dusty">Current amount is dusty</string>
@@ -83,6 +79,13 @@
     <string name="spend_address_hint">Bitcoin address</string>
     <string name="input_btc">&#160;bitcoins&#160;</string>
     <string name="input_sat">&#160;satoshi&#160;</string>
+
+    <string name="input_alt_sat">%1$s in satoshi</string>
+    <string name="input_alt_btc">%1$s in bitcoins</string>
+
+    <string name="input_dollar">amount in dollars</string>
+    <string name="input_euro">amount in euros</string>
+    <string name="input_yuan">amount in yuans</string>
 
     <array name="dialog_request">
         <item>Turn request into QR code</item>

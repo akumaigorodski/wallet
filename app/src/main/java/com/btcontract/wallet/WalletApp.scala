@@ -66,12 +66,10 @@ class WalletApp extends Application {
     chainFile = new File(getFilesDir, s"${Utils.appName}.spvchain")
     fontPaint setTypeface Typeface.create("Droid Sans", Typeface.NORMAL)
     AbstractCoin.bitLogo = decodeResource(getResources, R.drawable.bitwhite2)
-    Utils.btcTemplate = getString(R.string.input_alt_sat)
-    Utils.satTemplate = getString(R.string.input_alt_btc)
-    Utils.sumOut = getString(R.string.txs_sum_out)
-    Utils.sumIn = getString(R.string.txs_sum_in)
     coinBodyDef setType BodyType.DYNAMIC
+    Utils.startupAppReference = this
     fontPaint setColor 0xBBFFFFFF
+    FiatRates.reloadRates
   }
 
   object TransData {
@@ -100,6 +98,7 @@ class WalletApp extends Application {
     def freshOuts = wallet.calculateAllSpendCandidates(false, true).asScala
     def currentAddress = wallet currentAddress KeyPurpose.RECEIVE_FUNDS
     def currentBalance = wallet getBalance BalanceType.ESTIMATED
+    override def shutDown = peerGroup.stop
 
     def encryptWallet(password: CharSequence) = {
       val randSalt8Bytes = ByteString copyFrom KeyCrypterScrypt.randomSalt
@@ -120,14 +119,10 @@ class WalletApp extends Application {
       peerGroup.setUserAgent(Utils.appName, "1.03")
       peerGroup setDownloadTxDependencies false
       peerGroup setPingIntervalMsec 10000
+      peerGroup setMaxConnections 10
       peerGroup addWallet wallet
       startDownload
       autoSaveOn
-    }
-
-    override def shutDown = {
-      if (peerGroup.isRunning) peerGroup.stop
-      kit = null
     }
   }
 

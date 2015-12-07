@@ -5,13 +5,8 @@
     <EditText
         android:paddingTop="25dp"
         style="@style/BigInputText"
-        android:id="@+id/inputAmount"/>
-
-    <TextView
-        style="@style/StdText"
-        android:id="@+id/inputBottom"
-        android:layout_marginBottom="20dp"
-        android:layout_width="wrap_content"/>
+        android:id="@+id/inputAmount"
+        android:layout_marginBottom="11dp"/>
 
     <info.hoang8f.android.segmented.SegmentedGroup
         android:layout_height="wrap_content"
@@ -46,39 +41,12 @@
 
     <EditText
         style="@style/BigInputText"
-        android:layout_marginBottom="10dp"
         android:id="@+id/fiatInputAmount"/>
 
-    <info.hoang8f.android.segmented.SegmentedGroup
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:layout_marginBottom="40dp"
-        android:orientation="horizontal"
-        android:id="@+id/fiatType">
+    <TextView
+        style="@style/StdText"
+        android:id="@+id/fiatInputTip"
+        android:layout_marginBottom="35dp"
+        android:layout_width="wrap_content"/>
 
-        <RadioButton
-            android:text="$"
-            android:textSize="18sp"
-            android:id="@+id/typeUSD"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/RadioButton"/>
-
-        <RadioButton
-            android:text="€"
-            android:textSize="18sp"
-            android:id="@+id/typeEUR"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/RadioButton"/>
-
-        <RadioButton
-            android:text="¥"
-            android:textSize="18sp"
-            android:id="@+id/typeCNY"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/RadioButton"/>
-
-    </info.hoang8f.android.segmented.SegmentedGroup>
 </LinearLayout>

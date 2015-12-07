@@ -7,9 +7,8 @@ import android.text.Html
 
 import android.widget.{TextView, ListView, BaseAdapter, RadioGroup, AdapterView, ArrayAdapter}
 import org.bitcoinj.core.{AbstractWalletEventListener, Wallet, Transaction, Coin, Address}
+import Utils.{wrap, denom, Outputs, app, sumIn, humanAddr}
 import R.string.{err_general, no_funds, dialog_cancel}
-import Utils.{wrap, denom, Outputs}
-
 import collection.JavaConversions._
 import android.view._
 
@@ -22,8 +21,8 @@ class AdrsActivity extends TimerActivity { me =>
   lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
 
   // Implicits for denom
-  implicit lazy val dc = new DenomControl(prefs, head)
-  implicit lazy val noFunds = me getString no_funds
+  implicit lazy val dc = new DenomControl(me, head)
+  implicit lazy val noFunds = getString(no_funds)
 
   // Human number of addresses, list of dialog options and caches
   lazy val adrOpts = getResources getStringArray R.array.dialog_address
@@ -65,7 +64,7 @@ class AdrsActivity extends TimerActivity { me =>
     // Setup selector
     dc.radios check dc.nowMode
     dc.radios setOnCheckedChangeListener new OnCheckedChangeListener {
-      def onCheckedChanged(r: RadioGroup, n: Int) = wrap(adapter.notifyDataSetChanged)(dc.updMode)
+      def onCheckedChanged(r: RadioGroup, n: Int) = wrap(adapter.notifyDataSetChanged)(dc.update)
     }
 
     // pos - 1 because header is present
@@ -73,7 +72,7 @@ class AdrsActivity extends TimerActivity { me =>
       def onItemClick(par: AdapterView[_], v: View, pos: Int, id: Long) = bag(pos - 1) match { case item =>
         val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
         val arrAdapter = new ArrayAdapter(me, R.layout.frag_center_text, R.id.textItem, adrOpts)
-        val dialog = mkForm(me negBld dialog_cancel, Html fromHtml item.human, listCon)
+        val dialog = mkForm(me negBld dialog_cancel, Html fromHtml item.humanAddrWay, listCon)
 
         listCon setOnItemClickListener new AdapterView.OnItemClickListener {
           def onItemClick(par: AdapterView[_], view: View, pos: Int, id: Long) =
@@ -102,7 +101,7 @@ class AdrsActivity extends TimerActivity { me =>
     view setTag this
 
     def fillView(cache: AdrCache) = {
-      addressText setText Html.fromHtml(cache.human)
+      addressText setText Html.fromHtml(cache.humanAddrWay)
       amountText setText denom(cache.amount)
     }
   }
@@ -113,4 +112,8 @@ class AdrsActivity extends TimerActivity { me =>
     val issued = app.kit.wallet.getIssuedReceiveAddresses.map(_ -> Coin.ZERO).toMap
     issued ++ withFunds map AdrCache.tupled
   }.toList
+}
+
+case class AdrCache(address: Address, amount: Coin) {
+  lazy val humanAddrWay = sumIn format humanAddr(address)
 }

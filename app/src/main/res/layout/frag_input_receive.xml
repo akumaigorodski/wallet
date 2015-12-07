@@ -5,18 +5,12 @@
     <EditText
         android:paddingTop="25dp"
         style="@style/BigInputText"
-        android:id="@+id/inputAmount"/>
-
-    <TextView
-        style="@style/StdText"
-        android:id="@+id/inputBottom"
-        android:layout_marginBottom="20dp"
-        android:layout_width="wrap_content"/>
+        android:id="@+id/inputAmount"
+        android:layout_marginBottom="11dp"/>
 
     <info.hoang8f.android.segmented.SegmentedGroup
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:layout_marginBottom="40dp"
         android:orientation="horizontal"
         android:id="@+id/inputType">
 
@@ -37,4 +31,12 @@
             style="@style/RadioButton"/>
 
     </info.hoang8f.android.segmented.SegmentedGroup>
+
+    <TextView
+        style="@style/StdText"
+        android:id="@+id/inputBottom"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="35dp"
+        android:layout_width="wrap_content"/>
+
 </LinearLayout>

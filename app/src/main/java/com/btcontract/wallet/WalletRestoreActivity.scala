@@ -3,8 +3,8 @@ package com.btcontract.wallet
 import org.bitcoinj.store.SPVBlockStore
 import android.os.Bundle
 import android.view.View
-import Utils.wrap
 
+import Utils.{wrap, app}
 import java.util.{Date, Calendar}
 import org.bitcoinj.wallet.{KeyChainGroup, DeterministicSeed}
 import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}

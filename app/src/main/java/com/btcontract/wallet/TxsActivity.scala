@@ -15,7 +15,7 @@ import android.text.Html
 import android.net.Uri
 import java.util.Date
 
-import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none, sumIn, sumOut}
+import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none, sumIn, sumOut, app}
 import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_general}
 import R.string.{txs_yes_fee, txs_incoming, txs_noaddr, dialog_ok, no_funds}
 import android.view.{View, ViewGroup, Menu}
@@ -34,8 +34,8 @@ class TxsActivity extends InfoActivity { me =>
   // Confirmation rings, number of txs and implicits for denom
   lazy private[this] val confOpts = getResources getStringArray R.array.txs_normal_conf
   lazy private[this] val txsOpts = getResources getStringArray R.array.txs_total
-  implicit lazy private[this] val dc = new DenomControl(prefs, head)
-  implicit lazy private[this] val noFunds = me getString no_funds
+  implicit lazy private[this] val dc = new DenomControl(me, head)
+  implicit lazy private[this] val noFunds = getString(no_funds)
 
   // Sent/received templates and fee
   lazy private[this] val yesFee = me getString txs_yes_fee
@@ -91,7 +91,7 @@ class TxsActivity extends InfoActivity { me =>
       // Setup selector
       dc.radios check dc.nowMode
       dc.radios setOnCheckedChangeListener new OnCheckedChangeListener {
-        def onCheckedChanged(r: RadioGroup, n: Int) = wrap(adapter.notifyDataSetChanged)(dc.updMode)
+        def onCheckedChanged(r: RadioGroup, n: Int) = wrap(adapter.notifyDataSetChanged)(dc.update)
       }
 
       // Wait for transactions list

@@ -11,6 +11,7 @@ import android.widget.{LinearLayout, EditText, TextView}
 import R.string.{dialog_ok, dialog_cancel}
 import scala.util.{Success, Try}
 import View.{GONE, VISIBLE}
+import Utils.{wrap, app}
 
 
 class MainActivity extends TimerActivity { me =>
@@ -108,7 +109,7 @@ class MainActivity extends TimerActivity { me =>
       }
     }
 
-  override def onBackPressed = Utils.wrap(super.onBackPressed) { activityIsCurrentlyOperational = false }
+  override def onBackPressed = wrap(super.onBackPressed) { activityIsCurrentlyOperational = false }
   def walletOrHistory = if (sack) me exitTo classOf[WalletActivity] else me exitTo classOf[TxsActivity]
   def maybeStartKit = if (activityIsCurrentlyOperational) app.kit.startAsync
   def goRestoreWallet(v: View) = me exitTo classOf[WalletRestoreActivity]
