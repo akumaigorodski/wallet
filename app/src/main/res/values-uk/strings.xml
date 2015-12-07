@@ -80,6 +80,12 @@
     <string name="input_btc">&#160;біткоіни&#160;</string>
     <string name="input_sat">&#160;сатоші&#160;</string>
 
+    <string name="input_alt_sat">%1$s у сатоші</string>
+    <string name="input_alt_btc">%1$s у биткоїнах</string>
+    <string name="input_dollar">сума у доларах</string>
+    <string name="input_euro">сума у евро</string>
+    <string name="input_yuan">сума у юанях</string>
+
     <array name="dialog_request">
         <item>Перетворити запит у QR-код</item>
         <item>Скопіювати запит у буфер</item>

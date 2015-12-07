@@ -74,11 +74,17 @@
     <string name="input_hint_sat">量satoshi</string>
     <string name="dialog_sum_dusty">当前数量是灰暗的</string>
     <string name="dialog_addr_wrong">比特币地址无效</string>
-    <string name="input_sat">&#160;satoshi&#160;</string>
     <string name="spend_address_tip">发送钱的地方</string>
     <string name="spend_address_hint">比特币地址</string>
+    <string name="input_sat">&#160;satoshi&#160;</string>
     <string name="input_btc">&#160;比特币&#160;</string>
     <string name="dialog_sum_empty">请提供量</string>
+
+    <string name="input_alt_sat">%1$s satoshi</string>
+    <string name="input_alt_btc">%1$s比特币</string>
+    <string name="input_dollar">量美元</string>
+    <string name="input_euro">量以欧元</string>
+    <string name="input_yuan">量元</string>
 
     <array name="dialog_request">
         <item>将请求转换为QR代码</item>

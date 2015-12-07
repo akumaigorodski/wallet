@@ -82,10 +82,9 @@
 
     <string name="input_alt_sat">%1$s in satoshi</string>
     <string name="input_alt_btc">%1$s in bitcoins</string>
-
-    <string name="input_dollar">amount in dollars</string>
-    <string name="input_euro">amount in euros</string>
-    <string name="input_yuan">amount in yuans</string>
+    <string name="input_dollar">amount in dollar</string>
+    <string name="input_euro">amount in euro</string>
+    <string name="input_yuan">amount in yuan</string>
 
     <array name="dialog_request">
         <item>Turn request into QR code</item>
