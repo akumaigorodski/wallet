@@ -19,7 +19,6 @@
     <string name="wallet_open">打开钱包</string>
 
     <string name="sets_fee">每KB费用</string>
-    <string name="sets_pass_ask">启动时请求密码</string>
     <string name="sets_pass_change">更改钱包密码</string>
     <string name="sets_destruct_set">设置销毁代码</string>
     <string name="sets_mnemonic">查看助记代码</string>

@@ -65,7 +65,7 @@ class MainActivity extends TimerActivity { me =>
   def tryPass(view: View) = hideKeys {
     if (passWordInput == destructCode) replaceWallet
     else <(check, _ => wrong)(if (_) maybeStartKit else wrong)
-    timer.scheduleAtFixedRate(new Spinner(spin), 100, 1000)
+    timer.scheduleAtFixedRate(new Spinner(spin), 0, 1000)
     progress setVisibility VISIBLE
     password setVisibility GONE
 
@@ -109,14 +109,16 @@ class MainActivity extends TimerActivity { me =>
       }
     }
 
+  def passWordInput = passData.getText.toString
+  def check = app.kit.wallet checkPassword passWordInput
+  def maybeStartKit = if (activityIsCurrentlyOperational) {
+    prefs.edit.putBoolean(AbstractKit.PASSWORD_ASK_STARTUP, false).commit
+    app.kit.startAsync
+  }
+
   override def onBackPressed = wrap(super.onBackPressed) { activityIsCurrentlyOperational = false }
   def walletOrHistory = if (sack) me exitTo classOf[WalletActivity] else me exitTo classOf[TxsActivity]
-  def maybeStartKit = if (activityIsCurrentlyOperational) app.kit.startAsync
   def goRestoreWallet(v: View) = me exitTo classOf[WalletRestoreActivity]
   def goCreateWallet(v: View) = me exitTo classOf[WalletCreateActivity]
   def openConverter(v: View) = mkConverterForm
-
-  // Password checking methods
-  def check = app.kit.wallet checkPassword passWordInput
-  def passWordInput = passData.getText.toString
 }

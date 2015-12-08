@@ -26,17 +26,17 @@
         <item name="android:textSize">18sp</item>
     </style>
 
-    <style name="StdText" parent="@style/BaseText">
+    <style name="StdText" parent="BaseText">
         <item name="android:gravity">center</item>
     </style>
 
-    <style name="Info" parent="@style/StdText">
+    <style name="Info" parent="StdText">
         <item name="android:layout_marginRight">10dp</item>
         <item name="android:layout_marginLeft">10dp</item>
         <item name="android:maxWidth">400dp</item>
     </style>
 
-    <style name="MarginInfo" parent="@style/Info">
+    <style name="MarginInfo" parent="Info">
         <item name="android:layout_marginBottom">25dp</item>
         <item name="android:layout_marginTop">25dp</item>
     </style>

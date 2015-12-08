@@ -19,7 +19,6 @@
     <string name="wallet_password">Contraseña</string>
 
     <string name="sets_fee">Cargo por kilobyte</string>
-    <string name="sets_pass_ask">Solicitar contraseña al inicio</string>
     <string name="sets_pass_change">Cambiar contraseña de monedero</string>
     <string name="sets_destruct_set">Fijar código de destrucción</string>
     <string name="sets_rescan">Reescanear cadena de bloque</string>

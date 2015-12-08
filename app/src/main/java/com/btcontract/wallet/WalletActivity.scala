@@ -71,12 +71,7 @@ class WalletActivity extends InfoActivity { me =>
       app.kit.wallet addEventListener walletListener
       sack setOnTouchListener new MoveListener(this)
       sack.getHolder addCallback new OnceCallback
-    } else this exitTo classOf[MainActivity]
-  }
-
-  override def onCreateOptionsMenu(menu: Menu) = {
-    getMenuInflater.inflate(R.menu.wallet_ops, menu)
-    super.onCreateOptionsMenu(menu)
+    } else this exitTo mainActivClass
   }
 
   override def onResume = wrap(super.onResume) {

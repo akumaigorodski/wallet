@@ -18,7 +18,6 @@
     <string name="wallet_password">Пароль</string>
     <string name="wallet_open">Открыть</string>
 
-    <string name="sets_pass_ask">Спрашивать пароль при входе</string>
     <string name="sets_destruct_set">Установить код уничтожения</string>
     <string name="sets_pass_change">Сменить пароль кошелька</string>
     <string name="sets_rescan">Пересканировать блокчейн</string>

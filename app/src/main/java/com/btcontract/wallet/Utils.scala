@@ -167,9 +167,10 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   var infos = List.empty[Informer]
   var currentAnimation = Option.empty[TimerTask]
-  val ui = anyToRunnable(getActionBar setSubtitle infos.head.value)
   lazy val memo = getResources getStringArray R.array.action_send_memo
   lazy val requestOpts = getResources getStringArray R.array.dialog_request
+  val ui = anyToRunnable(getActionBar setSubtitle infos.head.value)
+  val mainActivClass = classOf[MainActivity]
 
   // Bottom menu actions
   def doSend(view: View) = {
@@ -178,8 +179,7 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   def doReceive(view: View) = Failure(null) match { case fail =>
-    val payData = PayData(app.kit.currentAddress, fail)
-    app.TransData.value = Option apply payData
+    app.TransData.value = Option apply PayData(app.kit.currentAddress, fail)
     me goTo classOf[RequestActivity]
   }
 
@@ -193,6 +193,11 @@ abstract class InfoActivity extends TimerActivity { me =>
   def feeBase = rawFeeFactor match { case raw => if (raw < 1 | raw > 10) 2 else raw }
 
   // Activity lifecycle listeners management
+  override def onCreateOptionsMenu(menu: Menu) = {
+    getMenuInflater.inflate(R.menu.transactions_ops, menu)
+    super.onCreateOptionsMenu(menu)
+  }
+
   override def onOptionsItemSelected(mi: MenuItem) = {
     val decideActionToTake: PartialFunction[Int, Unit] = {
       case R.id.actionAddresses => me goTo classOf[AdrsActivity]
@@ -201,8 +206,8 @@ abstract class InfoActivity extends TimerActivity { me =>
       case R.id.actionSettings => mkSetsForm
 
       case R.id.lockWalletRightNow =>
-        wrap(app.kit.stopAsync)(me setPassAsk true)
-        me exitTo classOf[MainActivity]
+        prefs.edit.putBoolean(AbstractKit.PASSWORD_ASK_STARTUP, true).commit
+        wrap(me exitTo mainActivClass)(app.kit.stopAsync)
     }
 
     decideActionToTake(mi.getItemId)
@@ -222,7 +227,6 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   // CRUD for informers
-
   def del(delTag: Int) = uiTask {
     infos = infos.filterNot(_.tag == delTag)
     ui
@@ -239,7 +243,6 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   // Balance animation
-
   class Anim(amt: Coin, curText: String) extends Runnable {
     val txt = if (amt.isZero) getString(R.string.wallet_empty) else fmt(amt)
     val max = scala.math.max(txt.length, curText.length)
@@ -256,7 +259,6 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   // Concrete dialogs
-
   def mkClear(alert: Dialog) = {
     def remove = rm(alert)(process)
     def process = wrap(mkPayForm)(app.TransData.payments.clear)
@@ -283,10 +285,9 @@ abstract class InfoActivity extends TimerActivity { me =>
     dc.radios check dc.nowMode
 
     def savePay(tc: TryCoin) = Try {
-      val addr = spMan.address.getText.toString
-      val pay = PayData(new Address(app.params, addr), tc)
-      val isAlready = app.TransData.payments contains pay
-      if (!isAlready) app.TransData.payments prepend pay
+      val address = spMan.address.getText.toString
+      val pay = PayData(new Address(app.params, address), tc)
+      pay +=: (app.TransData.payments -= pay)
     } match {
       case Success(addrIsOK) => rm(alert)(new PayPass)
       case Failure(e) => toast(R.string.dialog_addr_wrong)
@@ -403,26 +404,20 @@ abstract class InfoActivity extends TimerActivity { me =>
   }
 
   def mkSetsForm: Unit = {
-    val fee = fmt(me feePerKb feeBase)
     val feeTitle = me getString R.string.sets_fee
+    val fee = sumOut.format(feePerKb _ andThen fmt apply feeBase)
     val form = getLayoutInflater.inflate(R.layout.frag_settings, null)
     val dialog = mkForm(me negBld dialog_back, null, form)
 
     val fiatType = form.findViewById(R.id.fiatType).asInstanceOf[SegmentedGroup]
     val rescanChain = form.findViewById(R.id.rescanBlockchain).asInstanceOf[Button]
-    val askForPass = form.findViewById(R.id.askForPassword).asInstanceOf[CheckBox]
     val viewMnemonic = form.findViewById(R.id.viewMnemonic).asInstanceOf[Button]
     val changePass = form.findViewById(R.id.changePass).asInstanceOf[Button]
     val setCode = form.findViewById(R.id.setCode).asInstanceOf[Button]
     val setFee = form.findViewById(R.id.setFee).asInstanceOf[Button]
     val about = form.findViewById(R.id.about).asInstanceOf[Button]
 
-    setFee setText Html.fromHtml(s"$feeTitle <font color=#E31300>$fee</font>")
-    askForPass setChecked prefs.getBoolean(AbstractKit.PASSWORD_ASK_STARTUP, false)
-    askForPass setOnCheckedChangeListener new CompoundButton.OnCheckedChangeListener {
-      def onCheckedChanged(button: CompoundButton, isChecked: Boolean) = setPassAsk(isChecked)
-    }
-
+    setFee setText Html.fromHtml(s"$feeTitle $fee")
     setFee setOnClickListener new OnClickListener {
       override def onClick(view: View) = rm(dialog) {
         val feePerKilobytePicker = new NumberPicker(me)
@@ -564,7 +559,6 @@ abstract class TimerActivity extends Activity { me =>
   override def onDestroy = wrap(super.onDestroy)(timer.cancel)
   implicit def anyToRunnable(process: => Unit): Runnable = new Runnable { def run = process }
   implicit def uiTask(process: => Runnable): TimerTask = new TimerTask { def run = me runOnUiThread process }
-  def setPassAsk = prefs.edit.putBoolean(AbstractKit.PASSWORD_ASK_STARTUP, _: Boolean).commit
   def toast(message: Int) = Toast.makeText(app, message, Toast.LENGTH_LONG).show
 
   // Fiat conversion utilities

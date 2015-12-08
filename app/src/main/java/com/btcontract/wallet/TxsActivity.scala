@@ -15,11 +15,12 @@ import android.text.Html
 import android.net.Uri
 import java.util.Date
 
+import OnScrollListener.SCROLL_STATE_IDLE
 import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none, sumIn, sumOut, app}
 import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_general}
 import R.string.{txs_yes_fee, txs_incoming, txs_noaddr, dialog_ok, no_funds}
-import android.view.{View, ViewGroup, Menu}
-import OnScrollListener.SCROLL_STATE_IDLE
+import android.view.{View, ViewGroup}
+import View.{VISIBLE, GONE}
 import org.bitcoinj.core._
 import android.widget._
 
@@ -27,6 +28,7 @@ import android.widget._
 class TxsActivity extends InfoActivity { me =>
   def onFail(exc: Throwable): Unit = new Builder(me).setMessage(err_general).show
   lazy private[this] val time = String.format("%1$tb %1$te&#x200b;,&#160;%1$tY&#x200b;,&#160;%1$tR", _: Date)
+  lazy private[this] val allButton = getLayoutInflater.inflate(R.layout.frag_txs_all, null).asInstanceOf[ImageButton]
   lazy private[this] val head = getLayoutInflater.inflate(R.layout.frag_denom_and_count_head, null)
   lazy private[this] val txsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
   lazy private[this] val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
@@ -34,8 +36,8 @@ class TxsActivity extends InfoActivity { me =>
   // Confirmation rings, number of txs and implicits for denom
   lazy private[this] val confOpts = getResources getStringArray R.array.txs_normal_conf
   lazy private[this] val txsOpts = getResources getStringArray R.array.txs_total
-  implicit lazy private[this] val dc = new DenomControl(me, head)
-  implicit lazy private[this] val noFunds = getString(no_funds)
+  lazy implicit private[this] val dc = new DenomControl(me, head)
+  lazy implicit private[this] val noFunds = getString(no_funds)
 
   // Sent/received templates and fee
   lazy private[this] val yesFee = me getString txs_yes_fee
@@ -88,6 +90,34 @@ class TxsActivity extends InfoActivity { me =>
         var state = SCROLL_STATE_IDLE
       }
 
+      // pos - 1 because header is present
+      list setOnItemClickListener new AdapterView.OnItemClickListener {
+        def onItemClick(par: AdapterView[_], v: View, pos: Int, id: Long) = {
+          val detailsForm = getLayoutInflater.inflate(R.layout.frag_transaction_details, null)
+          val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
+          val outside = detailsForm.findViewById(R.id.viewTxOutside).asInstanceOf[TextView]
+          val copy = detailsForm.findViewById(R.id.copyTxHash).asInstanceOf[Button]
+          val transaction = adapter getItem pos - 1
+          val hash = transaction.getHash
+          val entry = cache(hash)
+
+          // Take special pain to inform if transaction is dead
+          val totalSum = transaction.getConfidence.getConfidenceType match {
+            case TransactionConfidence.ConfidenceType.DEAD => app getString R.string.txs_dead
+            case _ => s"${entry.transactAmount}<br><small>${me time transaction.getUpdateTime}</small>"
+          }
+
+          // Wire everything up
+          def site = new Intent(Intent.ACTION_VIEW, Uri parse s"https://blockexplorer.com/tx/$hash")
+          val txt = for (payment <- entry.pays) yield Html.fromHtml(payment pretty entry.sumDirection)
+          outside setOnClickListener new OnClickListener { def onClick(v: View) = me startActivity site }
+          copy setOnClickListener new OnClickListener { def onClick(v: View) = app setBuffer hash.toString }
+          listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, txt.toArray)
+          mkForm(me negBld dialog_ok, Html fromHtml totalSum, listCon)
+          listCon addHeaderView detailsForm
+        }
+      }
+
       // Setup selector
       dc.radios check dc.nowMode
       dc.radios setOnCheckedChangeListener new OnCheckedChangeListener {
@@ -97,53 +127,21 @@ class TxsActivity extends InfoActivity { me =>
       // Wait for transactions list
       <(app.kit.wallet.getTransactionsByTime, onFail) { result =>
         txsNum setText app.plurOrZero(txsOpts, result.size)
-        // txsListListener uses adapter which may be null
         app.kit.wallet addEventListener txsListListener
+
+        // Show lomited txs list
+        val range = scala.math.min(3, result.size)
+        if (range < result.size) list addFooterView allButton
+        adapter.transactions = result.subList(0, range)
         list.addHeaderView(head, null, true)
-        adapter.transactions = result
         list setAdapter adapter
-
-        // pos - 1 because header is present
-        list setOnItemClickListener new AdapterView.OnItemClickListener {
-          def onItemClick(par: AdapterView[_], v: View, pos: Int, id: Long) = {
-            val detailsForm = getLayoutInflater.inflate(R.layout.frag_transaction_details, null)
-            val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
-            val outside = detailsForm.findViewById(R.id.viewTxOutside).asInstanceOf[TextView]
-            val copy = detailsForm.findViewById(R.id.copyTxHash).asInstanceOf[Button]
-            val transaction = adapter getItem pos - 1
-            val hash = transaction.getHash
-            val entry = cache(hash)
-
-            // Take special pain to inform if transaction is dead
-            val totalSum = transaction.getConfidence.getConfidenceType match {
-              case TransactionConfidence.ConfidenceType.DEAD => app getString R.string.txs_dead
-              case _ => s"${entry.transactAmount}<br><small>${me time transaction.getUpdateTime}</small>"
-            }
-
-            // Wire up controls buttons
-            def site = new Intent(Intent.ACTION_VIEW, Uri parse s"https://blockexplorer.com/tx/$hash")
-            outside setOnClickListener new OnClickListener { def onClick(v: View) = me startActivity site }
-            copy setOnClickListener new OnClickListener { def onClick(v: View) = app setBuffer hash.toString }
-
-            // Prepare data and wire everything up
-            val txt = for (payment <- entry.pays) yield Html.fromHtml(payment pretty entry.sumDirection)
-            listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, txt.toArray)
-            mkForm(me negBld dialog_ok, Html fromHtml totalSum, listCon)
-            listCon addHeaderView detailsForm
-          }
-        }
       }
 
       // Wire up listeners
       app.kit.peerGroup addEventListener new CatchUpTracker
       app.kit.peerGroup addEventListener constantListener
       app.kit.wallet addEventListener taskListener
-    } else this exitTo classOf[MainActivity]
-  }
-
-  override def onCreateOptionsMenu(menu: Menu) = {
-    getMenuInflater.inflate(R.menu.transactions_ops, menu)
-    super.onCreateOptionsMenu(menu)
+    } else me exitTo mainActivClass
   }
 
   override def onResume = wrap(super.onResume) {
@@ -154,6 +152,13 @@ class TxsActivity extends InfoActivity { me =>
     app.kit.peerGroup removeEventListener constantListener
     app.kit.wallet removeEventListener txsListListener
     app.kit.wallet removeEventListener taskListener
+  }
+
+  def showAll(view: View) = {
+    list removeFooterView allButton
+    <(app.kit.wallet.getTransactionsByTime, onFail) { result =>
+      wrap(adapter.notifyDataSetChanged)(adapter.transactions = result)
+    }
   }
 
   // Adapter
@@ -208,8 +213,7 @@ class TxsActivity extends InfoActivity { me =>
   }
 
   def makeCache(txn: Transaction) = txn getValue app.kit.wallet match { case sum =>
-    val goodOuts = getOuts(txn.getOutputs, mutable.Buffer.empty, sum.isPositive)
-    TxCache(goodOuts, txn.getFee, sum)
+    TxCache(getOuts(txn.getOutputs, mutable.Buffer.empty, sum.isPositive), txn.getFee, sum)
   }
 
   // Transaction cache item and view holders

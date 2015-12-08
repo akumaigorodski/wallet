@@ -2,11 +2,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
     android:layout_height="wrap_content" android:layout_width="wrap_content">
 
-    <CheckBox
-        android:padding="15dp" android:button="@null"
-        android:layout_width="fill_parent" android:text="@string/sets_pass_ask"
-        android:layout_height="wrap_content" android:id="@+id/askForPassword"
-        android:drawableRight="?android:attr/listChoiceIndicatorMultiple"/>
+    <Button
+        android:id="@+id/setFee"
+        style="@style/TransButton"/>
 
     <View
         android:layout_height="1dp"
@@ -46,15 +44,6 @@
             style="@style/RadioButton"/>
 
     </info.hoang8f.android.segmented.SegmentedGroup>
-
-    <View
-        android:layout_height="1dp"
-        android:background="#33999999"
-        android:layout_width="fill_parent"/>
-
-    <Button
-        android:id="@+id/setFee"
-        style="@style/TransButton"/>
 
     <View
         android:layout_height="1dp"

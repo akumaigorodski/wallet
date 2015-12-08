@@ -19,7 +19,6 @@
     <string name="wallet_open">Open wallet</string>
 
     <string name="sets_fee">Fee per kilobyte</string>
-    <string name="sets_pass_ask">Ask for password on startup</string>
     <string name="sets_pass_change">Change wallet password</string>
     <string name="sets_destruct_set">Set destruction code</string>
     <string name="sets_mnemonic">View mnemonic code</string>
@@ -135,8 +134,8 @@
     <string name="txs_many_received_to"><![CDATA[rcvd to <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_many_sent_to"><![CDATA[sent to <font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_received_to"><![CDATA[rcvd to <font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[sent to <font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[sent to <font color=#E31300>%1$s</font>]]></string>
+    <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_view_outside">View on BlockExplorer.com</string>
     <string name="txs_copy_hash">Copy transaction hash</string>

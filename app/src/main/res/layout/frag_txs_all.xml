@@ -1,0 +1,3 @@
+<ImageButton xmlns:android="http://schemas.android.com/apk/res/android" style="@style/BottomMenuTransImageButton"
+    android:src="@drawable/ic_expand_more_black_24dp" android:paddingTop="5dp" android:paddingBottom="5dp"
+    android:onClick="showAll"/>
