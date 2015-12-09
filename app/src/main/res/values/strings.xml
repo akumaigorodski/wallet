@@ -124,7 +124,6 @@
     <string name="restore_wallet">Restore Wallet</string>
 
     <!-- activity_request -->
-    <string name="req_generating">Generating QR code</string>
     <string name="req_save">Share QR code</string>
 
     <!-- activity_txs -->

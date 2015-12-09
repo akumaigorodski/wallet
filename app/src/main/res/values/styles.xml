@@ -67,12 +67,6 @@
         <item name="android:paddingLeft">15dp</item>
     </style>
 
-    <!-- for request page -->
-    <style name="ReqItem" parent="StdText">
-        <item name="android:layout_centerHorizontal">true</item>
-        <item name="android:layout_width">wrap_content</item>
-    </style>
-
     <!-- for transactions -->
     <style name="OneLinerText" parent="BaseText">
         <item name="android:maxLines">1</item>
@@ -86,5 +80,4 @@
     <style name="LiteNoBar" parent="@android:style/Theme.Holo.Light.NoActionBar"/>
     <style name="LiteBar" parent="@android:style/Theme.Holo.Light"/>
     <style name="DarkBar" parent="@android:style/Theme.Holo"/>
-
 </resources>

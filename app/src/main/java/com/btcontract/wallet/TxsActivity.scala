@@ -15,12 +15,11 @@ import android.text.Html
 import android.net.Uri
 import java.util.Date
 
-import OnScrollListener.SCROLL_STATE_IDLE
+import android.view.{View, ViewGroup}
 import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none, sumIn, sumOut, app}
 import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_general}
 import R.string.{txs_yes_fee, txs_incoming, txs_noaddr, dialog_ok, no_funds}
-import android.view.{View, ViewGroup}
-import View.{VISIBLE, GONE}
+import OnScrollListener.SCROLL_STATE_IDLE
 import org.bitcoinj.core._
 import android.widget._
 
@@ -28,16 +27,16 @@ import android.widget._
 class TxsActivity extends InfoActivity { me =>
   def onFail(exc: Throwable): Unit = new Builder(me).setMessage(err_general).show
   lazy private[this] val time = String.format("%1$tb %1$te&#x200b;,&#160;%1$tY&#x200b;,&#160;%1$tR", _: Date)
-  lazy private[this] val allButton = getLayoutInflater.inflate(R.layout.frag_txs_all, null).asInstanceOf[ImageButton]
   lazy private[this] val head = getLayoutInflater.inflate(R.layout.frag_denom_and_count_head, null)
+  lazy private[this] val allButton = getLayoutInflater.inflate(R.layout.frag_txs_all, null)
   lazy private[this] val txsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
   lazy private[this] val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
 
   // Confirmation rings, number of txs and implicits for denom
   lazy private[this] val confOpts = getResources getStringArray R.array.txs_normal_conf
   lazy private[this] val txsOpts = getResources getStringArray R.array.txs_total
-  lazy implicit private[this] val dc = new DenomControl(me, head)
-  lazy implicit private[this] val noFunds = getString(no_funds)
+  lazy private[this] implicit val dc = new DenomControl(me, head)
+  lazy private[this] implicit val noFunds = getString(no_funds)
 
   // Sent/received templates and fee
   lazy private[this] val yesFee = me getString txs_yes_fee
@@ -70,13 +69,15 @@ class TxsActivity extends InfoActivity { me =>
   override def onCreate(savedInstanceState: Bundle) =
   {
     super.onCreate(savedInstanceState)
+    val linesNum = if (scrHeight < 4.5) 3 else if (scrHeight < 4.8) 4
+      else if (scrHeight < 5.1) 5 else if (scrHeight < 5.5) 6
+      else if (scrHeight < 6.2) 10 else 12
 
     if (app.isAlive) {
       add(constantListener.mkTxt, Informer.PEERS).ui.run
       new Anim(app.kit.currentBalance, Utils.appName)
       setContentView(R.layout.activity_txs)
 
-      // Setup adapter here because scrWidth is not available on start
       adapter = if (scrWidth < 2.0) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_small)
         else if (scrWidth < 3.2) new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_normal)
         else if (scrWidth < 4.4) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_large)
@@ -130,7 +131,7 @@ class TxsActivity extends InfoActivity { me =>
         app.kit.wallet addEventListener txsListListener
 
         // Show lomited txs list
-        val range = scala.math.min(3, result.size)
+        val range = scala.math.min(linesNum, result.size)
         if (range < result.size) list addFooterView allButton
         adapter.transactions = result.subList(0, range)
         list.addHeaderView(head, null, true)

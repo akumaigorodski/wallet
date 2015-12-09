@@ -124,7 +124,6 @@
     <string name="restore_wallet">Restaurar monedero</string>
 
     <!-- activity_request -->
-    <string name="req_generating">Generando código QR</string>
     <string name="req_save">Compartir código QR</string>
 
     <!-- activity_txs -->

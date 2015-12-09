@@ -101,16 +101,16 @@
     <orderEntry type="library" exported="" name="guava-16.0.1" level="project" />
     <orderEntry type="library" exported="" name="bitcoinj-core-0.13.3" level="project" />
     <orderEntry type="library" exported="" name="scrypt-1.4.0" level="project" />
-    <orderEntry type="library" exported="" name="protobuf-java-2.5.0" level="project" />
     <orderEntry type="library" exported="" name="scala-library-2.11.7" level="project" />
+    <orderEntry type="library" exported="" name="protobuf-java-2.5.0" level="project" />
+    <orderEntry type="library" exported="" name="core-3.2.0" level="project" />
     <orderEntry type="library" exported="" name="okhttp-2.2.0" level="project" />
     <orderEntry type="library" exported="" name="core-1.51.0.0" level="project" />
-    <orderEntry type="library" exported="" name="core-3.2.0" level="project" />
     <orderEntry type="library" exported="" name="android-segmented-1.0.4" level="project" />
     <orderEntry type="library" exported="" name="jbox2d-library-2.3.1-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="jsr305-2.0.1" level="project" />
-    <orderEntry type="library" exported="" name="slf4j-api-1.7.7" level="project" />
     <orderEntry type="library" exported="" name="okio-1.2.0" level="project" />
+    <orderEntry type="library" exported="" name="slf4j-api-1.7.7" level="project" />
     <orderEntry type="library" name="scala-sdk-2.9.1.final" level="application" />
   </component>
 </module>

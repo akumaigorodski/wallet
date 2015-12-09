@@ -116,7 +116,7 @@ class WalletApp extends Application {
       wallet addEventListener listener
       wallet.allowSpendingUnconfirmedTransactions
       peerGroup addPeerDiscovery new DnsDiscovery(params)
-      peerGroup.setUserAgent(Utils.appName, "1.03")
+      peerGroup.setUserAgent(Utils.appName, "1.04")
       peerGroup setDownloadTxDependencies false
       peerGroup setPingIntervalMsec 10000
       peerGroup setMaxConnections 10

@@ -123,7 +123,6 @@
     <string name="restore_wallet">还原钱包</string>
 
     <!-- activity_request -->
-    <string name="req_generating">生成QR代码中</string>
     <string name="req_save">分享QR代码</string>
 
     <!-- activity_txs -->

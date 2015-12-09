@@ -260,8 +260,7 @@ abstract class InfoActivity extends TimerActivity { me =>
 
   // Concrete dialogs
   def mkClear(alert: Dialog) = {
-    def remove = rm(alert)(process)
-    def process = wrap(mkPayForm)(app.TransData.payments.clear)
+    def remove = rm(alert)(app.TransData.payments.clear)
     val container = getLayoutInflater.inflate(R.layout.frag_top_clear, null)
     val clear = container.findViewById(R.id.clearPayments).asInstanceOf[Button]
     clear setOnClickListener new OnClickListener { def onClick(view: View) = remove }
@@ -545,15 +544,17 @@ abstract class TimerActivity extends Activity { me =>
   val goTo: Class[_] => Unit = me startActivity new Intent(me, _)
   val exitTo: Class[_] => Unit = goto => wrap(finish)(goTo apply goto)
   lazy val prefs = app.getSharedPreferences("prefs", Context.MODE_PRIVATE)
-  lazy val maxDialog = metrics.densityDpi * 2.1
-  lazy val metrics = new DisplayMetrics
   val timer = new Timer
 
-  lazy val scrWidth = {
-    // Screen width in inches
-    getWindowManager.getDefaultDisplay getMetrics metrics
-    metrics.widthPixels.toDouble / metrics.densityDpi
+  // Screen size in inches
+  lazy val metrics = new DisplayMetrics match { case mtx =>
+    getWindowManager.getDefaultDisplay getMetrics mtx
+    mtx
   }
+
+  lazy val scrHeight = metrics.heightPixels.toDouble / metrics.densityDpi
+  lazy val scrWidth = metrics.widthPixels.toDouble / metrics.densityDpi
+  lazy val maxDialog = metrics.densityDpi * 2.1
 
   // Navigation related methods and timer cancel
   override def onDestroy = wrap(super.onDestroy)(timer.cancel)
@@ -592,7 +593,7 @@ abstract class TimerActivity extends Activity { me =>
   }
 
   def rm(prev: Dialog)(fun: => Unit) = {
-    timer.schedule(me anyToRunnable fun, 100)
+    timer.schedule(me anyToRunnable fun, 120)
     prev.dismiss
   }
 

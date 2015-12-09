@@ -125,7 +125,6 @@
     <string name="restore_hint">Ваш мнемонічний код</string>
 
     <!-- activity_request -->
-    <string name="req_generating">Генерую QR-код</string>
     <string name="req_save">Поділитися картинкою</string>
 
     <!-- activity_txs -->

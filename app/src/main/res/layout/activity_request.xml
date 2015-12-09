@@ -1,29 +1,25 @@
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_marginTop="20dp" android:layout_marginBottom="20dp"
-    android:layout_height="fill_parent" android:layout_width="fill_parent">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent" android:layout_height="fill_parent"
+    style="@style/StandardLinearLayout">
 
     <TextView
-        style="@style/ReqItem"
+        style="@style/StdText"
         android:maxWidth="245sp"
-        android:id="@+id/reqAddress"/>
-
-    <TextView
-        style="@style/ReqItem"
-        android:layout_centerVertical="true"
-        android:text="@string/req_generating"/>
+        android:id="@+id/reqAddress"
+        android:layout_width="wrap_content"/>
 
     <ImageView
-        style="@style/ReqItem"
         android:id="@+id/reqCode"
-        android:paddingTop="55dp"
-        android:layout_centerVertical="true"/>
+        android:layout_marginTop="25dp"
+        android:layout_marginBottom="25dp"
+        android:layout_width="@dimen/bitmap_qr_size"
+        android:layout_height="@dimen/bitmap_qr_size"/>
 
     <Button
-        style="@style/ReqItem"
         android:enabled="false"
         android:id="@+id/reqShare"
         android:text="@string/req_save"
-        android:layout_alignParentBottom="true"/>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
 
-</RelativeLayout>
+</LinearLayout>
