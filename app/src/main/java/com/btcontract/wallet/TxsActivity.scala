@@ -73,15 +73,15 @@ class TxsActivity extends InfoActivity { me =>
       else if (scrHeight < 5.1) 5 else if (scrHeight < 5.5) 6
       else if (scrHeight < 6.2) 10 else 12
 
+    adapter = if (scrWidth < 2.0) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_small)
+      else if (scrWidth < 3.2) new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_normal)
+      else if (scrWidth < 4.4) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_large)
+      else new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_extra)
+
     if (app.isAlive) {
       add(constantListener.mkTxt, Informer.PEERS).ui.run
       new Anim(app.kit.currentBalance, Utils.appName)
       setContentView(R.layout.activity_txs)
-
-      adapter = if (scrWidth < 2.0) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_small)
-        else if (scrWidth < 3.2) new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_normal)
-        else if (scrWidth < 4.4) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_large)
-        else new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_extra)
 
       // Periodic list update
       list setOnScrollListener new ScrollListener {

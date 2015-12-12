@@ -144,7 +144,7 @@
 
     <array name="txs_total">
         <item>No history</item>
-        <item>%1$s tranaction</item>
+        <item>%1$s transaction</item>
         <item>%1$s txns</item>
     </array>
 

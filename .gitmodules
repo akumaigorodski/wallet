@@ -1,0 +1,3 @@
+[submodule "app/scrypt"]
+	path = app/scrypt
+	url = https://github.com/wg/scrypt
