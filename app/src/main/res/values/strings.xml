@@ -149,7 +149,7 @@
     </array>
 
     <array name="addr_total">
-        <item>no addresses</item>
+        <item>No addresses</item>
         <item>%1$s address</item>
         <item>%1$s addresses</item>
     </array>

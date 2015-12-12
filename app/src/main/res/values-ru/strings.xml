@@ -151,7 +151,7 @@
     </array>
 
     <array name="addr_total">
-        <item>адресов нет</item>
+        <item>Адресов нет</item>
         <item>%1$s адрес</item>
         <item>%1$s адреса</item>
         <item>%1$s адресов</item>
