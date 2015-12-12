@@ -18,7 +18,7 @@ object FiatRates { me =>
 
   def loadCurrentRates(provider: RatesProvider): Unit = {
     val res = Future(provider fromJSON HttpRequest.get(provider.url).body)
-    res onComplete { case Success(ok) => me again 300000 case _ => me again 5000 }
+    res onComplete { case Success(ok) => me again 300000 case _ => me again 2500 }
     res onComplete { case ok: Success[Rates] => rates = ok case _ => }
   }
 }
