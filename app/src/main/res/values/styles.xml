@@ -72,6 +72,10 @@
         <item name="android:maxLines">1</item>
     </style>
 
+    <style name="GrayOneLinerText" parent="OneLinerText">
+        <item name="android:textColor">#FF777777</item>
+    </style>
+
     <!-- overall theme style -->
     <style name="NoBar" parent="@android:style/Theme.Holo.NoActionBar">
         <item name="android:windowBackground">@android:color/black</item>

@@ -131,17 +131,18 @@
     <string name="no_funds">Денег нет</string>
     <string name="txs_incoming">Входящая&#160;</string>
     <string name="txs_yes_fee">%1$s fee&#160;</string>
-    <string name="txs_many_received_to"><![CDATA[получ <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_many_sent_to"><![CDATA[отправ <font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_received_to"><![CDATA[получ <font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[отправ <font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_many_received_to"><![CDATA[получ&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_many_sent_to"><![CDATA[отправ&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_received_to"><![CDATA[получ&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[отправ&#160;<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_view_outside">Смотреть на BlockExplorer.com</string>
     <string name="txs_copy_hash">Скопировать хэш транзакции</string>
     <string name="txs_noaddr">адрес не найден</string>
     <string name="txs_dead">ТРАНЗАКЦИЯ МЕРТВА</string>
-    <string name="txs_normal_dead">✕✕✕</string>
+    <string name="txs_confirmed">Прошла</string>
+    <string name="txs_wait">Ждите</string>
 
     <array name="txs_total">
         <item>∅</item>
@@ -155,12 +156,5 @@
         <item>%1$s адрес</item>
         <item>%1$s адреса</item>
         <item>%1$s адресов</item>
-    </array>
-
-    <array name="txs_normal_conf">
-        <item>ЖДЕМ</item>
-        <item>%1$s</item>
-        <item>%1$s</item>
-        <item>%1$s</item>
     </array>
 </resources>

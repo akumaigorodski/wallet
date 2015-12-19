@@ -2,7 +2,7 @@
     android:layout_width="match_parent" android:layout_height="match_parent">
 
     <TextView
-        style="@style/StdText"
+        style="@style/Info"
         android:paddingTop="20dp"
         android:id="@+id/textItem"
         android:paddingBottom="20dp"

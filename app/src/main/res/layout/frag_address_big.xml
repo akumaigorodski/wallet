@@ -1,0 +1,17 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" style="@style/TransactionLayout"
+    android:paddingLeft="10dp" android:paddingRight="10dp" android:paddingTop="10dp" android:paddingBottom="15dp">
+
+    <TextView
+        style="@style/StdText"
+        android:id="@+id/amount"
+        android:layout_weight="3"
+        android:layout_width="0dp"/>
+
+    <TextView
+        style="@style/StdText"
+        android:id="@+id/address"
+        android:layout_weight="8"
+        android:layout_width="0dp"/>
+
+</LinearLayout>

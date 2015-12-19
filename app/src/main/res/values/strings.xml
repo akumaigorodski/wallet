@@ -130,17 +130,18 @@
     <string name="no_funds">No funds</string>
     <string name="txs_incoming">Incoming&#160;</string>
     <string name="txs_yes_fee">%1$s fee&#160;</string>
-    <string name="txs_many_received_to"><![CDATA[rcvd to <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_many_sent_to"><![CDATA[sent to <font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_received_to"><![CDATA[rcvd to <font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[sent to <font color=#E31300>%1$s</font>]]></string>
+    <string name="txs_many_received_to"><![CDATA[got&#160;on&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_many_sent_to"><![CDATA[sent&#160;to&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_received_to"><![CDATA[got&#160;on&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[sent&#160;to&#160;<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_view_outside">View on BlockExplorer.com</string>
     <string name="txs_copy_hash">Copy transaction hash</string>
     <string name="txs_noaddr">some unknown address</string>
     <string name="txs_dead">TRANSACTION IS DEAD</string>
-    <string name="txs_normal_dead">✕✕✕</string>
+    <string name="txs_confirmed">Confirmed</string>
+    <string name="txs_wait">Waiting</string>
 
     <array name="txs_total">
         <item>No history</item>
@@ -152,11 +153,5 @@
         <item>No addresses</item>
         <item>%1$s address</item>
         <item>%1$s addresses</item>
-    </array>
-
-    <array name="txs_normal_conf">
-        <item>WAIT</item>
-        <item>%1$s</item>
-        <item>%1$s</item>
     </array>
 </resources>

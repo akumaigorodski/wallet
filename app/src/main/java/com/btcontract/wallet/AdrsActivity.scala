@@ -4,11 +4,14 @@ import android.widget.RadioGroup.OnCheckedChangeListener
 import android.app.AlertDialog.Builder
 import android.os.Bundle
 import android.text.Html
+import util.Success
 
 import android.widget.{TextView, ListView, BaseAdapter, RadioGroup, AdapterView, ArrayAdapter}
-import org.bitcoinj.core.{AbstractWalletEventListener, Wallet, Transaction, Coin, Address}
-import Utils.{wrap, denom, Outputs, app, sumIn, humanAddr}
+import org.bitcoinj.core.{AbstractWalletEventListener, Wallet, Transaction, Coin}
+import Utils.{wrap, denom, Outputs, app, sumIn, nullFail}
 import R.string.{err_general, no_funds, dialog_cancel}
+import R.layout.{frag_address_small, frag_address_big}
+
 import collection.JavaConversions._
 import android.view._
 
@@ -16,22 +19,23 @@ import android.view._
 class AdrsActivity extends TimerActivity { me =>
   def onFail(exc: Throwable): Unit = new Builder(me).setMessage(err_general).show
   override def onDestroy = wrap(super.onDestroy)(app.kit.wallet removeEventListener addressListener)
-  lazy val head = getLayoutInflater.inflate(R.layout.frag_denom_and_count_head, null)
-  lazy val adrsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
-  lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
+  private[this] lazy val head = getLayoutInflater.inflate(R.layout.frag_denom_and_count_head, null)
+  private[this] lazy val adrTotal = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
+  private[this] lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
 
   // Implicits for denom
-  implicit lazy val dc = new DenomControl(me, head)
-  implicit lazy val noFunds = getString(no_funds)
+  private[this] implicit lazy val dc = new DenomControl(me, head)
+  private[this] implicit lazy val noFunds = getString(no_funds)
 
   // Human number of addresses, list of dialog options and caches
-  lazy val adrOpts = getResources getStringArray R.array.dialog_address
-  lazy val adrNum = getResources getStringArray R.array.addr_total
-  var bag = List.empty[AdrCache]
+  private[this] lazy val itemView = if (scrWidth < 3.5) frag_address_small else frag_address_big
+  private[this] lazy val adrOpts = getResources getStringArray R.array.dialog_address
+  private[this] lazy val adrNum = getResources getStringArray R.array.addr_total
+  private[this] var bag = List.empty[PayData]
 
   val adapter = new BaseAdapter {
     def getView(pos: Int, oldView: View, parent: ViewGroup) = {
-      val view = if (null == oldView) getLayoutInflater.inflate(R.layout.frag_address, null) else oldView
+      val view = if (null == oldView) getLayoutInflater.inflate(itemView, null) else oldView
       val hold = if (null == view.getTag) new AdrViewHolder(view) else view.getTag.asInstanceOf[AdrViewHolder]
       hold fillView getItem(pos)
       view
@@ -47,7 +51,7 @@ class AdrsActivity extends TimerActivity { me =>
     override def onCoinsSent(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = update
 
     def update = <(updateData, onFail) { case ok =>
-      adrsNum setText app.plurOrZero(adrNum, adapter.getCount)
+      adrTotal setText app.plurOrZero(adrNum, adapter.getCount)
       adapter.notifyDataSetChanged
     }
   }
@@ -58,7 +62,6 @@ class AdrsActivity extends TimerActivity { me =>
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_adrs)
     app.kit.wallet addEventListener addressListener
-    // Generate fresh address if there is none yet
     app.kit.currentAddress
 
     // Setup selector
@@ -72,22 +75,20 @@ class AdrsActivity extends TimerActivity { me =>
       def onItemClick(par: AdapterView[_], v: View, pos: Int, id: Long) = bag(pos - 1) match { case item =>
         val listCon = getLayoutInflater.inflate(R.layout.frag_center_list, null).asInstanceOf[ListView]
         val arrAdapter = new ArrayAdapter(me, R.layout.frag_center_text, R.id.textItem, adrOpts)
-        val dialog = mkForm(me negBld dialog_cancel, Html fromHtml item.humanAddrWay, listCon)
+        val dialog = mkForm(negBld(dialog_cancel), Html.fromHtml(item route sumIn), listCon)
 
+        listCon setAdapter arrAdapter
+        app.TransData.value = Option apply item.copy(tc = nullFail)
         listCon setOnItemClickListener new AdapterView.OnItemClickListener {
           def onItemClick(par: AdapterView[_], view: View, pos: Int, id: Long) =
-            rm(dialog) _ apply choose(pos, item.address.toString)
+            rm(dialog) _ apply choose(pos, item.adr.toString)
         }
-
-        // Wire everything up
-        app.TransData.value = Option(item)
-        listCon setAdapter arrAdapter
       }
     }
 
     // Wait for wallet data
     <(updateData, onFail) { case ok =>
-      adrsNum setText app.plurOrZero(adrNum, adapter.getCount)
+      adrTotal setText app.plurOrZero(adrNum, bag.size)
       list.addHeaderView(head, null, true)
       list setAdapter adapter
     }
@@ -100,20 +101,16 @@ class AdrsActivity extends TimerActivity { me =>
     val amountText = view.findViewById(R.id.amount).asInstanceOf[TextView]
     view setTag this
 
-    def fillView(cache: AdrCache) = {
-      addressText setText Html.fromHtml(cache.humanAddrWay)
-      amountText setText denom(cache.amount)
+    def fillView(item: PayData) = {
+      addressText setText Html.fromHtml(item route sumIn)
+      amountText setText(item.tc map denom getOrElse noFunds)
     }
   }
 
   def updateData = bag = {
-    def summate(outs: Outputs) = (Coin.ZERO /: outs)(_ add _.getValue)
+    def summate(outs: Outputs) = Success apply (Coin.ZERO /: outs)(_ add _.getValue)
+    val issued = app.kit.wallet.getIssuedReceiveAddresses map (adr => adr -> nullFail)
     val withFunds = app.kit.freshOuts groupBy app.kit.toAdr mapValues summate
-    val issued = app.kit.wallet.getIssuedReceiveAddresses.map(_ -> Coin.ZERO).toMap
-    issued ++ withFunds map AdrCache.tupled
+    issued.toMap ++ withFunds map PayData.tupled
   }.toList
-}
-
-case class AdrCache(address: Address, amount: Coin) {
-  lazy val humanAddrWay = sumIn format humanAddr(address)
 }

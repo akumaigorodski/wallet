@@ -3,41 +3,36 @@
     android:paddingLeft="10dp" android:paddingRight="10dp" android:paddingTop="8dp" android:paddingBottom="11dp">
 
     <TextView
-        android:layout_weight="6"
+        android:layout_weight="7"
         android:layout_width="0dp"
         style="@style/OneLinerText"
         android:id="@+id/transactSum"/>
 
     <TextView
         android:id="@+id/address"
-        android:layout_weight="12"
+        android:layout_weight="11"
         android:layout_width="0dp"
         style="@style/OneLinerText"/>
 
     <TextView
         android:gravity="center"
-        android:layout_weight="6"
+        android:layout_weight="7"
         android:layout_width="0dp"
         android:id="@+id/feeAmount"
-        style="@style/OneLinerText"
-        android:textColor="#FF777777"/>
+        style="@style/GrayOneLinerText"/>
 
     <TextView
-        style="@style/StdText"
-        android:layout_weight="6"
+        android:gravity="center"
+        android:layout_weight="8"
         android:layout_width="0dp"
+        style="@style/OneLinerText"
         android:id="@+id/transactWhen"/>
 
     <TextView
-        style="@style/StdText"
-        android:layout_weight="4"
+        android:gravity="end"
+        android:layout_weight="6"
         android:layout_width="0dp"
-        android:textColor="#FF777777"
+        style="@style/GrayOneLinerText"
         android:id="@+id/transactStatus"/>
-
-    <ImageView
-        android:layout_width="24dp"
-        android:id="@+id/transactCircle"
-        android:layout_height="wrap_content"/>
 
 </LinearLayout>

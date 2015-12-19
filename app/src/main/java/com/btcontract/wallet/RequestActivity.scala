@@ -1,5 +1,6 @@
 package com.btcontract.wallet
 
+import android.view.View.OnClickListener
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.qrcode.QRCodeWriter
 import android.app.AlertDialog.Builder
@@ -45,11 +46,12 @@ object QRGen {
 
 class RequestActivity extends TimerActivity { me =>
   def qrError(e: Throwable): Unit = new Builder(me).setMessage(err_general).show
-  lazy val qrSize = getResources getDimensionPixelSize R.dimen.bitmap_qr_size
-  lazy val address = findViewById(R.id.reqAddress).asInstanceOf[TextView]
-  lazy val reqCode = findViewById(R.id.reqCode).asInstanceOf[ImageView]
-  lazy val reqShare = findViewById(R.id.reqShare).asInstanceOf[Button]
-  lazy val enableShare = anyToRunnable(reqShare setEnabled true)
+  private [this] lazy val qrSize = getResources getDimensionPixelSize R.dimen.bitmap_qr_size
+  private [this] lazy val address = findViewById(R.id.reqAddress).asInstanceOf[TextView]
+  private [this] lazy val reqCode = findViewById(R.id.reqCode).asInstanceOf[ImageView]
+  private [this] lazy val reqShare = findViewById(R.id.reqShare).asInstanceOf[Button]
+  private [this] lazy val copyData = findViewById(R.id.copyData).asInstanceOf[Button]
+  private [this] lazy val enableShare = anyToRunnable(reqShare setEnabled true)
 
   // Initialize this activity, method is run once
   override def onCreate(savedInstanceState: Bundle)
@@ -58,43 +60,50 @@ class RequestActivity extends TimerActivity { me =>
     setContentView(R.layout.activity_request)
 
     app.TransData.value match {
-      case Some(cache: AdrCache) => show(cache.address.toString, cache.humanAddrWay)
-      case Some(payData: PayData) => show(payData.getURI, payData pretty sumIn)
+      case Some(pay: PayData) =>
+        // Define button text and function depeding on paydata tc value
+        val onClick = new OnClickListener { def onClick(v: View) = app setBuffer pay.string }
+        val copyAdr = getResources getStringArray R.array.dialog_address apply 1
+        val copyReq = getResources getStringArray R.array.dialog_request apply 1
+        val buttonText = if (pay.tc.isSuccess) copyReq else copyAdr
+        address setText Html.fromHtml(pay pretty sumIn)
+        copyData setOnClickListener onClick
+        copyData setText buttonText
+
+        <(QRGen.get(pay.string, qrSize), qrError) { bitMap =>
+          reqShare setOnClickListener new View.OnClickListener {
+            def shareQRCodeImage = <(me saveImage bitMap, qrError) { file =>
+              val share = new Intent setAction Intent.ACTION_SEND setType "image/png"
+              me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile file)
+            }
+
+            def onClick(v: View) = {
+              timer.schedule(enableShare, 2000)
+              reqShare setEnabled false
+              shareQRCodeImage
+            }
+          }
+
+          // Wire up the rest of the interface
+          reqCode setImageBitmap bitMap
+          enableShare.run
+        }
+
       case _ => finish
     }
   }
 
-  def show(content: String, fancy: String) =
-    <(QRGen.get(content, qrSize), qrError) { bitMap =>
-      reqShare setOnClickListener new View.OnClickListener {
-        def shareQRCodeImage = <(saveImage(bitMap), qrError) { file =>
-          val share = new Intent setAction Intent.ACTION_SEND setType "image/png"
-          me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile file)
-        }
-
-        def onClick(v: View) = {
-          timer.schedule(enableShare, 2000)
-          reqShare setEnabled false
-          shareQRCodeImage
-        }
-      }
-
-      address setText Html.fromHtml(fancy)
-      reqCode setImageBitmap bitMap
-      enableShare.run
-    }
-
   def saveImage(bits: Bitmap) = {
-    val path = Environment.getExternalStorageDirectory.getAbsolutePath
-    val dir = new File(s"$path/$appName")
+    val path = Environment.getExternalStorageDirectory
+    val dir = new File(s"${path.getAbsolutePath}/$appName")
     dir.mkdirs
 
     // Save PNG compressed file
     val imageFile = new File(dir, "qr.png")
-    val outStream = new FileOutputStream(imageFile)
-    bits.compress(Bitmap.CompressFormat.PNG, 90, outStream)
-    outStream.flush
-    outStream.close
+    val stream = new FileOutputStream(imageFile)
+    bits.compress(Bitmap.CompressFormat.PNG, 90, stream)
+    stream.flush
+    stream.close
     imageFile
   }
 }

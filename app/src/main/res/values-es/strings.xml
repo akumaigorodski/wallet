@@ -62,7 +62,7 @@
     <string name="err_address">Falló porque la dirección Bitcoin en la solicitud no es válida.</string>
     <string name="err_neg">Falló porque la solicitud contiene una cantidad negativa.</string>
     <string name="err_general">Falló porque ha ocurrido un error inesperado.</string>
-    
+
     <!-- dialogs -->
     <string name="dialog_ok">OK</string>
     <string name="dialog_pay">Pagar</string>
@@ -130,17 +130,18 @@
     <string name="no_funds">Sin fondos</string>
     <string name="txs_incoming">Entrante&#160;</string>
     <string name="txs_yes_fee">%1$s fee&#160;</string>
-    <string name="txs_many_received_to"><![CDATA[recibido <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_many_sent_to"><![CDATA[enviado <font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_received_to"><![CDATA[recibido <font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[enviado <font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_many_received_to"><![CDATA[recibido&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_many_sent_to"><![CDATA[enviado&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_received_to"><![CDATA[recibido&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[enviado&#160;<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_copy_hash">Copiar hash al portapapeles</string>
     <string name="txs_view_outside">Ver en BlockExplorer.com</string>
     <string name="txs_noaddr">dirección desconocida</string>
     <string name="txs_dead">LA TRANSACTION ESTÁ MUERTA</string>
-    <string name="txs_normal_dead">✕✕✕</string>
+    <string name="txs_confirmed">Confirmado</string>
+    <string name="txs_wait">Espera</string>
 
     <array name="txs_total">
         <item>Sin historial</item>
@@ -152,11 +153,5 @@
         <item>Sin direcciones</item>
         <item>%1$s dirección</item>
         <item>%1$s direcciones</item>
-    </array>
-
-    <array name="txs_normal_conf">
-        <item>Espera</item>
-        <item>%1$s</item>
-        <item>%1$s</item>
     </array>
 </resources>

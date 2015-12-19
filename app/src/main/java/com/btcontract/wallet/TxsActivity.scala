@@ -18,7 +18,7 @@ import java.util.Date
 import android.view.{View, ViewGroup}
 import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none, sumIn, sumOut, app}
 import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_general}
-import R.string.{txs_yes_fee, txs_incoming, txs_noaddr, dialog_ok, no_funds}
+import R.string.{txs_yes_fee, txs_incoming, txs_noaddr, dialog_back, no_funds, txs_confirmed, txs_wait}
 import OnScrollListener.SCROLL_STATE_IDLE
 import org.bitcoinj.core._
 import android.widget._
@@ -31,9 +31,6 @@ class TxsActivity extends InfoActivity { me =>
   lazy private[this] val allButton = getLayoutInflater.inflate(R.layout.frag_txs_all, null)
   lazy private[this] val txsNum = head.findViewById(R.id.txsNumber).asInstanceOf[TextView]
   lazy private[this] val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
-
-  // Confirmation rings, number of txs and implicits for denom
-  lazy private[this] val confOpts = getResources getStringArray R.array.txs_normal_conf
   lazy private[this] val txsOpts = getResources getStringArray R.array.txs_total
   lazy private[this] implicit val dc = new DenomControl(me, head)
   lazy private[this] implicit val noFunds = getString(no_funds)
@@ -54,7 +51,7 @@ class TxsActivity extends InfoActivity { me =>
   val taskListener = new WalletListener
   val txsListListener = new AbstractWalletEventListener {
     override def onReorganize(w: Wallet) = me runOnUiThread adapter.notifyDataSetChanged
-    override def onTransactionConfidenceChanged(w: Wallet, tx: Transaction) = if (tx.getConfidence.getDepthInBlocks < 6) onReorganize(w)
+    override def onTransactionConfidenceChanged(w: Wallet, tx: Transaction) = if (tx.getConfidence.getDepthInBlocks < 2) onReorganize(w)
     override def onCoinsReceived(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb) me runOnUiThread say(tx)
     override def onCoinsSent(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = me runOnUiThread say(tx)
 
@@ -69,12 +66,10 @@ class TxsActivity extends InfoActivity { me =>
   override def onCreate(savedInstanceState: Bundle) =
   {
     super.onCreate(savedInstanceState)
-    val linesNum = if (scrHeight < 4.5) 3 else if (scrHeight < 4.8) 4
-      else if (scrHeight < 5.1) 5 else if (scrHeight < 5.5) 6
-      else if (scrHeight < 6.2) 10 else 12
+    val linesNum = if (scrHeight < 4.8) 4 else if (scrHeight < 5.1) 5
+      else if (scrHeight < 5.5) 6 else if (scrHeight < 6.2) 10 else 12
 
-    adapter = if (scrWidth < 2.0) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_small)
-      else if (scrWidth < 3.2) new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_normal)
+    adapter = if (scrWidth < 3.2) new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_normal)
       else if (scrWidth < 4.4) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_large)
       else new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_extra)
 
@@ -114,7 +109,7 @@ class TxsActivity extends InfoActivity { me =>
           outside setOnClickListener new OnClickListener { def onClick(v: View) = me startActivity site }
           copy setOnClickListener new OnClickListener { def onClick(v: View) = app setBuffer hash.toString }
           listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, txt.toArray)
-          mkForm(me negBld dialog_ok, Html fromHtml totalSum, listCon)
+          mkForm(me negBld dialog_back, Html fromHtml totalSum, listCon)
           listCon addHeaderView detailsForm
         }
       }
@@ -130,7 +125,7 @@ class TxsActivity extends InfoActivity { me =>
         txsNum setText app.plurOrZero(txsOpts, result.size)
         app.kit.wallet addEventListener txsListListener
 
-        // Show lomited txs list
+        // Show limited txs list
         val range = scala.math.min(linesNum, result.size)
         if (range < result.size) list addFooterView allButton
         adapter.transactions = result.subList(0, range)
@@ -180,18 +175,12 @@ class TxsActivity extends InfoActivity { me =>
 
   // Tx details converters
 
-  def confMap(num: Int) = num match {
-    case 0 => R.drawable.conf0 case 1 => R.drawable.conf1
-    case 2 => R.drawable.conf2 case 3 => R.drawable.conf3
-    case 4 => R.drawable.conf4 case _ => R.drawable.conf5
-  }
-
   def when(date: Date, now: Long) = date.getTime match { case ago =>
     if (now - ago < 691200000) DateUtils.getRelativeTimeSpanString(ago, now, 0)
     else Html fromHtml time(date)
   }
 
-  def feeString(entry: TxCache) = entry.fee match {
+  def txtfee(entry: TxCache) = entry.fee match {
     case canNotDetermine if entry.value.isPositive => incoming
     case fee if null == fee || fee.isZero => yesFee format denom(Coin.ZERO)
     case fee => yesFee format denom(fee)
@@ -206,7 +195,7 @@ class TxsActivity extends InfoActivity { me =>
     case _ => sentTo format addrUnknown
   }
 
-  def getOuts(outs: Outputs, acc: PayDatas, way: Boolean) = {
+  def getPays(outs: Outputs, acc: PayDatas, way: Boolean) = {
     for (out <- outs if out.isMine(app.kit.wallet) == way) try {
       acc += PayData(app.kit toAdr out, Success apply out.getValue)
     } catch none
@@ -214,7 +203,8 @@ class TxsActivity extends InfoActivity { me =>
   }
 
   def makeCache(txn: Transaction) = txn getValue app.kit.wallet match { case sum =>
-    TxCache(getOuts(txn.getOutputs, mutable.Buffer.empty, sum.isPositive), txn.getFee, sum)
+    val pays = getPays(txn.getOutputs, mutable.Buffer.empty, sum.isPositive)
+    TxCache(pays, txn.getFee, sum)
   }
 
   // Transaction cache item and view holders
@@ -226,40 +216,28 @@ class TxsActivity extends InfoActivity { me =>
   }
 
   class TxViewHolder(view: View) {
-    val transactCircle = view.findViewById(R.id.transactCircle).asInstanceOf[ImageView]
     val transactWhen = view.findViewById(R.id.transactWhen).asInstanceOf[TextView]
     val transactSum = view.findViewById(R.id.transactSum).asInstanceOf[TextView]
     val feeAmount = view.findViewById(R.id.feeAmount).asInstanceOf[TextView]
     val address = view.findViewById(R.id.address).asInstanceOf[TextView]
     view setTag this
 
-    def status(tc: TransactionConfidence) = tc.getConfidenceType match {
-      case TransactionConfidence.ConfidenceType.DEAD => transactCircle setImageResource R.drawable.dead
-      case anyOtherConfidenceType => transactCircle setImageResource confMap(tc.getDepthInBlocks)
-    }
-
     def fillView(txn: Transaction) = {
       val entry = cache.getOrElseUpdate(txn.getHash, me makeCache txn)
       transactWhen setText when(txn.getUpdateTime, System.currentTimeMillis)
       transactSum setText Html.fromHtml(entry.transactAmount)
-      feeAmount setText feeString(entry)
       address setText entry.htmlSummary
-      status(txn.getConfidence)
+      feeAmount setText txtfee(entry)
     }
   }
 
   class TxViewHolderNormal(view: View) extends TxViewHolder(view) {
     val status = view.findViewById(R.id.transactStatus).asInstanceOf[TextView]
 
-    override def status(tc: TransactionConfidence) = {
-      val confirmationStatus = tc.getConfidenceType match {
-        case TransactionConfidence.ConfidenceType.DEAD => me getString R.string.txs_normal_dead
-        case _ => if (tc.getDepthInBlocks > 999) "999+" else app.plurOrZero(confOpts, tc.getDepthInBlocks)
-      }
-
-      // Text status and then also a circle
-      status setText confirmationStatus
-      super.status(tc)
+    override def fillView(txn: Transaction) = {
+      val isConf = txn.getConfidence.getDepthInBlocks > 1
+      status setText { if (isConf) txs_confirmed else txs_wait }
+      super.fillView(txn)
     }
   }
 }

@@ -129,17 +129,18 @@
     <string name="no_funds">没有资金</string>
     <string name="txs_incoming">传入事务&#160;</string>
     <string name="txs_yes_fee">%1$s费用&#160;</string>
-    <string name="txs_many_received_to"><![CDATA[收到 <font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_many_sent_to"><![CDATA[已发送到 <font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_received_to"><![CDATA[收到 <font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[已发送到 <font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_many_received_to"><![CDATA[收到&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_many_sent_to"><![CDATA[已发送到&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_received_to"><![CDATA[收到&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[已发送到&#160;<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_view_outside">观 BlockExplorer.com</string>
     <string name="txs_copy_hash">复制哈希到剪贴板</string>
-    <string name="txs_normal_dead">✕✕✕</string>
     <string name="txs_noaddr">未知地址</string>
     <string name="txs_dead">交易已结束</string>
+    <string name="txs_confirmed">已确认</string>
+    <string name="txs_wait">等候</string>
 
     <array name="txs_total">
         <item>无交易</item>
@@ -149,10 +150,5 @@
     <array name="addr_total">
         <item>没有地址</item>
         <item>%1$s 地址</item>
-    </array>
-
-    <array name="txs_normal_conf">
-        <item>等待</item>
-        <item>%1$s</item>
     </array>
 </resources>

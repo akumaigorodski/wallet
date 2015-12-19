@@ -66,8 +66,9 @@ object Utils {
   val revFiatMap = Map(strDollar -> typeUSD, strEuro -> typeEUR, strYuan -> typeCNY)
   val fiatMap = Map(typeUSD -> strDollar, typeEUR -> strEuro, typeCNY -> strYuan)
 
-  val separator = " "
   val appName = "Bitcoin"
+  val separator = "\u00A0"
+  val nullFail = Failure(null)
   val emptyString = new String
   val rand = new scala.util.Random
   val baseFiat = new DecimalFormat("#.##")
@@ -86,7 +87,6 @@ object Utils {
 
   def inpInBtc(coin: Coin) = baseBtc format BigDecimal(coin.value) / 100000000
   def inpInSat(coin: Coin) = baseSat format coin.value
-  def fmt(cn: Coin) = "฿\u00A0" + inpInBtc(cn)
 
   def humanSum(coin: Coin) = {
     val btc = btcTemplate format inpInBtc(coin)
@@ -101,6 +101,7 @@ object Utils {
   def wrap(run: => Unit)(go: => Unit) = try go catch none finally run
   def randBtw(start: Float, end: Float) = start + rand.nextFloat * (end - start)
   def humanAddr(adr: Address) = adr.toString grouped 4 mkString separator
+  def fmt(cn: Coin) = s"฿$separator${this inpInBtc cn}"
 }
 
 // Info stack manager
@@ -178,8 +179,9 @@ abstract class InfoActivity extends TimerActivity { me =>
     if (hasPays) mkPayForm else new PayPass
   }
 
-  def doReceive(view: View) = Failure(null) match { case fail =>
-    app.TransData.value = Option apply PayData(app.kit.currentAddress, fail)
+  def doReceive(view: View) = {
+    val pay = PayData(app.kit.currentAddress, nullFail)
+    app.TransData.value = Option apply pay
     me goTo classOf[RequestActivity]
   }
 
@@ -393,7 +395,7 @@ abstract class InfoActivity extends TimerActivity { me =>
 
         listCon setOnItemClickListener new AdapterView.OnItemClickListener {
           def onItemClick(par: AdapterView[_], view: View, pos: Int, id: Long) =
-            rm(dialog) _ apply choose(pos, pay.getURI)
+            rm(dialog) _ apply choose(pos, pay.string)
         }
 
         app.TransData.value = Option(pay)
@@ -723,8 +725,8 @@ class SpendManager(val man: AmountInputManager) {
 }
 
 case class PayData(adr: Address, tc: TryCoin) { me =>
-  def getURI = BitcoinURI.convertToBitcoinURI(adr, tc getOrElse null, null, null)
-  def pretty(way: String) = tc.map(sat => s"${me route way}<br><br>${Utils humanSum sat}") getOrElse route(way)
+  def string = tc map (BitcoinURI.convertToBitcoinURI(adr, _, null, null).trim) getOrElse adr.toString
+  def pretty(way: String) = tc map humanSum map (sm => s"${me route way}<br><br>$sm") getOrElse route(way)
   def route(way: String) = way format humanAddr(adr)
 }
 
