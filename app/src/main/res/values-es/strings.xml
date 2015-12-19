@@ -130,10 +130,10 @@
     <string name="no_funds">Sin fondos</string>
     <string name="txs_incoming">Entrante&#160;</string>
     <string name="txs_yes_fee">%1$s fee&#160;</string>
-    <string name="txs_many_received_to"><![CDATA[recibido&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_many_sent_to"><![CDATA[enviado&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_received_to"><![CDATA[recibido&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[enviado&#160;<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_many_received_to"><![CDATA[Recibido&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_many_sent_to"><![CDATA[Enviado&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_received_to"><![CDATA[Recibido&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[Enviado&#160;<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_copy_hash">Copiar hash al portapapeles</string>

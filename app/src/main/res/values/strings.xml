@@ -130,10 +130,10 @@
     <string name="no_funds">No funds</string>
     <string name="txs_incoming">Incoming&#160;</string>
     <string name="txs_yes_fee">%1$s fee&#160;</string>
-    <string name="txs_many_received_to"><![CDATA[got&#160;on&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_many_sent_to"><![CDATA[sent&#160;to&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_received_to"><![CDATA[got&#160;on&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[sent&#160;to&#160;<font color=#E31300>%1$s</font>]]></string>
+    <string name="txs_many_received_to"><![CDATA[Got&#160;on&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_many_sent_to"><![CDATA[Sent&#160;to&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_received_to"><![CDATA[Got&#160;on&#160;<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_sent_to"><![CDATA[Sent&#160;to&#160;<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_view_outside">View on BlockExplorer.com</string>
