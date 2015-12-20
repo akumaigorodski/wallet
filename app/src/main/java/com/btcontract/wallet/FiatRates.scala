@@ -13,8 +13,8 @@ object FiatRates { me =>
   val timer = new java.util.Timer
   var rates: Try[Rates] = Utils.nullFail
   val providers = List(Blockchain, BitcoinCharts, BitcoinAverage, Bitpay)
-  def again(msec: Long) = timer.schedule(new TimerTask { def run = reloadRates }, msec)
   def reloadRates = me loadCurrentRates providers(rand nextInt providers.size)
+  def again(msec: Long) = timer.schedule(new TimerTask { def run = reloadRates }, msec)
 
   def loadCurrentRates(provider: RatesProvider): Unit = {
     val result = Future(provider fromJSON HttpRequest.get(provider.url).body)

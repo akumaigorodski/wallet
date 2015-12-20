@@ -139,9 +139,10 @@
     <string name="txs_copy_hash">Copiar hash al portapapeles</string>
     <string name="txs_view_outside">Ver en BlockExplorer.com</string>
     <string name="txs_noaddr">dirección desconocida</string>
-    <string name="txs_dead">LA TRANSACTION ESTÁ MUERTA</string>
-    <string name="txs_confirmed">Confirmado</string>
-    <string name="txs_wait">Espera</string>
+
+    <string name="txs_confirmed"><![CDATA[<font color=#79A81B>Confirmad</font>]]></string>
+    <string name="txs_wait"><![CDATA[<font color=#777777>Espera</font>]]></string>
+    <string name="txs_dead"><![CDATA[<font color=#E31300>Muerto</font>]]></string>
 
     <array name="txs_total">
         <item>Sin historial</item>

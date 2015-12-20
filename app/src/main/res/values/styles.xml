@@ -73,7 +73,7 @@
     </style>
 
     <style name="GrayOneLinerText" parent="OneLinerText">
-        <item name="android:textColor">#FF777777</item>
+        <item name="android:textColor">#777777</item>
     </style>
 
     <!-- overall theme style -->

@@ -140,9 +140,10 @@
     <string name="txs_view_outside">Смотреть на BlockExplorer.com</string>
     <string name="txs_copy_hash">Скопировать хэш транзакции</string>
     <string name="txs_noaddr">адрес не найден</string>
-    <string name="txs_dead">ТРАНЗАКЦИЯ МЕРТВА</string>
-    <string name="txs_confirmed">Прошла</string>
-    <string name="txs_wait">Ждите</string>
+
+    <string name="txs_confirmed"><![CDATA[<font color=#79A81B>Прошла</font>]]></string>
+    <string name="txs_wait"><![CDATA[<font color=#777777>Ждите</font>]]></string>
+    <string name="txs_dead"><![CDATA[<font color=#E31300>Мертва</font>]]></string>
 
     <array name="txs_total">
         <item>∅</item>

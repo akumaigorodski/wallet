@@ -140,9 +140,10 @@
     <string name="txs_view_outside">Дивитись на BlockExplorer.com</string>
     <string name="txs_copy_hash">Скопіювати хеш транзакції</string>
     <string name="txs_noaddr">якась невідома адреса</string>
-    <string name="txs_dead">ТРАНЗАКЦІЯ МЕРТВА</string>
-    <string name="txs_confirmed">Пройшла</string>
-    <string name="txs_wait">Чекайте</string>
+
+    <string name="txs_confirmed"><![CDATA[<font color=#79A81B>Пройшла</font>]]></string>
+    <string name="txs_wait"><![CDATA[<font color=#777777>Чекайте</font>]]></string>
+    <string name="txs_dead"><![CDATA[<font color=#E31300>Мертва</font>]]></string>
 
     <array name="txs_total">
         <item>∅</item>

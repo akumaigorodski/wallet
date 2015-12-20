@@ -9,17 +9,17 @@
         android:id="@+id/transactSum"/>
 
     <TextView
-        android:id="@+id/address"
         android:layout_weight="11"
         android:layout_width="0dp"
-        style="@style/OneLinerText"/>
+        style="@style/OneLinerText"
+        android:id="@+id/address"/>
 
     <TextView
         android:gravity="center"
         android:layout_weight="7"
         android:layout_width="0dp"
-        android:id="@+id/feeAmount"
-        style="@style/GrayOneLinerText"/>
+        style="@style/GrayOneLinerText"
+        android:id="@+id/feeAmount"/>
 
     <TextView
         android:gravity="center"
@@ -32,7 +32,7 @@
         android:gravity="end"
         android:layout_weight="6"
         android:layout_width="0dp"
-        style="@style/GrayOneLinerText"
+        style="@style/OneLinerText"
         android:id="@+id/transactStatus"/>
 
 </LinearLayout>

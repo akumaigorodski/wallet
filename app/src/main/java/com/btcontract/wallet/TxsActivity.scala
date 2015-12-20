@@ -3,7 +3,6 @@ package com.btcontract.wallet
 import android.widget.RadioGroup.OnCheckedChangeListener
 import android.widget.AbsListView.OnScrollListener
 import collection.JavaConversions.asScalaBuffer
-import org.bitcoinj.core.TransactionConfidence
 import android.view.View.OnClickListener
 import android.app.AlertDialog.Builder
 import android.text.format.DateUtils
@@ -15,13 +14,14 @@ import android.text.Html
 import android.net.Uri
 import java.util.Date
 
+import android.widget._
+import org.bitcoinj.core._
 import android.view.{View, ViewGroup}
 import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none, sumIn, sumOut, app}
 import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_general}
-import R.string.{txs_yes_fee, txs_incoming, txs_noaddr, dialog_back, no_funds, txs_confirmed, txs_wait}
+import R.string.{txs_yes_fee, txs_incoming, txs_noaddr, dialog_back, no_funds}
+import TransactionConfidence.ConfidenceType.DEAD
 import OnScrollListener.SCROLL_STATE_IDLE
-import org.bitcoinj.core._
-import android.widget._
 
 
 class TxsActivity extends InfoActivity { me =>
@@ -43,6 +43,11 @@ class TxsActivity extends InfoActivity { me =>
   lazy private[this] val sentManyTo = me getString txs_many_sent_to
   lazy private[this] val rcvdTo = me getString txs_received_to
   lazy private[this] val sentTo = me getString txs_sent_to
+
+  // Transaction confidence and status text
+  lazy private[this] val txDead = Html fromHtml getString(R.string.txs_dead)
+  lazy private[this] val txWait = Html fromHtml getString(R.string.txs_wait)
+  lazy private[this] val txConf = Html fromHtml getString(R.string.txs_confirmed)
 
   // Local state
   var cache = mutable.Map.empty[Sha256Hash, TxCache]
@@ -66,12 +71,10 @@ class TxsActivity extends InfoActivity { me =>
   override def onCreate(savedInstanceState: Bundle) =
   {
     super.onCreate(savedInstanceState)
-    val linesNum = if (scrHeight < 4.8) 4 else if (scrHeight < 5.1) 5
-      else if (scrHeight < 5.5) 6 else if (scrHeight < 6.2) 10 else 12
-
-    adapter = if (scrWidth < 3.2) new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_normal)
+    val linesNum = if (scrHeight < 4.8) 4 else if (scrHeight < 5.1) 5 else if (scrHeight < 5.5) 6 else 10
+    adapter = if (scrWidth < 3.2) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_normal)
       else if (scrWidth < 4.4) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_large)
-      else new TxsListAdapter(new TxViewHolderNormal(_), R.layout.frag_transaction_extra)
+      else new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_extra)
 
     if (app.isAlive) {
       add(constantListener.mkTxt, Informer.PEERS).ui.run
@@ -97,15 +100,11 @@ class TxsActivity extends InfoActivity { me =>
           val hash = transaction.getHash
           val entry = cache(hash)
 
-          // Take special pain to inform if transaction is dead
-          val totalSum = transaction.getConfidence.getConfidenceType match {
-            case TransactionConfidence.ConfidenceType.DEAD => app getString R.string.txs_dead
-            case _ => s"${entry.transactAmount}<br><small>${me time transaction.getUpdateTime}</small>"
-          }
+          val totalSum = s"${entry.transactAmount}<br><small>${me time transaction.getUpdateTime}</small>"
+          val txt = for (payment <- entry.pays) yield Html.fromHtml(payment pretty entry.sumDirection)
+          val site = new Intent(Intent.ACTION_VIEW, Uri parse s"https://blockexplorer.com/tx/$hash")
 
           // Wire everything up
-          def site = new Intent(Intent.ACTION_VIEW, Uri parse s"https://blockexplorer.com/tx/$hash")
-          val txt = for (payment <- entry.pays) yield Html.fromHtml(payment pretty entry.sumDirection)
           outside setOnClickListener new OnClickListener { def onClick(v: View) = me startActivity site }
           copy setOnClickListener new OnClickListener { def onClick(v: View) = app setBuffer hash.toString }
           listCon setAdapter new ArrayAdapter(me, R.layout.frag_top_tip, R.id.actionTip, txt.toArray)
@@ -218,26 +217,20 @@ class TxsActivity extends InfoActivity { me =>
   class TxViewHolder(view: View) {
     val transactWhen = view.findViewById(R.id.transactWhen).asInstanceOf[TextView]
     val transactSum = view.findViewById(R.id.transactSum).asInstanceOf[TextView]
+    val status = view.findViewById(R.id.transactStatus).asInstanceOf[TextView]
     val feeAmount = view.findViewById(R.id.feeAmount).asInstanceOf[TextView]
     val address = view.findViewById(R.id.address).asInstanceOf[TextView]
     view setTag this
 
     def fillView(txn: Transaction) = {
+      val isConf = txn.getConfidence.getDepthInBlocks > 1
+      val isDead = txn.getConfidence.getConfidenceType == DEAD
       val entry = cache.getOrElseUpdate(txn.getHash, me makeCache txn)
+      status setText { if (isDead) txDead else if (isConf) txConf else txWait }
       transactWhen setText when(txn.getUpdateTime, System.currentTimeMillis)
       transactSum setText Html.fromHtml(entry.transactAmount)
       address setText entry.htmlSummary
       feeAmount setText txtfee(entry)
-    }
-  }
-
-  class TxViewHolderNormal(view: View) extends TxViewHolder(view) {
-    val status = view.findViewById(R.id.transactStatus).asInstanceOf[TextView]
-
-    override def fillView(txn: Transaction) = {
-      val isConf = txn.getConfidence.getDepthInBlocks > 1
-      status setText { if (isConf) txs_confirmed else txs_wait }
-      super.fillView(txn)
     }
   }
 }
