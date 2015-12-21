@@ -1,7 +1,6 @@
 package com.btcontract.wallet
 
 import android.widget.RadioGroup.OnCheckedChangeListener
-import android.widget.AbsListView.OnScrollListener
 import collection.JavaConversions.asScalaBuffer
 import android.view.View.OnClickListener
 import android.app.AlertDialog.Builder
@@ -21,7 +20,6 @@ import Utils.{humanAddr, wrap, denom, Outputs, PayDatas, none, sumIn, sumOut, ap
 import R.string.{txs_received_to, txs_sent_to, txs_many_received_to, txs_many_sent_to, err_general}
 import R.string.{txs_yes_fee, txs_incoming, txs_noaddr, dialog_back, no_funds}
 import TransactionConfidence.ConfidenceType.DEAD
-import OnScrollListener.SCROLL_STATE_IDLE
 
 
 class TxsActivity extends InfoActivity { me =>
@@ -80,14 +78,6 @@ class TxsActivity extends InfoActivity { me =>
       add(constantListener.mkTxt, Informer.PEERS).ui.run
       new Anim(app.kit.currentBalance, Utils.appName)
       setContentView(R.layout.activity_txs)
-
-      // Periodic list update
-      list setOnScrollListener new ScrollListener {
-        timer.schedule(me anyToRunnable go, 10000, 10000)
-        def onScrollStateChanged(v: AbsListView, newState: Int) = state = newState
-        def go = if (SCROLL_STATE_IDLE == state) adapter.notifyDataSetChanged
-        var state = SCROLL_STATE_IDLE
-      }
 
       // pos - 1 because header is present
       list setOnItemClickListener new AdapterView.OnItemClickListener {

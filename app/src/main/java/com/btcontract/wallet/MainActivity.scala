@@ -54,6 +54,7 @@ class MainActivity extends TimerActivity { me =>
 
   def warmUp = {
     progress setVisibility VISIBLE
+    timer.scheduleAtFixedRate(new Spinner(spin), 5000, 1000)
     <(prepareWallet, _ => System exit 0)(_ => react)
 
     def react = if (askPass) {
@@ -65,7 +66,6 @@ class MainActivity extends TimerActivity { me =>
   def tryPass(view: View) = hideKeys {
     if (passWordInput == destructCode) replaceWallet
     else <(check, _ => wrong)(if (_) maybeStartKit else wrong)
-    timer.scheduleAtFixedRate(new Spinner(spin), 0, 1000)
     progress setVisibility VISIBLE
     password setVisibility GONE
 
