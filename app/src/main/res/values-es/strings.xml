@@ -140,7 +140,7 @@
     <string name="txs_view_outside">Ver en BlockExplorer.com</string>
     <string name="txs_noaddr">dirección desconocida</string>
 
-    <string name="txs_confirmed"><![CDATA[<font color=#79A81B>Confirmad</font>]]></string>
+    <string name="txs_conf"><![CDATA[<font color=#79A81B>Confirmad</font>]]></string>
     <string name="txs_wait"><![CDATA[<font color=#777777>Espera</font>]]></string>
     <string name="txs_dead"><![CDATA[<font color=#E31300>Muerto</font>]]></string>
 

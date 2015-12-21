@@ -13,7 +13,7 @@ android {
         applicationId "com.btcontract.wallet"
         versionName "1.04"
         minSdkVersion 15
-        versionCode 27
+        versionCode 30
     }
 
     buildTypes {
@@ -30,12 +30,10 @@ android {
 
 dependencies {
     compile files('libs/jbox2d-library-2.3.1-SNAPSHOT.jar')
-
     compile 'com.journeyapps:zxing-android-embedded:3.0.3@aar'
-    compile 'com.google.zxing:core:3.2.0'
-
     compile 'com.github.kevinsawicki:http-request:6.0'
     compile 'info.hoang8f:android-segmented:1.0.4'
     compile 'org.scala-lang:scala-library:2.11.7'
-    compile 'org.bitcoinj:bitcoinj-core:0.13.3'
+    compile 'org.bitcoinj:bitcoinj-core:0.13.4'
+    compile 'com.google.zxing:core:3.2.0'
 }

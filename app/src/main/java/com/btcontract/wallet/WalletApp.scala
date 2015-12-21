@@ -96,8 +96,8 @@ class WalletApp extends Application {
     def toAdr(out: TransactionOutput) = out.getScriptPubKey.getToAddress(params, true)
     def autoSaveOn = wallet.autosaveToFile(walletFile, 500, MILLISECONDS, null)
     def freshOuts = wallet.calculateAllSpendCandidates(false, true).asScala
+    def currentBalance = wallet getBalance BalanceType.ESTIMATED_SPENDABLE
     def currentAddress = wallet currentAddress KeyPurpose.RECEIVE_FUNDS
-    def currentBalance = wallet getBalance BalanceType.ESTIMATED
     override def shutDown = peerGroup.stop
 
     def encryptWallet(password: CharSequence) = {

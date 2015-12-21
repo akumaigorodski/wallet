@@ -140,7 +140,7 @@
     <string name="txs_copy_hash">Copy transaction hash</string>
     <string name="txs_noaddr">some unknown address</string>
 
-    <string name="txs_confirmed"><![CDATA[<font color=#79A81B>Confirmed</font>]]></string>
+    <string name="txs_conf"><![CDATA[<font color=#79A81B>Confirmed</font>]]></string>
     <string name="txs_wait"><![CDATA[<font color=#777777>Waiting</font>]]></string>
     <string name="txs_dead"><![CDATA[<font color=#E31300>Dead</font>]]></string>
 

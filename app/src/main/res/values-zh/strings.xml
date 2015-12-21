@@ -139,7 +139,7 @@
     <string name="txs_copy_hash">复制哈希到剪贴板</string>
     <string name="txs_noaddr">未知地址</string>
 
-    <string name="txs_confirmed"><![CDATA[<font color=#79A81B>已确认</font>]]></string>
+    <string name="txs_conf"><![CDATA[<font color=#79A81B>已确认</font>]]></string>
     <string name="txs_wait"><![CDATA[<font color=#777777>等候</font>]]></string>
     <string name="txs_dead"><![CDATA[<font color=#E31300>死</font>]]></string>
 

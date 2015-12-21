@@ -4,7 +4,6 @@ import android.widget.RadioGroup.OnCheckedChangeListener
 import collection.JavaConversions.asScalaBuffer
 import android.view.View.OnClickListener
 import android.app.AlertDialog.Builder
-import android.text.format.DateUtils
 import scala.collection.mutable
 import android.content.Intent
 import scala.util.Success
@@ -34,18 +33,18 @@ class TxsActivity extends InfoActivity { me =>
   lazy private[this] implicit val noFunds = getString(no_funds)
 
   // Sent/received templates and fee
-  lazy private[this] val yesFee = me getString txs_yes_fee
-  lazy private[this] val incoming = me getString txs_incoming
-  lazy private[this] val addrUnknown = me getString txs_noaddr
-  lazy private[this] val rcvdManyTo = me getString txs_many_received_to
-  lazy private[this] val sentManyTo = me getString txs_many_sent_to
-  lazy private[this] val rcvdTo = me getString txs_received_to
-  lazy private[this] val sentTo = me getString txs_sent_to
+  lazy private[this] val yesFee = getString(txs_yes_fee)
+  lazy private[this] val incoming = getString(txs_incoming)
+  lazy private[this] val addrUnknown = getString(txs_noaddr)
+  lazy private[this] val rcvdManyTo = getString(txs_many_received_to)
+  lazy private[this] val sentManyTo = getString(txs_many_sent_to)
+  lazy private[this] val rcvdTo = getString(txs_received_to)
+  lazy private[this] val sentTo = getString(txs_sent_to)
 
   // Transaction confidence and status text
   lazy private[this] val txDead = Html fromHtml getString(R.string.txs_dead)
   lazy private[this] val txWait = Html fromHtml getString(R.string.txs_wait)
-  lazy private[this] val txConf = Html fromHtml getString(R.string.txs_confirmed)
+  lazy private[this] val txConf = Html fromHtml getString(R.string.txs_conf)
 
   // Local state
   var cache = mutable.Map.empty[Sha256Hash, TxCache]
@@ -69,7 +68,7 @@ class TxsActivity extends InfoActivity { me =>
   override def onCreate(savedInstanceState: Bundle) =
   {
     super.onCreate(savedInstanceState)
-    val linesNum = if (scrHeight < 4.8) 4 else if (scrHeight < 5.1) 5 else if (scrHeight < 5.5) 6 else 10
+    val linesNum = if (scrHeight < 4.8) 3 else if (scrHeight < 5.1) 5 else if (scrHeight < 5.5) 6 else 10
     adapter = if (scrWidth < 3.2) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_normal)
       else if (scrWidth < 4.4) new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_large)
       else new TxsListAdapter(new TxViewHolder(_), R.layout.frag_transaction_extra)
@@ -164,12 +163,7 @@ class TxsActivity extends InfoActivity { me =>
 
   // Tx details converters
 
-  def when(date: Date, now: Long) = date.getTime match { case ago =>
-    if (now - ago < 691200000) DateUtils.getRelativeTimeSpanString(ago, now, 0)
-    else Html fromHtml time(date)
-  }
-
-  def txtfee(entry: TxCache) = entry.fee match {
+  def fee(entry: TxCache) = entry.fee match {
     case canNotDetermine if entry.value.isPositive => incoming
     case fee if null == fee || fee.isZero => yesFee format denom(Coin.ZERO)
     case fee => yesFee format denom(fee)
@@ -217,10 +211,10 @@ class TxsActivity extends InfoActivity { me =>
       val isDead = txn.getConfidence.getConfidenceType == DEAD
       val entry = cache.getOrElseUpdate(txn.getHash, me makeCache txn)
       status setText { if (isDead) txDead else if (isConf) txConf else txWait }
-      transactWhen setText when(txn.getUpdateTime, System.currentTimeMillis)
+      time andThen Html.fromHtml andThen transactWhen.setText apply txn.getUpdateTime
       transactSum setText Html.fromHtml(entry.transactAmount)
       address setText entry.htmlSummary
-      feeAmount setText txtfee(entry)
+      feeAmount setText fee(entry)
     }
   }
 }
