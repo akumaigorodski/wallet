@@ -1,3 +1,9 @@
-<ImageButton xmlns:android="http://schemas.android.com/apk/res/android" style="@style/BottomMenuTransImageButton"
-    android:src="@drawable/ic_expand_more_black_24dp" android:paddingTop="5dp" android:paddingBottom="5dp"
-    android:onClick="showAll"/>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/TransactionLayout" android:background="#33CCCCCC">
+
+    <ImageButton style="@style/BottomMenuTransImageButton" android:onClick="showAll"
+        android:src="@drawable/ic_expand_more_black_24dp" android:layout_width="fill_parent"
+        android:paddingTop="5dp" android:paddingBottom="5dp"/>
+
+</LinearLayout>
+
