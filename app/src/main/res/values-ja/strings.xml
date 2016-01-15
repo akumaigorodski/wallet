@@ -1,0 +1,158 @@
+<resources>
+    <string name="lang">jpn</string>
+
+    <!-- app wide -->
+    <string name="or">または</string>
+    <string name="app_name">Bitcoin</string>
+    <string name="sets_noscreen">スクリーンショットは行わないでください</string>
+    <string name="sets_password_ok">新しいパスワードを正常に設定しました</string>
+    <string name="sets_destruct_ok">ディストラクション コードを «%1$s» に設定しました</string>
+    <string name="sets_rescan_ok">アプリケーションを閉じます。次回起動時にブロックチェーンの再スキャンを起動します</string>
+    <string name="greetings">ビジュアル ビットコイン ウォレットへようこそ!\nまず <a href='http://btcontract.github.io/VisualBitcoinWallet/'>ウォレット マニュアルをご覧ください</a></string>
+    <string name="mnemonic_info">回復ニーモニックは非常に重要です!\n続行する前に <a href='http://btcontract.github.io/VisualBitcoinWallet/#mnemonic-code'>それに関してご覧ください</a></string>
+    <string name="password_info">パスワードがないと、お金を失う危険があります。少なくとも 8 文字の長さのものを選んでください</string>
+    <string name="wallet_restore">コードからウォレットを回復</string>
+    <string name="copied_to_buffer">クリップボードにコピーしました</string>
+    <string name="wallet_create">新しいウォレットを作成</string>
+    <string name="wallet_empty">ウォレットは空です</string>
+    <string name="wallet_password">パスワード</string>
+    <string name="wallet_open">ウォレットを開く</string>
+
+    <string name="sets_fee">キロバイト当たり手数料</string>
+    <string name="sets_pass_change">ウォレットのパスワードを変更</string>
+    <string name="sets_destruct_set">ディストラクション コードを設定</string>
+    <string name="sets_mnemonic">回復ニーモニックを表示</string>
+    <string name="sets_rescan">ブロックチェーンを再スキャン</string>
+    <string name="sets_about">アプリマニュアルを読む</string>
+
+    <string name="password_new">新しいパスワード</string>
+    <string name="destruct_new">ディストラクション コード</string>
+    <string name="password_old">現在のパスワード</string>
+    <string name="password_wrong">ウォレットのパスワードが間違っています</string>
+    <string name="password_too_short">パスワードが短すぎます</string>
+    <string name="destruct_too_short">ディストラクション コードが短すぎます</string>
+
+    <!-- menu -->
+    <string name="action_lock">ウォレットをロック</string>
+    <string name="action_scan_qr">QR コードをスキャン</string>
+    <string name="paydata_clear">支払を破棄</string>
+    <string name="action_settings">ウォレット設定</string>
+    <string name="action_address">残高を表示</string>
+    <string name="action_converter">為替換算</string>
+    <string name="action_request_payment">支払のリクエスト</string>
+    <string name="action_receive_payment">受信</string>
+    <string name="action_send_money">送信</string>
+
+    <array name="action_send_memo">
+        <item>ビットコインを送信</item>
+        <item>2番目のアドレスを追加</item>
+        <item>3番目のアドレスを追加</item>
+        <item>%1$s番目のアドレスを追加</item>
+    </array>
+
+    <!-- errors -->
+    <string name="err_pass">パスワードが一致しないため、トランザクションに失敗しました。正しいパスワードを入力したことを確認してください</string>
+    <string name="err_low_funds">%1$s がこのウォレットのコインの合計金額を超えたため、トランザクションが失敗しました。資金を追加してもう一度試してください</string>
+    <string name="err_empty_shrunk">手続規則に違反して出金の手数料が縮小できないため、トランザクションが失敗しました。資金を追加してもう一度試してください</string>
+    <string name="err_transaction_too_large">ビットコインネットワークの処理が大きすぎるため、トランザクションが失敗しました。トランザクションの数を分割して試してください</string>
+    <string name="err_different_net">リクエストが異なるネットワークに属するアドレスを含むため失敗しました</string>
+    <string name="err_optional_field">リクエストが解析できない不正な形式の金額を含むため失敗しました</string>
+    <string name="err_required_field">リクエストの必須パラメータが不明な意味を含むため失敗しました</string>
+    <string name="err_uri">リクエストが解析できない不正な形式の URI を含むため失敗しました</string>
+    <string name="err_address">リクエストで指定されたビットコインのアドレスが正しくないため失敗しました</string>
+    <string name="err_neg">リクエストがマイナスの合計金額を含むため失敗しました</string>
+    <string name="err_general">予期しないエラーが発生したため失敗しました</string>
+
+    <!-- dialogs -->
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_pay">支払</string>
+    <string name="dialog_next">次へ</string>
+    <string name="dialog_back">戻る</string>
+    <string name="dialog_cancel">キャンセル</string>
+    <string name="input_hint_sat">金額 (satoshi)</string>
+    <string name="input_hint_btc">金額 (BTC)</string>
+    <string name="dialog_addr_wrong">ビットコインのアドレスが正しくありません</string>
+    <string name="dialog_sum_empty">金額を入力してください</string>
+    <string name="dialog_sum_dusty">現在の金額は埃です</string>
+    <string name="spend_address_tip">お金を送る先</string>
+    <string name="spend_address_hint">ビットコイン アドレス</string>
+    <string name="input_btc">&#160;ビットコイン&#160;</string>
+    <string name="input_sat">&#160;satoshi&#160;</string>
+
+    <string name="input_alt_sat">%1$s (satoshi)</string>
+    <string name="input_alt_btc">%1$s (ビットコイン)</string>
+    <string name="input_dollar">金額 (ドル)</string>
+    <string name="input_euro">金額 (ユーロ)</string>
+    <string name="input_yuan">金額 (元)</string>
+
+    <array name="dialog_request">
+        <item>リクエストを QR コードに変換</item>
+        <item>リクエストをクリップボードにコピー</item>
+        <item>リクエストを共有&#8230;</item>
+    </array>
+
+    <array name="dialog_address">
+        <item>アドレスを QR に変換</item>
+        <item>アドレスをクリップボードにコピー</item>
+        <item>アドレスを共有&#8230;</item>
+    </array>
+
+    <!-- notifications -->
+    <string name="reorg">再編成が発生しました</string>
+    <string name="info_progress">同期: %1$d ブロック残り</string>
+    <string name="info_progress_done">ブロックチェーンは最新です</string>
+    <string name="tx_announce">トランザクションのアナウンス中&#8230;</string>
+    <string name="pass_checking">パスワードのチェック中&#8230;</string>
+    <string name="pass_changing">ウォレットを閉じないでください</string>
+    <string name="tx_1st_conf">最初の確認を取得しました</string>
+    <string name="tx_received">%1$s を受信しました</string>
+    <string name="tx_sent">%1$s を送信しました</string>
+
+    <array name="info_peers">
+        <item>ピアの検索中&#8230;</item>
+        <item>%1$s ピアに接続しました</item>
+        <item>%1$s ピアに接続しました</item>
+    </array>
+
+    <!-- activity_create, activity_restore -->
+    <string name="restore_when">ウォレットをいつ作成しましたか?\n不確かな場合は日付をそのままにしてください</string>
+    <string name="create_wallet_creating">ウォレットを生成します\n数分かかることがあります</string>
+    <string name="restore_wallet_restoring">ウォレットを回復します\nしばらく時間がかかります</string>
+    <string name="restore_mnemonic_wrong">回復ニーモニックの長さは 12 語にする必要があります</string>
+    <string name="restore_wallet_ready">ウォレットの準備ができました</string>
+    <string name="restore_hint">回復ニーモニック</string>
+    <string name="restore_wallet">ウォレットを回復</string>
+
+    <!-- activity_request -->
+    <string name="req_save">QR コードを共有</string>
+
+    <!-- activity_txs -->
+    <string name="no_funds">資金なし</string>
+    <string name="txs_incoming">着信&#160;</string>
+    <string name="txs_yes_fee">%1$s 手数料&#160;</string>
+    <string name="txs_many_received_to"><![CDATA[<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]>&#160;で取得</string>
+    <string name="txs_many_sent_to"><![CDATA[<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]>&#160;に送信しました</string>
+    <string name="txs_received_to"><![CDATA[<font color=#1BA2E0>%1$s</font>]]>&#160;で取得</string>
+    <string name="txs_sent_to"><![CDATA[<font color=#E31300>%1$s</font>]]>&#160;に送信しました</string>
+    <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
+    <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
+    <string name="txs_view_outside">BlockExplorer.com で表示</string>
+    <string name="txs_copy_hash">トランザクションのハッシュをコピー</string>
+    <string name="txs_noaddr">不明なアドレス</string>
+
+    <string name="txs_conf"><![CDATA[<font color=#79A81B>確認済</font>]]></string>
+    <string name="txs_wait"><![CDATA[<font color=#777777>待機中</font>]]></string>
+    <string name="txs_dead"><![CDATA[<font color=#E31300>死亡</font>]]></string>
+
+    <array name="txs_total">
+        <item>履歴なし</item>
+        <item>%1$s トランザクション</item>
+        <item>%1$s txns</item>
+    </array>
+
+    <array name="addr_total">
+        <item>アドレスなし</item>
+        <item>%1$s アドレス</item>
+        <item>%1$s アドレス</item>
+    </array>
+</resources>
