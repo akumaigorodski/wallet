@@ -1,47 +1,43 @@
 package com.btcontract.wallet
 
+import R.string._
+import org.bitcoinj.core._
+import com.btcontract.wallet.Utils._
+import org.bitcoinj.core.listeners.WalletCoinEventListener
 import collection.JavaConverters.asScalaBufferConverter
 import com.google.common.util.concurrent.Service.State
-import android.graphics.BitmapFactory.decodeResource
 import org.bitcoinj.net.discovery.DnsDiscovery
 import org.bitcoinj.wallet.KeyChain.KeyPurpose
 import org.bitcoinj.core.Wallet.BalanceType
 import org.bitcoinj.crypto.KeyCrypterScrypt
-import com.btcontract.wallet.Utils.PayDatas
 import com.google.protobuf.ByteString
 import org.bitcoinj.wallet.Protos
 import android.app.Application
 import android.widget.Toast
-import android.os.Vibrator
-import collection.mutable
 import java.io.File
 
-import org.bitcoinj.core.{Address, WrongNetworkException, AddressFormatException, CheckpointManager}
-import org.bitcoinj.core.{TransactionOutput, AbstractWalletEventListener, Wallet, Transaction, Coin}
 import org.bitcoinj.uri.{BitcoinURIParseException, OptionalFieldValidationException}
 import org.bitcoinj.uri.{RequiredFieldValidationException, BitcoinURI}
 import android.content.{ClipData, ClipboardManager, Context}
-import org.jbox2d.dynamics.{BodyType, BodyDef}
-import android.graphics.{Typeface, Paint}
+import com.btcontract.wallet.helper.{FiatRates, Fee}
 import State.{STARTING, RUNNING}
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import Context.CLIPBOARD_SERVICE
-import Paint.ANTI_ALIAS_FLAG
 
 
 class WalletApp extends Application {
+  lazy val prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
   lazy val params = org.bitcoinj.params.MainNetParams.get
-  val fontPaint = new Paint(ANTI_ALIAS_FLAG)
-  val coinBodyDef = new BodyDef
+  val timer = new java.util.Timer
 
-  // These are provided on startup
-  var walletFile, chainFile: File = null
+  // Actual values provided at startup
+  var walletFile, chainFile: java.io.File = null
   var kit: WalletKit = null
 
-  lazy val plur = getString(R.string.lang) match {
+  lazy val plur = getString(lang) match {
     case "eng" | "esp" => (opts: Array[String], num: Int) => if (num == 1) opts(1) else opts(2)
-    case "chn" => (phraseOptions: Array[String], num: Int) => phraseOptions(1)
+    case "chn" | "jpn" => (phraseOptions: Array[String], num: Int) => phraseOptions(1)
     case "rus" | "ukr" => (phraseOptions: Array[String], num: Int) =>
 
       val reminder100 = num % 100
@@ -52,59 +48,58 @@ class WalletApp extends Application {
       else phraseOptions(3)
   }
 
-  def mgr = getSystemService(CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
-  def plurOrZero(options: Array[String], num: Int) = if (num > 0) plur(options, num) format num else options(0)
+  // Both these methods may throw
+  def getTo(base58: String) = Address.fromBase58(params, base58)
+  def getTo(out: TransactionOutput) = out.getScriptPubKey.getToAddress(params, true)
   def isAlive = if (null == kit) false else kit.state match { case STARTING | RUNNING => true case _ => false }
+  def plurOrZero(opts: Array[String], number: Int) = if (number > 0) plur(opts, number) format number else opts(0)
 
-  def setBuffer(data: String) = {
-    mgr setPrimaryClip ClipData.newPlainText(Utils.appName, data)
-    Toast.makeText(this, R.string.copied_to_buffer, Toast.LENGTH_LONG).show
+  def setBuffer(bufferMessage: String) = {
+    val mgr = getSystemService(CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
+    mgr setPrimaryClip ClipData.newPlainText(Utils.appName, bufferMessage)
+    Toast.makeText(this, copied_to_clipboard, Toast.LENGTH_LONG).show
   }
 
+  // Startup actions
   override def onCreate = Utils.wrap(super.onCreate) {
-    walletFile = new File(getFilesDir, s"${Utils.appName}.wallet")
     chainFile = new File(getFilesDir, s"${Utils.appName}.spvchain")
-    fontPaint setTypeface Typeface.create("Droid Sans", Typeface.NORMAL)
-    AbstractCoin.bitLogo = decodeResource(getResources, R.drawable.bitwhite2)
-    coinBodyDef setType BodyType.DYNAMIC
+    walletFile = new File(getFilesDir, s"${Utils.appName}.wallet")
     Utils.startupAppReference = this
-    fontPaint setColor 0xBBFFFFFF
-    FiatRates.reloadRates
+    FiatRates.task.run
+    Fee.task.run
   }
 
   object TransData {
-    var value: Option[Any] = Option.empty
-    val payments: PayDatas = mutable.Buffer.empty
-
-    def setValue(vs: String) = value = Option {
-      if (vs startsWith "bitcoin:") new BitcoinURI(params, vs)
-      else new Address(params, vs)
+    var value = Option.empty[Any]
+    def setValue(text: String) = value = Option {
+      // Both getTo and BitcoinUri may throw so watch over
+      if (text startsWith "bitcoin") new BitcoinURI(params, text)
+      else getTo(text)
     }
 
     def onFail(err: Int => Unit): PartialFunction[Throwable, Unit] = {
-      case e: RequiredFieldValidationException => err(R.string.err_required_field)
-      case e: OptionalFieldValidationException => err(R.string.err_optional_field)
-      case e: WrongNetworkException => err(R.string.err_different_net)
-      case e: AddressFormatException => err(R.string.err_address)
-      case e: BitcoinURIParseException => err(R.string.err_uri)
-      case e: ArithmeticException => err(R.string.err_neg)
-      case e: Throwable => err(R.string.err_general)
+      case _: RequiredFieldValidationException => err(err_required_field)
+      case _: OptionalFieldValidationException => err(err_optional_field)
+      case _: WrongNetworkException => err(err_different_net)
+      case _: AddressFormatException => err(err_address)
+      case _: BitcoinURIParseException => err(err_uri)
+      case _: ArithmeticException => err(err_neg)
+      case _: Throwable => err(err_general)
     }
   }
 
   abstract class WalletKit extends AbstractKit {
-    def toAdr(out: TransactionOutput) = out.getScriptPubKey.getToAddress(params, true)
     def autoSaveOn = wallet.autosaveToFile(walletFile, 500, MILLISECONDS, null)
     def freshOuts = wallet.calculateAllSpendCandidates(false, true).asScala
     def currentBalance = wallet getBalance BalanceType.ESTIMATED_SPENDABLE
     def currentAddress = wallet currentAddress KeyPurpose.RECEIVE_FUNDS
-    override def shutDown = peerGroup.stop
+    override def shutDown = if (peerGroup.isRunning) peerGroup.stop
 
-    def encryptWallet(password: CharSequence) = {
-      val randSalt8Bytes = ByteString copyFrom KeyCrypterScrypt.randomSalt
-      val scryptBuilder = Protos.ScryptParameters.newBuilder setSalt randSalt8Bytes setN 65536
+    def encryptWallet(pass: CharSequence) = {
+      val randSalt = ByteString copyFrom KeyCrypterScrypt.randomSalt
+      val scryptBuilder = Protos.ScryptParameters.newBuilder setSalt randSalt setN 65536
       val cr = new KeyCrypterScrypt(scryptBuilder.build)
-      wallet.encrypt(cr, cr deriveKey password)
+      wallet.encrypt(cr, cr deriveKey pass)
     }
 
     def useCheckPoints(time: Long) = {
@@ -113,10 +108,11 @@ class WalletApp extends Application {
     }
 
     def setupAndStartDownload = {
-      wallet addEventListener listener
+      wallet addCoinEventListener Vibr.listener
+      wallet addChangeEventListener Vibr.listener
       wallet.allowSpendingUnconfirmedTransactions
       peerGroup addPeerDiscovery new DnsDiscovery(params)
-      peerGroup.setUserAgent(Utils.appName, "1.04")
+      peerGroup.setUserAgent(Utils.appName, "1.06")
       peerGroup setDownloadTxDependencies false
       peerGroup setPingIntervalMsec 10000
       peerGroup setMaxConnections 10
@@ -125,68 +121,18 @@ class WalletApp extends Application {
       autoSaveOn
     }
   }
+}
 
-  val listener = new AbstractWalletEventListener {
-    override def onTransactionConfidenceChanged(w: Wallet, t: Transaction) = if (t.getConfidence.getDepthInBlocks == 1) vibrate(confirmed)
-    override def onCoinsReceived(w: Wallet, t: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb) vibrate(processed)
-    override def onCoinsSent(w: Wallet, t: Transaction, pb: Coin, nb: Coin) = vibrate(processed)
+object Vibr {
+  def vibrate(pattern: Pattern) = if (null != vib && vib.hasVibrator) vib.vibrate(pattern, -1)
+  lazy val vib = app.getSystemService(Context.VIBRATOR_SERVICE).asInstanceOf[android.os.Vibrator]
+  val confirmed = Array(0L, 75, 250, 75, 250)
+  val processed = Array(0L, 85, 200)
+  type Pattern = Array[Long]
 
-    def vibrate(vibrationPattern: Pattern) = {
-      val vib = getSystemService(Context.VIBRATOR_SERVICE).asInstanceOf[Vibrator]
-      if (null != vib && vib.hasVibrator) vib.vibrate(vibrationPattern, -1)
-    }
-
-    val confirmed = Array(0L, 75, 250, 75, 250)
-    val processed = Array(0L, 85, 200)
-    type Pattern = Array[Long]
+  val listener = new WalletCoinEventListener with MyWalletChangeListener {
+    def onTransactionConfidenceChanged(w: Wallet, tx: Transaction) = if (tx.getConfidence.getDepthInBlocks == 1) vibrate(confirmed)
+    def onCoinsReceived(w: Wallet, t: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb) vibrate(processed)
+    def onCoinsSent(w: Wallet, t: Transaction, pb: Coin, nb: Coin) = vibrate(processed)
   }
-
-  // Coins related
-
-  def txtPaint(size: Long) = {
-    val paint = new Paint(fontPaint)
-    paint setTextSize txMap(size)
-    paint
-  }
-
-  def mk(sum: Long, div: Long, paint: Paint, out: TransactionOutput) =
-    if (div < 1000000000L) new CircleCoin(paint, sizeMap(div), getText(div, sum), sum, txtPaint(div), out)
-    else new BitCoin(paint, sizeMap(div), getText(div, sum), sum, txtPaint(div), out)
-
-  def getText(div: Long, sum: Long) = div match {
-    case 1000000000000000L => s"${sum / 100000000000000L}M"
-    case 100000000000000L => s"${sum / 100000000000L}K"
-    case 10000000000000L => s"${sum / 100000000000L}K"
-    case 1000000000000L => s"${sum / 100000000000L}K"
-    case 100000000000L => (sum / 100000000L).toString
-    case 10000000000L => (sum / 100000000L).toString
-    case 1000000000L => (sum / 100000000L).toString
-    case 100000000L => s"${sum / 1000000L}M"
-    case 10000000L => s"${sum / 1000000L}M"
-    case 1000000L => s"${sum / 1000L}K"
-    case 100000L => s"${sum / 1000L}K"
-    case 10000L => s"${sum / 1000L}K"
-    case 1000L => sum.toString
-  }
-
-  val sizeMap = Map(1000000000000000L -> 1.35f, 100000000000000L -> 1.3f,
-    10000000000000L -> 1.20f, 1000000000000L -> 1.15f, 100000000000L -> 1.1f,
-    10000000000L -> 1f, 1000000000L -> 0.95f, 100000000L -> 0.9f, 10000000L -> 0.85f,
-    1000000L -> 0.75f, 100000L -> 0.7f, 10000L -> 0.65f, 1000L -> 0.6f)
-
-  lazy val txMap = Map(
-    1000000000000000L -> getResources.getDimensionPixelSize(R.dimen.font_12),
-    100000000000000L -> getResources.getDimensionPixelSize(R.dimen.font_11),
-    10000000000000L -> getResources.getDimensionPixelSize(R.dimen.font_10),
-    1000000000000L -> getResources.getDimensionPixelSize(R.dimen.font_9),
-    100000000000L -> getResources.getDimensionPixelSize(R.dimen.font_8),
-    10000000000L -> getResources.getDimensionPixelSize(R.dimen.font_7),
-    1000000000L -> getResources.getDimensionPixelSize(R.dimen.font_6),
-    100000000L -> getResources.getDimensionPixelSize(R.dimen.font_5),
-    10000000L -> getResources.getDimensionPixelSize(R.dimen.font_4),
-    1000000L -> getResources.getDimensionPixelSize(R.dimen.font_3),
-    100000L -> getResources.getDimensionPixelSize(R.dimen.font_2),
-    10000L -> getResources.getDimensionPixelSize(R.dimen.font_1),
-    1000L -> getResources.getDimensionPixelSize(R.dimen.font_0)
-  )
 }

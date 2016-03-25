@@ -1,85 +1,92 @@
 package com.btcontract.wallet
 
+import R.string._
+import android.widget._
+import Utils.{wrap, app}
+import scala.util.{Success, Try}
+import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}
+import concurrent.ExecutionContext.Implicits.global
 import org.bitcoinj.store.WalletProtobufSerializer
 import android.text.method.LinkMovementMethod
+import android.view.View.OnClickListener
+import scala.concurrent.Future
 import java.io.FileInputStream
 import android.os.Bundle
 import android.view.View
 
-import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}
-import android.widget.{LinearLayout, EditText, TextView}
-import R.string.{dialog_ok, dialog_cancel}
-import scala.util.{Success, Try}
-import View.{GONE, VISIBLE}
-import Utils.{wrap, app}
 
+trait ViewSwitch {
+  val views: List[View]
+  def setVis(ms: Int*) = views zip ms foreach {
+    case (view, state) => view setVisibility state
+  }
+}
 
-class MainActivity extends TimerActivity { me =>
-  lazy val askPass = prefs.getBoolean(AbstractKit.PASSWORD_ASK_STARTUP, false)
-  lazy val destructCode = prefs.getString(AbstractKit.DESTRUCT_CODE, null)
-  lazy val sack = prefs.getBoolean(AbstractKit.SACK_OR_TXS, true)
+class MainActivity extends TimerActivity with ViewSwitch { me =>
+  def opts = mkChoiceDialog(next, finish, dialog_ok, dialog_cancel)
+  def errorWarn(code: Int): Unit = mkForm(opts setMessage code, null, null)
+  lazy val askPass = app.prefs.getBoolean(AbstractKit.PASSWORD_ASK_STARTUP, false)
+  lazy val destructCode = app.prefs.getString(AbstractKit.DESTRUCT_CODE, null)
+  lazy val greet = findViewById(R.id.mainGreetings).asInstanceOf[TextView]
+  lazy val passData = findViewById(R.id.passData).asInstanceOf[EditText]
+  lazy val checkPass = findViewById(R.id.checkPass).asInstanceOf[Button]
 
-  // Sections
-  lazy val password = findViewById(R.id.mainPassword).asInstanceOf[LinearLayout]
-  lazy val progress = findViewById(R.id.mainProgess).asInstanceOf[LinearLayout]
-  lazy val choice = findViewById(R.id.mainChoice).asInstanceOf[LinearLayout]
-
-  // UI elements
-  lazy val passData = findViewById(R.id.mainPassData).asInstanceOf[EditText]
-  lazy val spin = findViewById(R.id.mainSpin).asInstanceOf[TextView]
-  var activityIsCurrentlyOperational = true
+  lazy val views =
+    findViewById(R.id.mainProgress).asInstanceOf[ImageView] ::
+    findViewById(R.id.mainPassword).asInstanceOf[LinearLayout] ::
+    findViewById(R.id.mainChoice).asInstanceOf[LinearLayout] :: Nil
 
   // Initialize this activity, method is run once
-  override def onCreate(savedInstState: Bundle) =
+  override def onCreate(savedState: Bundle) =
   {
-    super.onCreate(savedInstState)
+    super.onCreate(savedState)
     setContentView(R.layout.activity_main)
-    val mainGreetings = findViewById(R.id.mainGreetings).asInstanceOf[TextView]
-    mainGreetings setMovementMethod LinkMovementMethod.getInstance
+    // Allow read more link to be actually clicked
+    greet setMovementMethod LinkMovementMethod.getInstance
 
     Try(getIntent.getDataString) match {
       case ok@Success(dataNotNull: String) =>
-        ok map app.TransData.setValue map (_ => next) recover app.TransData.onFail { errCode =>
-          mkForm(mkChoiceDialog(next, finish, dialog_ok, dialog_cancel) setMessage errCode, null, null)
-        }
+        // Okay, we've got a real string, now try to convert it
+        val attempt = ok.map(app.TransData.setValue).map(_ => next)
+        // So we've indeed got a string, but it is not Bitcoin-related
+        attempt.recover(app.TransData onFail errorWarn)
+
+      // Usual launch
       case _ => next
     }
   }
 
   def next = app.walletFile.exists match {
-    case false => choice setVisibility VISIBLE
-    case true if app.isAlive => walletOrHistory
-    case true => warmUp
+    case true if app.isAlive => exitToWalletNow
+    case true if askPass => showPassword(Future apply prepareWallet)
+    case true => showLoadProgress(Future apply prepareWallet)
+    case _ => setVis(View.GONE, View.GONE, View.VISIBLE)
   }
 
-  def warmUp = {
-    progress setVisibility VISIBLE
-    timer.scheduleAtFixedRate(new Spinner(spin), 5000, 1000)
-    <(prepareWallet, _ => System exit 0)(_ => react)
+  val showPassword: Future[Unit] => Unit = work =>
+    checkPass setOnClickListener new OnClickListener {
+      def showPrompt = setVis(View.GONE, View.VISIBLE, View.GONE)
+      def check = Mnemonic decrypt passData.getText.toString
+      def wrong = wrap(me toast password_wrong)(showPrompt)
+      showPrompt
 
-    def react = if (askPass) {
-      password setVisibility VISIBLE
-      progress setVisibility GONE
-    } else maybeStartKit
-  }
-
-  def tryPass(view: View) = hideKeys {
-    if (passWordInput == destructCode) replaceWallet
-    else <(check, _ => wrong)(if (_) maybeStartKit else wrong)
-    progress setVisibility VISIBLE
-    password setVisibility GONE
-
-    def wrong = {
-      toast(R.string.password_wrong)
-      password setVisibility VISIBLE
-      progress setVisibility GONE
+      def onClick(view: View) = hideKeys {
+        setVis(View.VISIBLE, View.GONE, View.GONE)
+        if (passData.getText.toString == destructCode) replaceWallet
+        else <(check, _ => wrong)(_ => showLoadProgress apply work)
+      }
     }
+
+  val showLoadProgress: Future[Unit] => Unit = work => {
+    app.prefs.edit.putBoolean(AbstractKit.PASSWORD_ASK_STARTUP, false).commit
+    <<(work, _ => me errorWarn err_general)(_ => app.kit.startAsync)
+    setVis(View.VISIBLE, View.GONE, View.GONE)
   }
 
   def prepareWallet =
     app.kit = new app.WalletKit {
       val stream = new FileInputStream(app.walletFile)
-      val proto = try WalletProtobufSerializer.parseToProto(stream) finally stream.close
+      val proto = try WalletProtobufSerializer parseToProto stream finally stream.close
       wallet = new WalletProtobufSerializer readWallet (app.params, null, proto)
       store = new org.bitcoinj.store.SPVBlockStore(app.params, app.chainFile)
       blockChain = new BlockChain(app.params, wallet, store)
@@ -87,14 +94,14 @@ class MainActivity extends TimerActivity { me =>
 
       def startUp = {
         setupAndStartDownload
-        walletOrHistory
+        exitToWalletNow
       }
     }
 
   def replaceWallet =
     app.kit = new app.WalletKit {
-      // Clear destruction code and make a new wallet
-      prefs.edit.remove(AbstractKit.DESTRUCT_CODE).commit
+      val slot = AbstractKit.DESTRUCT_CODE
+      app.prefs.edit.remove(slot).commit
       startAsync
 
       def startUp = {
@@ -102,23 +109,15 @@ class MainActivity extends TimerActivity { me =>
         store = new org.bitcoinj.store.SPVBlockStore(app.params, app.chainFile)
         blockChain = new BlockChain(app.params, wallet, store)
         peerGroup = new PeerGroup(app.params, blockChain)
-        app.kit encryptWallet passWordInput
+        app.kit encryptWallet passData.getText.toString
         wallet saveToFile app.walletFile
         setupAndStartDownload
-        walletOrHistory
+        exitToWalletNow
       }
     }
 
-  def passWordInput = passData.getText.toString
-  def check = app.kit.wallet checkPassword passWordInput
-  def maybeStartKit = if (activityIsCurrentlyOperational) {
-    prefs.edit.putBoolean(AbstractKit.PASSWORD_ASK_STARTUP, false).commit
-    app.kit.startAsync
-  }
-
-  override def onBackPressed = wrap(super.onBackPressed) { activityIsCurrentlyOperational = false }
-  def walletOrHistory = if (sack) me exitTo classOf[WalletActivity] else me exitTo classOf[TxsActivity]
-  def goRestoreWallet(v: View) = me exitTo classOf[WalletRestoreActivity]
-  def goCreateWallet(v: View) = me exitTo classOf[WalletCreateActivity]
-  def openConverter(v: View) = mkConverterForm
+  // State transition helpers
+  def goRestoreWallet(view: View) = me exitTo classOf[WalletRestoreActivity]
+  def goCreateWallet(view: View) = me exitTo classOf[WalletCreateActivity]
+  def exitToWalletNow = me exitTo classOf[TxsActivity]
 }

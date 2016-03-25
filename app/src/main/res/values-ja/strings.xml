@@ -8,47 +8,43 @@
     <string name="sets_password_ok">新しいパスワードを正常に設定しました</string>
     <string name="sets_destruct_ok">ディストラクション コードを «%1$s» に設定しました</string>
     <string name="sets_rescan_ok">アプリケーションを閉じます。次回起動時にブロックチェーンの再スキャンを起動します</string>
-    <string name="greetings">ビジュアル ビットコイン ウォレットへようこそ!\nまず <a href='http://btcontract.github.io/VisualBitcoinWallet/'>ウォレット マニュアルをご覧ください</a></string>
-    <string name="mnemonic_info">回復ニーモニックは非常に重要です!\n続行する前に <a href='http://btcontract.github.io/VisualBitcoinWallet/#mnemonic-code'>それに関してご覧ください</a></string>
+    <string name="greetings">単純なビットコイン財布\nまず <a href='https://btcontract.com'>ウォレット マニュアルをご覧ください</a></string>
+    <string name="fee_default"><![CDATA[<small>デフォルトの手数料%1$s<br><font color=#999999><small>時間がかかることがあります確認</small></font></small>]]></string>
+    <string name="fee_live"><![CDATA[<small>プライオリティ料 %1$s<br><font color=#999999><small>高速取引確認</small></font></small>]]></string>
     <string name="password_info">パスワードがないと、お金を失う危険があります。少なくとも 8 文字の長さのものを選んでください</string>
+    <string name="copied_to_clipboard">クリップボードにコピーしました</string>
+    <string name="copy_to_clipboard">クリップボードにコピー</string>
     <string name="wallet_restore">コードからウォレットを回復</string>
-    <string name="copied_to_buffer">クリップボードにコピーしました</string>
     <string name="wallet_create">新しいウォレットを作成</string>
     <string name="wallet_empty">ウォレットは空です</string>
     <string name="wallet_password">パスワード</string>
-    <string name="wallet_open">ウォレットを開く</string>
 
-    <string name="sets_fee">キロバイト当たり手数料</string>
     <string name="sets_pass_change">ウォレットのパスワードを変更</string>
     <string name="sets_destruct_set">ディストラクション コードを設定</string>
-    <string name="sets_mnemonic">回復ニーモニックを表示</string>
     <string name="sets_rescan">ブロックチェーンを再スキャン</string>
-    <string name="sets_about">アプリマニュアルを読む</string>
+    <string name="sets_mnemonic">回復ニーモニックを表示</string>
 
     <string name="password_new">新しいパスワード</string>
     <string name="destruct_new">ディストラクション コード</string>
-    <string name="password_old">現在のパスワード</string>
+    <string name="password_old">ウォレット・パスワード</string>
     <string name="password_wrong">ウォレットのパスワードが間違っています</string>
-    <string name="password_too_short">パスワードが短すぎます</string>
     <string name="destruct_too_short">ディストラクション コードが短すぎます</string>
+    <string name="password_too_short">パスワードが短すぎます</string>
+
+    <!-- headers with links -->
+    <string name="mnemonic_info">回復ニーモニックは非常に重要です!\n<a href='https://btcontract.com/#mnemonic-code'>それについての詳細を調べる</a>と、それを保存してください\n\nニーモニックコードが保存して、あなたはあなたの貴重なビットコインを失うことは決してないだろうことを安心することができます</string>
+    <string name="buy_info"><![CDATA[You are about to be taken to <strong>LocalBitcoins</strong> secure website where bitcoins can be safely purchased and instantly transferred to this wallet.<br><br>Would you like to proceed?]]></string>
+    <string name="read_settings"><![CDATA[<small>質問をお持ちですか？<br><a href=https://btcontract.com>アプリの説明書を読んで</a><br><br></small>ウォレット設定]]></string>
+    <string name="action_lock">この財布をロック</string>
+    <string name="wallet_open">ウォレットを開く</string>
 
     <!-- menu -->
-    <string name="action_lock">ウォレットをロック</string>
-    <string name="action_scan_qr">QR コードをスキャン</string>
-    <string name="paydata_clear">支払を破棄</string>
     <string name="action_settings">ウォレット設定</string>
-    <string name="action_address">残高を表示</string>
-    <string name="action_converter">為替換算</string>
-    <string name="action_request_payment">支払のリクエスト</string>
-    <string name="action_receive_payment">受信</string>
-    <string name="action_send_money">送信</string>
-
-    <array name="action_send_memo">
-        <item>ビットコインを送信</item>
-        <item>2番目のアドレスを追加</item>
-        <item>3番目のアドレスを追加</item>
-        <item>%1$s番目のアドレスを追加</item>
-    </array>
+    <string name="action_request_payment">正確な金額を要求します</string>
+    <string name="action_receive_payment">受け取ります</string>
+    <string name="action_buy">購入コイン</string>
+    <string name="action_send">送金する</string>
+    <string name="action_scan">QRをスキャン</string>
 
     <!-- errors -->
     <string name="err_pass">パスワードが一致しないため、トランザクションに失敗しました。正しいパスワードを入力したことを確認してください</string>
@@ -78,12 +74,7 @@
     <string name="spend_address_hint">ビットコイン アドレス</string>
     <string name="input_btc">&#160;ビットコイン&#160;</string>
     <string name="input_sat">&#160;satoshi&#160;</string>
-
-    <string name="input_alt_sat">%1$s (satoshi)</string>
-    <string name="input_alt_btc">%1$s (ビットコイン)</string>
-    <string name="input_dollar">金額 (ドル)</string>
-    <string name="input_euro">金額 (ユーロ)</string>
-    <string name="input_yuan">金額 (元)</string>
+    <string name="input_alt_btc">%1$s BTC</string>
 
     <array name="dialog_request">
         <item>リクエストを QR コードに変換</item>
@@ -91,14 +82,7 @@
         <item>リクエストを共有&#8230;</item>
     </array>
 
-    <array name="dialog_address">
-        <item>アドレスを QR に変換</item>
-        <item>アドレスをクリップボードにコピー</item>
-        <item>アドレスを共有&#8230;</item>
-    </array>
-
     <!-- notifications -->
-    <string name="reorg">再編成が発生しました</string>
     <string name="info_progress">同期: %1$d ブロック残り</string>
     <string name="info_progress_done">ブロックチェーンは最新です</string>
     <string name="tx_announce">トランザクションのアナウンス中&#8230;</string>
@@ -111,48 +95,28 @@
     <array name="info_peers">
         <item>ピアの検索中&#8230;</item>
         <item>%1$s ピアに接続しました</item>
-        <item>%1$s ピアに接続しました</item>
     </array>
 
-    <!-- activity_create, activity_restore -->
-    <string name="restore_when">ウォレットをいつ作成しましたか?\n不確かな場合は日付をそのままにしてください</string>
+    <!-- activity_create, activity_restore, activity_request -->
     <string name="create_wallet_creating">ウォレットを生成します\n数分かかることがあります</string>
+    <string name="restore_when">ウォレットをいつ作成しましたか?\n不確かな場合は日付をそのままにしてください</string>
     <string name="restore_wallet_restoring">ウォレットを回復します\nしばらく時間がかかります</string>
     <string name="restore_mnemonic_wrong">回復ニーモニックの長さは 12 語にする必要があります</string>
     <string name="restore_wallet_ready">ウォレットの準備ができました</string>
-    <string name="restore_hint">回復ニーモニック</string>
     <string name="restore_wallet">ウォレットを回復</string>
-
-    <!-- activity_request -->
-    <string name="req_save">QR コードを共有</string>
+    <string name="restore_hint">回復ニーモニック</string>
+    <string name="req_save">共有画像</string>
 
     <!-- activity_txs -->
-    <string name="no_funds">資金なし</string>
-    <string name="txs_incoming">着信&#160;</string>
-    <string name="txs_yes_fee">%1$s 手数料&#160;</string>
-    <string name="txs_many_received_to"><![CDATA[<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]>&#160;で取得</string>
-    <string name="txs_many_sent_to"><![CDATA[<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]>&#160;に送信しました</string>
-    <string name="txs_received_to"><![CDATA[<font color=#1BA2E0>%1$s</font>]]>&#160;で取得</string>
-    <string name="txs_sent_to"><![CDATA[<font color=#E31300>%1$s</font>]]>&#160;に送信しました</string>
+    <string name="txs_fee_details"><![CDATA[%3$s<br><strong>%1$s</strong>支払い<br><strong>%2$s</strong>料金]]></string>
+    <string name="txs_fee_incoming"><![CDATA[%1$s<br><strong>着信トランザクション</strong>]]></string>
+    <string name="txs_fee_absent"><![CDATA[%1$s<br><strong>No fee</strong>]]></string>
     <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_view_outside">BlockExplorer.com で表示</string>
-    <string name="txs_copy_hash">トランザクションのハッシュをコピー</string>
-    <string name="txs_noaddr">不明なアドレス</string>
 
-    <string name="txs_conf"><![CDATA[<font color=#79A81B>確認済</font>]]></string>
-    <string name="txs_wait"><![CDATA[<font color=#777777>待機中</font>]]></string>
-    <string name="txs_dead"><![CDATA[<font color=#E31300>死亡</font>]]></string>
-
-    <array name="txs_total">
-        <item>履歴なし</item>
-        <item>%1$s トランザクション</item>
-        <item>%1$s txns</item>
-    </array>
-
-    <array name="addr_total">
-        <item>アドレスなし</item>
-        <item>%1$s アドレス</item>
-        <item>%1$s アドレス</item>
+    <array name="txs_confs">
+        <item><![CDATA[<font color=#E31300>まだ確認されません</font>]]></item>
+        <item><![CDATA[<strong>%1$s</strong>確認]]></item>
     </array>
 </resources>

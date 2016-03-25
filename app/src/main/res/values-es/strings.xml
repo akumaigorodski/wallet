@@ -8,47 +8,43 @@
     <string name="sets_password_ok">La nueva contraseña ha sido establecida exitosamente</string>
     <string name="sets_destruct_ok">El código de destrucción se ha sido establecido en «%1$s»</string>
     <string name="sets_rescan_ok">La aplicación se cerrará ahora y el reescaneo de la cadena de bloques se activará en el próximo reinicio</string>
-    <string name="greetings">Bienvenido a Monedero Bitcoin Visual!\nPor favor, lea el <a href='http://btcontract.github.io/VisualBitcoinWallet/'>manual de monedero</a></string>
-    <string name="mnemonic_info">Código mnemotécnico es súper importante!\n<a href='http://btcontract.github.io/VisualBitcoinWallet/#mnemonic-code'>Lea acerca de esto</a> por favor</string>
+    <string name="greetings">Bienvenido a Monedero Bitcoin!\nPor favor, lea el <a href='https://btcontract.com'>manual de monedero</a></string>
     <string name="password_info">Sin contraseña se expone de manera constante a perder su dinero. Por favor, elija una que tenga al menos 8 caracteres.</string>
+    <string name="fee_default"><![CDATA[<small>Default fee %1$s<br><font color=#999999><small>Puede tomar un tiempo</small></font></small>]]></string>
+    <string name="fee_live"><![CDATA[<small>Priority fee %1$s<br><font color=#999999><small>Confirmación rápida</small></font></small>]]></string>
     <string name="wallet_restore">Restaurar monedero a partir del código</string>
-    <string name="copied_to_buffer">Copiado al portapapeles</string>
+    <string name="copied_to_clipboard">Copiado al portapapeles</string>
+    <string name="copy_to_clipboard">Copiar al portapapeles</string>
     <string name="wallet_empty">El monedero está vacío</string>
     <string name="wallet_create">Crear nuevo monedero</string>
-    <string name="wallet_open">Monedero abierto</string>
     <string name="wallet_password">Contraseña</string>
 
-    <string name="sets_fee">Cargo por kilobyte</string>
     <string name="sets_pass_change">Cambiar contraseña de monedero</string>
     <string name="sets_destruct_set">Fijar código de destrucción</string>
     <string name="sets_rescan">Reescanear cadena de bloque</string>
-    <string name="sets_about">Leer manual de la aplicación</string>
     <string name="sets_mnemonic">Ver código nemotécnico</string>
 
     <string name="password_new">Nueva contraseña</string>
-    <string name="password_old">Contraseña actual</string>
     <string name="destruct_new">Código de destrucción</string>
+    <string name="password_old">Current wallet password</string>
     <string name="password_too_short">La contraseña es muy corta</string>
     <string name="password_wrong">Contraseña de monedero incorrecta</string>
     <string name="destruct_too_short">El código de destrucción es muy corto</string>
 
-    <!-- menu -->
-    <string name="action_lock">Bloquear</string>
-    <string name="paydata_clear">Descartar pago</string>
-    <string name="action_address">Ver mis direcciones</string>
-    <string name="action_settings">Ajustes de monedero</string>
-    <string name="action_request_payment">Solicitar pago</string>
-    <string name="action_converter">Convertidor de moneda</string>
-    <string name="action_scan_qr">Escanear una imagen QR</string>
-    <string name="action_receive_payment">RECIBIR</string>
-    <string name="action_send_money">ENVIAR</string>
+    <!-- headers with links -->
+    <string name="mnemonic_info">Código mnemotécnico es súper importante!\n<a href='https://btcontract.com/#mnemonic-code'>Lea acerca de esto</a> y asegúrese de guardarlo\n\nCon el código nemotécnico guarda puede estar seguro de que usted nunca perderá sus preciosos bitcoins</string>
+    <string name="buy_info"><![CDATA[You are about to be taken to <strong>LocalBitcoins</strong> secure website where bitcoins can be safely purchased and instantly transferred to this wallet.<br><br>Would you like to proceed?]]></string>
+    <string name="read_settings"><![CDATA[<small>¿Tienes preguntas?<br><a href=https://btcontract.com>lea el manual de aplicaciones</a><br><br></small>Ajustes de monedero]]></string>
+    <string name="action_lock">Bloqueo de esta cartera</string>
+    <string name="wallet_open">Copiar datos</string>
 
-    <array name="action_send_memo">
-        <item>Enviar bitcoins</item>
-        <item>+ segunda dirección</item>
-        <item>+ tercera dirección</item>
-        <item>+ una dirección de %1$s</item>
-    </array>
+    <!-- menu -->
+    <string name="action_settings">Ajustes de monedero</string>
+    <string name="action_request_payment">Solicitar una suma</string>
+    <string name="action_receive_payment">Recibir dinero</string>
+    <string name="action_buy">Comprar bitcoins</string>
+    <string name="action_send">Enviar dinero</string>
+    <string name="action_scan">Scan QR</string>
 
     <!-- errors -->
     <string name="err_pass">La transacción falló porque la contraseña no coincide. Por favor, asegúrese de que ha escrito la contraseña correcta.</string>
@@ -75,15 +71,10 @@
     <string name="dialog_sum_dusty">La cantidad actual puede ser considerada spam.</string>
     <string name="dialog_sum_empty">Por favor, proporcione un monto.</string>
     <string name="spend_address_tip">dónde enviar dinero</string>
-    <string name="spend_address_hint">dirección Bitcoin</string>
+    <string name="spend_address_hint">Bitcoin address</string>
     <string name="input_btc">&#160;bitcoins&#160;</string>
     <string name="input_sat">&#160;satoshi&#160;</string>
-
-    <string name="input_alt_sat">%1$s en satoshi</string>
-    <string name="input_alt_btc">%1$s en bitcoins</string>
-    <string name="input_dollar">suma en dólar</string>
-    <string name="input_euro">suma en euro</string>
-    <string name="input_yuan">suma en yuan</string>
+    <string name="input_alt_btc">%1$s BTC</string>
 
     <array name="dialog_request">
         <item>Crear un QR con la solicitud</item>
@@ -91,17 +82,10 @@
         <item>Compartir la solicitud&#8230;</item>
     </array>
 
-    <array name="dialog_address">
-        <item>Crear un QR con la dirección</item>
-        <item>Copiar la dirección al portapapeles</item>
-        <item>Compartir la dirección&#8230;</item>
-    </array>
-
     <!-- notifications -->
     <string name="tx_sent">Recién enviadas %1$s</string>
     <string name="tx_received">Recién recibidas %1$s</string>
     <string name="tx_1st_conf">1ra confirmación obtenida</string>
-    <string name="reorg">Acaba de suceder la reorganización</string>
     <string name="tx_announce">Anunciando transacción&#8230;</string>
     <string name="info_progress">Sincronizar: quedan %1$d bloques</string>
     <string name="info_progress_done">La cadena de bloque está actualizada</string>
@@ -114,7 +98,7 @@
         <item>Conectado con %1$d nodos</item>
     </array>
 
-    <!-- activity_create, activity_restore -->
+    <!-- activity_create, activity_restore, activity_request -->
     <string name="restore_when">Cuando se creó la billetera?\nNo cambie si no está seguro.</string>
     <string name="create_wallet_creating">Generando su monedero.\nEsto puede tomar unos minutos.</string>
     <string name="restore_wallet_restoring">Restaurando su monedero.\nEsto puede tomar un tiempo.</string>
@@ -122,37 +106,19 @@
     <string name="restore_wallet_ready">Su nueva billetera está lista.</string>
     <string name="restore_hint">Su código nemotécnico</string>
     <string name="restore_wallet">Restaurar monedero</string>
-
-    <!-- activity_request -->
-    <string name="req_save">Compartir código QR</string>
+    <string name="req_save">Compartir foto</string>
 
     <!-- activity_txs -->
-    <string name="no_funds">Sin fondos</string>
-    <string name="txs_incoming">Entrante&#160;</string>
-    <string name="txs_yes_fee">%1$s fee&#160;</string>
-    <string name="txs_many_received_to"><![CDATA[Recibido&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_many_sent_to"><![CDATA[Enviado&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_received_to"><![CDATA[Recibido&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[Enviado&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_fee_details"><![CDATA[%3$s<br><strong>%1$s</strong> pago<br><strong>%2$s</strong> cuota]]></string>
+    <string name="txs_fee_incoming"><![CDATA[%1$s<br><strong>Transacción de entrada</strong>]]></string>
+    <string name="txs_fee_absent"><![CDATA[%1$s<br><strong>No hay cuota</strong>]]></string>
+    <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_copy_hash">Copiar hash al portapapeles</string>
     <string name="txs_view_outside">Ver en BlockExplorer.com</string>
-    <string name="txs_noaddr">dirección desconocida</string>
 
-    <string name="txs_conf"><![CDATA[<font color=#79A81B>Confirmad</font>]]></string>
-    <string name="txs_wait"><![CDATA[<font color=#777777>Espera</font>]]></string>
-    <string name="txs_dead"><![CDATA[<font color=#E31300>Muerto</font>]]></string>
-
-    <array name="txs_total">
-        <item>Sin historial</item>
-        <item>%1$s transacción</item>
-        <item>%1$s operaciones</item>
-    </array>
-
-    <array name="addr_total">
-        <item>Sin direcciones</item>
-        <item>%1$s dirección</item>
-        <item>%1$s direcciones</item>
+    <array name="txs_confs">
+        <item><![CDATA[<font color=#E31300>Todavía no se ha confirmado</font>]]></item>
+        <item><![CDATA[<strong>%1$s</strong> de confirmación]]></item>
+        <item><![CDATA[<strong>%1$s</strong> confirmaciones]]></item>
     </array>
 </resources>

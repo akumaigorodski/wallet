@@ -1,46 +1,49 @@
 package com.btcontract.wallet
 
-import org.bitcoinj.store.SPVBlockStore
 import android.os.Bundle
-import android.view.View
-
-import Utils.{wrap, app}
-import java.util.{Date, Calendar}
+import java.util.Calendar
+import org.bitcoinj.store.SPVBlockStore
+import android.widget.DatePicker.OnDateChangedListener
 import org.bitcoinj.wallet.{KeyChainGroup, DeterministicSeed}
 import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}
-import android.app.{DatePickerDialog, DialogFragment}
-import Calendar.{YEAR, MONTH, DATE}
+import Utils.{wrap, app, none, runAnd}
+import android.view.{ViewGroup, View}
 import android.widget._
+import R.string._
 
 
-class WalletRestoreActivity extends TimerActivity { me =>
-  lazy val restoreProgess = findViewById(R.id.restoreProgess).asInstanceOf[LinearLayout]
-  lazy val restoreInfo = findViewById(R.id.restoreInfo).asInstanceOf[LinearLayout]
-  lazy val restoreWallet = findViewById(R.id.restoreWallet).asInstanceOf[Button]
-  lazy val restoreCode = findViewById(R.id.restoreCode).asInstanceOf[TextView]
-  lazy val restoreWhen = findViewById(R.id.restoreWhen).asInstanceOf[Button]
-  lazy val password = findViewById(R.id.restorePass).asInstanceOf[EditText]
-  lazy val spin = findViewById(R.id.restoreSpin).asInstanceOf[TextView]
-  val may1st2014 = 1398902400L * 1000
-  var when = Calendar.getInstance
+class WhenPicker(host: TimerActivity, start: Long)
+extends DatePicker(host) with OnDateChangedListener { me =>
+  def pure = runAnd(me)(try getParent.asInstanceOf[ViewGroup] removeView me catch none)
+  def human = java.text.DateFormat getDateInstance java.text.DateFormat.MEDIUM format cal.getTime
+  def onDateChanged(view: DatePicker, year: Int, mon: Int, dt: Int) = cal.set(year, mon, dt)
+  init(cal get Calendar.YEAR, cal get Calendar.MONTH, cal get Calendar.DATE, me)
+  me setCalendarViewShown false
 
-  class WhenPicker extends DialogFragment with android.app.DatePickerDialog.OnDateSetListener {
-    def onDateSet(dp: DatePicker, yr: Int, mn: Int, dt: Int) = wrap(updateWhen) _ apply when.set(yr, mn, dt)
-    val dialog = new DatePickerDialog(me, this, when get YEAR, when get MONTH, when get DATE)
-
-    override def onCreateDialog(state: Bundle) = {
-      dialog.getDatePicker setMaxDate (new Date).getTime
-      dialog
-    }
+  lazy val cal = {
+    val calendar = Calendar.getInstance
+    calendar setTimeInMillis start
+    calendar
   }
+}
+
+class WalletRestoreActivity extends TimerActivity with ViewSwitch { me =>
+  override def onBackPressed = wrap(super.onBackPressed)(app.kit.stopAsync)
+  private[this] lazy val datePicker = new WhenPicker(me, 1398902400L * 1000)
+  private[this] lazy val restoreWallet = findViewById(R.id.restoreWallet).asInstanceOf[Button]
+  private[this] lazy val restoreCode = findViewById(R.id.restoreCode).asInstanceOf[TextView]
+  private[this] lazy val restoreWhen = findViewById(R.id.restoreWhen).asInstanceOf[Button]
+  private[this] lazy val password = findViewById(R.id.restorePass).asInstanceOf[EditText]
+  private[this] lazy val spin = findViewById(R.id.restoreSpin).asInstanceOf[TextView]
+  lazy val views = findViewById(R.id.restoreInfo).asInstanceOf[LinearLayout] ::
+    findViewById(R.id.restoreProgress).asInstanceOf[LinearLayout] :: Nil
 
   // Initialize this activity, method is run once
-  override def onCreate(savedInstState: Bundle) =
+  override def onCreate(savedState: Bundle) =
   {
-    super.onCreate(savedInstState)
+    super.onCreate(savedState)
     setContentView(R.layout.activity_restore)
-    when setTimeInMillis may1st2014
-    updateWhen
+    restoreWhen setText datePicker.human
 
     val changeListener = new TextChangedWatcher {
       override def onTextChanged(s: CharSequence, x: Int, y: Int, z: Int) = {
@@ -48,9 +51,9 @@ class WalletRestoreActivity extends TimerActivity { me =>
         val passIsOk = password.getText.length >= 8
 
         restoreWallet.setEnabled(mnemonicWordsAreOk & passIsOk)
-        if (!mnemonicWordsAreOk) restoreWallet setText R.string.restore_mnemonic_wrong
-        else if (!passIsOk) restoreWallet setText R.string.password_too_short
-        else restoreWallet setText R.string.restore_wallet
+        if (!mnemonicWordsAreOk) restoreWallet setText restore_mnemonic_wrong
+        else if (!passIsOk) restoreWallet setText password_too_short
+        else restoreWallet setText restore_wallet
       }
     }
 
@@ -60,16 +63,17 @@ class WalletRestoreActivity extends TimerActivity { me =>
 
   def doRecoverWallet =
     app.kit = new app.WalletKit {
-      timer.scheduleAtFixedRate(new Spinner(spin), 1000, 1000)
-      restoreProgess setVisibility View.VISIBLE
-      restoreInfo setVisibility View.GONE
+      timer.scheduleAtFixedRate(new Spinner(spin), 0, 1000)
+      setVis(View.GONE, View.VISIBLE)
       startAsync
 
       def startUp = {
-        val whenTime = when.getTimeInMillis / 1000
-        val mnemo = restoreCode.getText.toString.toLowerCase
-        val ds = new DeterministicSeed(mnemo, null, "", whenTime)
-        val keyChainGroup = new KeyChainGroup(app.params, ds)
+        val whenTime = datePicker.cal.getTimeInMillis / 1000
+        val mnemonic = restoreCode.getText.toString.toLowerCase.trim
+        val seed = new DeterministicSeed(mnemonic, null, "", whenTime)
+        val keyChainGroup = new KeyChainGroup(app.params, seed)
+
+        // Recreate encrypted wallet and use checkpoints
         store = new SPVBlockStore(app.params, app.chainFile)
         wallet = new Wallet(app.params, keyChainGroup)
         app.kit encryptWallet password.getText
@@ -82,13 +86,12 @@ class WalletRestoreActivity extends TimerActivity { me =>
         if (app.isAlive) {
           setupAndStartDownload
           wallet saveToFile app.walletFile
-          exitTo apply classOf[WalletActivity]
+          exitTo apply classOf[TxsActivity]
         }
       }
     }
 
   def recWallet(v: View) = hideKeys(doRecoverWallet)
-  def setWhen(v: View) = (new WhenPicker).show(getFragmentManager, "whenCreatedTime")
-  def updateWhen = restoreWhen setText String.format("%1$tB %1$te, %1$tY", when)
-  override def onBackPressed = wrap(super.onBackPressed)(app.kit.stopAsync)
+  def setWhen(v: View) = mkForm(mkChoiceDialog(restoreWhen setText
+    datePicker.human, none, dialog_ok, dialog_cancel), null, datePicker.pure)
 }

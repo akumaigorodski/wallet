@@ -1,25 +1,5 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent" android:layout_height="fill_parent"
-    style="@style/StandardLinearLayout">
-
-    <Button
-        android:id="@+id/copyData"
-        android:layout_marginBottom="20dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-
-    <TextView
-        style="@style/StdText"
-        android:maxWidth="245sp"
-        android:id="@+id/reqAddress"
-        android:layout_width="wrap_content"/>
-
-    <ImageView
-        android:id="@+id/reqCode"
-        android:layout_marginTop="25dp"
-        android:layout_marginBottom="25dp"
-        android:layout_width="@dimen/bitmap_qr_size"
-        android:layout_height="@dimen/bitmap_qr_size"/>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+    android:layout_width="fill_parent" android:layout_height="fill_parent">
 
     <Button
         android:enabled="false"
@@ -27,5 +7,18 @@
         android:text="@string/req_save"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
+
+    <ImageView
+        android:id="@+id/reqCode"
+        android:layout_marginTop="25dp"
+        android:layout_marginBottom="25dp"
+        android:layout_width="@dimen/bitmap_qr_wrap_width"
+        android:layout_height="@dimen/bitmap_qr_wrap_height"/>
+
+    <Button
+        android:id="@+id/copyData"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/copy_to_clipboard"/>
 
 </LinearLayout>

@@ -1,54 +1,5 @@
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
     android:layout_height="wrap_content" android:layout_width="wrap_content">
-
-    <Button
-        android:id="@+id/setFee"
-        style="@style/TransButton"/>
-
-    <View
-        android:layout_height="1dp"
-        android:background="#33999999"
-        android:layout_width="fill_parent"/>
-
-    <info.hoang8f.android.segmented.SegmentedGroup
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:layout_marginBottom="15dp"
-        android:orientation="horizontal"
-        android:layout_marginTop="15dp"
-        android:id="@+id/fiatType">
-
-        <RadioButton
-            android:text="$"
-            android:textSize="18sp"
-            android:id="@+id/typeUSD"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/RadioButton"/>
-
-        <RadioButton
-            android:text="€"
-            android:textSize="18sp"
-            android:id="@+id/typeEUR"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/RadioButton"/>
-
-        <RadioButton
-            android:text="¥"
-            android:textSize="18sp"
-            android:id="@+id/typeCNY"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/RadioButton"/>
-
-    </info.hoang8f.android.segmented.SegmentedGroup>
-
-    <View
-        android:layout_height="1dp"
-        android:background="#33999999"
-        android:layout_width="fill_parent"/>
 
     <Button
         style="@style/TransButton"
@@ -62,17 +13,12 @@
 
     <Button
         style="@style/TransButton"
-        android:id="@+id/rescanBlockchain"
-        android:text="@string/sets_rescan"/>
-
-    <Button
-        style="@style/TransButton"
         android:id="@+id/viewMnemonic"
         android:text="@string/sets_mnemonic"/>
 
     <Button
-        android:id="@+id/about"
         style="@style/TransButton"
-        android:text="@string/sets_about"/>
+        android:id="@+id/rescanWallet"
+        android:text="@string/sets_rescan"/>
 
 </LinearLayout>

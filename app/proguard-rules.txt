@@ -3,15 +3,19 @@
 -dontpreverify
 -ignorewarnings
 
+-dontwarn okio.**
 -dontwarn scala.**
 -dontwarn org.slf4j.**
+-dontwarn net.sqlcipher.**
+-dontwarn org.whispersystems.**
+-dontwarn org.bitcoinj.store.**
 -dontwarn com.google.common.cache.**
 -dontwarn com.google.common.primitives.**
--dontwarn org.bitcoinj.store.**
+-dontwarn info.guardianproject.netcipher.**
 
--keep class scala.collection.SeqLike {
-    public protected *;
-}
+-keep class net.sqlcipher.** { *; }
+-keep class org.whispersystems.** { *; }
+-keep class scala.collection.SeqLike { *; }
 
 -keep public enum * {
 	public static **[] values();

@@ -8,47 +8,43 @@
     <string name="sets_password_ok">新密码已设置成功</string>
     <string name="sets_destruct_ok">销毁代码已设置«%1$s»</string>
     <string name="sets_rescan_ok">应用现在将被关闭而且下次启动时将触发数据块链重扫描</string>
-    <string name="greetings">视觉比特币钱包\n请首先<a href='http://btcontract.github.io/VisualBitcoinWallet/'>阅读钱包</a>手册</string>
-    <string name="mnemonic_info">助记码是非常重要的！\n<a href='http://btcontract.github.io/VisualBitcoinWallet/#mnemonic-code'>阅读关于它</a>，然后再继续</string>
+    <string name="greetings">简单的比特币钱包\n请首先<a href='https://btcontract.com'>阅读钱包</a>手册</string>
+    <string name="fee_default"><![CDATA[<small>默认费 %1$s<br><font color=#999999><small>确认可能需要数小时</small></font></small>]]></string>
+    <string name="fee_live"><![CDATA[<small>优先费 %1$s<br><font color=#999999><small>快速成交确认</small></font></small>]]></string>
     <string name="password_info">不设置密码的话，你会一直受到损失金钱的威胁。请选择一个至少8位字符的密码。</string>
-    <string name="copied_to_buffer">复制到剪贴板</string>
+    <string name="copied_to_clipboard">复制到剪贴板</string>
+    <string name="copy_to_clipboard">复制到剪贴板</string>
     <string name="wallet_restore">从代码还原钱包</string>
     <string name="wallet_create">创建新钱包</string>
     <string name="wallet_empty">钱包是空的</string>
     <string name="wallet_password">密码</string>
-    <string name="wallet_open">打开钱包</string>
 
-    <string name="sets_fee">每KB费用</string>
     <string name="sets_pass_change">更改钱包密码</string>
     <string name="sets_destruct_set">设置销毁代码</string>
-    <string name="sets_mnemonic">查看助记代码</string>
     <string name="sets_rescan">重扫描数据块链</string>
-    <string name="sets_about">阅读应用手册</string>
+    <string name="sets_mnemonic">查看助记代码</string>
 
-    <string name="password_new">新密码</string>
     <string name="destruct_new">销毁代码</string>
-    <string name="password_old">当前密码密码</string>
+    <string name="password_old">当前钱包密码</string>
+    <string name="password_new">新的电子钱包密码</string>
     <string name="password_wrong">错误的钱包密码</string>
     <string name="password_too_short">密码太短了</string>
     <string name="destruct_too_short">销毁代码太短</string>
 
-    <!-- menu -->
-    <string name="action_lock">锁钱包</string>
-    <string name="paydata_clear">丢弃付款</string>
-    <string name="action_settings">钱包设置</string>
-    <string name="action_address">查看我的地址</string>
-    <string name="action_converter">货币转换器</string>
-    <string name="action_scan_qr">扫描一张QR图片</string>
-    <string name="action_request_payment">请求支付</string>
-    <string name="action_receive_payment">接收</string>
-    <string name="action_send_money">发送</string>
+    <!-- headers with links -->
+    <string name="mnemonic_info">助记码是非常重要的！\n<a href='https://btcontract.com/#mnemonic-code'>了解更多关于</a>它，一定要保存\n\n随着助记码救了你可以放心，你永远不会失去你珍贵的比特币</string>
+    <string name="buy_info"><![CDATA[You are about to be taken to <strong>LocalBitcoins</strong> secure website where bitcoins can be safely purchased and instantly transferred to this wallet.<br><br>Would you like to proceed?]]></string>
+    <string name="read_settings"><![CDATA[<small>有疑问或者感到失落？<br><a href=https://btcontract.com>阅读应用程序手册</a><br><br></small>电子钱包设置]]></string>
+    <string name="action_lock">锁定这个钱包</string>
+    <string name="wallet_open">打开钱包</string>
 
-    <array name="action_send_memo">
-        <item>发送比特币</item>
-        <item>添加第二个地址</item>
-        <item>添加第三个地址</item>
-        <item>添加%1$s个地址</item>
-    </array>
+    <!-- menu -->
+    <string name="action_settings">电子钱包设置</string>
+    <string name="action_request_payment">请求确切数额</string>
+    <string name="action_receive_payment">收钱</string>
+    <string name="action_buy">比特币购买</string>
+    <string name="action_send">寄钱</string>
+    <string name="action_scan">扫描QR</string>
 
     <!-- errors -->
     <string name="err_pass">交易失败因为密码不匹配。请确保你提供了正确的密码</string>
@@ -78,23 +74,12 @@
     <string name="input_sat">&#160;satoshi&#160;</string>
     <string name="input_btc">&#160;比特币&#160;</string>
     <string name="dialog_sum_empty">请提供量</string>
-
-    <string name="input_alt_sat">%1$s satoshi</string>
-    <string name="input_alt_btc">%1$s比特币</string>
-    <string name="input_dollar">量美元</string>
-    <string name="input_euro">量以欧元</string>
-    <string name="input_yuan">量元</string>
+    <string name="input_alt_btc">%1$s BTC</string>
 
     <array name="dialog_request">
         <item>将请求转换为QR代码</item>
         <item>复制请求到剪贴板</item>
         <item>分享请求&#8230;</item>
-    </array>
-
-    <array name="dialog_address">
-        <item>Turn address into QR code</item>
-        <item>Copy address to clipboard</item>
-        <item>Share address&#8230;</item>
     </array>
 
     <!-- notifications -->
@@ -106,14 +91,13 @@
     <string name="tx_received">才接收到%1$s</string>
     <string name="tx_1st_conf">获得首先确认</string>
     <string name="tx_sent">才发送%1$s</string>
-    <string name="reorg">才进行了重组</string>
 
     <array name="info_peers">
         <item>搜索同伴&#8230;</item>
         <item>连接到%1$d 同伴</item>
     </array>
 
-    <!-- activity_create, activity_restore -->
+    <!-- activity_create, activity_restore, activity_request -->
     <string name="restore_when">如果是你的钱包产生的?\n如果没有把握不要改变</string>
     <string name="create_wallet_creating">生成你的钱包中\n这可能需要几分钟</string>
     <string name="restore_wallet_restoring">还原你的钱包\n可能需要一会</string>
@@ -121,35 +105,18 @@
     <string name="restore_wallet_ready">新的钱包准备好</string>
     <string name="restore_hint">你的助记代码</string>
     <string name="restore_wallet">还原钱包</string>
-
-    <!-- activity_request -->
     <string name="req_save">分享QR代码</string>
 
     <!-- activity_txs -->
-    <string name="no_funds">没有资金</string>
-    <string name="txs_incoming">传入事务&#160;</string>
-    <string name="txs_yes_fee">%1$s费用&#160;</string>
-    <string name="txs_many_received_to"><![CDATA[收到&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_many_sent_to"><![CDATA[已发送到&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_received_to"><![CDATA[收到&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[已发送到&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_fee_details"><![CDATA[%3$s<br><strong>%1$s</strong>付款<br><strong>%2$s</strong>费]]></string>
+    <string name="txs_fee_incoming"><![CDATA[%1$s<br><strong>输入的交易</strong>]]></string>
+    <string name="txs_fee_absent"><![CDATA[%1$s<br><strong>不收费</strong>]]></string>
+    <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_view_outside">观 BlockExplorer.com</string>
-    <string name="txs_copy_hash">复制哈希到剪贴板</string>
-    <string name="txs_noaddr">未知地址</string>
 
-    <string name="txs_conf"><![CDATA[<font color=#79A81B>已确认</font>]]></string>
-    <string name="txs_wait"><![CDATA[<font color=#777777>等候</font>]]></string>
-    <string name="txs_dead"><![CDATA[<font color=#E31300>死</font>]]></string>
-
-    <array name="txs_total">
-        <item>无交易</item>
-        <item>%1$s交易</item>
-    </array>
-
-    <array name="addr_total">
-        <item>没有地址</item>
-        <item>%1$s 地址</item>
+    <array name="txs_confs">
+        <item><![CDATA[<font color=#E31300>尚未确定</font>]]></item>
+        <item><![CDATA[<strong>%1$s</strong>的确认]]></item>
     </array>
 </resources>

@@ -7,48 +7,44 @@
     <string name="sets_noscreen">Не делайте скриншот</string>
     <string name="sets_password_ok">Новый пароль успешно установлен</string>
     <string name="sets_destruct_ok">Установлен новый код уничтожения: «%1$s»</string>
-    <string name="sets_rescan_ok">Сейчас кошелек будет закрыт, а повторное сканирование начнется при следующем открытии</string>
-    <string name="greetings">Visual Bitcoin Wallet\nПрочитайте <a href='http://btcontract.github.io/VisualBitcoinWallet/'>инструкцию пользователя</a></string>
-    <string name="mnemonic_info">Мнемонический код очень важен!\n<a href='http://btcontract.github.io/VisualBitcoinWallet/#mnemonic-code'>Почитайте про нього</a>, будь ласка</string>
+    <string name="greetings">Биткоин-кошелек\n<a href='https://btcontract.com'>инструкция пользователя</a></string>
+    <string name="sets_rescan_ok">Сейчас кошелек закроется, а повторное сканирование начнется при следующем открытии</string>
     <string name="password_info">Пожалуйста, подберите хороший пароль длиной не менее 8 символов, желательно содержащий в себе заглавные буквы и цифры</string>
+    <string name="fee_default"><![CDATA[<small>Комиссия %1$s<br><font color=#999999><small>Подтверждение может занять часы</small></font></small>]]></string>
+    <string name="fee_live"><![CDATA[<small>Комиссия %1$s<br><font color=#999999><small>Быстрое подтверждение транзакции</small></font></small>]]></string>
     <string name="wallet_restore">Восстановить кошелек из кода</string>
-    <string name="copied_to_buffer">Скопировано в буфер</string>
     <string name="wallet_create">Создать новый кошелек</string>
+    <string name="copied_to_clipboard">Скопировано в буфер</string>
+    <string name="copy_to_clipboard">Скопировать в буфер</string>
     <string name="wallet_empty">Кошелек пуст</string>
     <string name="wallet_password">Пароль</string>
-    <string name="wallet_open">Открыть</string>
 
     <string name="sets_destruct_set">Установить код уничтожения</string>
     <string name="sets_pass_change">Сменить пароль кошелька</string>
     <string name="sets_rescan">Пересканировать блокчейн</string>
     <string name="sets_mnemonic">Посмотреть мнемо-код</string>
-    <string name="sets_about">Почитать инструкцию</string>
-    <string name="sets_fee">Плата за килобайт</string>
 
-    <string name="password_new">Новый пароль</string>
-    <string name="password_old">Текущий пароль</string>
     <string name="destruct_new">Код уничтожения</string>
+    <string name="password_new">Введите новый пароль</string>
+    <string name="password_old">Введите пароль кошелька</string>
     <string name="password_wrong">Введен неверный пароль</string>
     <string name="password_too_short">Пароль слишком короткий</string>
     <string name="destruct_too_short">Код уничтожения слишком короткий</string>
 
-    <!-- menu -->
-    <string name="action_lock">Заблокировать</string>
-    <string name="action_address">Список моих адресов</string>
-    <string name="action_settings">Настройки кошелька</string>
-    <string name="paydata_clear">Сбросить данные платежа</string>
-    <string name="action_request_payment">Запросить платеж</string>
-    <string name="action_scan_qr">Отсканировать QR-код</string>
-    <string name="action_converter">Конвертер валют</string>
-    <string name="action_receive_payment">ПОЛУЧИТЬ</string>
-    <string name="action_send_money">ПОСЛАТЬ</string>
+    <!-- headers with links -->
+    <string name="mnemonic_info">Мнемонический код очень важен!\n<a href='https://btcontract.com/#mnemonic-code'>Почитайте про него</a>, сохраните и держите в секрете\n\nС мнемоническим кодом вы можете быть уверены что ваши биткоины никогда не пропадут</string>
+    <string name="buy_info"><![CDATA[You are about to be taken to <strong>LocalBitcoins</strong> secure website where bitcoins can be safely purchased and instantly transferred to this wallet.<br><br>Would you like to proceed?]]></string>
+    <string name="read_settings"><![CDATA[<small>Есть вопросы?<br><a href=https://btcontract.com>почитайте инструкцию</a><br><br></small>Настройки кошелька]]></string>
+    <string name="action_lock">Заблокировать кошелек</string>
+    <string name="wallet_open">Открыть кошелек</string>
 
-    <array name="action_send_memo">
-        <item>Послать биткоины</item>
-        <item>Добавить второй адрес</item>
-        <item>Добавить третий адрес</item>
-        <item>Добавить %1$sй адрес</item>
-    </array>
+    <!-- menu -->
+    <string name="action_settings">Настройки кошелька</string>
+    <string name="action_request_payment">Запросить сумму</string>
+    <string name="action_receive_payment">Получить</string>
+    <string name="action_buy">Купить биткоины</string>
+    <string name="action_send">Послать деньги</string>
+    <string name="action_scan">Скан QR</string>
 
     <!-- errors -->
     <string name="err_pass">Перевод не прошел потому что пароль не подошел. Убедитесь, что вы ввели правильный пароль</string>
@@ -78,12 +74,7 @@
     <string name="spend_address_hint">Биткоин-адрес</string>
     <string name="input_btc">&#160;биткоины&#160;</string>
     <string name="input_sat">&#160;сатоши&#160;</string>
-
-    <string name="input_alt_sat">%1$s в сатоши</string>
-    <string name="input_alt_btc">%1$s в биткоинах</string>
-    <string name="input_dollar">сумма в долларах</string>
-    <string name="input_euro">сумма в евро</string>
-    <string name="input_yuan">сумма в юанях</string>
+    <string name="input_alt_btc">%1$s BTC</string>
 
     <array name="dialog_request">
         <item>Сделать QR-код запроса</item>
@@ -91,14 +82,7 @@
         <item>Другие варианты&#8230;</item>
     </array>
 
-    <array name="dialog_address">
-        <item>Сделать QR-код адреса</item>
-        <item>Скопировать адрес в буфер</item>
-        <item>Другие варианты&#8230;</item>
-    </array>
-
     <!-- notifications -->
-    <string name="reorg">Случился реорг</string>
     <string name="info_progress">Осталось %1$d блоков</string>
     <string name="info_progress_done">Блокчейн синхронизирован</string>
     <string name="tx_1st_conf">Получено 1е подтверждение</string>
@@ -115,7 +99,7 @@
         <item>Подключено %1$s узлов</item>
     </array>
 
-    <!-- activity_create, activity_restore -->
+    <!-- activity_create, activity_restore, activity_request -->
     <string name="restore_when">Когда был создан ваш кошелек?\nНе меняйте дату если не помните</string>
     <string name="restore_wallet_restoring">Восстанавливаю кошелек</string>
     <string name="create_wallet_creating">Генерирую ваш кошелек</string>
@@ -123,39 +107,20 @@
     <string name="restore_wallet_ready">Ваш кошелек готов</string>
     <string name="restore_wallet">Восстановить кошелек</string>
     <string name="restore_hint">Ваш мнемонический код</string>
-
-    <!-- activity_request -->
     <string name="req_save">Поделиться картинкой</string>
 
     <!-- activity_txs -->
-    <string name="no_funds">Денег нет</string>
-    <string name="txs_incoming">Входящая&#160;</string>
-    <string name="txs_yes_fee">%1$s fee&#160;</string>
-    <string name="txs_many_received_to"><![CDATA[Получено&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_many_sent_to"><![CDATA[Отправлено&#160;<font color=#777777>%2$s&#160;+</font>&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_received_to"><![CDATA[Получено&#160;<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_sent_to"><![CDATA[Отправлено&#160;<font color=#e31300>%1$s</font>]]></string>
-    <string name="txs_sum_out"><![CDATA[<font color=#e31300>%1$s</font>]]></string>
+    <string name="txs_fee_details"><![CDATA[%3$s<br><strong>%1$s</strong> платеж<br><strong>%2$s</strong> комиссия]]></string>
+    <string name="txs_fee_incoming"><![CDATA[%1$s<br><strong>Входящая транзакция</strong>]]></string>
+    <string name="txs_fee_absent"><![CDATA[%1$s<br><strong>Без комиссии</strong>]]></string>
+    <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_view_outside">Смотреть на BlockExplorer.com</string>
-    <string name="txs_copy_hash">Скопировать хэш транзакции</string>
-    <string name="txs_noaddr">адрес не найден</string>
+    <string name="txs_view_outside">Смотреть на BlockExplorer</string>
 
-    <string name="txs_conf"><![CDATA[<font color=#79A81B>Прошла</font>]]></string>
-    <string name="txs_wait"><![CDATA[<font color=#777777>Ждите</font>]]></string>
-    <string name="txs_dead"><![CDATA[<font color=#E31300>Мертва</font>]]></string>
-
-    <array name="txs_total">
-        <item>∅</item>
-        <item>%1$s транзакция</item>
-        <item>%1$s транзикции</item>
-        <item>%1$s транзакций</item>
-    </array>
-
-    <array name="addr_total">
-        <item>Адресов нет</item>
-        <item>%1$s адрес</item>
-        <item>%1$s адреса</item>
-        <item>%1$s адресов</item>
+    <array name="txs_confs">
+        <item><![CDATA[<font color=#E31300>Еще не подтверждена</font>]]></item>
+        <item><![CDATA[<strong>%1$s</strong> подтверждение]]></item>
+        <item><![CDATA[<strong>%1$s</strong> подтверждения]]></item>
+        <item><![CDATA[<strong>%1$s</strong> подтверждений]]></item>
     </array>
 </resources>

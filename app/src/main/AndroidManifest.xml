@@ -14,7 +14,7 @@
 
     <application
         android:name="WalletApp"
-        android:allowBackup="false"
+        android:allowBackup="true"
         android:label="@string/app_name"
         android:icon="@drawable/ic_launcher">
 
@@ -36,48 +36,20 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:launchMode="singleTask"
-            android:name="WalletCreateActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/NoBar"/>
+        <activity android:launchMode="singleTask" android:name="WalletCreateActivity"
+            android:screenOrientation="portrait" android:theme="@style/NoBar"/>
 
-        <activity
-            android:launchMode="singleTask"
-            android:name="WalletRestoreActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/NoBar"/>
+        <activity android:launchMode="singleTask" android:name="WalletRestoreActivity"
+            android:screenOrientation="portrait" android:theme="@style/NoBar"/>
 
-        <activity
-            android:name="WalletActivity"
-            android:launchMode="singleTask"
-            android:hardwareAccelerated="true"
-            android:screenOrientation="portrait"
-            android:theme="@style/DarkBar"/>
+        <activity android:launchMode="singleTask" android:name="TxsActivity"
+            android:screenOrientation="portrait" android:theme="@style/LiteBar"/>
 
-        <activity
-            android:name="TxsActivity"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:theme="@style/LiteBar"/>
+        <activity android:launchMode="singleTask" android:name="ScanActivity"
+            android:screenOrientation="portrait" android:theme="@style/NoBar"/>
 
-        <activity
-            android:name="AdrsActivity"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:theme="@style/LiteNoBar"/>
-
-        <activity
-            android:name="ScanActivity"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:theme="@style/NoBar"/>
-
-        <activity
-            android:name="RequestActivity"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:theme="@style/NoBar"/>
+        <activity android:launchMode="singleTask" android:name="RequestActivity"
+            android:screenOrientation="portrait" android:theme="@style/NoBar"/>
 
     </application>
 </manifest>

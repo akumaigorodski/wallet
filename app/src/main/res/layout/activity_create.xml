@@ -34,7 +34,7 @@
         style="@style/StandardLinearLayout"
         android:layout_height="wrap_content"
         android:layout_width="fill_parent"
-        android:id="@+id/createProgess"
+        android:id="@+id/createProgress"
         android:visibility="gone">
 
         <ImageView
@@ -70,8 +70,7 @@
 
         <Button
             style="@style/MarginInfo"
-            android:onClick="showMnemo"
-            android:id="@+id/mnemonicShow"
+            android:onClick="revealMnemonic"
             android:layout_width="wrap_content"
             android:text="@string/sets_mnemonic"/>
 

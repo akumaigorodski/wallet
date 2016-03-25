@@ -1,25 +1,26 @@
 package com.btcontract.wallet
 
-import android.view.View.OnClickListener
+import R.string._
+import android.graphics._
+import java.io.{File, FileOutputStream}
+import android.os.{Environment, Bundle}
+import android.widget.{Button, ImageView}
+import android.text.{TextPaint, StaticLayout}
+import Utils.{app, humanAddr, btcHuman, appName}
+import com.google.zxing.{BarcodeFormat, EncodeHintType}
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.qrcode.QRCodeWriter
+import android.view.View.OnClickListener
 import android.app.AlertDialog.Builder
 import android.content.Intent
-import android.text.Html
 import android.view.View
 import android.net.Uri
 import java.util
 
-import com.google.zxing.{BarcodeFormat, EncodeHintType}
-import android.widget.{TextView, Button, ImageView}
-import java.io.{FileOutputStream, File}
-import android.os.{Environment, Bundle}
-import android.graphics.{Color, Bitmap}
-import Utils.{sumIn, appName, app}
-
+import android.text.Layout.Alignment.ALIGN_NORMAL
 import scala.language.implicitConversions
 import Bitmap.Config.ARGB_8888
-import R.string.err_general
+import Bitmap.createBitmap
 
 
 object QRGen {
@@ -38,70 +39,104 @@ object QRGen {
         case true => Color.BLACK case false => Color.WHITE
       }
 
-    val qrBitmap = Bitmap.createBitmap(wid, height, ARGB_8888)
+    val qrBitmap = createBitmap(wid, height, ARGB_8888)
     qrBitmap.setPixels(pixels, 0, wid, 0, 0, wid, height)
     qrBitmap
   }
 }
 
+object FileOps {
+  def shell(name: String) = {
+    val path = Environment.getExternalStorageDirectory
+    val dir = new File(path.getAbsolutePath + "/" + appName)
+    if (!dir.exists) dir.mkdirs
+    new File(dir, name)
+  }
+}
+
 class RequestActivity extends TimerActivity { me =>
-  def qrError(e: Throwable): Unit = new Builder(me).setMessage(err_general).show
-  private [this] lazy val qrSize = getResources getDimensionPixelSize R.dimen.bitmap_qr_size
-  private [this] lazy val address = findViewById(R.id.reqAddress).asInstanceOf[TextView]
-  private [this] lazy val reqCode = findViewById(R.id.reqCode).asInstanceOf[ImageView]
-  private [this] lazy val reqShare = findViewById(R.id.reqShare).asInstanceOf[Button]
-  private [this] lazy val copyData = findViewById(R.id.copyData).asInstanceOf[Button]
-  private [this] lazy val enableShare = anyToRunnable(reqShare setEnabled true)
+  def qrError(error: Throwable): Unit = new Builder(me).setMessage(err_general).show
+  private[this] lazy val reqCode = findViewById(R.id.reqCode).asInstanceOf[ImageView]
+  private[this] lazy val reqShare = findViewById(R.id.reqShare).asInstanceOf[Button]
+  private[this] lazy val copyData = findViewById(R.id.copyData).asInstanceOf[Button]
+
+  private[this] lazy val textBounds = getResources getDimensionPixelSize R.dimen.bitmap_text_bounds
+  private[this] lazy val bottomSize = getResources getDimensionPixelSize R.dimen.bitmap_bottom_size
+  private[this] lazy val topSize = getResources getDimensionPixelSize R.dimen.bitmap_top_size
+  private[this] lazy val qrSize = getResources getDimensionPixelSize R.dimen.bitmap_qr_size
+  private[this] lazy val btcAddress = me getString spend_address_hint
 
   // Initialize this activity, method is run once
-  override def onCreate(savedInstanceState: Bundle)
+  override def onCreate(savedState: Bundle) =
   {
-    super.onCreate(savedInstanceState)
+    super.onCreate(savedState)
     setContentView(R.layout.activity_request)
 
     app.TransData.value match {
       case Some(pay: PayData) =>
-        // Define button text and function depeding on paydata tc value
-        val onClick = new OnClickListener { def onClick(v: View) = app setBuffer pay.string }
-        val copyAdr = getResources getStringArray R.array.dialog_address apply 1
-        val copyReq = getResources getStringArray R.array.dialog_request apply 1
-        val buttonText = if (pay.tc.isSuccess) copyReq else copyAdr
-        address setText Html.fromHtml(pay pretty sumIn)
-        copyData setOnClickListener onClick
-        copyData setText buttonText
-
-        <(QRGen.get(pay.string, qrSize), qrError) { bitMap =>
-          reqShare setOnClickListener new View.OnClickListener {
-            def shareQRCodeImage = <(me saveImage bitMap, qrError) { file =>
-              val share = new Intent setAction Intent.ACTION_SEND setType "image/png"
-              me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile file)
-            }
-
-            def onClick(v: View) = {
-              timer.schedule(enableShare, 2000)
-              reqShare setEnabled false
-              shareQRCodeImage
-            }
-          }
-
-          // Wire up the rest of the interface
-          reqCode setImageBitmap bitMap
-          enableShare.run
-        }
+        val bottom = humanAddr(pay.adr)
+        val top = pay.tc map btcHuman getOrElse btcAddress
+        showInfo(drawAll(top, bottom), pay.string, pay.string)
 
       case _ => finish
     }
   }
 
-  def saveImage(bits: Bitmap) = {
-    val path = Environment.getExternalStorageDirectory
-    val dir = new File(s"${path.getAbsolutePath}/$appName")
-    dir.mkdirs
+  def showInfo(finalizer: Bitmap => Bitmap, msg: String, copy: String) = {
+    val onCopy = new OnClickListener { def onClick(view: View) = app setBuffer copy }
+    <(QRGen.get(msg, qrSize), qrError)(finalizer andThen setView)
+    copyData setOnClickListener onCopy
+  }
 
-    // Save PNG compressed file
-    val imageFile = new File(dir, "qr.png")
+  def setView(bitmap: Bitmap) =
+    reqShare setOnClickListener new View.OnClickListener {
+      def onClick(button: View) = <(me saveImage bitmap, qrError) { file =>
+        val share = new Intent setAction Intent.ACTION_SEND setType "image/png"
+        me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile file)
+      }
+
+      reqCode setImageBitmap bitmap
+      reqShare setEnabled true
+    }
+
+  def drawAll(top: String, bot: String)(qrBitmap: Bitmap) = {
+    val bitmap = createBitmap(qrSize, topSize + qrSize + bottomSize, ARGB_8888)
+    val ypos = topSize + qrSize + bottomSize / 2
+    val canvas = new Canvas(bitmap)
+    val transRect = new Rect
+
+    canvas drawColor 0xFFEEEEEE
+    transRect.set(0, topSize, qrSize, topSize + qrSize)
+    canvas.drawBitmap(qrBitmap, null, transRect, null)
+    drawText(canvas, top, qrSize / 2, topSize / 2)
+    drawText(canvas, bot, qrSize / 2, ypos)
+    bitmap
+  }
+
+  def paint = {
+    val newPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG)
+    newPaint setTextSize getResources.getDimensionPixelSize(R.dimen.text_small)
+    newPaint setTypeface Typeface.create("Droid Sans", Typeface.NORMAL)
+    newPaint setTextAlign Paint.Align.CENTER
+    newPaint setStyle Paint.Style.FILL
+    newPaint setColor Color.BLACK
+    newPaint
+  }
+
+  def drawText(canvas: Canvas, text: String, x: Float, baseY: Float) = {
+    val layout = new StaticLayout(text, paint, textBounds, ALIGN_NORMAL, 1f, 0f, false)
+    val y = baseY - layout.getHeight / 2f
+
+    canvas.save
+    canvas.translate(x, y)
+    layout draw canvas
+    canvas.restore
+  }
+
+  def saveImage(bits: Bitmap) = {
+    val imageFile = FileOps shell "qr.png"
     val stream = new FileOutputStream(imageFile)
-    bits.compress(Bitmap.CompressFormat.PNG, 90, stream)
+    bits.compress(Bitmap.CompressFormat.PNG, 80, stream)
     stream.flush
     stream.close
     imageFile

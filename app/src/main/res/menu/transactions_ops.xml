@@ -4,21 +4,11 @@
         android:icon="@drawable/ic_lock_outline_gray_24dp"
         android:id="@+id/lockWalletRightNow"
         android:title="@string/action_lock"
-        android:showAsAction="always"/>
-
-    <item
-        android:title="@string/action_address"
-        android:id="@+id/actionAddresses"
-        android:showAsAction="never"/>
+        android:showAsAction="ifRoom"/>
 
     <item
         android:title="@string/action_request_payment"
         android:id="@+id/actionRequestPayment"
-        android:showAsAction="never"/>
-
-    <item
-        android:title="@string/action_converter"
-        android:id="@+id/actionConverter"
         android:showAsAction="never"/>
 
     <item

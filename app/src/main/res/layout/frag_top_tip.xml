@@ -1,11 +1,7 @@
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
     android:layout_height="match_parent" android:layout_width="match_parent">
 
-    <TextView
-        android:maxWidth="245sp"
-        style="@style/MarginInfo"
-        android:id="@+id/actionTip"
-        android:layout_width="wrap_content"/>
+    <TextView style="@style/MarginInfo" android:maxWidth="230sp"
+        android:id="@+id/actionTip" android:layout_width="wrap_content"/>
 
 </LinearLayout>

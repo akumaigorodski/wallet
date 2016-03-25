@@ -1,44 +1,46 @@
 package com.btcontract.wallet
 
-import eu.livotov.zxscan.util.SoundPlayer
+import Utils.{wrap, app, none}
+import R.string.{dialog_cancel, dialog_ok}
+import com.journeyapps.barcodescanner.BarcodeCallback
+import com.journeyapps.barcodescanner.BarcodeResult
+import com.journeyapps.barcodescanner.BarcodeView
+import org.bitcoinj.uri.BitcoinURI
+import org.bitcoinj.core.Address
 import android.widget.Toast
 import android.os.Bundle
 
-import com.journeyapps.barcodescanner.{BarcodeCallback, BarcodeView, BarcodeResult}
-import R.string.{dialog_cancel, dialog_ok}
-import Utils.{wrap, app}
 
-
-class ScanActivity extends TimerActivity with BarcodeCallback {
+class ScanActivity extends TimerActivity with BarcodeCallback { me =>
   lazy val reader = findViewById(R.id.reader).asInstanceOf[BarcodeView]
-  lazy val beepSoundPlayer = new SoundPlayer(this)
+  lazy val beepSoundPlayer = new eu.livotov.zxscan.util.SoundPlayer(this)
+  type Points = java.util.List[com.google.zxing.ResultPoint]
+  var lastAttempt = System.currentTimeMillis
 
-  // Initialize this activity, method is run once
+  // Only try to decode result if 3 seconds elapsed
+  override def barcodeResult(res: BarcodeResult) = Option(res.getText) foreach {
+    rawText => if (System.currentTimeMillis - lastAttempt > 3000) tryParse(rawText)
+  }
+
+  override def possibleResultPoints(pts: Points) = none
+  override def onResume = wrap(super.onResume)(reader.resume)
+  override def onPause = wrap(super.onPause)(reader.pause)
   override def onCreate(savedInstState: Bundle) =
   {
     super.onCreate(savedInstState)
     setContentView(R.layout.activity_scan)
-    reader decodeContinuous this
+    reader decodeContinuous me
   }
-
-  type Points = java.util.List[com.google.zxing.ResultPoint]
-  override def possibleResultPoints(points: Points) = { /* nothing */ }
-  override def onResume = wrap(super.onResume)(reader.resume)
-  override def onPause = wrap(super.onPause)(reader.pause)
 
   def tryParse(text: String) = try {
     beepSoundPlayer.playRawResource(R.raw.beep, false)
     lastAttempt = System.currentTimeMillis
     app.TransData setValue text
     finish
-  } catch app.TransData.onFail { errCode =>
-    val alert = mkChoiceDialog(reader.resume, finish, dialog_ok, dialog_cancel)
-    alert.setMessage(errCode).show setCanceledOnTouchOutside false
-    Toast.makeText(app, text, Toast.LENGTH_LONG).show
-  } finally reader.pause
 
-  var lastAttempt = System.currentTimeMillis
-  override def barcodeResult(res: BarcodeResult) = Option(res.getText) foreach {
-    rawText => if (System.currentTimeMillis - lastAttempt > 4000) tryParse(rawText)
-  }
+  } catch app.TransData.onFail { err =>
+    val alert = mkChoiceDialog(reader.resume, finish, dialog_ok, dialog_cancel)
+    Toast.makeText(app, text, Toast.LENGTH_LONG).show
+    mkForm(alert setMessage err, null, null)
+  } finally reader.pause
 }

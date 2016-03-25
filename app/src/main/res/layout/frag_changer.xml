@@ -5,14 +5,14 @@
     <EditText
         style="@style/Info"
         android:hint="*********"
-        android:paddingTop="35dp"
+        android:paddingTop="30dp"
         android:id="@+id/secretInput"
         android:layout_width="wrap_content"/>
 
     <TextView
         style="@style/StdText"
         android:id="@+id/secretTip"
-        android:layout_marginBottom="35dp"
+        android:layout_marginBottom="30dp"
         android:layout_width="wrap_content"/>
 
 </LinearLayout>

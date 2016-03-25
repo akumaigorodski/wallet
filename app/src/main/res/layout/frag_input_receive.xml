@@ -1,18 +1,65 @@
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
     android:layout_height="wrap_content" android:layout_width="wrap_content">
 
     <EditText
-        android:paddingTop="25dp"
+        android:paddingTop="20dp"
         style="@style/BigInputText"
-        android:id="@+id/inputAmount"
-        android:layout_marginBottom="11dp"/>
+        android:inputType="numberDecimal"
+        android:id="@+id/fiatInputAmount"/>
 
     <info.hoang8f.android.segmented.SegmentedGroup
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:orientation="horizontal"
-        android:id="@+id/inputType">
+        android:layout_marginTop="10dp"
+        android:id="@+id/fiatType">
+
+        <RadioButton
+            android:text="$"
+            android:textSize="18sp"
+            android:id="@+id/typeUSD"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/RadioButton"/>
+
+        <RadioButton
+            android:text="€"
+            android:textSize="18sp"
+            android:id="@+id/typeEUR"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/RadioButton"/>
+
+        <RadioButton
+            android:text="CNY"
+            android:textSize="18sp"
+            android:id="@+id/typeCNY"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/RadioButton"/>
+
+    </info.hoang8f.android.segmented.SegmentedGroup>
+
+    <TextView
+        android:text="="
+        style="@style/StdText"
+        android:layout_marginTop="15dp"
+        android:layout_width="wrap_content"/>
+
+    <EditText
+        android:focusable="true"
+        style="@style/BigInputText"
+        android:id="@+id/inputAmount"
+        android:inputType="numberDecimal"
+        android:focusableInTouchMode="true"/>
+
+    <info.hoang8f.android.segmented.SegmentedGroup
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_marginBottom="35dp"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp"
+        android:id="@+id/bitType">
 
         <RadioButton
             android:textSize="18sp"
@@ -31,12 +78,4 @@
             style="@style/RadioButton"/>
 
     </info.hoang8f.android.segmented.SegmentedGroup>
-
-    <TextView
-        style="@style/StdText"
-        android:id="@+id/inputBottom"
-        android:layout_marginTop="6dp"
-        android:layout_marginBottom="35dp"
-        android:layout_width="wrap_content"/>
-
 </LinearLayout>

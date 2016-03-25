@@ -1,47 +1,41 @@
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
     android:layout_height="fill_parent" android:layout_width="fill_parent">
 
-    <ListView
-        android:layout_height="match_parent"
-        android:layout_width="match_parent"
-        android:id="@+id/itemsList"
-        android:layout_weight="1"/>
+    <org.apmem.tools.layouts.FlowLayout
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:layout_weight="0"
+        android:padding="8dp">
+
+        <Button android:drawableLeft="@drawable/ic_arrow_downward_black_18dp"
+            android:layout_width="wrap_content" android:text="@string/action_receive_payment"
+            android:onClick="doReceive" style="@style/BaseText"/>
+
+        <Button android:drawableLeft="@drawable/ic_arrow_upward_black_18dp"
+            android:layout_width="wrap_content" android:text="@string/action_send"
+            android:onClick="doPay" style="@style/BaseText"/>
+
+        <Button android:drawableLeft="@drawable/ic_fullscreen_black_18dp"
+            android:layout_width="wrap_content" android:text="@string/action_scan"
+            android:onClick="goQRScan" style="@style/BaseText"/>
+
+        <Button android:text="@string/action_buy"
+            android:layout_width="wrap_content"
+            android:onClick="goBuyBitcoin"
+            style="@style/BaseText"/>
+
+    </org.apmem.tools.layouts.FlowLayout>
 
     <View
-        android:layout_width="match_parent"
-        android:background="#33AAAAAA"
+        android:layout_weight="0"
         android:layout_height="1dp"
-        android:layout_weight="0"/>
+        android:background="#33999999"
+        android:layout_width="fill_parent"/>
 
-    <LinearLayout
-        android:background="#33CCCCCC"
-        android:layout_height="wrap_content"
+    <ListView
+        android:layout_weight="1"
+        android:id="@+id/itemsList"
         android:layout_width="match_parent"
-        android:layout_weight="0">
+        android:layout_height="match_parent"/>
 
-        <Button
-            android:drawableLeft="@drawable/ic_arrow_downward_black_18dp"
-            android:text="@string/action_receive_payment"
-            style="@style/BottomMenuTransButton"
-            android:onClick="doReceive"/>
-
-        <Button
-            android:drawableLeft="@drawable/ic_arrow_upward_black_18dp"
-            android:text="@string/action_send_money"
-            style="@style/BottomMenuTransButton"
-            android:onClick="doSend"/>
-
-        <Button
-            android:drawableLeft="@drawable/ic_fullscreen_black_18dp"
-            style="@style/BottomMenuTransButton"
-            android:onClick="goQRScan"
-            android:text="QR"/>
-
-        <ImageButton
-            style="@style/BottomMenuTransImageButton"
-            android:src="@drawable/ic_grain_black_24dp"
-            android:onClick="goCoins"/>
-
-    </LinearLayout>
 </LinearLayout>
