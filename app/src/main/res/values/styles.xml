@@ -3,6 +3,7 @@
     <style name="StandardLinearLayout">
         <item name="android:orientation">vertical</item>
         <item name="android:gravity">center</item>
+        <item name="android:maxWidth">800dp</item>
     </style>
 
     <!-- texts -->

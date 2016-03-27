@@ -1,12 +1,11 @@
 package com.btcontract.wallet.helper
 
 import scala.util.{Try, Success}
-import com.btcontract.wallet.Utils.app
-import concurrent.ExecutionContext.Implicits.global
+import rx.lang.scala.{Scheduler, Observable => Obs}
+import scala.concurrent.duration.{Duration, DurationInt}
 import com.github.kevinsawicki.http.HttpRequest
-import scala.concurrent.Future
+import rx.lang.scala.schedulers.IOScheduler
 import org.bitcoinj.core.Coin
-import java.util.TimerTask
 
 import spray.json._
 import JsonHttpUtils._
@@ -15,16 +14,14 @@ import com.btcontract.wallet.Utils._
 
 
 object JsonHttpUtils {
+  type Selector = (Throwable, Int) => Duration
+  def pickInc(err: Throwable, next: Int) = next.second
+  def obsOn[T](provider: => T, scheduler: Scheduler) = Obs.just(null).observeOn(scheduler).map(_ => provider)
+  def retry[T](obs: Obs[T], pick: Selector, times: Range) = obs.retryWhen(_.zipWith(Obs from times)(pick) flatMap Obs.timer)
+
   def to[T : JsonFormat](raw: String) = raw.parseJson.convertTo[T]
   val post = HttpRequest.post(_: String, true) connectTimeout 15000
   val get = HttpRequest.get(_: String, true) connectTimeout 15000
-  def fetch(ready: HttpRequest) = Future(ready.body)
-
-  // Future with side effects
-  def %[T](result: Future[T], onErr: => Unit, onOk: => Unit) = {
-    result onComplete { case Success(res) => onOk case _ => onErr }
-    result
-  }
 }
 
 object FiatRates { me =>
@@ -32,59 +29,57 @@ object FiatRates { me =>
   type BitpayList = List[BitpayRate]
   var rates: Try[Rates] = nullFail
 
-  implicit val bitpayRateFmt = jsonFormat[String, Double, BitpayRate](BitpayRate.apply, "code", "rate")
-  implicit val blockchainRateFmt = jsonFormat[Double, BlockchainRate](BlockchainRate.apply, "last")
-  implicit val bitaverageRateFmt = jsonFormat[Double, BitaverageRate](BitaverageRate.apply, "ask")
+  implicit val avgRateFmt = jsonFormat[Double, AvgRate](AvgRate, "ask")
+  implicit val chainRateFmt = jsonFormat[Double, ChainRate](ChainRate, "last")
+  implicit val blockchainFmt = jsonFormat[ChainRate, ChainRate, ChainRate, Blockchain](Blockchain, "USD", "EUR", "CNY")
+  implicit val bitaverageFmt = jsonFormat[AvgRate, AvgRate, AvgRate, Bitaverage](Bitaverage, "USD", "EUR", "CNY")
+  implicit val bitpayRateFmt = jsonFormat[String, Double, BitpayRate](BitpayRate, "code", "rate")
 
-  implicit val blockchainFmt = jsonFormat[BlockchainRate, BlockchainRate,
-    BlockchainRate, Blockchain](Blockchain.apply, "USD", "EUR", "CNY")
-
-  implicit val bitaverageFmt = jsonFormat[BitaverageRate, BitaverageRate,
-    BitaverageRate, Bitaverage](Bitaverage.apply, "USD", "EUR", "CNY")
-
+  // Normalizing incoming json data and converting it to rates map
   def toRates(src: RateProvider) = Map(strDollar -> src.usd.now, strEuro -> src.eur.now, strYuan -> src.cny.now)
   def toRates(src: RatesMap) = Map(strDollar -> src("USD").now, strEuro -> src("EUR").now, strYuan -> src("CNY").now)
   def bitpayNorm(src: String) = src.parseJson.asJsObject.fields("data").convertTo[BitpayList].map(rt => rt.code -> rt).toMap
-  def go = %(reloadData, me retry 2000, me retry 1200000) onComplete { case rateData@Success(_) => rates = rateData case _ => }
-  def retry(waitPeriod: Long) = app.timer.schedule(task, waitPeriod)
-  def task: TimerTask = new TimerTask { def run = go }
 
   def reloadData = rand nextInt 3 match {
-    case 0 => (get andThen fetch)("https://api.bitcoinaverage.com/ticker/global/all") map to[Bitaverage] map toRates
-    case 1 => (get andThen fetch)("https://blockchain.info/ticker") map to[Blockchain] map toRates
-    case _ => (get andThen fetch)("https://bitpay.com/rates") map bitpayNorm map toRates
+    case 0 => me toRates to[Bitaverage](get("https://api.bitcoinaverage.com/ticker/global/all").body)
+    case 1 => me toRates to[Blockchain](get("https://blockchain.info/ticker").body)
+    case _ => me toRates bitpayNorm(get("https://bitpay.com/rates").body)
   }
+
+  def go = retry(obsOn(reloadData, IOScheduler.apply), pickInc, 1 to 30)
+    .repeatWhen(_ delay 15.minute).subscribe(fresh => rates = Success apply fresh)
 }
 
 // Fiat rates containers
 trait Rate { def now: Double }
-case class BitaverageRate(ask: Double) extends Rate { def now = ask }
-case class BlockchainRate(last: Double) extends Rate { def now = last }
+case class AvgRate(ask: Double) extends Rate { def now = ask }
+case class ChainRate(last: Double) extends Rate { def now = last }
 case class BitpayRate(code: String, rate: Double) extends Rate { def now = rate }
 
 trait RateProvider { val usd, eur, cny: Rate }
-case class Blockchain(usd: BlockchainRate, eur: BlockchainRate, cny: BlockchainRate) extends RateProvider
-case class Bitaverage(usd: BitaverageRate, eur: BitaverageRate, cny: BitaverageRate) extends RateProvider
+case class Blockchain(usd: ChainRate, eur: ChainRate, cny: ChainRate) extends RateProvider
+case class Bitaverage(usd: AvgRate, eur: AvgRate, cny: AvgRate) extends RateProvider
 
 object Fee { me =>
   var rate = Coin valueOf 15000L
   val default = Coin valueOf 10000L
-  implicit val bitgoFeeFmt = jsonFormat[Long, BitgoFee](BitgoFee.apply, "feePerKb")
+
+  implicit val cypherFeeFmt = jsonFormat[Long, CypherFee](CypherFee.apply, "low_fee_per_kb")
   implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee.apply, "12")
-  implicit val blockcypherFeeFmt = jsonFormat[Long, BlockcypherFee](BlockcypherFee.apply, "low_fee_per_kb")
-  def go = %(reloadData, me retry 2000, me retry 1800000) foreach { prov => rate = Coin valueOf prov.fee }
-  def retry(waitPeriod: Long) = app.timer.schedule(task, waitPeriod)
-  def task: TimerTask = new TimerTask { def run = go }
+  implicit val bitgoFeeFmt = jsonFormat[Long, BitgoFee](BitgoFee.apply, "feePerKb")
 
   def reloadData = rand nextInt 3 match {
-    case 0 => (get andThen fetch)("https://www.bitgo.com/api/v1/tx/fee?numBlocks=12") map to[BitgoFee]
-    case 1 => (get andThen fetch)("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=12") map to[InsightFee]
-    case 2 => (get andThen fetch)("http://api.blockcypher.com/v1/btc/main") map to[BlockcypherFee]
+    case 0 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=12").body)
+    case 1 => to[BitgoFee](get("https://www.bitgo.com/api/v1/tx/fee?numBlocks=12").body)
+    case _ => to[CypherFee](get("http://api.blockcypher.com/v1/btc/main").body)
   }
+
+  def go = retry(obsOn(reloadData, IOScheduler.apply), pickInc, 1 to 30)
+    .repeatWhen(_ delay 30.minute).subscribe(prov => rate = Coin valueOf prov.fee)
 }
 
 // Fee rates providers
 trait FeeProvider { def fee: Long }
 case class BitgoFee(feePerKb: Long) extends FeeProvider { def fee = feePerKb }
-case class BlockcypherFee(low_fee_per_kb: Long) extends FeeProvider { def fee = low_fee_per_kb }
-case class InsightFee(fee12: BigDecimal) extends FeeProvider { def fee = (fee12 * 100000000).toLong }
+case class CypherFee(low_fee_per_kb: Long) extends FeeProvider { def fee = low_fee_per_kb }
+case class InsightFee(f12: BigDecimal) extends FeeProvider { def fee = (f12 * 100000000).toLong }

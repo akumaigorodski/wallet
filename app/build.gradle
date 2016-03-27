@@ -16,7 +16,7 @@ android {
         applicationId "com.btcontract.wallet"
         versionName "1.06"
         minSdkVersion 15
-        versionCode 36
+        versionCode 39
     }
 
     buildTypes {
@@ -39,5 +39,6 @@ dependencies {
     compile 'com.github.kevinsawicki:http-request:6.0'
     compile 'info.hoang8f:android-segmented:1.0.5'
     compile 'org.scala-lang:scala-library:2.11.7'
+    compile 'io.reactivex:rxscala_2.11:0.26.0'
     compile 'com.google.zxing:core:3.2.0'
 }

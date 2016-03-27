@@ -29,9 +29,6 @@ import Context.CLIPBOARD_SERVICE
 class WalletApp extends Application {
   lazy val prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
   lazy val params = org.bitcoinj.params.MainNetParams.get
-  val timer = new java.util.Timer
-
-  // Actual values provided at startup
   var walletFile, chainFile: java.io.File = null
   var kit: WalletKit = null
 
@@ -65,8 +62,8 @@ class WalletApp extends Application {
     chainFile = new File(getFilesDir, s"${Utils.appName}.spvchain")
     walletFile = new File(getFilesDir, s"${Utils.appName}.wallet")
     Utils.startupAppReference = this
-    FiatRates.task.run
-    Fee.task.run
+    FiatRates.go
+    Fee.go
   }
 
   object TransData {
