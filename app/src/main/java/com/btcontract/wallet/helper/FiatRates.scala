@@ -16,7 +16,7 @@ import com.btcontract.wallet.Utils._
 object JsonHttpUtils {
   type Selector = (Throwable, Int) => Duration
   def pickInc(err: Throwable, next: Int) = next.second
-  def obsOn[T](provider: => T, scheduler: Scheduler) = Obs.just(null).observeOn(scheduler).map(_ => provider)
+  def obsOn[T](provider: => T, scheduler: Scheduler) = Obs.just(null).subscribeOn(scheduler).map(_ => provider)
   def retry[T](obs: Obs[T], pick: Selector, times: Range) = obs.retryWhen(_.zipWith(Obs from times)(pick) flatMap Obs.timer)
 
   def to[T : JsonFormat](raw: String) = raw.parseJson.convertTo[T]

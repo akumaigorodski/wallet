@@ -65,15 +65,17 @@
     <string name="dialog_back">返回</string>
     <string name="dialog_next">下一步</string>
     <string name="dialog_cancel">取消</string>
+    <string name="input_hint_bit">量bits</string>
     <string name="input_hint_btc">量比特币</string>
     <string name="input_hint_sat">量satoshi</string>
+    <string name="dialog_sum_empty">请提供量</string>
     <string name="dialog_sum_dusty">当前数量是灰暗的</string>
     <string name="dialog_addr_wrong">比特币地址无效</string>
     <string name="spend_address_tip">发送钱的地方</string>
     <string name="spend_address_hint">比特币地址</string>
-    <string name="input_sat">&#160;satoshi&#160;</string>
-    <string name="input_btc">&#160;比特币&#160;</string>
-    <string name="dialog_sum_empty">请提供量</string>
+    <string name="input_sat">&#160;Satoshi&#160;</string>
+    <string name="input_bit">&#160;Bits&#160;</string>
+    <string name="input_btc">&#160;BTC&#160;</string>
     <string name="input_alt_btc">%1$s BTC</string>
 
     <array name="dialog_request">

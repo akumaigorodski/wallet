@@ -15,8 +15,8 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import android.net.Uri
 
-import R.id.{amtInSat, amtInBtc, typeUSD, typeEUR, typeCNY}
 import android.text.method.{LinkMovementMethod, DigitsKeyListener}
+import R.id.{amtInSat, amtInBtc, amtInBit, typeUSD, typeEUR, typeCNY}
 import org.bitcoinj.core.Wallet.{ExceededMaxTransactionSize => TxTooLarge}
 import org.bitcoinj.core.Wallet.{CouldNotAdjustDownwards, SendRequest}
 import org.bitcoinj.core.{InsufficientMoneyException => NoFunds}
@@ -64,18 +64,24 @@ object Utils { me =>
   lazy val sumIn = app getString txs_sum_in
   lazy val sumOut = app getString txs_sum_out
 
+  // Various denom format rules
   val locale = new Locale("en", "US")
   val baseFiat = new DecimalFormat("#.##")
   val baseBtc = new DecimalFormat("#.########")
   val baseSat = new DecimalFormat("###,###,###")
+  val baseBit = new DecimalFormat("#,###,###.##")
   val symbols = new DecimalFormatSymbols(locale)
 
   baseFiat setDecimalFormatSymbols symbols
+  baseBit setDecimalFormatSymbols symbols
   baseSat setDecimalFormatSymbols symbols
   baseBtc setDecimalFormatSymbols symbols
 
   def sat(coin: Coin) = baseSat format coin.value
+  def bit(coin: Coin) = baseBit format BigDecimal(coin.value) / 100
   def btc(coin: Coin) = baseBtc format BigDecimal(coin.value) / 100000000
+
+  // App wide utility functions
   def btcHuman(coin: Coin) = app getString input_alt_btc format btc(coin)
   def wrap(run: => Unit)(go: => Unit) = try go catch none finally run
   def runAnd[T](res: T)(run: => Any) = Option(run).map(x => res).get
@@ -83,8 +89,8 @@ object Utils { me =>
   def none: PartialFunction[Any, Unit] = { case _ => }
 
   // Current fiat name, it's rate and amount with respect to coin
-  def currentRate = for (currentRates <- FiatRates.rates) yield currentRates(currentFiatName)
   def inFiat(tc: TryCoin) = currentRate.flatMap(rt => for (cn <- tc) yield cn.getValue * rt / 100000000)
+  def currentRate = for (currentRates <- FiatRates.rates) yield currentRates(currentFiatName)
   def currentFiatName = app.prefs.getString(AbstractKit.CURRENCY, "dollar")
 
   def fiatSign(amt: Double) = baseFiat format amt match {
@@ -475,18 +481,19 @@ class RateManager(content: View) { me =>
   val fiatType = content.findViewById(R.id.fiatType).asInstanceOf[SegmentedGroup]
   val bitType = content.findViewById(R.id.bitType).asInstanceOf[SegmentedGroup]
 
-  val inputMap: Map[Int, Coin => String] = Map(amtInSat -> sat, amtInBtc -> btc)
-  val hintMap = Map(amtInBtc -> input_hint_btc, amtInSat -> input_hint_sat)
-  val charMap = Map(amtInBtc -> ".0123456789", amtInSat -> ",0123456789")
-  val setSum = (_: TryCoin) map inputMap(bst) map bitInput.setText
+  val memoMap = Map(amtInBtc -> "btc", amtInBit -> "bit", amtInSat -> "sat")
+  val memoRevMap = Map("btc" -> amtInBtc, "bit" -> amtInBit, "sat" -> amtInSat)
+  val inputMap: Map[Int, Coin => String] = Map(amtInBtc -> btc, amtInBit -> bit, amtInSat -> sat)
+  val hintMap = Map(amtInBtc -> input_hint_btc, amtInBit -> input_hint_bit, amtInSat -> input_hint_sat)
+  val charMap = Map(amtInBtc -> ".0123456789", amtInBit -> ".,0123456789", amtInSat -> ",0123456789")
+  def setSum(tc: TryCoin) = tc map inputMap(bitType.getCheckedRadioButtonId) map bitInput.setText
+  def memoMode = memoRevMap apply app.prefs.getString(AbstractKit.BTC_DENOMINATION, "bit")
+  def result = Try apply norm(bitType.getCheckedRadioButtonId)
 
-  def result = Try apply norm(bst)
-  def bst = bitType.getCheckedRadioButtonId
-  def bitNowMode = if (savedAsBtc) amtInBtc else amtInSat
-  def savedAsBtc = app.prefs.getBoolean(AbstractKit.BTC_OR_SATOSHI, true)
   def norm(state: Int) = bitInput.getText.toString.replace(",", "") match {
-    case rawClearString if amtInBtc == state => Coin parseCoin rawClearString
-    case rawClearString => Coin valueOf rawClearString.toLong
+    case raw if amtInBit == state => Coin valueOf (raw.toDouble * 100).toLong
+    case raw if amtInBtc == state => Coin parseCoin raw
+    case raw => Coin valueOf raw.toLong
   }
 
   val bitListener = new TextChangedWatcher {
@@ -504,10 +511,10 @@ class RateManager(content: View) { me =>
 
   bitType setOnCheckedChangeListener new OnCheckedChangeListener {
     def onCheckedChanged(radioGroup: RadioGroup, checkedButton: Int) = {
-      bitInput setKeyListener DigitsKeyListener.getInstance(charMap apply bst)
-      bitInput.setText(Try apply norm(bitNowMode) map inputMap(bst) getOrElse null)
-      app.prefs.edit.putBoolean(AbstractKit.BTC_OR_SATOSHI, amtInBtc == bst).commit
-      bitInput setHint hintMap(bst)
+      bitInput setKeyListener DigitsKeyListener.getInstance(charMap apply bitType.getCheckedRadioButtonId)
+      bitInput.setText(Try apply norm(memoMode) map inputMap(bitType.getCheckedRadioButtonId) getOrElse null)
+      app.prefs.edit.putString(AbstractKit.BTC_DENOMINATION, memoMap apply bitType.getCheckedRadioButtonId).commit
+      bitInput setHint hintMap(bitType.getCheckedRadioButtonId)
     }
   }
 
@@ -522,7 +529,7 @@ class RateManager(content: View) { me =>
   fiatInput addTextChangedListener fiatListener
   bitInput addTextChangedListener bitListener
   fiatType check revFiatMap(currentFiatName)
-  bitType check bitNowMode
+  bitType check memoMode
 }
 
 class SpendManager(address: EditText, man: RateManager) { me =>

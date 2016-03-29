@@ -14,7 +14,7 @@ import java.util.List;
 
 public abstract class AbstractKit extends AbstractIdleService {
     public static final String PASSWORD_ASK_STARTUP = "password_ask";
-    public static final String BTC_OR_SATOSHI = "btc_or_satoshi";
+    public static final String BTC_DENOMINATION = "btc_denomination";
     public static final String DESTRUCT_CODE = "destruct_code";
     public static final String CURRENCY = "currency";
 

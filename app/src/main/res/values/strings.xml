@@ -67,13 +67,15 @@
     <string name="dialog_cancel">Cancel</string>
     <string name="input_hint_sat">amount in sat</string>
     <string name="input_hint_btc">amount in btc</string>
+    <string name="input_hint_bit">amount in bits</string>
     <string name="dialog_addr_wrong">Bitcoin address is invalid</string>
     <string name="dialog_sum_empty">Please provide an amount</string>
     <string name="dialog_sum_dusty">Current amount is dusty</string>
     <string name="spend_address_tip">where to send money</string>
     <string name="spend_address_hint">Bitcoin address</string>
-    <string name="input_btc">&#160;bitcoins&#160;</string>
-    <string name="input_sat">&#160;satoshi&#160;</string>
+    <string name="input_sat">&#160;Satoshi&#160;</string>
+    <string name="input_bit">&#160;Bits&#160;</string>
+    <string name="input_btc">&#160;BTC&#160;</string>
     <string name="input_alt_btc">%1$s BTC</string>
 
     <array name="dialog_request">

@@ -67,13 +67,15 @@
     <string name="dialog_cancel">Отмена</string>
     <string name="input_hint_sat">сумма в sat</string>
     <string name="input_hint_btc">сумма в btc</string>
+    <string name="input_hint_bit">сумма в битах</string>
     <string name="dialog_addr_wrong">Неправильный Биткоин-адрес</string>
     <string name="dialog_sum_empty">Пожалуйста, укажите сумму</string>
     <string name="spend_address_tip">куда пойдут деньги</string>
     <string name="dialog_sum_dusty">Сумма слишком мала</string>
     <string name="spend_address_hint">Биткоин-адрес</string>
-    <string name="input_btc">&#160;биткоины&#160;</string>
-    <string name="input_sat">&#160;сатоши&#160;</string>
+    <string name="input_sat">&#160;Cатоши&#160;</string>
+    <string name="input_bit">&#160;Bits&#160;</string>
+    <string name="input_btc">&#160;BTC&#160;</string>
     <string name="input_alt_btc">%1$s BTC</string>
 
     <array name="dialog_request">

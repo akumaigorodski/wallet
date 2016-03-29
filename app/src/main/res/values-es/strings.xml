@@ -67,13 +67,15 @@
     <string name="dialog_cancel">Cancelar</string>
     <string name="input_hint_sat">suma en sat</string>
     <string name="input_hint_btc">suma en btc</string>
+    <string name="input_hint_bit">suma en bits</string>
     <string name="dialog_addr_wrong">La dirección Bitcoin no es válida.</string>
     <string name="dialog_sum_dusty">La cantidad actual puede ser considerada spam.</string>
     <string name="dialog_sum_empty">Por favor, proporcione un monto.</string>
     <string name="spend_address_tip">dónde enviar dinero</string>
     <string name="spend_address_hint">Bitcoin address</string>
-    <string name="input_btc">&#160;bitcoins&#160;</string>
-    <string name="input_sat">&#160;satoshi&#160;</string>
+    <string name="input_sat">&#160;Satoshi&#160;</string>
+    <string name="input_bit">&#160;Bits&#160;</string>
+    <string name="input_btc">&#160;BTC&#160;</string>
     <string name="input_alt_btc">%1$s BTC</string>
 
     <array name="dialog_request">

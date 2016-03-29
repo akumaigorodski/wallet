@@ -65,15 +65,17 @@
     <string name="dialog_next">次へ</string>
     <string name="dialog_back">戻る</string>
     <string name="dialog_cancel">キャンセル</string>
-    <string name="input_hint_sat">金額 (satoshi)</string>
     <string name="input_hint_btc">金額 (BTC)</string>
+    <string name="input_hint_bit">金額 (bits)</string>
+    <string name="input_hint_sat">金額 (satoshi)</string>
+    <string name="spend_address_tip">お金を送る先</string>
+    <string name="spend_address_hint">ビットコイン アドレス</string>
     <string name="dialog_addr_wrong">ビットコインのアドレスが正しくありません</string>
     <string name="dialog_sum_empty">金額を入力してください</string>
     <string name="dialog_sum_dusty">現在の金額は埃です</string>
-    <string name="spend_address_tip">お金を送る先</string>
-    <string name="spend_address_hint">ビットコイン アドレス</string>
-    <string name="input_btc">&#160;ビットコイン&#160;</string>
-    <string name="input_sat">&#160;satoshi&#160;</string>
+    <string name="input_sat">&#160;Satoshi&#160;</string>
+    <string name="input_bit">&#160;Bits&#160;</string>
+    <string name="input_btc">&#160;BTC&#160;</string>
     <string name="input_alt_btc">%1$s BTC</string>
 
     <array name="dialog_request">

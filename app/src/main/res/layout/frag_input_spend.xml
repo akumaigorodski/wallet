@@ -71,6 +71,14 @@
 
         <RadioButton
             android:textSize="18sp"
+            android:id="@+id/amtInBit"
+            android:text="@string/input_bit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/RadioButton"/>
+
+        <RadioButton
+            android:textSize="18sp"
             android:id="@+id/amtInSat"
             android:text="@string/input_sat"
             android:layout_width="wrap_content"
