@@ -14,8 +14,10 @@
 -dontwarn info.guardianproject.netcipher.**
 
 -keep class net.sqlcipher.** { *; }
+-keep class com.squareup.wire.** { *; }
 -keep class org.whispersystems.** { *; }
 -keep class scala.collection.SeqLike { *; }
+-keep class com.btcontract.wallet.lnproto.** { *; }
 
 -keep public enum * {
 	public static **[] values();

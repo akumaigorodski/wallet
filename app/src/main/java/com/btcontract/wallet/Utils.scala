@@ -43,7 +43,6 @@ import Context.INPUT_METHOD_SERVICE
 
 
 object Utils { me =>
-  type Bytes = Array[Byte]
   type TryCoin = Try[Coin]
   type Rates = Map[String, Double]
   type Pays = mutable.Buffer[PayData]
@@ -88,10 +87,14 @@ object Utils { me =>
   def humanAddr(adr: Address) = s"$adr" grouped 4 mkString "\u0020"
   def none: PartialFunction[Any, Unit] = { case _ => }
 
-  // Current fiat name, it's rate and amount with respect to coin
-  def inFiat(tc: TryCoin) = currentRate.flatMap(rt => for (cn <- tc) yield cn.getValue * rt / 100000000)
-  def currentRate = for (currentRates <- FiatRates.rates) yield currentRates(currentFiatName)
+  // Fiat rates related functions, all transform a Try monad
   def currentFiatName = app.prefs.getString(AbstractKit.CURRENCY, "dollar")
+  def currentRate = FiatRates.rates.map(_ apply currentFiatName)
+
+  // Iff we have rates and amount then fiat price
+  def inFiat(tc: TryCoin) = currentRate flatMap { rt =>
+    for (coin <- tc) yield coin.getValue * rt / 100000000
+  }
 
   def fiatSign(amt: Double) = baseFiat format amt match {
     case amount if currentFiatName == strYuan => s"$amount CNY"
