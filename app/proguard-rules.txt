@@ -17,7 +17,7 @@
 -keep class com.squareup.wire.** { *; }
 -keep class org.whispersystems.** { *; }
 -keep class scala.collection.SeqLike { *; }
--keep class com.btcontract.wallet.lnproto.** { *; }
+-keep class com.btcontract.wallet.lightning.proto.** { *; }
 
 -keep public enum * {
 	public static **[] values();

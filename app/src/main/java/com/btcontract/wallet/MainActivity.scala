@@ -4,6 +4,7 @@ import R.string._
 import android.widget._
 import Utils.{wrap, app}
 import scala.util.{Success, Try}
+import com.btcontract.wallet.helper.{FiatRates, Fee}
 import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}
 import concurrent.ExecutionContext.Implicits.global
 import org.bitcoinj.store.WalletProtobufSerializer
@@ -41,8 +42,9 @@ class MainActivity extends TimerActivity with ViewSwitch { me =>
   {
     super.onCreate(savedState)
     setContentView(R.layout.activity_main)
-    // Allow read more link to be actually clicked
     greet setMovementMethod LinkMovementMethod.getInstance
+    FiatRates.go
+    Fee.go
 
     Try(getIntent.getDataString) match {
       case ok@Success(dataNotNull: String) =>
