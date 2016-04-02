@@ -17,12 +17,12 @@ import android.net.Uri
 
 import android.text.method.{LinkMovementMethod, DigitsKeyListener}
 import R.id.{amtInSat, amtInBtc, amtInBit, typeUSD, typeEUR, typeCNY}
+import com.btcontract.wallet.helper.{RandomGenerator, Fee, FiatRates}
 import org.bitcoinj.core.Wallet.{ExceededMaxTransactionSize => TxTooLarge}
 import org.bitcoinj.core.Wallet.{CouldNotAdjustDownwards, SendRequest}
 import org.bitcoinj.core.{InsufficientMoneyException => NoFunds}
 import android.content.{DialogInterface, Context, Intent}
 import java.text.{DecimalFormatSymbols, DecimalFormat}
-import com.btcontract.wallet.helper.{Fee, FiatRates}
 import java.util.{Locale, Timer, TimerTask}
 import scala.util.{Failure, Success, Try}
 import android.app.{Dialog, Activity}
@@ -59,7 +59,7 @@ object Utils { me =>
 
   val appName = "Bitcoin"
   val nullFail = Failure(null)
-  val rand = new scala.util.Random
+  val rand = new RandomGenerator
   lazy val sumIn = app getString txs_sum_in
   lazy val sumOut = app getString txs_sum_out
 

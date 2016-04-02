@@ -14,26 +14,29 @@ object Tools { me =>
   val strToBytes = (_: String) getBytes "UTF-8"
   val bytesToJson = new String(_: Bytes, "UTF-8")
 
-  def hash2256Hex(raw: Bytes) = HEX.encode(Sha256Hash hashTwice raw)
-
   // Read uint64
-  def uInt64(input: InputStream): Long =
-    uInt64(input.read, input.read, input.read, input.read,
+  def uint64(input: InputStream): Long =
+    uint64(input.read, input.read, input.read, input.read,
       input.read, input.read, input.read, input.read)
 
-  def uInt64(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int): Long =
-    (a.&(0xffl) << 0) | (b.&(0xffl) << 8) | (c.&(0xffl) << 16) | (d.&(0xffl) << 24) |
-      (e.&(0xffl) << 32) | (f.&(0xffl) << 40) | (g.&(0xffl) << 48) | (h.&(0xffl) << 56)
+  def uint64(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int) =
+    a.&(0xffl).<<(0) | b.&(0xffl).<<(8) | c.&(0xffl).<<(16) | d.&(0xffl).<<(24) |
+      e.&(0xffl).<<(32) | f.&(0xffl).<<(40) | g.&(0xffl).<<(48) | h.&(0xffl).<<(56)
 
   // Write unit8 and unit64
-  def writeUInt8(out: OutputStream, ins: Long*) =
-    for (in8 <- ins) out write (in8 & 0xff).asInstanceOf[Int]
+  def writeUInt8(out: OutputStream, inputs: Long*) =
+    for (input <- inputs) out write (input & 0xff).asInstanceOf[Int]
 
-  def writeUInt64(out: OutputStream, ins: Long*) =
-    for (in64 <- ins) writeUInt8(out, in64 & 0xff, (in64 >>> 8) & 0xff,
-      (in64 >>> 16) & 0xff, (in64 >>> 24) & 0xff, (in64 >>> 24) & 0xff,
-      (in64 >>> 32) & 0xff, (in64 >>> 40) & 0xff, (in64 >>> 48) & 0xff,
-      (in64 >>> 56) & 0xff)
+  def writeUInt64(out: OutputStream, inputs: Long*) =
+    for (input <- inputs) writeUInt8(out, input & 0xff, (input >>> 8) & 0xff,
+      (input >>> 16) & 0xff, (input >>> 24) & 0xff, (input >>> 32) & 0xff,
+      (input >>> 40) & 0xff, (input >>> 48) & 0xff, (input >>> 56) & 0xff)
+
+  def writeUInt64(input: Long): Bytes = {
+    val output = new ByteArrayOutputStream(8)
+    writeUInt64(output, input)
+    output.toByteArray
+  }
 
   // Fix signature size
   def fixSize(raw: Bytes): Bytes = raw.length match {
@@ -44,11 +47,12 @@ object Tools { me =>
 
   // Proto signature conversion
   def bytesToSignature(bts: Bytes) = {
-    val tx = TransactionSignature.decodeFromBitcoin(bts, true)
-    val (arrR, arrS) = fixSize(tx.r.toByteArray).reverse -> fixSize(tx.s.toByteArray).reverse
-    val (rIn, sIn) = new ByteArrayInputStream(arrR) -> new ByteArrayInputStream(arrS)
-    new proto.signature(me uInt64 rIn, me uInt64 rIn, me uInt64 rIn, me uInt64 rIn,
-      me uInt64 sIn, me uInt64 sIn, me uInt64 sIn, me uInt64 sIn)
+    val ts = TransactionSignature.decodeFromBitcoin(bts, true)
+    val inR = new ByteArrayInputStream(fixSize(ts.r.toByteArray).reverse)
+    val inS = new ByteArrayInputStream(fixSize(ts.s.toByteArray).reverse)
+    new proto.signature(me uint64 inR, me uint64 inR, me uint64 inR,
+      me uint64 inR, me uint64 inS, me uint64 inS,
+      me uint64 inS, me uint64 inS)
   }
 
   def signature2Bytes(protosig: proto.signature) = {
@@ -61,13 +65,14 @@ object Tools { me =>
   }
 
   // Proto sha256 conversion
-  def bytes2Sha(bts: Bytes) = new ByteArrayInputStream(bts) match { case stream =>
-    new proto.sha256_hash(me uInt64 stream, me uInt64 stream, me uInt64 stream, me uInt64 stream)
+  def bytes2Sha(sha256hashByteArray: Bytes) = {
+    val in = new ByteArrayInputStream(sha256hashByteArray)
+    new proto.sha256_hash(me uint64 in, me uint64 in, me uint64 in, me uint64 in)
   }
 
-  def sha2Bytes(sha: proto.sha256_hash) = {
-    val byteOutputStream = new ByteArrayOutputStream
-    writeUInt64(byteOutputStream, sha.a, sha.b, sha.c, sha.d)
-    byteOutputStream.toByteArray
+  def sha2Bytes(ps: proto.sha256_hash) = {
+    val outputStream = new ByteArrayOutputStream
+    writeUInt64(outputStream, ps.a, ps.b, ps.c, ps.d)
+    outputStream.toByteArray
   }
 }
