@@ -1,5 +1,5 @@
 package com.btcontract.wallet.lightning.crypto;
-// Taken from
+// Taken from https://github.com/nitram509/jmacaroons
 
 public class Poly3105 {
     final int CRYPTO_BYTES = 16;
