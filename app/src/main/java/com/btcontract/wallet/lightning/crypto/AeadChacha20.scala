@@ -1,13 +1,13 @@
 package com.btcontract.wallet.lightning.crypto
 
-import com.btcontract.wallet.lightning.Tools.Bytes
-import org.spongycastle.crypto.engines.ChaChaEngine
-import com.btcontract.wallet.lightning.Tools.writeUInt64
+import com.btcontract.wallet.lightning.{JavaTools => jt}
 import org.spongycastle.crypto.params.ParametersWithIV
+import org.spongycastle.crypto.engines.ChaChaEngine
 import org.spongycastle.crypto.params.KeyParameter
+import com.btcontract.wallet.lightning.Tools.Bytes
 
 
-class AeadChacha20(key: Bytes, nonce: Bytes) {
+class AeadChacha20(key: Bytes, nonce: Bytes) { me =>
   def chacha20Run(content: Bytes, encrypt: Boolean, skip: Boolean) = {
     val cipherParameters = new ParametersWithIV(new KeyParameter(key), nonce)
     val finalResult = new Bytes(content.length)
@@ -28,13 +28,15 @@ class AeadChacha20(key: Bytes, nonce: Bytes) {
 
   def encrypt(plainText: Bytes, aad: Bytes) = {
     val cipher = chacha20Run(plainText, encrypt = true, skip = true)
-    val data = aad ++ writeUInt64(aad.length) ++ cipher ++ writeUInt64(cipher.length)
-    cipher -> mkPoly(data)
+    (me mkPoly jt.concat(aad, jt writeUInt64 aad.length, cipher,
+      jt writeUInt64 cipher.length), cipher)
   }
 
-  def decrypt(cipherText: Bytes, aad: Bytes, mac: Bytes) = {
-    val data = aad ++ writeUInt64(aad.length) ++ cipherText ++ writeUInt64(cipherText.length)
-    assert(mkPoly(data) sameElements mac, "Invalid Poly1305 MAC detected")
-    chacha20Run(cipherText, encrypt = false, skip = true)
+  def decrypt(cipher: Bytes, aad: Bytes, mac: Bytes) = {
+    val macCheck = jt.concat(aad, jt writeUInt64 aad.length,
+      cipher, jt writeUInt64 cipher.length)
+
+    assert(me mkPoly macCheck sameElements mac, "Invalid MAC")
+    chacha20Run(cipher, encrypt = false, skip = true)
   }
 }

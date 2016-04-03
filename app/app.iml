@@ -98,9 +98,10 @@
     <orderEntry type="library" exported="" name="okhttp-2.4.0" level="project" />
     <orderEntry type="library" exported="" name="zxing-android-embedded-3.1.0" level="project" />
     <orderEntry type="library" exported="" name="rxjava-1.1.0" level="project" />
+    <orderEntry type="library" exported="" name="nv-websocket-client-1.23" level="project" />
     <orderEntry type="library" exported="" name="scrypt-1.4.0" level="project" />
-    <orderEntry type="library" exported="" name="protobuf-java-2.5.0" level="project" />
     <orderEntry type="library" exported="" name="scala-library-2.11.7" level="project" />
+    <orderEntry type="library" exported="" name="protobuf-java-2.5.0" level="project" />
     <orderEntry type="library" exported="" name="android-segmented-1.0.5" level="project" />
     <orderEntry type="library" exported="" name="core-3.2.0" level="project" />
     <orderEntry type="library" exported="" name="core-1.51.0.0" level="project" />
