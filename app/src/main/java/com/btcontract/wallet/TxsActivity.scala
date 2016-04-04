@@ -37,7 +37,7 @@ class TxsActivity extends InfoActivity { me =>
   lazy private[this] val feeDetails = getString(txs_fee_details)
   lazy private[this] val feeAbsent = getString(txs_fee_absent)
 
-  val transactionsTracker = new MyWalletChangeListener with WalletCoinEventListener {
+  private[this] val transactionsTracker = new MyWalletChangeListener with WalletCoinEventListener {
     def onTransactionConfidenceChanged(w: Wallet, tx: Transaction) = if (tx.getConfidence.getDepthInBlocks < 2) onReorganize(w)
     def onCoinsReceived(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb) me runOnUiThread tell(tx)
     def onCoinsSent(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = me runOnUiThread tell(tx)
@@ -45,7 +45,7 @@ class TxsActivity extends InfoActivity { me =>
   }
 
   // Relative or absolute date
-  var time: java.util.Date => String = null
+  private[this] var time: java.util.Date => String = null
   def when(now: Long, dat: java.util.Date) = dat.getTime match { case ago =>
     if (now - ago < 129600000) getRelativeTimeSpanString(ago, now, 0).toString else time(dat)
   }

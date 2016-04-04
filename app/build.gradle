@@ -38,6 +38,7 @@ dependencies {
     compile 'org.bitcoinj:bitcoinj-core:0.14-SNAPSHOT'
     compile 'com.github.kevinsawicki:http-request:6.0'
     compile 'com.journeyapps:zxing-android-embedded:3.1.0@aar'
+    compile 'org.whispersystems:curve25519-android:0.2.4'
     compile 'com.neovisionaries:nv-websocket-client:1.23'
     compile 'info.hoang8f:android-segmented:1.0.5'
     compile 'org.scala-lang:scala-library:2.11.7'
