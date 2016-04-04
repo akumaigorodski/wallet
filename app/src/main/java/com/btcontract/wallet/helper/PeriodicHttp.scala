@@ -83,3 +83,23 @@ trait FeeProvider { def fee: Long }
 case class BitgoFee(feePerKb: Long) extends FeeProvider { def fee = feePerKb }
 case class CypherFee(low_fee_per_kb: Long) extends FeeProvider { def fee = low_fee_per_kb }
 case class InsightFee(f12: BigDecimal) extends FeeProvider { def fee = (f12 * 100000000).toLong }
+
+object HTTPUXTO {
+  type UtxoList = List[Utxo]
+  implicit val utxoFmt = jsonFormat[String, String, Int, Long, String, BigDecimal, Long,
+    Utxo](Utxo.apply, "address", "txid", "vout", "ts", "scriptPubKey", "amount", "confirmations")
+
+  def reloadData(addr: String) = rand nextInt 3 match {
+    case 0 => to[UtxoList](get(s"https://insight.bitpay.com/api/addr/$addr/utxo").body)
+    case 1 => to[UtxoList](get(s"https://blockexplorer.com/api/addr/$addr/utxo").body)
+    case _ => to[UtxoList](get(s"https://bitlox.io/api/addr/$addr/utxo").body)
+  }
+
+  // Query random sources for a given address, retry operation up to 5 times with 1 second interval
+  def byAddr(addr: String) = retry(obsOn(reloadData(addr), IOScheduler.apply), (_, _) => 1.second, 1 to 5)
+
+}
+
+// Bitcore.io UTXO representation
+case class Utxo(address: String, txid: String, vout: Int, ts: Long,
+  scriptPubKey: String, amount: BigDecimal, confirmations: Long)

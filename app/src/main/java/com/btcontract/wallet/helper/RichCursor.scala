@@ -16,10 +16,12 @@ extends Iterable[Cursor]
   def closeAfter[T](body: RichCursor => T) = try body(this) finally c.close
   def orm[T](body: Cursor => T) = closeAfter(_.map(body).toList)
 
+  // Transform cursor into value and close
   def toString(default: String) = closeAfter(_ => if (c.moveToFirst) c getString 0 else default)
   def toLong(default: Long) = closeAfter(_ => if (c.moveToFirst) c getLong 0 else default)
   def toInt(default: Int) = closeAfter(_ => if (c.moveToFirst) c getInt 0 else default)
 
+  // Take value but do not close yet
   def string(key: String) = c.getString(c getColumnIndex key)
   def long(key: String) = c.getLong(c getColumnIndex key)
   def bytes(key: String) = HEX decode string(key)
