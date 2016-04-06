@@ -322,7 +322,7 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     // Check password length before proceeding
     def shortCheck(txtRes: Int, short: Int)(next: String => Unit) = {
       val (passwordAsk, secret) = generatePasswordPromptView(textType, txtRes)
-      def check = if (secret.getText.length < 8) toast(short) else next(secret.getText.toString)
+      def check = if (secret.getText.length >= 6) next(secret.getText.toString) else toast(short)
       mkForm(mkChoiceDialog(check, mkSetsForm, dialog_ok, dialog_back), null, passwordAsk)
     }
   }

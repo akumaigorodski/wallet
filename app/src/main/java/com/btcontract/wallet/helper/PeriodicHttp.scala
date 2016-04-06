@@ -93,7 +93,7 @@ object Insight {
 
   type TxList = List[Tx]
   implicit val txFmt = jsonFormat[String, Tx](Tx.apply, "txid")
-  def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs?from=0&to=100").parseJson
+  def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs?from=0&to=50").parseJson
     .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), (_, _) => 1.second, 1 to 5)
 }
 

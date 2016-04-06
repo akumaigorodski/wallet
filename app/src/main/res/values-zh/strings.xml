@@ -11,7 +11,7 @@
     <string name="greetings">简单的比特币钱包\n请首先<a href='https://btcontract.com'>阅读钱包</a>手册</string>
     <string name="fee_default"><![CDATA[<small>默认费 %1$s<br><font color=#999999><small>确认可能需要数小时</small></font></small>]]></string>
     <string name="fee_live"><![CDATA[<small>优先费 %1$s<br><font color=#999999><small>快速成交确认</small></font></small>]]></string>
-    <string name="password_info">不设置密码的话，你会一直受到损失金钱的威胁。请选择一个至少8位字符的密码。</string>
+    <string name="password_info">不设置密码的话，你会一直受到损失金钱的威胁。请选择一个至少6位字符的密码。</string>
     <string name="copied_to_clipboard">复制到剪贴板</string>
     <string name="copy_to_clipboard">复制到剪贴板</string>
     <string name="wallet_restore">从代码还原钱包</string>

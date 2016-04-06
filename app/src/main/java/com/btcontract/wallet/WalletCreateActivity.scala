@@ -42,8 +42,8 @@ class WalletCreateActivity extends TimerActivity with ViewSwitch { me =>
 
     createPass addTextChangedListener new TextChangedWatcher {
       override def onTextChanged(s: CharSequence, st: Int, n: Int, af: Int) = {
-        val buttonMessage = if (s.length >= 8) wallet_create else password_too_short
-        createWallet setEnabled s.length >= 8
+        val buttonMessage = if (s.length >= 6) wallet_create else password_too_short
+        createWallet setEnabled s.length >= 6
         createWallet setText buttonMessage
       }
     }

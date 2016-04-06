@@ -9,7 +9,7 @@
     <string name="sets_destruct_ok">El código de destrucción se ha sido establecido en «%1$s»</string>
     <string name="sets_rescan_ok">La aplicación se cerrará ahora y el reescaneo de la cadena de bloques se activará en el próximo reinicio</string>
     <string name="greetings">Bienvenido a Monedero Bitcoin!\nPor favor, lea el <a href='https://btcontract.com'>manual de monedero</a></string>
-    <string name="password_info">Sin contraseña se expone de manera constante a perder su dinero. Por favor, elija una que tenga al menos 8 caracteres.</string>
+    <string name="password_info">Sin contraseña se expone de manera constante a perder su dinero. Por favor, elija una que tenga al menos 6 caracteres.</string>
     <string name="fee_default"><![CDATA[<small>Default fee %1$s<br><font color=#999999><small>Puede tomar un tiempo</small></font></small>]]></string>
     <string name="fee_live"><![CDATA[<small>Priority fee %1$s<br><font color=#999999><small>Confirmación rápida</small></font></small>]]></string>
     <string name="wallet_restore">Restaurar monedero a partir del código</string>

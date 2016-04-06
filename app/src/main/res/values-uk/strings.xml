@@ -9,7 +9,7 @@
     <string name="sets_destruct_ok">Встановлено новий код знищення: «%1$s»</string>
     <string name="greetings">Bitcoin-гаманець\n<a href='https://btcontract.com'>інструкція користувача</a></string>
     <string name="sets_rescan_ok">Зараз гаманець буде закритий, сканування почнеться коли ви відкриєте його наступного разу</string>
-    <string name="password_info">Будь ласка, підберіть пароль довжиною не менше 8 ніж символів, бажано такий що містить в собі великі літери і цифри</string>
+    <string name="password_info">Будь ласка, підберіть пароль довжиною не менше 6 ніж символів, бажано такий що містить в собі великі літери і цифри</string>
     <string name="fee_default"><![CDATA[<small>Комісія %1$s<br><font color=#999999><small>Підтвердження може зайняти години</small></font></small>]]></string>
     <string name="fee_live"><![CDATA[<small>Комісія %1$s<br><font color=#999999><small>Швидке підтвердження транзакції</small></font></small>]]></string>
     <string name="wallet_restore">Відновити гаманець з коду</string>
