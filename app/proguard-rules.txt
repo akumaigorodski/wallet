@@ -6,16 +6,13 @@
 -dontwarn okio.**
 -dontwarn scala.**
 -dontwarn org.slf4j.**
--dontwarn net.sqlcipher.**
--dontwarn org.whispersystems.**
+-dontwarn org.spongycastle.**
 -dontwarn org.bitcoinj.store.**
 -dontwarn com.google.common.cache.**
 -dontwarn com.google.common.primitives.**
 -dontwarn info.guardianproject.netcipher.**
 
--keep class net.sqlcipher.** { *; }
 -keep class com.squareup.wire.** { *; }
--keep class org.whispersystems.** { *; }
 -keep class scala.collection.SeqLike { *; }
 -keep class com.btcontract.wallet.lightning.proto.** { *; }
 

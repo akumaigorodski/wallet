@@ -4,6 +4,7 @@ import R.string._
 import org.bitcoinj.core._
 import com.btcontract.wallet.Utils._
 import org.bitcoinj.core.listeners.WalletCoinEventListener
+import info.guardianproject.netcipher.proxy.OrbotHelper
 import collection.JavaConverters.asScalaBufferConverter
 import com.google.common.util.concurrent.Service.State
 import org.bitcoinj.net.discovery.DnsDiscovery
@@ -55,6 +56,10 @@ class WalletApp extends Application {
     mgr setPrimaryClip ClipData.newPlainText(Utils.appName, bufferMessage)
     Toast.makeText(this, copied_to_clipboard, Toast.LENGTH_LONG).show
   }
+
+  // Tor related
+  def hasOrbot = OrbotHelper isOrbotInstalled this
+  def orbotOnline = OrbotHelper isOrbotRunning this
 
   // Startup actions
   override def onCreate = Utils.wrap(super.onCreate) {

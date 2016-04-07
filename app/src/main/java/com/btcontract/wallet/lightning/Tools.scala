@@ -1,8 +1,11 @@
 package com.btcontract.wallet.lightning
 
+import org.bitcoinj.crypto.{HDKeyDerivation, ChildNumber, TransactionSignature}
 import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
-import org.bitcoinj.crypto.TransactionSignature
+import org.spongycastle.jce.ECNamedCurveTable
+import org.bitcoinj.wallet.DeterministicSeed
+import org.bitcoinj.core.Sha256Hash
 import java.math.BigInteger
 
 
@@ -10,6 +13,23 @@ object Tools { me =>
   type Bytes = Array[Byte]
   val strToBytes = (_: String) getBytes "UTF-8"
   val bytesToJson = new String(_: Bytes, "UTF-8")
+
+  // Deriving /M/1H/<arbitrary depth> deterministic keys
+  def derive(way: List[ChildNumber], seed: DeterministicSeed) = {
+    val master = HDKeyDerivation createMasterPrivateKey seed.getSeedBytes
+    (new ChildNumber(1, true) :: way).foldLeft(master)(HDKeyDerivation.deriveChildKey)
+  }
+
+  // Shared secret for secp256k1
+  def ecdh(pub: Bytes, priv: Bytes) = {
+    val ecSpec = ECNamedCurveTable getParameterSpec "secp256k1"
+    val pubPoint = ecSpec.getCurve decodePoint pub
+    val bigPriv = new BigInteger(1, priv)
+
+    val mult = pubPoint.multiply(bigPriv).normalize
+    val prefix = if (mult.getYCoord.toBigInteger testBit 0) 0x03 else 0x02
+    Sha256Hash hash prefix.toByte +: mult.getXCoord.toBigInteger.toByteArray.takeRight(32)
+  }
 
   // Fix signature size
   def fixSize(raw: Bytes): Bytes = raw.length match {
