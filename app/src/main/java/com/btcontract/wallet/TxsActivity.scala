@@ -6,7 +6,7 @@ import org.bitcoinj.core._
 import com.btcontract.wallet.R.string._
 
 import android.view.{View, ViewGroup}
-import R.drawable.{dead, conf0, conf5}
+import R.drawable.{dead, conf0, conf1}
 import android.provider.Settings.{System => FontSystem}
 import android.text.format.DateUtils.getRelativeTimeSpanString
 import android.widget.AbsListView.OnScrollListener
@@ -193,7 +193,7 @@ class TxsActivity extends InfoActivity { me =>
       val isConf = transaction.getConfidence.getDepthInBlocks > 0
       val isDead = transaction.getConfidence.getConfidenceType == DEAD
       val time = Html fromHtml when(System.currentTimeMillis, transaction.getUpdateTime)
-      transactCircle setImageResource { if (isDead) dead else if (isConf) conf5 else conf0 }
+      transactCircle setImageResource { if (isDead) dead else if (isConf) conf1 else conf0 }
       transactSum setText Html.fromHtml(new TxPlus(transaction).human)
       transactWhen setText time
     }

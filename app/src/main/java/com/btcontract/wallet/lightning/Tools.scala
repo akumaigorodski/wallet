@@ -12,7 +12,9 @@ import java.math.BigInteger
 object Tools { me =>
   type Bytes = Array[Byte]
   val strToBytes = (_: String) getBytes "UTF-8"
-  val bytesToJson = new String(_: Bytes, "UTF-8")
+
+  // Masking public keys as pruned zero/one array allows for plausible deniability
+  def mask(src: Bytes) = for (byte <- src take 25) yield if (byte > 0) 1.toByte else 0.toByte
 
   // Deriving /M/1H/<arbitrary depth> deterministic keys
   def derive(way: List[ChildNumber], seed: DeterministicSeed) = {
