@@ -5,21 +5,23 @@ import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
 import org.spongycastle.jce.ECNamedCurveTable
 import org.bitcoinj.wallet.DeterministicSeed
-import org.bitcoinj.core.Sha256Hash
+import org.bitcoinj.core.{ECKey, Sha256Hash}
 import java.math.BigInteger
 
 
 object Tools { me =>
   type Bytes = Array[Byte]
-  val strToBytes = (_: String) getBytes "UTF-8"
 
-  // Masking public keys as pruned zero/one array allows for plausible deniability
-  def mask(src: Bytes) = for (byte <- src take 25) yield if (byte > 0) 1.toByte else 0.toByte
+  def mask(source: Bytes) =
+    for (byte <- source take 28) yield
+      if (byte > 0) 1.toByte else 0.toByte
 
-  // Deriving /M/1H/<arbitrary depth> deterministic keys
-  def derive(way: List[ChildNumber], seed: DeterministicSeed) = {
+  // Second 0 means "Bitcoin" according to BIP44
+  // Deriving /M/nH/0H/<arbitrary depth> deterministic keys
+  def derive(way: List[ChildNumber], n: Int, seed: DeterministicSeed) = {
+    val purposeBitcoin = List(new ChildNumber(n, true), ChildNumber.ZERO_HARDENED)
     val master = HDKeyDerivation createMasterPrivateKey seed.getSeedBytes
-    (new ChildNumber(1, true) :: way).foldLeft(master)(HDKeyDerivation.deriveChildKey)
+    (master /: purposeBitcoin)(HDKeyDerivation.deriveChildKey)
   }
 
   // Shared secret for secp256k1

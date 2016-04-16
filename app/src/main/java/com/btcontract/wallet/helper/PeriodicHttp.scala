@@ -3,6 +3,8 @@ package com.btcontract.wallet.helper
 import scala.util.{Try, Success}
 import rx.lang.scala.{Scheduler, Observable => Obs}
 import scala.concurrent.duration.{Duration, DurationInt}
+import com.btcontract.wallet.Utils.{Rates, rand, nullFail}
+import com.btcontract.wallet.Utils.{strDollar, strEuro, strYuan}
 import com.github.kevinsawicki.http.HttpRequest
 import rx.lang.scala.schedulers.IOScheduler
 import org.bitcoinj.core.Coin
@@ -10,7 +12,6 @@ import org.bitcoinj.core.Coin
 import spray.json._
 import JsonHttpUtils._
 import DefaultJsonProtocol._
-import com.btcontract.wallet.Utils._
 
 
 object JsonHttpUtils {
