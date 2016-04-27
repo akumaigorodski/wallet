@@ -3,18 +3,17 @@ package com.btcontract.wallet.lightning
 import org.bitcoinj.crypto.{HDKeyDerivation, ChildNumber, TransactionSignature}
 import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
+import org.bitcoinj.core.{BloomFilter, Sha256Hash}
+import com.btcontract.wallet.Utils.{rand, Bytes}
 import org.spongycastle.jce.ECNamedCurveTable
 import org.bitcoinj.wallet.DeterministicSeed
-import org.bitcoinj.core.{ECKey, Sha256Hash}
+import org.bitcoinj.core.Utils.HEX
 import java.math.BigInteger
 
 
 object Tools { me =>
-  type Bytes = Array[Byte]
-
-  def mask(source: Bytes) =
-    for (byte <- source take 28) yield
-      if (byte > 0) 1.toByte else 0.toByte
+  def stringToHex(src: String) = HEX.encode(src getBytes "UTF-8")
+  def mask(src: Bytes) = for (byte <- src take 28) yield if (byte > 0) 1.toByte else 0.toByte
 
   // Second 0 means "Bitcoin" according to BIP44
   // Deriving /M/nH/0H/<arbitrary depth> deterministic keys
@@ -35,9 +34,16 @@ object Tools { me =>
     Sha256Hash hash prefix.toByte +: mult.getXCoord.toBigInteger.toByteArray.takeRight(32)
   }
 
+  // Bloom filter for incoming Requests and Responses
+  def mkBloom(ephemeralMasks: Seq[Bytes], identityMask: Bytes) = {
+    val bloomFilter = new BloomFilter(ephemeralMasks.size + 1, 0.000001, rand.nextInt)
+    for (mask <- identityMask +: ephemeralMasks) bloomFilter insert mask
+    HEX encode bloomFilter.bitcoinSerialize
+  }
+
   // Fix signature size
   def fixSize(raw: Bytes): Bytes = raw.length match {
-    case s if s < 32 => Array.fill(32 - s)(0: Byte) ++ raw
+    case s if s < 32 => Array.fill(32 - s)(0.toByte) ++ raw
     case s if s > 32 => raw takeRight 32
     case _ => raw
   }

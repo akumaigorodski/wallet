@@ -43,10 +43,13 @@ import Context.INPUT_METHOD_SERVICE
 
 
 object Utils { me =>
+  type Bytes = Array[Byte]
   type TryCoin = Try[Coin]
   type Rates = Map[String, Double]
   type Pays = mutable.Buffer[PayData]
   type Outputs = mutable.Buffer[TransactionOutput]
+
+  // Cannot have lazy var so use this construct
   var startupAppReference: WalletApp = null
   lazy val app = startupAppReference
 

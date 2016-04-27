@@ -1,6 +1,6 @@
 package com.btcontract.wallet.lightning.crypto
 
-import com.btcontract.wallet.lightning.Tools.Bytes
+import com.btcontract.wallet.Utils.Bytes
 import org.bitcoinj.core.Sha256Hash
 
 

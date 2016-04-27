@@ -10,7 +10,7 @@ extends Iterable[Cursor]
 {
   def iterator = new Iterator[Cursor] {
     def hasNext = c.getPosition < c.getCount - 1
-    def next = runAnd(c) { c.moveToNext }
+    def next = runAnd(res = c) { c.moveToNext }
   }
 
   def closeAfter[T](body: RichCursor => T) = try body(this) finally c.close

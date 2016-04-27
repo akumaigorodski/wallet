@@ -60,6 +60,9 @@ class WalletApp extends Application {
   // Tor related
   def hasOrbot = OrbotHelper isOrbotInstalled this
   def orbotOnline = OrbotHelper isOrbotRunning this
+  def orbotAllowed = prefs.getBoolean(AbstractKit.USE_ORBOT, false)
+  def orbotStart(act: android.app.Activity) = OrbotHelper requestShowOrbotStart act
+  def setOrbotAllowed(mode: Boolean) = prefs.edit.putBoolean(AbstractKit.USE_ORBOT, mode).commit
 
   // Startup actions
   override def onCreate = Utils.wrap(super.onCreate) {

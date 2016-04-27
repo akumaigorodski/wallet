@@ -108,9 +108,9 @@
     <orderEntry type="library" exported="" name="pg-1.54.0.0" level="project" />
     <orderEntry type="library" exported="" name="rxjava-1.1.0" level="project" />
     <orderEntry type="library" exported="" name="prov-1.54.0.0" level="project" />
-    <orderEntry type="library" exported="" name="nv-websocket-client-1.25" level="project" />
     <orderEntry type="library" exported="" name="pkix-1.54.0.0" level="project" />
     <orderEntry type="library" exported="" name="scrypt-1.4.0" level="project" />
+    <orderEntry type="library" exported="" name="nv-websocket-client-1.25" level="project" />
     <orderEntry type="library" exported="" name="scala-library-2.11.7" level="project" />
     <orderEntry type="library" exported="" name="protobuf-java-2.5.0" level="project" />
     <orderEntry type="library" exported="" name="android-segmented-1.0.5" level="project" />

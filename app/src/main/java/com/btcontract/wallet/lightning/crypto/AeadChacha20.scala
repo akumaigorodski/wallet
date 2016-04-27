@@ -4,7 +4,7 @@ import com.btcontract.wallet.lightning.{JavaTools => jt}
 import org.spongycastle.crypto.params.ParametersWithIV
 import org.spongycastle.crypto.engines.ChaChaEngine
 import org.spongycastle.crypto.params.KeyParameter
-import com.btcontract.wallet.lightning.Tools.Bytes
+import com.btcontract.wallet.Utils.Bytes
 
 
 class AeadChacha20(key: Bytes, nonce: Bytes) { me =>
@@ -36,7 +36,7 @@ class AeadChacha20(key: Bytes, nonce: Bytes) { me =>
     val macCheck = jt.concat(aad, jt writeUInt64 aad.length,
       cipher, jt writeUInt64 cipher.length)
 
-    assert(me mkPoly macCheck sameElements mac, "Invalid MAC")
+    assert(me mkPoly macCheck sameElements mac, Poly3105.INVALID_MAC)
     chacha20Run(cipher, encrypt = false, skip = true)
   }
 }

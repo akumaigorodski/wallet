@@ -1,11 +1,9 @@
-package com.btcontract.wallet.lightning.crypto
+package com.btcontract.wallet.lightning.thundercloud
 
-import com.btcontract.wallet.Utils.rand
 import org.spongycastle.math.ec.ECPoint
-import org.bitcoinj.core.Utils.HEX
+import com.btcontract.wallet.Utils.rand
 import org.bitcoinj.core.ECKey
 import java.math.BigInteger
-import spray.json._
 
 
 // As seen on http://arxiv.org/pdf/1304.2094.pdf
@@ -26,25 +24,9 @@ class ECBlind(signerQ: ECPoint, signerR: ECPoint) {
   }
 }
 
+// We blind messages but unblind their signatures
 case class BlindParams(key: ECPoint, a: BigInteger, b: BigInteger, c: BigInteger, bInv: BigInteger) {
   def blind(msg: BigInteger) = b.multiply(keyBigInt mod ECKey.CURVE.getN).multiply(msg).add(a) mod ECKey.CURVE.getN
-  def unblind(msgHat: BigInteger) = bInv.multiply(msgHat).add(c) mod ECKey.CURVE.getN
+  def unblind(sigHat: BigInteger) = bInv.multiply(sigHat).add(c) mod ECKey.CURVE.getN
   def keyBigInt = key.getAffineXCoord.toBigInteger
-}
-
-// Turning BlindParams into JSON
-object BlindParamsProtocol extends DefaultJsonProtocol { me =>
-  implicit object BigIntegerFormat extends JsonFormat[BigInteger] {
-    def write(bigInteger: BigInteger) = JsString apply bigInteger.toString
-    def read(json: JsValue) = new BigInteger(me jsonToString json)
-  }
-
-  implicit object ECPointJson extends JsonFormat[ECPoint] {
-    def write(point: ECPoint) = JsString apply HEX.encode(point getEncoded true)
-    def read(json: JsValue) = ECKey.CURVE.getCurve decodePoint HEX.decode(me jsonToString json)
-  }
-
-  def jsonToString(json: JsValue) = json.convertTo[String]
-  implicit val blockchainFmt = jsonFormat[ECPoint, BigInteger, BigInteger,
-    BigInteger, BigInteger, BlindParams](BlindParams, "key", "a", "b", "c", "bInv")
 }

@@ -3,19 +3,25 @@ package com.btcontract.wallet.helper
 import com.neovisionaries.ws.client.{WebSocketFrame, WebSocketAdapter}
 import com.neovisionaries.ws.client.{WebSocket, WebSocketFactory}
 import rx.lang.scala.{Observable => Obs, Subscription}
-import com.btcontract.wallet.lightning.Tools.Bytes
+import com.btcontract.wallet.Utils.app
 
 
 object Websocket {
   type Header = java.util.List[String]
   type SocketHeaders = java.util.Map[String, Header]
-  val factory = new WebSocketFactory setConnectionTimeout 15000
   var currentSocket = Option.empty[WebSocket]
 
-  def init(run: => Unit, uri: String) = Obs.create[Bytes] { obs =>
+  def factory = {
+    val useTor = app.orbotAllowed && app.orbotOnline
+    val fac = new WebSocketFactory setConnectionTimeout 15000
+    if (useTor) fac.getProxySettings setHost "127.0.0.1" setPort 8118
+    fac
+  }
+
+  def init(run: => Unit, uri: String) = Obs.create[String] { obs =>
     val sock = factory createSocket uri addListener new WebSocketAdapter {
       override def onConnected(ws: WebSocket, sockHeaders: SocketHeaders) = run
-      override def onBinaryMessage(ws: WebSocket, msg: Bytes) = obs onNext msg
+      override def onTextMessage(ws: WebSocket, msg: String) = obs onNext msg
       override def onDisconnected(ws: WebSocket, sf: WebSocketFrame,
         mf: WebSocketFrame, byServ: Boolean) = obs.onCompleted
     }

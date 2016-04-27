@@ -5,6 +5,7 @@ public class Poly3105 {
     final int CRYPTO_BYTES = 16;
     final int CRYPTO_KEYBYTES = 32;
 
+    static public final String INVALID_MAC = "Invalid MAC";
     static final int[] minusp = {5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 252};
 
     static void add(int[] h, int[] c)

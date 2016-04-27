@@ -3,7 +3,7 @@ package com.btcontract.wallet.helper
 import scala.util.{Try, Success}
 import rx.lang.scala.{Scheduler, Observable => Obs}
 import scala.concurrent.duration.{Duration, DurationInt}
-import com.btcontract.wallet.Utils.{Rates, rand, nullFail}
+import com.btcontract.wallet.Utils.{Rates, nullFail, rand, app}
 import com.btcontract.wallet.Utils.{strDollar, strEuro, strYuan}
 import com.github.kevinsawicki.http.HttpRequest
 import rx.lang.scala.schedulers.IOScheduler
@@ -19,6 +19,7 @@ object JsonHttpUtils {
   def pickInc(err: Throwable, next: Int) = next.second
   def obsOn[T](provider: => T, scheduler: Scheduler) = Obs.just(null).subscribeOn(scheduler).map(_ => provider)
   def retry[T](obs: Obs[T], pick: Selector, times: Range) = obs.retryWhen(_.zipWith(Obs from times)(pick) flatMap Obs.timer)
+  def withTor(http: HttpRequest) = if (app.orbotAllowed && app.orbotOnline) http.useProxy("127.0.0.1", 8118) else http
 
   def to[T : JsonFormat](raw: String) = raw.parseJson.convertTo[T]
   val post = HttpRequest.post(_: String, true) connectTimeout 15000
@@ -65,9 +66,9 @@ object Fee { me =>
   var rate = Coin valueOf 15000L
   val default = Coin valueOf 10000L
 
-  implicit val cypherFeeFmt = jsonFormat[Long, CypherFee](CypherFee.apply, "low_fee_per_kb")
-  implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee.apply, "12")
-  implicit val bitgoFeeFmt = jsonFormat[Long, BitgoFee](BitgoFee.apply, "feePerKb")
+  implicit val cypherFeeFmt = jsonFormat[Long, CypherFee](CypherFee, "low_fee_per_kb")
+  implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee, "12")
+  implicit val bitgoFeeFmt = jsonFormat[Long, BitgoFee](BitgoFee, "feePerKb")
 
   def reloadData = rand nextInt 3 match {
     case 0 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=12").body)
@@ -93,7 +94,7 @@ object Insight {
   }
 
   type TxList = List[Tx]
-  implicit val txFmt = jsonFormat[String, Tx](Tx.apply, "txid")
+  implicit val txFmt = jsonFormat[String, Tx](Tx, "txid")
   def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs?from=0&to=50").parseJson
     .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), (_, _) => 1.second, 1 to 5)
 }
