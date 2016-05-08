@@ -1,14 +1,14 @@
 package com.btcontract.wallet
 
 import android.text.method.LinkMovementMethod
-import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.store.SPVBlockStore
 import android.text.TextUtils
 import android.os.Bundle
 import android.view.View
 
 import android.widget.{EditText, Button, TextView, LinearLayout}
-import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}
+import org.bitcoinj.wallet.{DeterministicSeed, Wallet}
+import org.bitcoinj.core.{PeerGroup, BlockChain}
 import Utils.{wrap, app}
 import R.string._
 
@@ -42,8 +42,8 @@ class WalletCreateActivity extends TimerActivity with ViewSwitch { me =>
 
     createPass addTextChangedListener new TextChangedWatcher {
       override def onTextChanged(s: CharSequence, st: Int, n: Int, af: Int) = {
-        val buttonMessage = if (s.length >= 8) wallet_create else password_too_short
-        createWallet setEnabled s.length >= 8
+        val buttonMessage = if (s.length >= 6) wallet_create else password_too_short
+        createWallet setEnabled s.length >= 6
         createWallet setText buttonMessage
       }
     }

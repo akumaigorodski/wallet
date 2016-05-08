@@ -1,21 +1,23 @@
 package com.btcontract.wallet
 
 import Utils._
+import R.string._
 import android.widget._
 import org.bitcoinj.core._
-import com.btcontract.wallet.R.string._
+import org.bitcoinj.wallet.listeners._
 
 import android.view.{View, ViewGroup}
-import R.drawable.{dead, conf0, conf5}
+import R.drawable.{dead, await, conf1}
 import android.provider.Settings.{System => FontSystem}
+import org.bitcoinj.core.listeners.TransactionConfidenceEventListener
 import android.text.format.DateUtils.getRelativeTimeSpanString
 import android.widget.AbsListView.OnScrollListener
 import collection.JavaConversions.asScalaBuffer
-import listeners.WalletCoinEventListener
 import android.view.View.OnClickListener
 import android.app.AlertDialog.Builder
 import android.text.format.DateFormat
 import java.text.SimpleDateFormat
+import org.bitcoinj.wallet.Wallet
 import scala.collection.mutable
 import android.content.Intent
 import scala.util.Success
@@ -28,24 +30,26 @@ import OnScrollListener.SCROLL_STATE_IDLE
 
 
 class TxsActivity extends InfoActivity { me =>
-  def onFail(exc: Throwable): Unit = new Builder(me).setMessage(err_general).show
-  lazy private[this] val adapter = new TxsListAdapter(R.layout.frag_transaction_line)
-  lazy private[this] val all = getLayoutInflater.inflate(R.layout.frag_txs_all, null)
-  lazy private[this] val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
-  lazy private[this] val txsConfs = getResources getStringArray R.array.txs_confs
-  lazy private[this] val feeIncoming = getString(txs_fee_incoming)
-  lazy private[this] val feeDetails = getString(txs_fee_details)
-  lazy private[this] val feeAbsent = getString(txs_fee_absent)
+  def onFail(e: Throwable): Unit = new Builder(me).setMessage(err_general).show
+  lazy val adapter = new TxsListAdapter(R.layout.frag_transaction_line)
+  lazy val all = getLayoutInflater.inflate(R.layout.frag_txs_all, null)
+  lazy val list = findViewById(R.id.itemsList).asInstanceOf[ListView]
+  lazy val txsConfs = getResources getStringArray R.array.txs_confs
+  lazy val feeIncoming = getString(txs_fee_incoming)
+  lazy val feeDetails = getString(txs_fee_details)
+  lazy val feeAbsent = getString(txs_fee_absent)
 
-  val transactionsTracker = new MyWalletChangeListener with WalletCoinEventListener {
+  private[this] val transactionsTracker = new WalletChangeEventListener with WalletReorganizeEventListener
+    with TransactionConfidenceEventListener with WalletCoinsReceivedEventListener with WalletCoinsSentEventListener {
     def onTransactionConfidenceChanged(w: Wallet, tx: Transaction) = if (tx.getConfidence.getDepthInBlocks < 2) onReorganize(w)
     def onCoinsReceived(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb) me runOnUiThread tell(tx)
     def onCoinsSent(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = me runOnUiThread tell(tx)
-    override def onReorganize(w: Wallet) = me runOnUiThread adapter.notifyDataSetChanged
+    def onReorganize(w: Wallet) = me runOnUiThread adapter.notifyDataSetChanged
+    def onWalletChanged(w: Wallet) = none
   }
 
   // Relative or absolute date
-  var time: java.util.Date => String = null
+  private[this] var time: java.util.Date => String = null
   def when(now: Long, dat: java.util.Date) = dat.getTime match { case ago =>
     if (now - ago < 129600000) getRelativeTimeSpanString(ago, now, 0).toString else time(dat)
   }
@@ -93,9 +97,9 @@ class TxsActivity extends InfoActivity { me =>
         val hash = txPlus.tx.getHash.toString
 
         // Compute required variables
-        val totalSum = s"${txPlus.human}<br><small>${me time txPlus.tx.getUpdateTime}</small>"
-        val pays = getPays(txPlus.tx.getOutputs, mutable.Buffer.empty, txPlus.value.isPositive)
+        val totalSum = s"${txPlus.humanValue}<br><small>${me time txPlus.tx.getUpdateTime}</small>"
         val site = new Intent(Intent.ACTION_VIEW, Uri parse s"https://blockexplorer.com/tx/$hash")
+        val pays = getPays(txPlus.tx.getOutputs, mutable.Buffer.empty, txPlus.value.isPositive)
         val txt = for (payment <- pays) yield Html.fromHtml(payment pretty txPlus.route)
 
         // Wire everything up
@@ -109,8 +113,10 @@ class TxsActivity extends InfoActivity { me =>
 
       // Wait for transactions list
       <(app.kit.wallet.getTransactionsByTime, onFail) { result =>
-        app.kit.wallet addChangeEventListener transactionsTracker
-        app.kit.wallet addCoinEventListener transactionsTracker
+        app.kit.wallet addReorganizeEventListener transactionsTracker
+        app.kit.wallet addTransactionConfidenceEventListener transactionsTracker
+        app.kit.wallet addCoinsReceivedEventListener transactionsTracker
+        app.kit.wallet addCoinsSentEventListener transactionsTracker
 
         // Show limited txs list
         val range = scala.math.min(linesNum, result.size)
@@ -128,20 +134,29 @@ class TxsActivity extends InfoActivity { me =>
         var state = SCROLL_STATE_IDLE
       }
 
-      // Wire up listeners
-      app.kit.peerGroup addDataEventListener new CatchTracker
-      app.kit.peerGroup addConnectionEventListener constListener
-      app.kit.wallet addChangeEventListener tracker
-      app.kit.wallet addCoinEventListener tracker
+      // Wire up general listeners
+      app.kit.wallet addTransactionConfidenceEventListener tracker
+      app.kit.wallet addCoinsReceivedEventListener tracker
+      app.kit.wallet addCoinsSentEventListener tracker
+
+      app.kit.peerGroup addBlocksDownloadedEventListener new CatchTracker
+      app.kit.peerGroup addDisconnectedEventListener constListener
+      app.kit.peerGroup addConnectedEventListener constListener
     } else me exitTo classOf[MainActivity]
   }
 
   override def onDestroy = wrap(super.onDestroy) {
-    app.kit.peerGroup removeConnectionEventListener constListener
-    app.kit.wallet removeChangeEventListener transactionsTracker
-    app.kit.wallet removeCoinEventListener transactionsTracker
-    app.kit.wallet removeChangeEventListener tracker
-    app.kit.wallet removeCoinEventListener tracker
+    app.kit.wallet removeReorganizeEventListener transactionsTracker
+    app.kit.wallet removeTransactionConfidenceEventListener transactionsTracker
+    app.kit.wallet removeCoinsReceivedEventListener transactionsTracker
+    app.kit.wallet removeCoinsSentEventListener transactionsTracker
+
+    app.kit.wallet removeTransactionConfidenceEventListener tracker
+    app.kit.wallet removeCoinsReceivedEventListener tracker
+    app.kit.wallet removeCoinsSentEventListener tracker
+
+    app.kit.peerGroup removeDisconnectedEventListener constListener
+    app.kit.peerGroup removeConnectedEventListener constListener
   }
 
   def showAll(v: View) = {
@@ -176,11 +191,14 @@ class TxsActivity extends InfoActivity { me =>
   class TxPlus(val tx: Transaction) {
     lazy val value = tx getValue app.kit.wallet
     def confs = app.plurOrZero(txsConfs, tx.getConfidence.getDepthInBlocks)
-    def detail(fee: Coin) = feeDetails.format(btc(value multiply -1 subtract fee), btc(fee), confs)
-    def computeFee = Option(tx.getFee).filter(_.isPositive) map detail getOrElse feeAbsent.format(confs)
-    def status = if (value.isPositive) feeIncoming.format(confs) else computeFee
     def route = if (value.isPositive) sumIn else sumOut
-    def human = route format btc(value)
+    def humanValue = route format btc(value)
+
+    def status = if (value.isPositive) feeIncoming format confs else {
+      val positiveHumanFee = Option(tx.getFee).filter(_.isPositive) map btc
+      val out = for (fee <- positiveHumanFee) yield feeDetails.format(fee, confs)
+      out getOrElse feeAbsent.format(confs)
+    }
   }
 
   class TxViewHolder(view: View) {
@@ -193,8 +211,8 @@ class TxsActivity extends InfoActivity { me =>
       val isConf = transaction.getConfidence.getDepthInBlocks > 0
       val isDead = transaction.getConfidence.getConfidenceType == DEAD
       val time = Html fromHtml when(System.currentTimeMillis, transaction.getUpdateTime)
-      transactCircle setImageResource { if (isDead) dead else if (isConf) conf5 else conf0 }
-      transactSum setText Html.fromHtml(new TxPlus(transaction).human)
+      transactCircle setImageResource { if (isDead) dead else if (isConf) conf1 else await }
+      transactSum setText Html.fromHtml(new TxPlus(transaction).humanValue)
       transactWhen setText time
     }
   }

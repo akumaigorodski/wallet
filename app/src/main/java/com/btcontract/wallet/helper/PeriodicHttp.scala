@@ -3,6 +3,8 @@ package com.btcontract.wallet.helper
 import scala.util.{Try, Success}
 import rx.lang.scala.{Scheduler, Observable => Obs}
 import scala.concurrent.duration.{Duration, DurationInt}
+import com.btcontract.wallet.Utils.{Rates, nullFail, rand, app}
+import com.btcontract.wallet.Utils.{strDollar, strEuro, strYuan}
 import com.github.kevinsawicki.http.HttpRequest
 import rx.lang.scala.schedulers.IOScheduler
 import org.bitcoinj.core.Coin
@@ -10,7 +12,6 @@ import org.bitcoinj.core.Coin
 import spray.json._
 import JsonHttpUtils._
 import DefaultJsonProtocol._
-import com.btcontract.wallet.Utils._
 
 
 object JsonHttpUtils {
@@ -18,6 +19,7 @@ object JsonHttpUtils {
   def pickInc(err: Throwable, next: Int) = next.second
   def obsOn[T](provider: => T, scheduler: Scheduler) = Obs.just(null).subscribeOn(scheduler).map(_ => provider)
   def retry[T](obs: Obs[T], pick: Selector, times: Range) = obs.retryWhen(_.zipWith(Obs from times)(pick) flatMap Obs.timer)
+  def withTor(http: HttpRequest) = if (app.orbotAllowed && app.orbotOnline) http.useProxy("127.0.0.1", 8118) else http
 
   def to[T : JsonFormat](raw: String) = raw.parseJson.convertTo[T]
   val post = HttpRequest.post(_: String, true) connectTimeout 15000
@@ -61,16 +63,17 @@ case class Blockchain(usd: ChainRate, eur: ChainRate, cny: ChainRate) extends Ra
 case class Bitaverage(usd: AvgRate, eur: AvgRate, cny: AvgRate) extends RateProvider
 
 object Fee { me =>
-  var rate = Coin valueOf 15000L
+  var rate = Coin valueOf 25000L
   val default = Coin valueOf 10000L
 
-  implicit val cypherFeeFmt = jsonFormat[Long, CypherFee](CypherFee.apply, "low_fee_per_kb")
-  implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee.apply, "12")
-  implicit val bitgoFeeFmt = jsonFormat[Long, BitgoFee](BitgoFee.apply, "feePerKb")
+  implicit val cypherFeeFmt = jsonFormat[Long, CypherFee](CypherFee, "medium_fee_per_kb")
+  implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee, "3")
+  implicit val bitgoFeeFmt = jsonFormat[Long, BitgoFee](BitgoFee, "feePerKb")
 
-  def reloadData = rand nextInt 3 match {
-    case 0 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=12").body)
-    case 1 => to[BitgoFee](get("https://www.bitgo.com/api/v1/tx/fee?numBlocks=12").body)
+  def reloadData = rand nextInt 4 match {
+    case 0 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=3").body)
+    case 1 => to[InsightFee](get("http://bitlox.io/api/utils/estimatefee?nbBlocks=3").body)
+    case 2 => to[BitgoFee](get("https://www.bitgo.com/api/v1/tx/fee?numBlocks=3").body)
     case _ => to[CypherFee](get("http://api.blockcypher.com/v1/btc/main").body)
   }
 
@@ -81,5 +84,21 @@ object Fee { me =>
 // Fee rates providers
 trait FeeProvider { def fee: Long }
 case class BitgoFee(feePerKb: Long) extends FeeProvider { def fee = feePerKb }
-case class CypherFee(low_fee_per_kb: Long) extends FeeProvider { def fee = low_fee_per_kb }
-case class InsightFee(f12: BigDecimal) extends FeeProvider { def fee = (f12 * 100000000).toLong }
+case class CypherFee(medium_fee_per_kb: Long) extends FeeProvider { def fee = medium_fee_per_kb }
+case class InsightFee(f3: BigDecimal) extends FeeProvider { def fee = (f3 * 100000000L).toLong }
+
+object Insight {
+  def reloadData(suffix: String) = rand nextInt 3 match {
+    case 0 => get(s"https://insight.bitpay.com/api/$suffix").body
+    case 1 => get(s"https://blockexplorer.com/api/$suffix").body
+    case _ => get(s"https://bitlox.io/api/$suffix").body
+  }
+
+  type TxList = List[Tx]
+  implicit val txFmt = jsonFormat[String, Tx](Tx, "txid")
+  def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs?from=0&to=50").parseJson
+    .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 3)
+}
+
+// Insight API formats
+case class Tx(txid: String)

@@ -2,11 +2,15 @@ package com.btcontract.wallet
 
 import R.string._
 import android.widget._
+
 import Utils.{wrap, app}
 import scala.util.{Success, Try}
-import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}
+import org.bitcoinj.core.{PeerGroup, BlockChain}
+import com.btcontract.wallet.helper.{FiatRates, Fee}
+
+import org.bitcoinj.wallet.Wallet
+import org.bitcoinj.wallet.WalletProtobufSerializer
 import concurrent.ExecutionContext.Implicits.global
-import org.bitcoinj.store.WalletProtobufSerializer
 import android.text.method.LinkMovementMethod
 import android.view.View.OnClickListener
 import scala.concurrent.Future
@@ -23,10 +27,14 @@ trait ViewSwitch {
 }
 
 class MainActivity extends TimerActivity with ViewSwitch { me =>
-  def opts = mkChoiceDialog(next, finish, dialog_ok, dialog_cancel)
-  def errorWarn(code: Int): Unit = mkForm(opts setMessage code, null, null)
+  def errorWarn(code: Int): Unit = mkForm(mkChoiceDialog(next, finish,
+    dialog_ok, dialog_cancel) setMessage code, null, null)
+
+  // Saved settings data
   lazy val askPass = app.prefs.getBoolean(AbstractKit.PASSWORD_ASK_STARTUP, false)
   lazy val destructCode = app.prefs.getString(AbstractKit.DESTRUCT_CODE, null)
+
+  // Interface elements we'll need to interact with
   lazy val greet = findViewById(R.id.mainGreetings).asInstanceOf[TextView]
   lazy val passData = findViewById(R.id.passData).asInstanceOf[EditText]
   lazy val checkPass = findViewById(R.id.checkPass).asInstanceOf[Button]
@@ -41,12 +49,11 @@ class MainActivity extends TimerActivity with ViewSwitch { me =>
   {
     super.onCreate(savedState)
     setContentView(R.layout.activity_main)
-    // Allow read more link to be actually clicked
     greet setMovementMethod LinkMovementMethod.getInstance
 
     Try(getIntent.getDataString) match {
       case ok@Success(dataNotNull: String) =>
-        // Okay, we've got a real string, now try to convert it
+        // Okay, we've got some string, now try to convert it
         val attempt = ok.map(app.TransData.setValue).map(_ => next)
         // So we've indeed got a string, but it is not Bitcoin-related
         attempt.recover(app.TransData onFail errorWarn)
@@ -54,6 +61,10 @@ class MainActivity extends TimerActivity with ViewSwitch { me =>
       // Usual launch
       case _ => next
     }
+
+    // Periodic http
+    FiatRates.go
+    Fee.go
   }
 
   def next = app.walletFile.exists match {
@@ -80,7 +91,6 @@ class MainActivity extends TimerActivity with ViewSwitch { me =>
   val showLoadProgress: Future[Unit] => Unit = work => {
     app.prefs.edit.putBoolean(AbstractKit.PASSWORD_ASK_STARTUP, false).commit
     <<(work, _ => me errorWarn err_general)(_ => app.kit.startAsync)
-    setVis(View.VISIBLE, View.GONE, View.GONE)
   }
 
   def prepareWallet =

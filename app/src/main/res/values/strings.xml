@@ -9,9 +9,9 @@
     <string name="sets_destruct_ok">Destruction code has been set to «%1$s»</string>
     <string name="sets_rescan_ok">Application is about to be closed now and blockchain rescan will be triggered on next launch</string>
     <string name="greetings">Welcome to Simple Bitcoin Wallet!\nPlease read a <a href='https://btcontract.com'>wallet manual</a> first</string>
-    <string name="password_info">Without password you are in constant danger of losing your money. Please pick one which is at least 8 characters long</string>
-    <string name="fee_live"><![CDATA[<small>Priority fee %1$s<br><font color=#999999><small>Faster transaction confirmation</small></font></small>]]></string>
-    <string name="fee_default"><![CDATA[<small>Default fee %1$s<br><font color=#999999><small>Confirmation may take hours</small></font></small>]]></string>
+    <string name="password_info">Without password you are in constant danger of losing your money. Please pick one which is at least 6 characters long</string>
+    <string name="fee_live"><![CDATA[<small>%1$s fee per kB<br><font color=#999999><small>Faster transaction confirmation</small></font></small>]]></string>
+    <string name="fee_default"><![CDATA[<small>%1$s fee per kB<br><font color=#999999><small>Confirmation may take hours</small></font></small>]]></string>
     <string name="wallet_restore">Restore Wallet From Code</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="copy_to_clipboard">Copy to clipboard</string>
@@ -110,10 +110,10 @@
     <string name="restore_wallet">Restore Wallet</string>
     <string name="req_save">Share picture</string>
 
-    <!-- activity_txs -->
-    <string name="txs_fee_details"><![CDATA[%3$s<br><strong>%1$s</strong> payment<br><strong>%2$s</strong> fee]]></string>
     <string name="txs_fee_incoming"><![CDATA[%1$s<br><strong>Incoming transaction</strong>]]></string>
+    <string name="txs_fee_details"><![CDATA[%2$s<br>Fee is <strong>%1$s</strong>]]></string>
     <string name="txs_fee_absent"><![CDATA[%1$s<br><strong>No fee</strong>]]></string>
+
     <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_view_outside">View on BlockExplorer.com</string>

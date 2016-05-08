@@ -5,8 +5,6 @@ import R.string.{dialog_cancel, dialog_ok}
 import com.journeyapps.barcodescanner.BarcodeCallback
 import com.journeyapps.barcodescanner.BarcodeResult
 import com.journeyapps.barcodescanner.BarcodeView
-import org.bitcoinj.uri.BitcoinURI
-import org.bitcoinj.core.Address
 import android.widget.Toast
 import android.os.Bundle
 

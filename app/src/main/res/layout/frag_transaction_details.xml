@@ -2,8 +2,9 @@
     android:layout_height="fill_parent" android:layout_width="fill_parent">
 
     <TextView
-        style="@style/StdText" android:paddingTop="6dp" android:paddingLeft="10dp"
-        android:paddingRight="10dp" android:paddingBottom="10dp" android:id="@+id/confNumber"
+        style="@style/StdText" android:paddingTop="6dp"
+        android:paddingLeft="10dp" android:paddingRight="10dp"
+        android:paddingBottom="10dp" android:id="@+id/confNumber"
         android:background="#33CCCCCC" android:layout_width="match_parent"/>
 
     <Button

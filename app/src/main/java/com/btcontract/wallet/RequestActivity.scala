@@ -29,7 +29,7 @@ object QRGen {
   hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H)
   hints.put(EncodeHintType.MARGIN, 1)
 
-  def get(txt: String, size: Int) = {
+  def get(txt: String, size: Int): Bitmap = {
     val bitMatrix = writer.encode(txt, BarcodeFormat.QR_CODE, size, size, hints)
     val (wid, height) = (bitMatrix.getWidth, bitMatrix.getHeight)
     val pixels = new Array[Int](wid * height)
