@@ -113,7 +113,7 @@
 
     <!-- activity_txs -->
     <string name="txs_fee_incoming"><![CDATA[%1$s<br><strong>Входящая транзакция</strong>]]></string>
-    <string name="txs_fee_details"><![CDATA[%2$s<br>Комиссия <strong>%1$s</strong>]]></string>
+    <string name="txs_fee_details"><![CDATA[%2$s<br><strong>%1$s</strong> комиссия]]></string>
     <string name="txs_fee_absent"><![CDATA[%1$s<br><strong>Без комиссии</strong>]]></string>
 
     <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>

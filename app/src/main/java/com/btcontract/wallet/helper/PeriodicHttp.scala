@@ -5,6 +5,7 @@ import rx.lang.scala.{Scheduler, Observable => Obs}
 import scala.concurrent.duration.{Duration, DurationInt}
 import com.btcontract.wallet.Utils.{Rates, nullFail, rand, app}
 import com.btcontract.wallet.Utils.{strDollar, strEuro, strYuan}
+
 import com.github.kevinsawicki.http.HttpRequest
 import rx.lang.scala.schedulers.IOScheduler
 import org.bitcoinj.core.Coin
