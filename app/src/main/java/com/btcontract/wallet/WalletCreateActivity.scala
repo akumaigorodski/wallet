@@ -1,14 +1,14 @@
 package com.btcontract.wallet
 
 import android.text.method.LinkMovementMethod
-import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.store.SPVBlockStore
 import android.text.TextUtils
 import android.os.Bundle
 import android.view.View
 
 import android.widget.{EditText, Button, TextView, LinearLayout}
-import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}
+import org.bitcoinj.wallet.{DeterministicSeed, Wallet}
+import org.bitcoinj.core.{PeerGroup, BlockChain}
 import Utils.{wrap, app}
 import R.string._
 

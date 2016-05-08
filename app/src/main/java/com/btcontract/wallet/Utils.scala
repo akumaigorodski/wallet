@@ -1,8 +1,9 @@
 package com.btcontract.wallet
 
-import concurrent.ExecutionContext.Implicits.global
-import info.hoang8f.android.segmented.SegmentedGroup
+import org.bitcoinj.core.listeners._
 import android.widget.RadioGroup.OnCheckedChangeListener
+import info.hoang8f.android.segmented.SegmentedGroup
+import concurrent.ExecutionContext.Implicits.global
 import android.view.inputmethod.InputMethodManager
 import org.bitcoinj.crypto.KeyCrypterException
 import android.view.View.OnClickListener
@@ -10,30 +11,29 @@ import org.bitcoinj.store.SPVBlockStore
 import android.app.AlertDialog.Builder
 import android.util.DisplayMetrics
 import org.bitcoinj.uri.BitcoinURI
-import org.bitcoinj.script.Script
 import scala.collection.mutable
 import scala.concurrent.Future
 import android.net.Uri
 
-import android.text.method.{LinkMovementMethod, DigitsKeyListener}
+import org.bitcoinj.wallet.{SendRequest, Wallet}
+import org.bitcoinj.wallet.Wallet.{ExceededMaxTransactionSize, CouldNotAdjustDownwards}
+import org.bitcoinj.wallet.listeners.{WalletChangeEventListener, WalletCoinsReceivedEventListener, WalletCoinsSentEventListener}
+
 import R.id.{amtInSat, amtInBtc, amtInBit, typeUSD, typeEUR, typeCNY}
 import com.btcontract.wallet.helper.{RandomGenerator, Fee, FiatRates}
-import org.bitcoinj.core.Wallet.{ExceededMaxTransactionSize => TxTooLarge}
-import org.bitcoinj.core.Wallet.{CouldNotAdjustDownwards, SendRequest}
-import org.bitcoinj.core.{InsufficientMoneyException => NoFunds}
+import android.text.method.{LinkMovementMethod, DigitsKeyListener}
 import android.content.{DialogInterface, Context, Intent}
 import java.text.{DecimalFormatSymbols, DecimalFormat}
 import java.util.{Locale, Timer, TimerTask}
 import scala.util.{Failure, Success, Try}
 import android.app.{Dialog, Activity}
 
-import org.bitcoinj.core.listeners._
-import com.btcontract.wallet.Utils._
-import org.bitcoinj.core._
-import android.widget._
-import android.view._
-import android.text._
+import Utils._
 import R.string._
+import android.text._
+import android.view._
+import android.widget._
+import org.bitcoinj.core._
 
 import DialogInterface.BUTTON_POSITIVE
 import ViewGroup.LayoutParams.WRAP_CONTENT
@@ -92,7 +92,7 @@ object Utils { me =>
 
   // Fiat rates related functions, all transform a Try monad
   def currentFiatName = app.prefs.getString(AbstractKit.CURRENCY, "dollar")
-  def currentRate = FiatRates.rates.map(_ apply currentFiatName)
+  def currentRate = for (rates <- FiatRates.rates) yield rates(currentFiatName)
 
   // Iff we have rates and amount then fiat price
   def inFiat(tc: TryCoin) = currentRate flatMap { rt =>
@@ -108,22 +108,18 @@ object Utils { me =>
 
 // Info stack manager
 abstract class InfoActivity extends AnimatorActivity { me =>
-  val tracker = new MyWalletChangeListener with WalletCoinEventListener {
-    def onCoinsReceived(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb)
-      anim(me getString tx_received format btc(nb subtract pb), Informer.RECEIVED)
-
-    def onCoinsSent(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) =
-      anim(me getString tx_sent format btc(pb subtract nb), Informer.DECSEND)
-
-    def onTransactionConfidenceChanged(w: Wallet, tx: Transaction) =
-      if (tx.getConfidence.getDepthInBlocks == 1) anim(getString(tx_1st_conf), Informer.TXCONFIRMED)
+  val tracker = new WalletChangeEventListener with WalletCoinsReceivedEventListener with WalletCoinsSentEventListener with TransactionConfidenceEventListener {
+    def onCoinsReceived(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb) anim(me getString tx_received format btc(nb subtract pb), Informer.RECEIVED)
+    def onTransactionConfidenceChanged(w: Wallet, tx: Transaction) = if (tx.getConfidence.getDepthInBlocks == 1) anim(getString(tx_1st_conf), Informer.TXCONFIRMED)
+    def onCoinsSent(w: Wallet, tx: Transaction, pb: Coin, nb: Coin) = anim(me getString tx_sent format btc(pb subtract nb), Informer.DECSEND)
+    def onWalletChanged(w: Wallet) = none
   }
 
   // Peers listeners
   class CatchTracker extends MyPeerDataListener {
-    def onBlocksDownloaded(p: Peer, b: Block, fb: FilteredBlock, left: Int) = {
-      app.kit.peerGroup addDataEventListener new NextTracker(blocksNumberLeftOnStart = left)
-      app.kit.peerGroup removeDataEventListener this
+    def onBlocksDownloaded(peer: Peer, block: Block, fBlock: FilteredBlock, left: Int) = {
+      app.kit.peerGroup addBlocksDownloadedEventListener new NextTracker(blocksNumberLeftOnStart = left)
+      app.kit.peerGroup removeBlocksDownloadedEventListener this
     }
   }
 
@@ -131,7 +127,7 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     def onBlocksDownloaded(peer: Peer, block: Block, fBlock: FilteredBlock, left: Int) = {
       if (blocksNumberLeftOnStart > 144) update(howManyBlocksLeftInPlainText format left, Informer.SYNC)
       if (left < 1) add(getString(info_progress_done), Informer.SYNC).timer.schedule(me del Informer.SYNC, 5000)
-      if (left < 1) app.kit.peerGroup removeDataEventListener this
+      if (left < 1) app.kit.peerGroup removeBlocksDownloadedEventListener this
       if (left < 1) app.kit.wallet saveToFile app.walletFile
       runOnUiThread(ui)
     }
@@ -141,12 +137,10 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     if (blocksNumberLeftOnStart > 144) add(howManyBlocksLeftOnStart, Informer.SYNC)
   }
 
-  val constListener = new PeerConnectionEventListener {
-    def mkTxt = app.plurOrZero(peersInfoOpts, app.kit.peerGroup.numConnectedPeers)
+  val constListener = new PeerConnectedEventListener with PeerDisconnectedEventListener {
     def onPeerDisconnected(p: Peer, pc: Int) = me runOnUiThread update(mkTxt, Informer.PEERS).ui
     def onPeerConnected(p: Peer, pc: Int) = me runOnUiThread update(mkTxt, Informer.PEERS).ui
-    def onPeersDiscovered(pas: PeerAddresses) = none
-    type PeerAddresses = java.util.Set[PeerAddress]
+    def mkTxt = app.plurOrZero(peersInfoOpts, app.kit.peerGroup.numConnectedPeers)
   }
 
   lazy val peersInfoOpts = getResources getStringArray R.array.info_peers
@@ -159,9 +153,8 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     else if (m.getItemId == R.id.actionSettings) mkSetsForm
   }
 
-  override def onCreateOptionsMenu(menu: Menu) = {
+  override def onCreateOptionsMenu(menu: Menu) = runAnd(true) {
     getMenuInflater.inflate(R.menu.transactions_ops, menu)
-    true
   }
 
   override def onResume = {
@@ -177,12 +170,12 @@ abstract class InfoActivity extends AnimatorActivity { me =>
   }
 
   def doLockWalletRightNow = {
-    <(Thread sleep 250, none) { _ => me exitTo classOf[MainActivity] /* locked */ }
+    <(Thread sleep 200, none) { _ => me exitTo classOf[MainActivity] /* locked */ }
     app.prefs.edit.putBoolean(AbstractKit.PASSWORD_ASK_STARTUP, true).commit
     try app.kit.stopAsync catch none
   }
 
-  // Bottom bar reactions
+  // Top bar reactions
   def goQRScan(top: View) = me goTo classOf[ScanActivity]
   def goBuyBitcoin(top: View) = Uri parse s"https://localbitcoins.com/buy_bitcoins" match { case site =>
     val ask = mkChoiceDialog(me startActivity new Intent(Intent.ACTION_VIEW, site), none, dialog_ok, dialog_cancel)
@@ -204,7 +197,7 @@ abstract class InfoActivity extends AnimatorActivity { me =>
 
     val ok = alert getButton BUTTON_POSITIVE
     ok setOnClickListener new OnClickListener {
-      def onClick(recordDataView: View) = man.result match {
+      def onClick(proceed: View) = man.result match {
         case Failure(seemsAmountIsEmpty) => toast(dialog_sum_empty)
         case Success(cn) if Try(btcAddr).isFailure => toast(dialog_addr_wrong)
         case Success(cn) if cn isLessThan MIN_NONDUST_OUTPUT => toast(dialog_sum_dusty)
@@ -595,16 +588,16 @@ abstract class CompletePay(host: AnimatorActivity) {
     request.aesKey = app.kit.wallet.getKeyCrypter deriveKey secretField.getText.toString
 
     app.kit.wallet completeTx request
-    // Block until at leat one peer confirms it got our request
+    // Block until at least one peer confirms it got our request
     app.kit.peerGroup.broadcastTransaction(request.tx, 1).broadcast.get
   }
 
   def errorReact(exc: Throwable): Unit = exc match {
-    case e: CouldNotAdjustDownwards => onError(app getString err_empty_shrunk)
-    case e: NoFunds => onError(app getString err_low_funds format pay.tc.get)
-    case e: TxTooLarge => onError(app getString err_transaction_too_large)
-    case e: KeyCrypterException => onError(app getString err_pass)
-    case e: Throwable => onError(app getString err_general)
+    case _: InsufficientMoneyException => onError(app getString err_low_funds format pay.tc.get)
+    case _: ExceededMaxTransactionSize => onError(app getString err_transaction_too_large)
+    case _: CouldNotAdjustDownwards => onError(app getString err_empty_shrunk)
+    case _: KeyCrypterException => onError(app getString err_pass)
+    case _: Throwable => onError(app getString err_general)
   }
 
   def onError(errorMessage: String) = try {
@@ -616,17 +609,7 @@ abstract class CompletePay(host: AnimatorActivity) {
 
 abstract class TextChangedWatcher extends TextWatcher {
   override def beforeTextChanged(s: CharSequence, x: Int, y: Int, z: Int) = none
-  override def afterTextChanged(s: Editable) = none
-}
-
-trait MyWalletChangeListener extends WalletChangeEventListener {
-  def onScriptsChanged(wlt: Wallet, scs: Scripts, a: Boolean) = none
-  def onWalletChanged(affectedWallet: Wallet) = none
-  def onReorganize(wallet: Wallet) = none
-  def onKeysAdded(keys: Keys) = none
-
-  type Scripts = java.util.List[Script]
-  type Keys = java.util.List[ECKey]
+  override def afterTextChanged(editableCharSequence: Editable) = none
 }
 
 trait MyPeerDataListener extends PeerDataEventListener {

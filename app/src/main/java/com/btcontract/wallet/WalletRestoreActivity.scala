@@ -4,10 +4,12 @@ import android.os.Bundle
 import java.util.Calendar
 import org.bitcoinj.store.SPVBlockStore
 import android.widget.DatePicker.OnDateChangedListener
-import org.bitcoinj.wallet.{KeyChainGroup, DeterministicSeed}
-import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}
+
+import org.bitcoinj.wallet.{Wallet, KeyChainGroup, DeterministicSeed}
+import org.bitcoinj.core.{PeerGroup, BlockChain}
 import Utils.{wrap, app, none, runAnd}
 import android.view.{ViewGroup, View}
+
 import android.widget._
 import R.string._
 
@@ -29,12 +31,13 @@ extends DatePicker(host) with OnDateChangedListener { me =>
 
 class WalletRestoreActivity extends TimerActivity with ViewSwitch { me =>
   override def onBackPressed = wrap(super.onBackPressed)(app.kit.stopAsync)
-  private[this] lazy val datePicker = new WhenPicker(me, 1398902400L * 1000)
-  private[this] lazy val restoreWallet = findViewById(R.id.restoreWallet).asInstanceOf[Button]
-  private[this] lazy val restoreCode = findViewById(R.id.restoreCode).asInstanceOf[TextView]
-  private[this] lazy val restoreWhen = findViewById(R.id.restoreWhen).asInstanceOf[Button]
-  private[this] lazy val password = findViewById(R.id.restorePass).asInstanceOf[EditText]
-  private[this] lazy val spin = findViewById(R.id.restoreSpin).asInstanceOf[TextView]
+  lazy val restoreWallet = findViewById(R.id.restoreWallet).asInstanceOf[Button]
+  lazy val restoreCode = findViewById(R.id.restoreCode).asInstanceOf[TextView]
+  lazy val restoreWhen = findViewById(R.id.restoreWhen).asInstanceOf[Button]
+  lazy val password = findViewById(R.id.restorePass).asInstanceOf[EditText]
+  lazy val spin = findViewById(R.id.restoreSpin).asInstanceOf[TextView]
+  lazy val datePicker = new WhenPicker(me, 1398902400L * 1000)
+
   lazy val views = findViewById(R.id.restoreInfo).asInstanceOf[LinearLayout] ::
     findViewById(R.id.restoreProgress).asInstanceOf[LinearLayout] :: Nil
 

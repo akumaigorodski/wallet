@@ -9,8 +9,8 @@
     <string name="sets_destruct_ok">ディストラクション コードを «%1$s» に設定しました</string>
     <string name="sets_rescan_ok">アプリケーションを閉じます。次回起動時にブロックチェーンの再スキャンを起動します</string>
     <string name="greetings">単純なビットコイン財布\nまず <a href='https://btcontract.com'>ウォレット マニュアルをご覧ください</a></string>
-    <string name="fee_default"><![CDATA[<small>デフォルトの手数料%1$s<br><font color=#999999><small>時間がかかることがあります確認</small></font></small>]]></string>
-    <string name="fee_live"><![CDATA[<small>プライオリティ料 %1$s<br><font color=#999999><small>高速取引確認</small></font></small>]]></string>
+    <string name="fee_default"><![CDATA[<small>%1$s fee per kB<br><font color=#999999><small>時間がかかることがあります確認</small></font></small>]]></string>
+    <string name="fee_live"><![CDATA[<small>%1$s fee per kB<br><font color=#999999><small>高速取引確認</small></font></small>]]></string>
     <string name="password_info">パスワードがないと、お金を失う危険があります。少なくとも 6 文字の長さのものを選んでください</string>
     <string name="copied_to_clipboard">クリップボードにコピーしました</string>
     <string name="copy_to_clipboard">クリップボードにコピー</string>
@@ -110,9 +110,10 @@
     <string name="req_save">共有画像</string>
 
     <!-- activity_txs -->
-    <string name="txs_fee_details"><![CDATA[%3$s<br><strong>%1$s</strong>支払い<br><strong>%2$s</strong>料金]]></string>
     <string name="txs_fee_incoming"><![CDATA[%1$s<br><strong>着信トランザクション</strong>]]></string>
+    <string name="txs_fee_details"><![CDATA[%2$s<br>Fee is <strong>%1$s</strong>料金]]></string>
     <string name="txs_fee_absent"><![CDATA[%1$s<br><strong>No fee</strong>]]></string>
+
     <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_view_outside">BlockExplorer.com で表示</string>

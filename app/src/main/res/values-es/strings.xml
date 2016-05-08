@@ -10,8 +10,8 @@
     <string name="sets_rescan_ok">La aplicación se cerrará ahora y el reescaneo de la cadena de bloques se activará en el próximo reinicio</string>
     <string name="greetings">Bienvenido a Monedero Bitcoin!\nPor favor, lea el <a href='https://btcontract.com'>manual de monedero</a></string>
     <string name="password_info">Sin contraseña se expone de manera constante a perder su dinero. Por favor, elija una que tenga al menos 6 caracteres.</string>
-    <string name="fee_default"><![CDATA[<small>Default fee %1$s<br><font color=#999999><small>Puede tomar un tiempo</small></font></small>]]></string>
-    <string name="fee_live"><![CDATA[<small>Priority fee %1$s<br><font color=#999999><small>Confirmación rápida</small></font></small>]]></string>
+    <string name="fee_default"><![CDATA[<small>%1$s cuota por kB<br><font color=#999999><small>Puede tomar un tiempo</small></font></small>]]></string>
+    <string name="fee_live"><![CDATA[<small>%1$s cuota por kB<br><font color=#999999><small>Confirmación rápida</small></font></small>]]></string>
     <string name="wallet_restore">Restaurar monedero a partir del código</string>
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
     <string name="copy_to_clipboard">Copiar al portapapeles</string>
@@ -111,9 +111,10 @@
     <string name="req_save">Compartir foto</string>
 
     <!-- activity_txs -->
-    <string name="txs_fee_details"><![CDATA[%3$s<br><strong>%1$s</strong> pago<br><strong>%2$s</strong> cuota]]></string>
     <string name="txs_fee_incoming"><![CDATA[%1$s<br><strong>Transacción de entrada</strong>]]></string>
+    <string name="txs_fee_details"><![CDATA[%2$s<br>Cuota es de <strong>%1$s</strong>]]></string>
     <string name="txs_fee_absent"><![CDATA[%1$s<br><strong>No hay cuota</strong>]]></string>
+
     <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_view_outside">Ver en BlockExplorer.com</string>

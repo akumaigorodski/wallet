@@ -2,12 +2,15 @@ package com.btcontract.wallet
 
 import R.string._
 import android.widget._
+
 import Utils.{wrap, app}
 import scala.util.{Success, Try}
+import org.bitcoinj.core.{PeerGroup, BlockChain}
 import com.btcontract.wallet.helper.{FiatRates, Fee}
-import org.bitcoinj.core.{PeerGroup, BlockChain, Wallet}
+
+import org.bitcoinj.wallet.Wallet
+import org.bitcoinj.wallet.WalletProtobufSerializer
 import concurrent.ExecutionContext.Implicits.global
-import org.bitcoinj.store.WalletProtobufSerializer
 import android.text.method.LinkMovementMethod
 import android.view.View.OnClickListener
 import scala.concurrent.Future

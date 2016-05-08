@@ -1,25 +1,27 @@
 package com.btcontract.wallet
 
+import Utils._
 import R.string._
 import org.bitcoinj.core._
-import com.btcontract.wallet.Utils._
-import org.bitcoinj.core.listeners.WalletCoinEventListener
+
+import org.bitcoinj.core.listeners.TransactionConfidenceEventListener
 import info.guardianproject.netcipher.proxy.OrbotHelper
 import collection.JavaConverters.asScalaBufferConverter
 import com.google.common.util.concurrent.Service.State
 import org.bitcoinj.net.discovery.DnsDiscovery
 import org.bitcoinj.wallet.KeyChain.KeyPurpose
-import org.bitcoinj.core.Wallet.BalanceType
+import org.bitcoinj.wallet.Wallet.BalanceType
 import org.bitcoinj.crypto.KeyCrypterScrypt
 import com.google.protobuf.ByteString
-import org.bitcoinj.wallet.Protos
 import android.app.Application
 import android.widget.Toast
 import java.io.File
 
+import org.bitcoinj.wallet.listeners.{WalletChangeEventListener, WalletCoinsSentEventListener, WalletCoinsReceivedEventListener}
 import org.bitcoinj.uri.{BitcoinURIParseException, OptionalFieldValidationException}
 import org.bitcoinj.uri.{RequiredFieldValidationException, BitcoinURI}
 import android.content.{ClipData, ClipboardManager, Context}
+import org.bitcoinj.wallet.{Wallet, Protos}
 import State.{STARTING, RUNNING}
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
@@ -28,7 +30,7 @@ import Context.CLIPBOARD_SERVICE
 
 class WalletApp extends Application {
   lazy val prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
-  lazy val params = org.bitcoinj.params.TestNet3Params.get
+  lazy val params = org.bitcoinj.params.MainNetParams.get
   var walletFile, chainFile: java.io.File = null
   var kit: WalletKit = null
 
@@ -105,17 +107,18 @@ class WalletApp extends Application {
     }
 
     def useCheckPoints(time: Long) = {
-      val pts = getAssets open "checkpoints-testnet.txt"
+      val pts = getAssets open "checkpoints.txt"
       CheckpointManager.checkpoint(params, pts, store, time)
     }
 
     def setupAndStartDownload = {
-      wallet addCoinEventListener Vibr.listener
-      wallet addChangeEventListener Vibr.listener
       wallet.allowSpendingUnconfirmedTransactions
+      wallet addCoinsSentEventListener Vibr.generalTracker
+      wallet addCoinsReceivedEventListener Vibr.generalTracker
+      wallet addTransactionConfidenceEventListener Vibr.generalTracker
       peerGroup addPeerDiscovery new DnsDiscovery(params)
-      peerGroup.setUserAgent(Utils.appName, "1.06")
-      peerGroup setDownloadTxDependencies false
+      peerGroup.setUserAgent(Utils.appName, "1.07")
+      peerGroup setDownloadTxDependencies 0
       peerGroup setPingIntervalMsec 10000
       peerGroup setMaxConnections 10
       peerGroup addWallet wallet
@@ -132,9 +135,11 @@ object Vibr {
   val processed = Array(0L, 85, 200)
   type Pattern = Array[Long]
 
-  val listener = new WalletCoinEventListener with MyWalletChangeListener {
+  val generalTracker = new WalletChangeEventListener with
+    TransactionConfidenceEventListener with WalletCoinsReceivedEventListener with WalletCoinsSentEventListener {
     def onTransactionConfidenceChanged(w: Wallet, tx: Transaction) = if (tx.getConfidence.getDepthInBlocks == 1) vibrate(confirmed)
     def onCoinsReceived(w: Wallet, t: Transaction, pb: Coin, nb: Coin) = if (nb isGreaterThan pb) vibrate(processed)
     def onCoinsSent(w: Wallet, t: Transaction, pb: Coin, nb: Coin) = vibrate(processed)
+    def onWalletChanged(w: Wallet) = none
   }
 }

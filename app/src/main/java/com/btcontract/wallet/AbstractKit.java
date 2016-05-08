@@ -1,14 +1,16 @@
 package com.btcontract.wallet;
 
+import org.bitcoinj.core.listeners.*;
+import org.bitcoinj.core.*;
+
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 
-import org.bitcoinj.core.listeners.PeerDataEventListener;
 import org.bitcoinj.store.SPVBlockStore;
+import org.bitcoinj.wallet.Wallet;
 import javax.annotation.Nullable;
-import org.bitcoinj.core.*;
 import java.util.List;
 
 
@@ -25,10 +27,10 @@ public abstract class AbstractKit extends AbstractIdleService {
     public volatile Wallet wallet;
 
     public class NonePeerDataListener implements PeerDataEventListener {
-        public void onBlocksDownloaded(Peer peer, Block block, @Nullable FilteredBlock fb, int left) {}
-        public Message onPreMessageReceived(Peer peer, Message message) { return message; }
-        public List<Message> getData(Peer peer, GetDataMessage m) { return null; }
-        public void onChainDownloadStarted(Peer peer, int left) {}
+        public void onBlocksDownloaded(Peer peer, Block block, @Nullable FilteredBlock fb, int left) { /* none */ }
+        public Message onPreMessageReceived(Peer peerSender, Message message) { return message; }
+        public List<Message> getData(Peer peer, GetDataMessage msg) { return null; }
+        public void onChainDownloadStarted(Peer peer, int left) { /* none */ }
     }
 
     public void startDownload() {

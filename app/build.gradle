@@ -3,9 +3,6 @@ apply plugin: "jp.leafytree.android-scala"
 
 repositories {
     jcenter()
-    maven {
-        url "https://oss.sonatype.org/content/repositories/snapshots/"
-    }
 }
 
 android {
@@ -14,9 +11,9 @@ android {
 
     defaultConfig {
         applicationId "com.btcontract.wallet"
-        versionName "1.06"
+        versionName "1.07"
         minSdkVersion 15
-        versionCode 39
+        versionCode 40
     }
 
     buildTypes {
@@ -36,7 +33,7 @@ dependencies {
     compile 'com.madgag.spongycastle:pg:1.54.0.0'
     compile 'com.madgag.spongycastle:prov:1.54.0.0'
     compile 'com.madgag.spongycastle:pkix:1.54.0.0'
-    compile 'org.bitcoinj:bitcoinj-core:0.14-SNAPSHOT'
+    compile 'org.bitcoinj:bitcoinj-core:0.14'
 
     // UI and layout
     compile 'org.apmem.tools:layouts:1.10@aar'

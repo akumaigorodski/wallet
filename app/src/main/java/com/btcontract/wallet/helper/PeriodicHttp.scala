@@ -63,16 +63,17 @@ case class Blockchain(usd: ChainRate, eur: ChainRate, cny: ChainRate) extends Ra
 case class Bitaverage(usd: AvgRate, eur: AvgRate, cny: AvgRate) extends RateProvider
 
 object Fee { me =>
-  var rate = Coin valueOf 15000L
+  var rate = Coin valueOf 25000L
   val default = Coin valueOf 10000L
 
-  implicit val cypherFeeFmt = jsonFormat[Long, CypherFee](CypherFee, "low_fee_per_kb")
-  implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee, "12")
+  implicit val cypherFeeFmt = jsonFormat[Long, CypherFee](CypherFee, "medium_fee_per_kb")
+  implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee, "3")
   implicit val bitgoFeeFmt = jsonFormat[Long, BitgoFee](BitgoFee, "feePerKb")
 
-  def reloadData = rand nextInt 3 match {
-    case 0 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=12").body)
-    case 1 => to[BitgoFee](get("https://www.bitgo.com/api/v1/tx/fee?numBlocks=12").body)
+  def reloadData = rand nextInt 4 match {
+    case 0 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=3").body)
+    case 1 => to[InsightFee](get("http://bitlox.io/api/utils/estimatefee?nbBlocks=3").body)
+    case 2 => to[BitgoFee](get("https://www.bitgo.com/api/v1/tx/fee?numBlocks=3").body)
     case _ => to[CypherFee](get("http://api.blockcypher.com/v1/btc/main").body)
   }
 
@@ -83,8 +84,8 @@ object Fee { me =>
 // Fee rates providers
 trait FeeProvider { def fee: Long }
 case class BitgoFee(feePerKb: Long) extends FeeProvider { def fee = feePerKb }
-case class CypherFee(low_fee_per_kb: Long) extends FeeProvider { def fee = low_fee_per_kb }
-case class InsightFee(f12: BigDecimal) extends FeeProvider { def fee = (f12 * 100000000).toLong }
+case class CypherFee(medium_fee_per_kb: Long) extends FeeProvider { def fee = medium_fee_per_kb }
+case class InsightFee(f3: BigDecimal) extends FeeProvider { def fee = (f3 * 100000000L).toLong }
 
 object Insight {
   def reloadData(suffix: String) = rand nextInt 3 match {
@@ -96,7 +97,7 @@ object Insight {
   type TxList = List[Tx]
   implicit val txFmt = jsonFormat[String, Tx](Tx, "txid")
   def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs?from=0&to=50").parseJson
-    .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), (_, _) => 1.second, 1 to 5)
+    .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 3)
 }
 
 // Insight API formats

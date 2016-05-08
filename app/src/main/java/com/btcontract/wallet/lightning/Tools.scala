@@ -50,7 +50,7 @@ object Tools { me =>
 
   // Proto signature conversion
   def bytesToSignature(bts: Bytes) = {
-    val ts = TransactionSignature.decodeFromBitcoin(bts, true)
+    val ts = TransactionSignature.decodeFromBitcoin(bts, true, true)
     val inR = new ByteArrayInputStream(fixSize(ts.r.toByteArray).reverse)
     val inS = new ByteArrayInputStream(fixSize(ts.s.toByteArray).reverse)
     new proto.signature(jt uint64 inR, jt uint64 inR, jt uint64 inR,

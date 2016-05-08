@@ -10,8 +10,8 @@
     <string name="greetings">Bitcoin-гаманець\n<a href='https://btcontract.com'>інструкція користувача</a></string>
     <string name="sets_rescan_ok">Зараз гаманець буде закритий, сканування почнеться коли ви відкриєте його наступного разу</string>
     <string name="password_info">Будь ласка, підберіть пароль довжиною не менше 6 ніж символів, бажано такий що містить в собі великі літери і цифри</string>
-    <string name="fee_default"><![CDATA[<small>Комісія %1$s<br><font color=#999999><small>Підтвердження може зайняти години</small></font></small>]]></string>
-    <string name="fee_live"><![CDATA[<small>Комісія %1$s<br><font color=#999999><small>Швидке підтвердження транзакції</small></font></small>]]></string>
+    <string name="fee_default"><![CDATA[<small>%1$s комісія за кБ<br><font color=#999999><small>Підтвердження може зайняти години</small></font></small>]]></string>
+    <string name="fee_live"><![CDATA[<small>%1$s комісія за кБ<br><font color=#999999><small>Швидке підтвердження транзакції</small></font></small>]]></string>
     <string name="wallet_restore">Відновити гаманець з коду</string>
     <string name="wallet_create">Створити новий гаманець</string>
     <string name="copied_to_clipboard">Скопійовано у буфер</string>
@@ -112,9 +112,10 @@
     <string name="req_save">Поділитися картинкою</string>
 
     <!-- activity_txs -->
-    <string name="txs_fee_details"><![CDATA[%3$s<br><strong>%1$s</strong> платiж<br><strong>%2$s</strong> комiсiя]]></string>
     <string name="txs_fee_incoming"><![CDATA[%1$s<br><strong>Вхiдна транзакцiя</strong>]]></string>
+    <string name="txs_fee_details"><![CDATA[%2$s<br>Комiсiя <strong>%1$s</strong>]]></string>
     <string name="txs_fee_absent"><![CDATA[%1$s<br><strong>Без комісії</strong>]]></string>
+
     <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
     <string name="txs_view_outside">Дивитись на BlockExplorer.com</string>
