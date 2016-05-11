@@ -27,6 +27,16 @@ object JsonHttpUtils {
   val get = HttpRequest.get(_: String, true) connectTimeout 15000
 }
 
+// Fiat rates containers
+trait Rate { def now: Double }
+case class AvgRate(ask: Double) extends Rate { def now = ask }
+case class ChainRate(last: Double) extends Rate { def now = last }
+case class BitpayRate(code: String, rate: Double) extends Rate { def now = rate }
+
+trait RateProvider { val usd, eur, cny: Rate }
+case class Blockchain(usd: ChainRate, eur: ChainRate, cny: ChainRate) extends RateProvider
+case class Bitaverage(usd: AvgRate, eur: AvgRate, cny: AvgRate) extends RateProvider
+
 object FiatRates { me =>
   type RatesMap = Map[String, Rate]
   type BitpayList = List[BitpayRate]
@@ -53,15 +63,11 @@ object FiatRates { me =>
     .repeatWhen(_ delay 15.minute).subscribe(fresh => rates = Success apply fresh)
 }
 
-// Fiat rates containers
-trait Rate { def now: Double }
-case class AvgRate(ask: Double) extends Rate { def now = ask }
-case class ChainRate(last: Double) extends Rate { def now = last }
-case class BitpayRate(code: String, rate: Double) extends Rate { def now = rate }
-
-trait RateProvider { val usd, eur, cny: Rate }
-case class Blockchain(usd: ChainRate, eur: ChainRate, cny: ChainRate) extends RateProvider
-case class Bitaverage(usd: AvgRate, eur: AvgRate, cny: AvgRate) extends RateProvider
+// Fee rates providers
+trait FeeProvider { def fee: Long }
+case class BitgoFee(feePerKb: Long) extends FeeProvider { def fee = feePerKb }
+case class CypherFee(medium_fee_per_kb: Long) extends FeeProvider { def fee = medium_fee_per_kb }
+case class InsightFee(f3: BigDecimal) extends FeeProvider { def fee = (f3 * 100000000L).toLong }
 
 object Fee { me =>
   var rate = Coin valueOf 25000L
@@ -81,25 +87,3 @@ object Fee { me =>
   def go = retry(obsOn(reloadData, IOScheduler.apply), pickInc, 1 to 30)
     .repeatWhen(_ delay 30.minute).subscribe(prov => rate = Coin valueOf prov.fee)
 }
-
-// Fee rates providers
-trait FeeProvider { def fee: Long }
-case class BitgoFee(feePerKb: Long) extends FeeProvider { def fee = feePerKb }
-case class CypherFee(medium_fee_per_kb: Long) extends FeeProvider { def fee = medium_fee_per_kb }
-case class InsightFee(f3: BigDecimal) extends FeeProvider { def fee = (f3 * 100000000L).toLong }
-
-object Insight {
-  def reloadData(suffix: String) = rand nextInt 3 match {
-    case 0 => get(s"https://insight.bitpay.com/api/$suffix").body
-    case 1 => get(s"https://blockexplorer.com/api/$suffix").body
-    case _ => get(s"https://bitlox.io/api/$suffix").body
-  }
-
-  type TxList = List[Tx]
-  implicit val txFmt = jsonFormat[String, Tx](Tx, "txid")
-  def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs?from=0&to=50").parseJson
-    .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 3)
-}
-
-// Insight API formats
-case class Tx(txid: String)

@@ -92,8 +92,8 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="wire-runtime-2.1.1" level="project" />
     <orderEntry type="library" exported="" name="http-request-6.0" level="project" />
-    <orderEntry type="library" exported="" name="okio-1.6.0" level="project" />
     <orderEntry type="library" exported="" name="slf4j-api-1.7.20" level="project" />
+    <orderEntry type="library" exported="" name="okio-1.6.0" level="project" />
     <orderEntry type="library" exported="" name="rxscala_2.11-0.26.0" level="project" />
     <orderEntry type="library" exported="" name="layouts-1.10" level="project" />
     <orderEntry type="library" exported="" name="core-1.54.0.0" level="project" />
@@ -110,10 +110,10 @@
     <orderEntry type="library" exported="" name="pg-1.54.0.0" level="project" />
     <orderEntry type="library" exported="" name="rxjava-1.1.0" level="project" />
     <orderEntry type="library" exported="" name="prov-1.54.0.0" level="project" />
-    <orderEntry type="library" exported="" name="pkix-1.54.0.0" level="project" />
     <orderEntry type="library" exported="" name="nv-websocket-client-1.25" level="project" />
-    <orderEntry type="library" exported="" name="protobuf-java-2.6.1" level="project" />
     <orderEntry type="library" exported="" name="scrypt-1.4.0" level="project" />
+    <orderEntry type="library" exported="" name="pkix-1.54.0.0" level="project" />
+    <orderEntry type="library" exported="" name="protobuf-java-2.6.1" level="project" />
     <orderEntry type="library" exported="" name="scala-library-2.11.7" level="project" />
     <orderEntry type="library" exported="" name="android-segmented-1.0.5" level="project" />
     <orderEntry type="library" exported="" name="orchid-1.2" level="project" />
