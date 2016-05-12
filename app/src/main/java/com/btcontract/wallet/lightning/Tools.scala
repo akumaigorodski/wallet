@@ -13,7 +13,6 @@ import java.math.BigInteger
 
 object Tools { me =>
   def stringToHex(src: String) = HEX.encode(src getBytes "UTF-8")
-  def mask(src: Bytes) = for (byte <- src take 28) yield if (byte > 0) 1.toByte else 0.toByte
 
   // Second 0 means "Bitcoin" according to BIP44
   // Deriving /M/nH/0H/<arbitrary depth> deterministic keys
@@ -35,9 +34,9 @@ object Tools { me =>
   }
 
   // Bloom filter for incoming Requests and Responses
-  def mkBloom(ephemeralMasks: Seq[Bytes], identityMask: Bytes) = {
-    val bloomFilter = new BloomFilter(ephemeralMasks.size + 1, 0.000001, rand.nextInt)
-    for (mask <- identityMask +: ephemeralMasks) bloomFilter insert mask
+  def mkBloom(ephemeralKeys: Seq[Bytes], identityKey: Bytes) = {
+    val bloomFilter = new BloomFilter(ephemeralKeys.size + 1, 0.00001, rand.nextInt)
+    for (key <- identityKey +: ephemeralKeys) bloomFilter insert key
     HEX encode bloomFilter.bitcoinSerialize
   }
 

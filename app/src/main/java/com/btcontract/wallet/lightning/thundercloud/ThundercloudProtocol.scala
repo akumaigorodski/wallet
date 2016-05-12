@@ -24,25 +24,16 @@ object ThundercloudProtocol extends DefaultJsonProtocol { me =>
     BigInteger, BigInteger, BlindParams](BlindParams, "key", "a", "b", "c", "bInv")
 
   // Request and Response
-  implicit val requestFmt = jsonFormat[Long, Bytes, String, String,
-    Request](Request, "mSatAmount", "ephemeral", "message", "id")
-
-  implicit val responseFmt = jsonFormat[Request, Bytes,
-    Response](Response, "request", "lnRouteData")
+  implicit val requestFmt = jsonFormat[Long, Bytes, String, String, Request](Request, "mSatAmount", "ephemeral", "message", "id")
+  implicit val responseFmt = jsonFormat[Request, Bytes, Response](Response, "request", "lnRouteData")
 
   // Message and Wrap
-  implicit val messageFmt = jsonFormat[Bytes, Bytes, Bytes,
-    Message](Message, "mask", "ephemeral", "content")
+  implicit val messageFmt = jsonFormat[Bytes, Bytes, Message](Message, "pubKey", "content")
+  implicit val wrapFmt = jsonFormat[Message, Long, Wrap](Wrap, "data", "stamp")
 
-  implicit val wrapFmt = jsonFormat[Message,
-    Long, Wrap](Wrap, "data", "stamp")
-
-  // Signed email
-  implicit val smFmt = jsonFormat[String, String, String,
-    SignedMail](SignedMail, "email", "pubKey", "signature")
-
-  implicit val ssmFmt = jsonFormat[SignedMail, String,
-    ServerSignedMail](ServerSignedMail, "client", "signature")
+  // User signed email and server signed email
+  implicit val smFmt = jsonFormat[String, String, String, SignedMail](SignedMail, "email", "pubKey", "signature")
+  implicit val ssmFmt = jsonFormat[SignedMail, String, ServerSignedMail](ServerSignedMail, "client", "signature")
 }
 
 // This is a "response-to" ephemeral key, it's private part
@@ -50,9 +41,8 @@ object ThundercloudProtocol extends DefaultJsonProtocol { me =>
 case class Request(mSatAmount: Long, ephemeral: Bytes, message: String, id: String)
 case class Response(request: Request, lnRouteData: Bytes)
 
-// This is a "signle-use" ephemeral key for Request
-// and "response-to" ephemeral key for Response, server sees no difference
-case class Message(mask: Bytes, ephemeral: Bytes, content: Bytes)
+// Request/Response container and Wrap
+case class Message(pubKey: Bytes, content: Bytes)
 case class Wrap(data: Message, stamp: Long)
 
 // Client and server signed email to key mappings
