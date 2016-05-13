@@ -5,13 +5,18 @@ import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
 import org.bitcoinj.core.{BloomFilter, Sha256Hash}
 import com.btcontract.wallet.Utils.{rand, Bytes}
+
 import org.spongycastle.jce.ECNamedCurveTable
 import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.core.Utils.HEX
 import java.math.BigInteger
 
+object LNConstants {
+  val FILE_NAME = "lightning.db"
+}
 
 object Tools { me =>
+  def uuid = java.util.UUID.randomUUID.toString
   def stringToHex(src: String) = HEX.encode(src getBytes "UTF-8")
 
   // Second 0 means "Bitcoin" according to BIP44
@@ -36,7 +41,7 @@ object Tools { me =>
   // Bloom filter for incoming Requests and Responses
   def mkBloom(ephemeralKeys: Seq[Bytes], identityKey: Bytes) = {
     val bloomFilter = new BloomFilter(ephemeralKeys.size + 1, 0.00001, rand.nextInt)
-    for (key <- identityKey +: ephemeralKeys) bloomFilter insert key
+    for (nextKey <- identityKey +: ephemeralKeys) bloomFilter insert nextKey
     HEX encode bloomFilter.bitcoinSerialize
   }
 

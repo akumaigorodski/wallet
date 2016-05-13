@@ -23,9 +23,9 @@ object ThundercloudProtocol extends DefaultJsonProtocol { me =>
   implicit val blindParamsFmt = jsonFormat[ECPoint, BigInteger, BigInteger,
     BigInteger, BigInteger, BlindParams](BlindParams, "key", "a", "b", "c", "bInv")
 
-  // Request and Response
-  implicit val requestFmt = jsonFormat[Long, Bytes, String, String, Request](Request, "mSatAmount", "ephemeral", "message", "id")
-  implicit val responseFmt = jsonFormat[Request, Bytes, Response](Response, "request", "lnRouteData")
+  // Request and Charge which can be remote or NFC-based
+  implicit val requestFmt = jsonFormat[Option[Bytes], Long, String, String, Request](Request, "ephemeral", "mSatAmount", "message", "id")
+  implicit val chargeFmt = jsonFormat[Request, Bytes, Charge](Charge, "request", "lnPaymentData")
 
   // Message and Wrap
   implicit val messageFmt = jsonFormat[Bytes, Bytes, Message](Message, "pubKey", "content")
@@ -36,10 +36,10 @@ object ThundercloudProtocol extends DefaultJsonProtocol { me =>
   implicit val ssmFmt = jsonFormat[SignedMail, String, ServerSignedMail](ServerSignedMail, "client", "signature")
 }
 
-// This is a "response-to" ephemeral key, it's private part
-// should be stored in a database because my bloom filter has it's mask
-case class Request(mSatAmount: Long, ephemeral: Bytes, message: String, id: String)
-case class Response(request: Request, lnRouteData: Bytes)
+// This is a "response-to" ephemeral key, it's private part should be stored in a database
+// because my bloom filter has it's mask, it's optional because Request may come locally via NFC
+case class Request(ephemeral: Option[Bytes], mSatAmount: Long, message: String, id: String)
+case class Charge(request: Request, lnPaymentData: Bytes)
 
 // Request/Response container and Wrap
 case class Message(pubKey: Bytes, content: Bytes)

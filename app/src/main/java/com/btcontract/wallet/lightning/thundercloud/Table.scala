@@ -1,11 +1,17 @@
 package com.btcontract.wallet.lightning.thundercloud
 
+import android.database.sqlite.{SQLiteDatabase, SQLiteOpenHelper}
+import com.btcontract.wallet.lightning.LNConstants
+import com.btcontract.wallet.Utils.none
+import android.content.Context
+
 
 trait Table {
   val id = "_id"
 }
 
 object PendingBlindTokens extends Table {
+  // params is a Json of List[BlindParams], tokens is a Json of List[BigInteger] clear tokens
   val (table, params, tokens, sesPubkey, rHash) = ("pblindtokens", "params", "tokens", "seskey", "rhash")
   def newSql = s"INSERT OR IGNORE INTO $table ($params, $tokens, $sesPubkey, $rHash) VALUES (?, ?, ?, ?)"
   def selectOneSql = s"SELECT * FROM $table WHERE $rHash = ? LIMIT 1"
@@ -34,4 +40,20 @@ object EphemeralKeys extends Table {
 
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
     $privKey TEXT NOT NULL, $stamp INTEGER NOT NULL, $used INTEGER NOT NULL)"""
+}
+
+class OpenHelper(context: Context, version: Int, secret: String)
+  extends SQLiteOpenHelper(context, LNConstants.FILE_NAME, null, version)
+{
+  lazy val db = getWritableDatabase
+  def txWrap(run: => Unit) = try run finally db.endTransaction
+  def onUpgrade(db: SQLiteDatabase, oldVer: Int, newVer: Int) = none
+  def change(sql: String, params: String*) = db.execSQL(sql, params.toArray)
+  def select(sql: String, params: String*) = db.rawQuery(sql, params.toArray)
+
+  def onCreate(dbs: SQLiteDatabase) = {
+    dbs execSQL PendingBlindTokens.createSql
+    dbs execSQL EphemeralKeys.createSql
+    dbs execSQL BlindTokens.createSql
+  }
 }
