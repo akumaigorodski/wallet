@@ -1,7 +1,6 @@
 package com.btcontract.wallet.lightning.thundercloud
 
 import android.database.sqlite.{SQLiteDatabase, SQLiteOpenHelper}
-import com.btcontract.wallet.lightning.LNConstants
 import com.btcontract.wallet.Utils.none
 import android.content.Context
 
@@ -51,10 +50,10 @@ object Payments extends Table {
   def newSql(inc: Int, stp: Long) = s"""INSERT OR IGNORE INTO $table ($data, $incoming, $rHash,
     $rValue, $status, $identity, $stamp) VALUES (?, $inc, ?, ?, $waiting, ?, $stp)"""
 
-  // Identity here refers to Thundercloud, not to be mixed with HTLC id
-  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
-    $data TEXT NOT NULL, $incoming INTEGER NOT NULL, $rHash TEXT NOT NULL, $rValue TEXT NOT NULL,
-    $status INTEGER NOT NULL, $identity TEXT NOT NULL UNIQUE, $stamp INTEGER NOT NULL);
+  // Identity here refers to Thundercloud inner message id, not to be mixed with HTLC id
+  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT, $data TEXT NOT NULL,
+    $incoming INTEGER NOT NULL, $rHash TEXT, $rValue TEXT, $status INTEGER NOT NULL,
+    $identity TEXT NOT NULL UNIQUE, $stamp INTEGER NOT NULL);
     CREATE INDEX idx$identity ON $table ($identity);
     CREATE INDEX idx$rValue ON $table ($rValue);
     CREATE INDEX idx$rHash ON $table ($rHash);
