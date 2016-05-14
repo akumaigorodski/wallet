@@ -42,8 +42,28 @@ object EphemeralKeys extends Table {
     $privKey TEXT NOT NULL, $stamp INTEGER NOT NULL, $used INTEGER NOT NULL)"""
 }
 
-class OpenHelper(context: Context, version: Int, secret: String)
-  extends SQLiteOpenHelper(context, LNConstants.FILE_NAME, null, version)
+object Payments extends Table {
+  val (waiting, paid, failed) = (1, 2, 3)
+  // Waiting means we have to look outside of database (at CHANGEs and received/sent HTLCs)
+  val strings = ("payments", "data", "incoming", "rhash", "r", "status", "identity", "stamp")
+  val (table, data, incoming, rHash, rValue, status, identity, stamp) = strings
+
+  def newSql(inc: Int, stp: Long) = s"""INSERT OR IGNORE INTO $table ($data, $incoming, $rHash,
+    $rValue, $status, $identity, $stamp) VALUES (?, $inc, ?, ?, $waiting, ?, $stp)"""
+
+  // Identity here refers to Thundercloud, not to be mixed with HTLC id
+  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
+    $data TEXT NOT NULL, $incoming INTEGER NOT NULL, $rHash TEXT NOT NULL, $rValue TEXT NOT NULL,
+    $status INTEGER NOT NULL, $identity TEXT NOT NULL UNIQUE, $stamp INTEGER NOT NULL);
+    CREATE INDEX idx$identity ON $table ($identity);
+    CREATE INDEX idx$rValue ON $table ($rValue);
+    CREATE INDEX idx$rHash ON $table ($rHash);
+    CREATE INDEX idx$stamp ON $table ($stamp);
+    COMMIT"""
+}
+
+class OpenHelper(context: Context, version: Int)
+extends SQLiteOpenHelper(context, "lightning.db", null, version)
 {
   lazy val db = getWritableDatabase
   def txWrap(run: => Unit) = try run finally db.endTransaction
@@ -55,5 +75,6 @@ class OpenHelper(context: Context, version: Int, secret: String)
     dbs execSQL PendingBlindTokens.createSql
     dbs execSQL EphemeralKeys.createSql
     dbs execSQL BlindTokens.createSql
+    dbs execSQL Payments.createSql
   }
 }

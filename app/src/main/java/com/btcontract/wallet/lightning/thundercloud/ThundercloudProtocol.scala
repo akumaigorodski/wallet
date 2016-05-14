@@ -36,8 +36,8 @@ object ThundercloudProtocol extends DefaultJsonProtocol { me =>
   implicit val ssmFmt = jsonFormat[SignedMail, String, ServerSignedMail](ServerSignedMail, "client", "signature")
 }
 
-// This is a "response-to" ephemeral key, it's private part should be stored in a database
-// because my bloom filter has it's mask, it's optional because Request may come locally via NFC
+// A "response-to" ephemeral key, it's private part should be stored in a database
+// because my bloom filter has it, it's optional because Charge may come locally via NFC
 case class Request(ephemeral: Option[Bytes], mSatAmount: Long, message: String, id: String)
 case class Charge(request: Request, lnPaymentData: Bytes)
 

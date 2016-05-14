@@ -11,12 +11,9 @@ import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.core.Utils.HEX
 import java.math.BigInteger
 
-object LNConstants {
-  val FILE_NAME = "lightning.db"
-}
 
 object Tools { me =>
-  def uuid = java.util.UUID.randomUUID.toString
+  def uuid = HEX.encode(rand getBytes 64)
   def stringToHex(src: String) = HEX.encode(src getBytes "UTF-8")
 
   // Second 0 means "Bitcoin" according to BIP44
