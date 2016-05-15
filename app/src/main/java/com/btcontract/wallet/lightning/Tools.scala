@@ -3,8 +3,8 @@ package com.btcontract.wallet.lightning
 import org.bitcoinj.crypto.{HDKeyDerivation, ChildNumber, TransactionSignature}
 import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
+import com.btcontract.wallet.Utils.{rand, wrap, Bytes}
 import org.bitcoinj.core.{BloomFilter, Sha256Hash}
-import com.btcontract.wallet.Utils.{rand, Bytes}
 
 import org.spongycastle.jce.ECNamedCurveTable
 import org.bitcoinj.wallet.DeterministicSeed
@@ -80,4 +80,12 @@ object Tools { me =>
     jt.writeUInt64(outputStream, ps.a, ps.b, ps.c, ps.d)
     outputStream.toByteArray
   }
+}
+
+// A general purpose State Machine
+abstract class StateMachine[T](var state: Symbol, var data: T) { me =>
+  def become(nState: Symbol, nData: T) = wrap { state = nState } { data = nData }
+  def process(change: Any) = try synchronized(me doProcess change) catch error
+  def error: PartialFunction[Throwable, Unit]
+  def doProcess(change: Any)
 }
