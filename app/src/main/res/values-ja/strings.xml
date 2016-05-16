@@ -6,7 +6,6 @@
     <string name="app_name">Bitcoin</string>
     <string name="sets_noscreen">スクリーンショットは行わないでください</string>
     <string name="sets_password_ok">新しいパスワードを正常に設定しました</string>
-    <string name="sets_destruct_ok">ディストラクション コードを «%1$s» に設定しました</string>
     <string name="sets_rescan_ok">アプリケーションを閉じます。次回起動時にブロックチェーンの再スキャンを起動します</string>
     <string name="greetings">単純なビットコイン財布\nまず <a href='https://btcontract.com'>ウォレット マニュアルをご覧ください</a></string>
     <string name="fee_default"><![CDATA[<small>%1$s fee per kB<br><font color=#999999><small>時間がかかることがあります確認</small></font></small>]]></string>
@@ -20,22 +19,18 @@
     <string name="wallet_password">パスワード</string>
 
     <string name="sets_pass_change">ウォレットのパスワードを変更</string>
-    <string name="sets_destruct_set">ディストラクション コードを設定</string>
     <string name="sets_rescan">ブロックチェーンを再スキャン</string>
     <string name="sets_mnemonic">回復ニーモニックを表示</string>
 
     <string name="password_new">新しいパスワード</string>
-    <string name="destruct_new">ディストラクション コード</string>
     <string name="password_old">ウォレット・パスワード</string>
     <string name="password_wrong">ウォレットのパスワードが間違っています</string>
-    <string name="destruct_too_short">ディストラクション コードが短すぎます</string>
     <string name="password_too_short">パスワードが短すぎます</string>
 
     <!-- headers with links -->
     <string name="mnemonic_info">回復ニーモニックは非常に重要です!\n<a href='https://btcontract.com/#mnemonic-code'>それについての詳細を調べる</a>と、それを保存してください\n\nニーモニックコードが保存して、あなたはあなたの貴重なビットコインを失うことは決してないだろうことを安心することができます</string>
     <string name="buy_info"><![CDATA[You are about to be taken to <strong>LocalBitcoins</strong> secure website where bitcoins can be safely purchased and instantly transferred to this wallet.<br><br>Would you like to proceed?]]></string>
     <string name="read_settings"><![CDATA[<small>質問をお持ちですか？<br><a href=https://btcontract.com>アプリの説明書を読んで</a><br><br></small>ウォレット設定]]></string>
-    <string name="action_lock">この財布をロック</string>
     <string name="wallet_open">ウォレットを開く</string>
 
     <!-- menu -->

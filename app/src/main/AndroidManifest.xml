@@ -51,5 +51,8 @@
         <activity android:launchMode="singleTask" android:name="RequestActivity"
             android:screenOrientation="portrait" android:theme="@style/NoBar"/>
 
+        <activity android:launchMode="singleTask" android:name="LNPassActivity"
+            android:screenOrientation="portrait" android:theme="@style/NoBar"/>
+
     </application>
 </manifest>

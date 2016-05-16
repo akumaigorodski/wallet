@@ -1,10 +1,6 @@
 apply plugin: "com.android.application"
 apply plugin: "jp.leafytree.android-scala"
 
-repositories {
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
-}
-
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.3"
@@ -51,7 +47,6 @@ dependencies {
     // Utils
     compile 'com.google.zxing:core:3.2.1'
     compile 'com.journeyapps:zxing-android-embedded:3.1.0@aar'
-    compile 'me.drozdzynski.library.steppers:steppers:0.3.3-SNAPSHOT'
     compile 'info.guardianproject.netcipher:netcipher:1.2.1'
     compile 'org.scala-lang:scala-library:2.11.7'
     compile 'io.reactivex:rxscala_2.11:0.26.0'

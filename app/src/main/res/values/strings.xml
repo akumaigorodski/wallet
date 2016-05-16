@@ -6,7 +6,6 @@
     <string name="app_name">Bitcoin</string>
     <string name="sets_noscreen">Do not make a screenshot</string>
     <string name="sets_password_ok">New password has been set successfully</string>
-    <string name="sets_destruct_ok">Destruction code has been set to «%1$s»</string>
     <string name="sets_rescan_ok">Application is about to be closed now and blockchain rescan will be triggered on next launch</string>
     <string name="greetings">Welcome to Simple Bitcoin Wallet!\nPlease read a <a href='https://btcontract.com'>wallet manual</a> first</string>
     <string name="password_info">Without password you are in constant danger of losing your money. Please pick one which is at least 6 characters long</string>
@@ -20,22 +19,18 @@
     <string name="wallet_password">Password</string>
 
     <string name="sets_pass_change">Change wallet password</string>
-    <string name="sets_destruct_set">Set destruction code</string>
     <string name="sets_mnemonic">View mnemonic code</string>
     <string name="sets_rescan">Rescan blockchain</string>
 
     <string name="password_new">New password</string>
     <string name="password_old">Wallet password</string>
-    <string name="destruct_new">Destruction code</string>
     <string name="password_wrong">Wrong wallet password</string>
     <string name="password_too_short">Password is too short</string>
-    <string name="destruct_too_short">Destruction code is too short</string>
 
     <!-- headers with links -->
     <string name="mnemonic_info">Mnemonic code is super important!\n<a href='https://btcontract.com/#mnemonic-code'>Read about it</a> and be sure to save it\n\nWith mnemonic code saved you can rest assured that you\'ll never lose your precious bitcoins</string>
     <string name="buy_info"><![CDATA[You are about to be taken to <strong>LocalBitcoins</strong> secure website where bitcoins can be safely purchased and instantly transferred to this wallet.<br><br>Would you like to proceed?]]></string>
     <string name="read_settings"><![CDATA[<small>Got questions or feel lost?<br><a href=https://btcontract.com>Read a short app manual</a><br><br></small>Wallet settings]]></string>
-    <string name="action_lock">Lock this wallet</string>
     <string name="wallet_open">Open wallet</string>
 
     <!-- menu -->
