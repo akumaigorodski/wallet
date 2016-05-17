@@ -7,9 +7,9 @@ import org.spongycastle.crypto.params.KeyParameter
 import com.btcontract.wallet.Utils.Bytes
 
 
-class AeadChacha20(key: Bytes, nonce: Bytes) { me =>
-  def chacha20Run(content: Bytes, encrypt: Boolean, skip: Boolean) = {
-    val cipherParameters = new ParametersWithIV(new KeyParameter(key), nonce)
+class AeadChacha20(asymmetricKey: Bytes) {
+  def chacha20Run(content: Bytes, nonce: Bytes, encrypt: Boolean, skip: Boolean) = {
+    val cipherParameters = new ParametersWithIV(new KeyParameter(asymmetricKey), nonce)
     val finalResult = new Bytes(content.length)
     val engine = new ChaChaEngine(20)
 
@@ -20,23 +20,21 @@ class AeadChacha20(key: Bytes, nonce: Bytes) { me =>
     finalResult
   }
 
-  def mkPoly(data: Bytes): Bytes = new Bytes(16) match { case output =>
-    val polykey = chacha20Run(new Bytes(32), encrypt = true, skip = false)
+  def mkPoly(data: Bytes, nonce: Bytes) = new Bytes(16) match { case output =>
+    val polykey = chacha20Run(new Bytes(32), nonce, encrypt = true, skip = false)
     Poly3105.crypto_onetimeauth(output, 0, data, 0, data.length, polykey)
     output
   }
 
-  def encrypt(plainText: Bytes, aad: Bytes) = {
-    val cipher = chacha20Run(plainText, encrypt = true, skip = true)
-    (me mkPoly jt.concat(aad, jt writeUInt64 aad.length, cipher,
-      jt writeUInt64 cipher.length), cipher)
+  def encrypt(nonce: Bytes, plainText: Bytes, aad: Bytes) = {
+    val cipher = chacha20Run(plainText, nonce, encrypt = true, skip = true)
+    val data = jt.concat(aad, jt writeUInt64 aad.length, cipher, jt writeUInt64 cipher.length)
+    cipher -> mkPoly(data, nonce)
   }
 
-  def decrypt(cipher: Bytes, aad: Bytes, mac: Bytes) = {
-    val macCheck = jt.concat(aad, jt writeUInt64 aad.length,
-      cipher, jt writeUInt64 cipher.length)
-
-    assert(me mkPoly macCheck sameElements mac, Poly3105.INVALID_MAC)
-    chacha20Run(cipher, encrypt = false, skip = true)
+  def decrypt(mac: Bytes, nonce: Bytes, cipher: Bytes, aad: Bytes) = {
+    val check = jt.concat(aad, jt writeUInt64 aad.length, cipher, jt writeUInt64 cipher.length)
+    assert(mkPoly(data = check, nonce) sameElements mac, Poly3105.INVALID_MAC)
+    chacha20Run(cipher, nonce, encrypt = false, skip = true)
   }
 }

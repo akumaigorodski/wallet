@@ -21,6 +21,16 @@ public class JavaTools {
         for (Long input : inputs) out.write( (int)(input & 0xff) );
     }
 
+    public static void writeUInt32(Long input, OutputStream out) throws IOException {
+        writeUInt8(out, input & 0xff, (input >>> 8) & 0xff, (input >>> 16), (input >>> 24) & 0xff);
+    }
+
+    public static byte[] writeUInt32(Long input) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream(4);
+        writeUInt32(input, out);
+        return out.toByteArray();
+    }
+
     public static void writeUInt64(OutputStream out, Long... inputs) throws IOException {
         for (Long input : inputs) writeUInt8(out, input & 0xff, (input >>> 8) & 0xff,
                 (input >>> 16) & 0xff, (input >>> 24) & 0xff, (input >>> 32) & 0xff,
