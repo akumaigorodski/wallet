@@ -18,10 +18,10 @@ object Tools { me =>
 
   // Second 0 means "Bitcoin" according to BIP44
   // Deriving /M/nH/0H/<arbitrary depth> deterministic keys
-  def derive(way: List[ChildNumber], n: Int, seed: DeterministicSeed) = {
+  def derive(way: List[ChildNumber], n: Int)(seed: DeterministicSeed) = {
+    val masterKey = HDKeyDerivation createMasterPrivateKey seed.getSeedBytes
     val purposeBitcoin = List(new ChildNumber(n, true), ChildNumber.ZERO_HARDENED)
-    val master = HDKeyDerivation createMasterPrivateKey seed.getSeedBytes
-    (master /: purposeBitcoin)(HDKeyDerivation.deriveChildKey)
+    (purposeBitcoin ::: way).foldLeft(masterKey)(HDKeyDerivation.deriveChildKey)
   }
 
   // Shared secret for secp256k1
@@ -80,6 +80,14 @@ object Tools { me =>
     jt.writeUInt64(outputStream, ps.a, ps.b, ps.c, ps.d)
     outputStream.toByteArray
   }
+}
+
+object LNSeed {
+  private var seed = Option.empty[DeterministicSeed]
+  // Commit tx keys are located at /M/100H/0H/x, id will be at /M/101H/0H
+  def getKey(x: Int) = seed map Tools.derive(new ChildNumber(x) :: Nil, 100)
+  def setSeed(newSeed: DeterministicSeed) = seed = Some(newSeed)
+  def isSeedSet = seed.isDefined
 }
 
 // A general purpose State Machine
