@@ -8,6 +8,7 @@ import com.btcontract.wallet.Utils.{strDollar, strEuro, strYuan}
 
 import com.github.kevinsawicki.http.HttpRequest
 import rx.lang.scala.schedulers.IOScheduler
+import java.net.ProtocolException
 import org.bitcoinj.core.Coin
 
 import spray.json._
@@ -20,10 +21,20 @@ object JsonHttpUtils {
   def pickInc(err: Throwable, next: Int) = next.second
   def obsOn[T](provider: => T, scheduler: Scheduler) = Obs.just(null).subscribeOn(scheduler).map(_ => provider)
   def retry[T](obs: Obs[T], pick: Selector, times: Range) = obs.retryWhen(_.zipWith(Obs from times)(pick) flatMap Obs.timer)
-  def withTor(http: HttpRequest) = if (app.orbotAllowed && app.orbotOnline) http.useProxy("127.0.0.1", 8118) else http
+
+  // Observable which processes responses of form [ok, ...] or [error, why]
+  def thunder[T](path: String, trans: Vector[JsValue] => T, params: Object*) = {
+    val httpRequest = HttpRequest.post(s"http://10.0.2.2:9001/$path", true, params:_*)
+    if (app.orbotAllowed && app.orbotAllowed) httpRequest.useProxy("127.0.0.1", 8118)
+
+    obsOn(httpRequest.connectTimeout(15000).body.parseJson, IOScheduler.apply) map {
+      case JsArray(JsString("error") +: JsString(why) +: _) => throw new ProtocolException(why)
+      case JsArray(JsString("ok") +: responseParams) => trans(responseParams)
+      case _ => throw new Throwable
+    }
+  }
 
   def to[T : JsonFormat](raw: String) = raw.parseJson.convertTo[T]
-  val post = HttpRequest.post(_: String, true) connectTimeout 15000
   val get = HttpRequest.get(_: String, true) connectTimeout 15000
 }
 

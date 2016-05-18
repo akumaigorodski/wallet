@@ -6,7 +6,6 @@
     <string name="app_name">Bitcoin</string>
     <string name="sets_noscreen">Не делайте скриншот</string>
     <string name="sets_password_ok">Новый пароль успешно установлен</string>
-    <string name="sets_destruct_ok">Установлен новый код уничтожения: «%1$s»</string>
     <string name="greetings">Биткоин-кошелек\n<a href='https://btcontract.com'>инструкция пользователя</a></string>
     <string name="sets_rescan_ok">Сейчас кошелек закроется, а повторное сканирование начнется при следующем открытии</string>
     <string name="password_info">Пожалуйста, подберите хороший пароль длиной не менее 6 символов, желательно содержащий в себе заглавные буквы и цифры</string>
@@ -19,23 +18,19 @@
     <string name="wallet_empty">Кошелек пуст</string>
     <string name="wallet_password">Пароль</string>
 
-    <string name="sets_destruct_set">Установить код уничтожения</string>
     <string name="sets_pass_change">Сменить пароль кошелька</string>
     <string name="sets_rescan">Пересканировать блокчейн</string>
     <string name="sets_mnemonic">Посмотреть мнемо-код</string>
 
-    <string name="destruct_new">Код уничтожения</string>
     <string name="password_new">Введите новый пароль</string>
     <string name="password_old">Введите пароль кошелька</string>
     <string name="password_wrong">Введен неверный пароль</string>
     <string name="password_too_short">Пароль слишком короткий</string>
-    <string name="destruct_too_short">Код уничтожения слишком короткий</string>
 
     <!-- headers with links -->
     <string name="mnemonic_info">Мнемонический код очень важен!\n<a href='https://btcontract.com/#mnemonic-code'>Почитайте про него</a>, сохраните и держите в секрете\n\nС мнемоническим кодом вы можете быть уверены что ваши биткоины никогда не пропадут</string>
     <string name="buy_info"><![CDATA[You are about to be taken to <strong>LocalBitcoins</strong> secure website where bitcoins can be safely purchased and instantly transferred to this wallet.<br><br>Would you like to proceed?]]></string>
     <string name="read_settings"><![CDATA[<small>Есть вопросы?<br><a href=https://btcontract.com>почитайте инструкцию</a><br><br></small>Настройки кошелька]]></string>
-    <string name="action_lock">Заблокировать кошелек</string>
     <string name="wallet_open">Открыть кошелек</string>
 
     <!-- menu -->

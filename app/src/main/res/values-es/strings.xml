@@ -6,7 +6,6 @@
     <string name="app_name">Bitcoin</string>
     <string name="sets_noscreen">No hacer una captura de pantalla</string>
     <string name="sets_password_ok">La nueva contraseña ha sido establecida exitosamente</string>
-    <string name="sets_destruct_ok">El código de destrucción se ha sido establecido en «%1$s»</string>
     <string name="sets_rescan_ok">La aplicación se cerrará ahora y el reescaneo de la cadena de bloques se activará en el próximo reinicio</string>
     <string name="greetings">Bienvenido a Monedero Bitcoin!\nPor favor, lea el <a href='https://btcontract.com'>manual de monedero</a></string>
     <string name="password_info">Sin contraseña se expone de manera constante a perder su dinero. Por favor, elija una que tenga al menos 6 caracteres.</string>
@@ -20,22 +19,18 @@
     <string name="wallet_password">Contraseña</string>
 
     <string name="sets_pass_change">Cambiar contraseña de monedero</string>
-    <string name="sets_destruct_set">Fijar código de destrucción</string>
     <string name="sets_rescan">Reescanear cadena de bloque</string>
     <string name="sets_mnemonic">Ver código nemotécnico</string>
 
     <string name="password_new">Nueva contraseña</string>
-    <string name="destruct_new">Código de destrucción</string>
     <string name="password_old">Current wallet password</string>
     <string name="password_too_short">La contraseña es muy corta</string>
     <string name="password_wrong">Contraseña de monedero incorrecta</string>
-    <string name="destruct_too_short">El código de destrucción es muy corto</string>
 
     <!-- headers with links -->
     <string name="mnemonic_info">Código mnemotécnico es súper importante!\n<a href='https://btcontract.com/#mnemonic-code'>Lea acerca de esto</a> y asegúrese de guardarlo\n\nCon el código nemotécnico guarda puede estar seguro de que usted nunca perderá sus preciosos bitcoins</string>
     <string name="buy_info"><![CDATA[You are about to be taken to <strong>LocalBitcoins</strong> secure website where bitcoins can be safely purchased and instantly transferred to this wallet.<br><br>Would you like to proceed?]]></string>
     <string name="read_settings"><![CDATA[<small>¿Tienes preguntas?<br><a href=https://btcontract.com>lea el manual de aplicaciones</a><br><br></small>Ajustes de monedero]]></string>
-    <string name="action_lock">Bloqueo de esta cartera</string>
     <string name="wallet_open">Copiar datos</string>
 
     <!-- menu -->

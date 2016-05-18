@@ -7,11 +7,6 @@
         android:text="@string/sets_pass_change"/>
 
     <Button
-        android:id="@+id/setCode"
-        style="@style/TransButton"
-        android:text="@string/sets_destruct_set"/>
-
-    <Button
         style="@style/TransButton"
         android:id="@+id/viewMnemonic"
         android:text="@string/sets_mnemonic"/>

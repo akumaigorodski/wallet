@@ -3,8 +3,9 @@ package com.btcontract.wallet.lightning
 import org.bitcoinj.crypto.{HDKeyDerivation, ChildNumber, TransactionSignature}
 import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
+import com.btcontract.wallet.Utils.{rand, wrap, Bytes}
 import org.bitcoinj.core.{BloomFilter, Sha256Hash}
-import com.btcontract.wallet.Utils.{rand, Bytes}
+
 import org.spongycastle.jce.ECNamedCurveTable
 import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.core.Utils.HEX
@@ -12,15 +13,15 @@ import java.math.BigInteger
 
 
 object Tools { me =>
+  def uuid = HEX.encode(rand getBytes 64)
   def stringToHex(src: String) = HEX.encode(src getBytes "UTF-8")
-  def mask(src: Bytes) = for (byte <- src take 28) yield if (byte > 0) 1.toByte else 0.toByte
 
   // Second 0 means "Bitcoin" according to BIP44
   // Deriving /M/nH/0H/<arbitrary depth> deterministic keys
-  def derive(way: List[ChildNumber], n: Int, seed: DeterministicSeed) = {
+  def derive(way: List[ChildNumber], n: Int)(seed: DeterministicSeed) = {
+    val masterKey = HDKeyDerivation createMasterPrivateKey seed.getSeedBytes
     val purposeBitcoin = List(new ChildNumber(n, true), ChildNumber.ZERO_HARDENED)
-    val master = HDKeyDerivation createMasterPrivateKey seed.getSeedBytes
-    (master /: purposeBitcoin)(HDKeyDerivation.deriveChildKey)
+    (purposeBitcoin ::: way).foldLeft(masterKey)(HDKeyDerivation.deriveChildKey)
   }
 
   // Shared secret for secp256k1
@@ -35,9 +36,9 @@ object Tools { me =>
   }
 
   // Bloom filter for incoming Requests and Responses
-  def mkBloom(ephemeralMasks: Seq[Bytes], identityMask: Bytes) = {
-    val bloomFilter = new BloomFilter(ephemeralMasks.size + 1, 0.000001, rand.nextInt)
-    for (mask <- identityMask +: ephemeralMasks) bloomFilter insert mask
+  def mkBloom(ephemeralKeys: Seq[Bytes], identityKey: Bytes) = {
+    val bloomFilter = new BloomFilter(ephemeralKeys.size + 1, 0.00001, rand.nextInt)
+    for (nextKey <- identityKey +: ephemeralKeys) bloomFilter insert nextKey
     HEX encode bloomFilter.bitcoinSerialize
   }
 
@@ -79,4 +80,20 @@ object Tools { me =>
     jt.writeUInt64(outputStream, ps.a, ps.b, ps.c, ps.d)
     outputStream.toByteArray
   }
+}
+
+object LNSeed {
+  private var seed = Option.empty[DeterministicSeed]
+  // Commit tx keys are located at /M/100H/0H/x, id will be at /M/101H/0H
+  def getKey(x: Int) = seed map Tools.derive(new ChildNumber(x) :: Nil, 100)
+  def setSeed(newSeed: DeterministicSeed) = seed = Some(newSeed)
+  def isSeedSet = seed.isDefined
+}
+
+// A general purpose State Machine
+abstract class StateMachine[T](var state: Symbol, var data: T) { me =>
+  def become(nState: Symbol, nData: T) = wrap { state = nState } { data = nData }
+  def process(change: Any) = try synchronized(me doProcess change) catch error
+  def error: PartialFunction[Throwable, Unit]
+  def doProcess(change: Any)
 }

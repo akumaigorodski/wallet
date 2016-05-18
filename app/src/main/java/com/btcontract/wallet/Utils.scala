@@ -1,6 +1,13 @@
 package com.btcontract.wallet
 
+import Utils._
+import R.string._
+import android.text._
+import android.view._
+import android.widget._
+import org.bitcoinj.core._
 import org.bitcoinj.core.listeners._
+
 import android.widget.RadioGroup.OnCheckedChangeListener
 import info.hoang8f.android.segmented.SegmentedGroup
 import concurrent.ExecutionContext.Implicits.global
@@ -27,13 +34,6 @@ import java.text.{DecimalFormatSymbols, DecimalFormat}
 import java.util.{Locale, Timer, TimerTask}
 import scala.util.{Failure, Success, Try}
 import android.app.{Dialog, Activity}
-
-import Utils._
-import R.string._
-import android.text._
-import android.view._
-import android.widget._
-import org.bitcoinj.core._
 
 import DialogInterface.BUTTON_POSITIVE
 import ViewGroup.LayoutParams.WRAP_CONTENT
@@ -148,8 +148,7 @@ abstract class InfoActivity extends AnimatorActivity { me =>
 
   // Activity lifecycle listeners management
   override def onOptionsItemSelected(m: MenuItem) = runAnd(true) {
-    if (m.getItemId == R.id.lockWalletRightNow) doLockWalletRightNow
-    else if (m.getItemId == R.id.actionRequestPayment) mkRequestForm
+    if (m.getItemId == R.id.actionRequestPayment) mkRequestForm
     else if (m.getItemId == R.id.actionSettings) mkSetsForm
   }
 
@@ -167,12 +166,6 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     // Clear value right away
     app.TransData.value = None
     super.onResume
-  }
-
-  def doLockWalletRightNow = {
-    <(Thread sleep 200, none) { _ => me exitTo classOf[MainActivity] /* locked */ }
-    app.prefs.edit.putBoolean(AbstractKit.PASSWORD_ASK_STARTUP, true).commit
-    try app.kit.stopAsync catch none
   }
 
   // Top bar reactions
@@ -251,7 +244,6 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     val rescanWallet = form.findViewById(R.id.rescanWallet).asInstanceOf[Button]
     val viewMnemonic = form.findViewById(R.id.viewMnemonic).asInstanceOf[Button]
     val changePass = form.findViewById(R.id.changePass).asInstanceOf[Button]
-    val setCode = form.findViewById(R.id.setCode).asInstanceOf[Button]
 
     rescanWallet setOnClickListener new OnClickListener {
       def onClick(restoreWalletView: View) = rm(dialog)(openForm)
@@ -268,18 +260,6 @@ abstract class InfoActivity extends AnimatorActivity { me =>
         app.kit useCheckPoints app.kit.wallet.getEarliestKeyCreationTime
         app.kit.wallet saveToFile app.walletFile
       } catch none finally System exit 0
-    }
-
-    setCode setOnClickListener new OnClickListener {
-      def onClick(setCodeView: View) = rm(dialog)(openForm)
-
-      def openForm = checkPass { pass =>
-        shortCheck(destruct_new, destruct_too_short) { code =>
-          app.prefs.edit.putString(AbstractKit.DESTRUCT_CODE, code).commit
-          val codeSetMessage = me getString sets_destruct_ok format code
-          Toast.makeText(app, codeSetMessage, Toast.LENGTH_LONG).show
-        }
-      }
     }
 
     changePass setOnClickListener new OnClickListener {

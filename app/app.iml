@@ -12,10 +12,7 @@
         <option name="SELECTED_TEST_ARTIFACT" value="_android_test_" />
         <option name="ASSEMBLE_TASK_NAME" value="assembleDebug" />
         <option name="COMPILE_JAVA_TASK_NAME" value="compileDebugSources" />
-        <option name="ASSEMBLE_TEST_TASK_NAME" value="assembleDebugAndroidTest" />
-        <option name="COMPILE_JAVA_TEST_TASK_NAME" value="compileDebugAndroidTestSources" />
         <afterSyncTasks>
-          <task>generateDebugAndroidTestSources</task>
           <task>generateDebugSources</task>
         </afterSyncTasks>
         <option name="ALLOW_USER_CONFIGURATION" value="false" />
@@ -28,7 +25,7 @@
   </component>
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_7" inherit-compiler-output="false">
     <output url="file://$MODULE_DIR$/build/intermediates/classes/debug" />
-    <output-test url="file://$MODULE_DIR$/build/intermediates/classes/androidTest/debug" />
+    <output-test url="file://$MODULE_DIR$/build/intermediates/classes/test/debug" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/build/generated/source/r/debug" isTestSource="false" generated="true" />
@@ -51,6 +48,14 @@
       <sourceFolder url="file://$MODULE_DIR$/src/debug/scala" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/debug/jni" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/debug/rs" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/testDebug/res" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/testDebug/resources" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/testDebug/assets" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/testDebug/aidl" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/testDebug/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/testDebug/scala" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/testDebug/jni" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/testDebug/rs" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/res" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/resources" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/assets" type="java-resource" />
@@ -67,6 +72,14 @@
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/scala" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/jni" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/rs" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/res" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/resources" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/assets" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/aidl" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/scala" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/jni" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/rs" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/build/android-scala" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/assets" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/classes" />
@@ -79,6 +92,7 @@
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/exploded-aar/org.apmem.tools/layouts/1.10/jars" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/incremental" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/manifests" />
+      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/mockable-android-23.jar" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/proguard-rules" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/release" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/res" />
@@ -92,18 +106,19 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="wire-runtime-2.1.1" level="project" />
     <orderEntry type="library" exported="" name="http-request-6.0" level="project" />
-    <orderEntry type="library" exported="" name="slf4j-api-1.7.20" level="project" />
     <orderEntry type="library" exported="" name="okio-1.6.0" level="project" />
+    <orderEntry type="library" exported="" name="slf4j-api-1.7.20" level="project" />
     <orderEntry type="library" exported="" name="rxscala_2.11-0.26.0" level="project" />
     <orderEntry type="library" exported="" name="layouts-1.10" level="project" />
     <orderEntry type="library" exported="" name="core-1.54.0.0" level="project" />
     <orderEntry type="library" exported="" name="okhttp-2.7.2" level="project" />
     <orderEntry type="library" exported="" name="core-3.2.1" level="project" />
+    <orderEntry type="library" exported="" name="bitcoinj-core-0.14.1" level="project" />
     <orderEntry type="library" exported="" name="ndeftools-1.2.4" level="project" />
     <orderEntry type="library" exported="" name="netcipher-1.2.1" level="project" />
-    <orderEntry type="library" exported="" name="bitcoinj-core-0.14" level="project" />
     <orderEntry type="library" exported="" name="spray-json_2.11-1.3.2" level="project" />
     <orderEntry type="library" exported="" name="jsr305-2.0.1" level="project" />
+    <orderEntry type="library" exported="" name="orchid-1.2.1" level="project" />
     <orderEntry type="library" exported="" name="guava-18.0" level="project" />
     <orderEntry type="library" exported="" name="jcip-annotations-1.0" level="project" />
     <orderEntry type="library" exported="" name="zxing-android-embedded-3.1.0" level="project" />
@@ -116,7 +131,6 @@
     <orderEntry type="library" exported="" name="protobuf-java-2.6.1" level="project" />
     <orderEntry type="library" exported="" name="scala-library-2.11.7" level="project" />
     <orderEntry type="library" exported="" name="android-segmented-1.0.5" level="project" />
-    <orderEntry type="library" exported="" name="orchid-1.2" level="project" />
     <orderEntry type="library" name="scala-sdk-2.11.8" level="application" />
   </component>
 </module>

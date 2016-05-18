@@ -6,7 +6,6 @@
     <string name="app_name">Bitcoin</string>
     <string name="sets_noscreen">不要截屏</string>
     <string name="sets_password_ok">新密码已设置成功</string>
-    <string name="sets_destruct_ok">销毁代码已设置«%1$s»</string>
     <string name="sets_rescan_ok">应用现在将被关闭而且下次启动时将触发数据块链重扫描</string>
     <string name="greetings">简单的比特币钱包\n请首先<a href='https://btcontract.com'>阅读钱包</a>手册</string>
     <string name="fee_default"><![CDATA[<small>默认费 %1$s 每kB<br><font color=#999999><small>确认可能需要数小时</small></font></small>]]></string>
@@ -20,22 +19,18 @@
     <string name="wallet_password">密码</string>
 
     <string name="sets_pass_change">更改钱包密码</string>
-    <string name="sets_destruct_set">设置销毁代码</string>
     <string name="sets_rescan">重扫描数据块链</string>
     <string name="sets_mnemonic">查看助记代码</string>
 
-    <string name="destruct_new">销毁代码</string>
     <string name="password_old">当前钱包密码</string>
     <string name="password_new">新的电子钱包密码</string>
     <string name="password_wrong">错误的钱包密码</string>
     <string name="password_too_short">密码太短了</string>
-    <string name="destruct_too_short">销毁代码太短</string>
 
     <!-- headers with links -->
     <string name="mnemonic_info">助记码是非常重要的！\n<a href='https://btcontract.com/#mnemonic-code'>了解更多关于</a>它，一定要保存\n\n随着助记码救了你可以放心，你永远不会失去你珍贵的比特币</string>
     <string name="buy_info"><![CDATA[You are about to be taken to <strong>LocalBitcoins</strong> secure website where bitcoins can be safely purchased and instantly transferred to this wallet.<br><br>Would you like to proceed?]]></string>
     <string name="read_settings"><![CDATA[<small>有疑问或者感到失落？<br><a href=https://btcontract.com>阅读应用程序手册</a><br><br></small>电子钱包设置]]></string>
-    <string name="action_lock">锁定这个钱包</string>
     <string name="wallet_open">打开钱包</string>
 
     <!-- menu -->

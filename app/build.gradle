@@ -1,19 +1,15 @@
 apply plugin: "com.android.application"
 apply plugin: "jp.leafytree.android-scala"
 
-repositories {
-    jcenter()
-}
-
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.3"
 
     defaultConfig {
         applicationId "com.btcontract.wallet"
-        versionName "1.07"
+        versionName "1.071"
         minSdkVersion 15
-        versionCode 41
+        versionCode 42
     }
 
     buildTypes {
@@ -33,7 +29,7 @@ dependencies {
     compile 'com.madgag.spongycastle:pg:1.54.0.0'
     compile 'com.madgag.spongycastle:prov:1.54.0.0'
     compile 'com.madgag.spongycastle:pkix:1.54.0.0'
-    compile 'org.bitcoinj:bitcoinj-core:0.14'
+    compile 'org.bitcoinj:bitcoinj-core:0.14.1'
 
     // UI and layout
     compile 'org.apmem.tools:layouts:1.10@aar'

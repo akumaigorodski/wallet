@@ -1,15 +1,15 @@
 package com.btcontract.wallet.lightning;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.IOException;
 
 
 public class JavaTools {
     public static Long uint64(int a, int b, int c, int d, int e, int f, int g, int h) {
-        return (a & 0xffl) | ((b & 0xffl) << 8) | ((c & 0xffl) << 16) | ((d & 0xffl) << 24) |
-                ((e & 0xffl) << 32) | ((f & 0xffl) << 40) | ((g & 0xffl) << 48) | ((h & 0xffl) << 56);
+        return (a & 0xffL) | ((b & 0xffL) << 8) | ((c & 0xffL) << 16) | ((d & 0xffL) << 24) |
+                ((e & 0xffL) << 32) | ((f & 0xffL) << 40) | ((g & 0xffL) << 48) | ((h & 0xffL) << 56);
     }
 
     public static Long uint64(InputStream input) throws IOException {
@@ -19,6 +19,16 @@ public class JavaTools {
 
     public static void writeUInt8(OutputStream out, Long... inputs) throws IOException {
         for (Long input : inputs) out.write( (int)(input & 0xff) );
+    }
+
+    public static void writeUInt32(Long input, OutputStream out) throws IOException {
+        writeUInt8(out, input & 0xff, (input >>> 8) & 0xff, (input >>> 16), (input >>> 24) & 0xff);
+    }
+
+    public static byte[] writeUInt32(Long input) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream(4);
+        writeUInt32(input, out);
+        return out.toByteArray();
     }
 
     public static void writeUInt64(OutputStream out, Long... inputs) throws IOException {

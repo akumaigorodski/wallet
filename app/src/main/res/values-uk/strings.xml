@@ -6,7 +6,6 @@
     <string name="app_name">Bitcoin</string>
     <string name="sets_noscreen">Не робіть скріншот</string>
     <string name="sets_password_ok">Новий пароль успішно встановлено</string>
-    <string name="sets_destruct_ok">Встановлено новий код знищення: «%1$s»</string>
     <string name="greetings">Bitcoin-гаманець\n<a href='https://btcontract.com'>інструкція користувача</a></string>
     <string name="sets_rescan_ok">Зараз гаманець буде закритий, сканування почнеться коли ви відкриєте його наступного разу</string>
     <string name="password_info">Будь ласка, підберіть пароль довжиною не менше 6 ніж символів, бажано такий що містить в собі великі літери і цифри</string>
@@ -19,23 +18,19 @@
     <string name="wallet_empty">Гаманець порожній</string>
     <string name="wallet_password">Пароль</string>
 
-    <string name="sets_destruct_set">Встановити код знищення</string>
     <string name="sets_pass_change">Змінити пароль гаманця</string>
     <string name="sets_rescan">Пересканувати блокчейн</string>
     <string name="sets_mnemonic">Подивитись мнемо-код</string>
 
-    <string name="destruct_new">Код знищення</string>
     <string name="password_new">Новий пароль гаманця</string>
     <string name="password_old">Поточний пароль гаманця</string>
     <string name="password_wrong">Введено невірний пароль</string>
     <string name="password_too_short">Пароль занадто короткий</string>
-    <string name="destruct_too_short">Код знищення занадто короткий</string>
 
     <!-- headers with links -->
     <string name="mnemonic_info">Мнемонічний код дуже важливий!\n<a href='https://btcontract.com/#mnemonic-code'>Почитайте про нього</a>, збережіть та тримайте в секреті\n\nЗ мнемонічним кодом ви можете бути впевнені що ваші біткоіни ніколи не пропадуть</string>
     <string name="buy_info"><![CDATA[You are about to be taken to <strong>LocalBitcoins</strong> secure website where bitcoins can be safely purchased and instantly transferred to this wallet.<br><br>Would you like to proceed?]]></string>
     <string name="read_settings"><![CDATA[<small>Є питання?<br><a href=https://btcontract.com>інформація про гаманець</a><br><br></small>Налаштувати гаманець]]></string>
-    <string name="action_lock">Заблокувати гаманець</string>
     <string name="wallet_open">Відчинити</string>
 
     <!-- menu -->
