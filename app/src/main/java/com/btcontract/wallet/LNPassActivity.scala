@@ -21,7 +21,7 @@ class LNPassActivity extends TimerActivity with ViewSwitch { me =>
     setContentView(R.layout.activity_ln_pass)
     checkPassword setOnClickListener new View.OnClickListener {
       def check = LNSeed.setSeed(Mnemonic decrypt passData.getText.toString)
-      def proceed = me exitTo classOf[TxsActivity]
+      def proceed = me exitTo classOf[LNTxsActivity]
 
       def onClick(view: View) = hideKeys {
         <(check, _ => wrongPass)(_ => proceed)

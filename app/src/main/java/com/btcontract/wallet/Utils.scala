@@ -150,6 +150,13 @@ abstract class InfoActivity extends AnimatorActivity { me =>
   override def onOptionsItemSelected(m: MenuItem) = runAnd(true) {
     if (m.getItemId == R.id.actionRequestPayment) mkRequestForm
     else if (m.getItemId == R.id.actionSettings) mkSetsForm
+    else if (m.getItemId == R.id.actionBuyCoins) {
+
+      val msg = Html.fromHtml(me getString buy_info)
+      val site = new Intent(Intent.ACTION_VIEW, Uri parse s"https://localbitcoins.com/buy_bitcoins")
+      val dialog = mkChoiceDialog(me startActivity site, none, dialog_ok, dialog_cancel)
+      mkForm(dialog setMessage msg, me getString action_buy, null)
+    }
   }
 
   override def onCreateOptionsMenu(menu: Menu) = runAnd(true) {
@@ -170,10 +177,7 @@ abstract class InfoActivity extends AnimatorActivity { me =>
 
   // Top bar reactions
   def goQRScan(top: View) = me goTo classOf[ScanActivity]
-  def goBuyBitcoin(top: View) = Uri parse s"https://localbitcoins.com/buy_bitcoins" match { case site =>
-    val ask = mkChoiceDialog(me startActivity new Intent(Intent.ACTION_VIEW, site), none, dialog_ok, dialog_cancel)
-    mkForm(ask setMessage Html.fromHtml(me getString buy_info), me getString action_buy, null)
-  }
+  def goLNWallet(top: View) = me goTo classOf[LNTxsActivity]
 
   def doReceive(top: View) = {
     val payData = PayData(app.kit.currentAddress, nullFail)

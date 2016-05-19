@@ -118,4 +118,7 @@
         <item><![CDATA[<strong>%1$s</strong> confirmation]]></item>
         <item><![CDATA[<strong>%1$s</strong> confirmations]]></item>
     </array>
+
+    <string name="ln_search">Search</string>
+    <string name="ln_wallet">Lightning wallet</string>
 </resources>
