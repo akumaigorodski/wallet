@@ -3,4 +3,5 @@ Link to APK file: https://github.com/btcontract/bitcoins/blob/master/app/app-rel
 
 Simple Bitcoin Wallet is available on the following app stores:  
 Google: https://play.google.com/store/apps/details?id=com.btcontract.wallet  
+ApkFiles: https://www.apkfiles.com/apk-492141/simple-bitcoin-wallet  
 Xiaomi: http://app.mi.com/detail/105943
