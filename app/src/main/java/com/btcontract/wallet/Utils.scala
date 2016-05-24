@@ -186,10 +186,9 @@ abstract class InfoActivity extends AnimatorActivity { me =>
   }
 
   def doPay(top: View): SpendManager = {
-    val dialog = negPosBld(dialog_cancel, dialog_next)
     val content = getLayoutInflater.inflate(R.layout.frag_input_spend, null, false)
     val address = content.findViewById(R.id.addressData).asInstanceOf[EditText]
-    val alert = mkForm(dialog, me getString action_send, content)
+    val alert = mkForm(negPosBld(dialog_cancel, dialog_next), null, content)
     val man = new RateManager(content)
 
     val ok = alert getButton BUTTON_POSITIVE

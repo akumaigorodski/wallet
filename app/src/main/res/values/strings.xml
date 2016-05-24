@@ -36,10 +36,10 @@
     <!-- menu -->
     <string name="action_settings">Wallet settings</string>
     <string name="action_request_payment">Request payment</string>
-    <string name="action_receive_payment">Receive money</string>
-    <string name="action_buy">Buy some bitcoins</string>
-    <string name="action_send">Send money</string>
+    <string name="action_receive_payment">Receive</string>
+    <string name="action_buy">Buy bitcoins</string>
     <string name="action_scan">Scan QR</string>
+    <string name="action_send">Send</string>
 
     <!-- errors -->
     <string name="err_pass">Transaction failed because password did not match. Please make sure you have provided a correct password</string>

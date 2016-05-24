@@ -19,10 +19,6 @@
             android:layout_width="wrap_content" android:text="@string/action_scan"
             android:onClick="goQRScan" style="@style/BaseText"/>
 
-        <Button android:drawableLeft="@drawable/ic_flash_on_white_18dp"
-            android:layout_width="wrap_content" android:text="@string/ln_wallet"
-            android:onClick="goLNWallet" style="@style/BaseText"/>
-
     </org.apmem.tools.layouts.FlowLayout>
 
     <View

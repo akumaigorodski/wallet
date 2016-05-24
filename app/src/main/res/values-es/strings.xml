@@ -23,7 +23,7 @@
     <string name="sets_mnemonic">Ver código nemotécnico</string>
 
     <string name="password_new">Nueva contraseña</string>
-    <string name="password_old">Current wallet password</string>
+    <string name="password_old">Contraseña actual</string>
     <string name="password_too_short">La contraseña es muy corta</string>
     <string name="password_wrong">Contraseña de monedero incorrecta</string>
 
@@ -36,10 +36,10 @@
     <!-- menu -->
     <string name="action_settings">Ajustes de monedero</string>
     <string name="action_request_payment">Solicitar una suma</string>
-    <string name="action_receive_payment">Recibir dinero</string>
+    <string name="action_receive_payment">Recibir</string>
     <string name="action_buy">Comprar bitcoins</string>
-    <string name="action_send">Enviar dinero</string>
-    <string name="action_scan">Scan QR</string>
+    <string name="action_send">Enviar</string>
+    <string name="action_scan">QR</string>
 
     <!-- errors -->
     <string name="err_pass">La transacción falló porque la contraseña no coincide. Por favor, asegúrese de que ha escrito la contraseña correcta.</string>

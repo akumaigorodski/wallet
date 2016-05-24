@@ -38,8 +38,8 @@
     <string name="action_request_payment">请求确切数额</string>
     <string name="action_receive_payment">收钱</string>
     <string name="action_buy">比特币购买</string>
-    <string name="action_send">寄钱</string>
     <string name="action_scan">扫描QR</string>
+    <string name="action_send">寄钱</string>
 
     <!-- errors -->
     <string name="err_pass">交易失败因为密码不匹配。请确保你提供了正确的密码</string>
