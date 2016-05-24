@@ -54,5 +54,9 @@
         <activity android:launchMode="singleTask" android:name="LNPassActivity"
             android:screenOrientation="portrait" android:theme="@style/NoBar"/>
 
+        <activity android:launchMode="singleTask" android:name="LNTxsActivity"
+            android:screenOrientation="portrait" android:theme="@style/LiteBar"
+            android:icon="@drawable/ic_ln"/>
+
     </application>
 </manifest>

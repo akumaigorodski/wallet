@@ -7,9 +7,9 @@ android {
 
     defaultConfig {
         applicationId "com.btcontract.wallet"
-        versionName "1.071"
+        versionName "1.072"
         minSdkVersion 15
-        versionCode 42
+        versionCode 43
     }
 
     buildTypes {

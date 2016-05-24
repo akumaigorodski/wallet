@@ -37,9 +37,9 @@
     <string name="action_settings">ウォレット設定</string>
     <string name="action_request_payment">正確な金額を要求します</string>
     <string name="action_receive_payment">受け取ります</string>
+    <string name="action_scan">QRをスキャン</string>
     <string name="action_buy">購入コイン</string>
     <string name="action_send">送金する</string>
-    <string name="action_scan">QRをスキャン</string>
 
     <!-- errors -->
     <string name="err_pass">パスワードが一致しないため、トランザクションに失敗しました。正しいパスワードを入力したことを確認してください</string>

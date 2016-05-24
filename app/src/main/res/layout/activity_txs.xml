@@ -19,11 +19,6 @@
             android:layout_width="wrap_content" android:text="@string/action_scan"
             android:onClick="goQRScan" style="@style/BaseText"/>
 
-        <Button android:text="@string/action_buy"
-            android:layout_width="wrap_content"
-            android:onClick="goBuyBitcoin"
-            style="@style/BaseText"/>
-
     </org.apmem.tools.layouts.FlowLayout>
 
     <View

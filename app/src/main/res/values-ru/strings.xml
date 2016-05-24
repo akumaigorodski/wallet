@@ -22,8 +22,8 @@
     <string name="sets_rescan">Пересканировать блокчейн</string>
     <string name="sets_mnemonic">Посмотреть мнемо-код</string>
 
-    <string name="password_new">Введите новый пароль</string>
-    <string name="password_old">Введите пароль кошелька</string>
+    <string name="password_new">Новый пароль</string>
+    <string name="password_old">Пароль кошелька</string>
     <string name="password_wrong">Введен неверный пароль</string>
     <string name="password_too_short">Пароль слишком короткий</string>
 
@@ -38,8 +38,8 @@
     <string name="action_request_payment">Запросить сумму</string>
     <string name="action_receive_payment">Получить</string>
     <string name="action_buy">Купить биткоины</string>
-    <string name="action_send">Послать деньги</string>
-    <string name="action_scan">Скан QR</string>
+    <string name="action_send">Послать</string>
+    <string name="action_scan">QR</string>
 
     <!-- errors -->
     <string name="err_pass">Перевод не прошел потому что пароль не подошел. Убедитесь, что вы ввели правильный пароль</string>
