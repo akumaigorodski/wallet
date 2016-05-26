@@ -8,7 +8,7 @@ import com.btcontract.wallet.Utils.Bytes
 
 case class Encryptor(chacha: AeadChacha20, nonce: Long)
 case class Decryptor(chacha: AeadChacha20, nonce: Long, buffer: Bytes = Array.empty,
-                     header: Option[Int] = None, body: Option[Bytes] = None)
+                     header: Option[Int] = None, bodies: Vector[Bytes] = Vector.empty)
 
 object Encryptor {
   def encrypt(enc: Encryptor, data: Bytes) = jt.writeUInt32(data.length.toLong) match { case header =>
@@ -19,23 +19,18 @@ object Encryptor {
 }
 
 object Decryptor {
-  def decryptHeader(buf1: Bytes, dec: Decryptor) = if (buf1.length < 20) dec.copy(buffer = buf1) else {
-    val headLen = dec.chacha.decrypt(buf1.slice(4, 20), jt writeUInt64 dec.nonce, buf1 take 4, Array.empty) take 4
-    val dec1 = dec.copy(nonce = dec.nonce + 1, header = Some apply readUint32(headLen, 0).toInt, buffer = Array.empty)
-    add(dec1, buf1 drop 20)
+  def header(buf1: Bytes, state: Decryptor) = if (buf1.length < 20) state.copy(buffer = buf1) else {
+    val headLen = state.chacha.decrypt(buf1.slice(4, 20), jt writeUInt64 state.nonce, buf1 take 4, Array.empty) take 4
+    add(Decryptor(state.chacha, state.nonce + 1, Array.empty, Some(readUint32(headLen, 0).toInt), state.bodies), buf1 drop 20)
   }
 
-  def decryptBody(buf1: Bytes, dec: Decryptor, headLen: Int) = if (buf1.length < headLen) dec.copy(buffer = buf1) else {
-    val plain = dec.chacha.decrypt(buf1.slice(headLen, headLen + 16), jt writeUInt64 dec.nonce, buf1 take headLen, Array.empty)
-    dec.copy(nonce = dec.nonce + 1, header = dec.header, body = Some apply plain, buffer = Array.empty)
+  def body(buf1: Bytes, state: Decryptor, headLen: Int) = if (buf1.length < headLen + 16) state.copy(buffer = buf1) else {
+    val plain = state.chacha.decrypt(buf1.slice(headLen, headLen + 16), jt writeUInt64 state.nonce, buf1 take headLen, Array.empty)
+    add(Decryptor(state.chacha, state.nonce + 1, Array.empty, None, state.bodies :+ plain), buf1 drop headLen + 16)
   }
 
-  def add(dec: Decryptor, data: Bytes): Decryptor = dec match {
-    case Decryptor(_, _, buffer, None, _) => decryptHeader(jt.concat(buffer, data), dec)
-    case Decryptor(_, _, buffer, Some(headLen), _) => decryptBody(jt.concat(buffer, data), dec, headLen)
+  def add(state: Decryptor, data: Bytes): Decryptor = if (data.isEmpty) state else state match {
+    case Decryptor(_, _, buffer, Some(headLen), bodies) => body(jt.concat(buffer, data), state, headLen)
+    case Decryptor(_, _, buffer, None, _) => header(jt.concat(buffer, data), state)
   }
-}
-
-class AuthHandler {
-
 }
