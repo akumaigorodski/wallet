@@ -2,6 +2,7 @@ package com.btcontract.wallet.lightning
 
 import org.bitcoinj.crypto.{HDKeyDerivation, ChildNumber, TransactionSignature}
 import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
+import javax.crypto.spec.{SecretKeySpec, IvParameterSpec}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
 import com.btcontract.wallet.Utils.{rand, wrap, Bytes}
 import org.bitcoinj.core.{BloomFilter, Sha256Hash}
@@ -10,6 +11,7 @@ import org.spongycastle.jce.ECNamedCurveTable
 import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.core.Utils.HEX
 import java.math.BigInteger
+import javax.crypto.Cipher
 
 
 object Tools { me =>
@@ -80,6 +82,20 @@ object Tools { me =>
 //    jt.writeUInt64(outputStream, ps.a, ps.b, ps.c, ps.d)
 //    outputStream.toByteArray
 //  }
+}
+
+object AES {
+  def cipher(key: Bytes, initVector: Bytes, mode: Int) =
+    Cipher getInstance "AES/CTR/NoPadding" match { case aesCipher =>
+      val ivParameterSpec: IvParameterSpec = new IvParameterSpec(initVector)
+      aesCipher.init(mode, new SecretKeySpec(key, "AES"), ivParameterSpec)
+      aesCipher
+    }
+
+  def encCypher(key: Bytes, initVector: Bytes) = cipher(key, initVector, Cipher.ENCRYPT_MODE)
+  def decCypher(key: Bytes, initVector: Bytes) = cipher(key, initVector, Cipher.DECRYPT_MODE)
+  def enc(data: Bytes, key: Bytes, initVector: Bytes) = encCypher(key, initVector) doFinal data
+  def dec(data: Bytes, key: Bytes, initVector: Bytes) = decCypher(key, initVector) doFinal data
 }
 
 object LNSeed {
