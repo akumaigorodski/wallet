@@ -107,8 +107,8 @@ object LNSeed {
 }
 
 // A general purpose State Machine
-abstract class StateMachine[T](var state: Symbol, var data: T) { me =>
-  def become(nState: Symbol, nData: T) = wrap { state = nState } { data = nData }
+abstract class StateMachine[T](var state: List[String], var data: T) { me =>
+  def become(ns: String, nData: T) = wrap { state = ns :: state take 3 } { data = nData }
   def process(change: Any) = try synchronized(me doProcess change) catch error
   def error: PartialFunction[Throwable, Unit]
   def doProcess(change: Any)

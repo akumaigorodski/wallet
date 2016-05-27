@@ -52,19 +52,13 @@ class WalletApp extends Application {
   def getTo(out: TransactionOutput) = out.getScriptPubKey.getToAddress(params, true)
   def isAlive = if (null == kit) false else kit.state match { case STARTING | RUNNING => true case _ => false }
   def plurOrZero(opts: Array[String], number: Int) = if (number > 0) plur(opts, number) format number else opts(0)
+  def orbotOnline = OrbotHelper isOrbotRunning this
 
   def setBuffer(bufferMessage: String) = {
     val mgr = getSystemService(CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
     mgr setPrimaryClip ClipData.newPlainText(Utils.appName, bufferMessage)
     Toast.makeText(this, copied_to_clipboard, Toast.LENGTH_LONG).show
   }
-
-  // Tor related
-  def hasOrbot = OrbotHelper isOrbotInstalled this
-  def orbotOnline = OrbotHelper isOrbotRunning this
-  def orbotAllowed = prefs.getBoolean(AbstractKit.USE_ORBOT, false)
-  def orbotStart(act: android.app.Activity) = OrbotHelper requestShowOrbotStart act
-  def setOrbotAllowed(mode: Boolean) = prefs.edit.putBoolean(AbstractKit.USE_ORBOT, mode).commit
 
   // Startup actions
   override def onCreate = Utils.wrap(super.onCreate) {
