@@ -41,6 +41,7 @@ dependencies {
 
     // Networking
     compile 'com.github.kevinsawicki:http-request:6.0'
+    compile 'com.neovisionaries:nv-websocket-client:1.27'
     compile 'com.google.code.ndef-tools-for-android:ndeftools:1.2.4'
 
     // Utils
