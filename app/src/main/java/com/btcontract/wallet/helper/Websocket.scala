@@ -2,10 +2,10 @@ package com.btcontract.wallet.helper
 
 import com.neovisionaries.ws.client.{WebSocketFrame, WebSocketAdapter}
 import com.neovisionaries.ws.client.{WebSocket, WebSocketFactory}
-import com.btcontract.wallet.Utils.{Bytes, runAnd, app, none}
+import com.btcontract.wallet.Utils.{Bytes, app, none}
 import concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 
 class Websocket(urlAddress: String) {
@@ -14,7 +14,7 @@ class Websocket(urlAddress: String) {
   var socket = Option.empty[WebSocket]
   var reactors = List.empty[WsReactor]
 
-  val adapter = new WebSocketAdapter {
+  private val adapter = new WebSocketAdapter {
     override def onConnected(ws: WebSocket, hs: Heads) = for (rc <- reactors) rc onConnect ws
     override def onTextMessage(ws: WebSocket, text: String) = for (rc <- reactors) rc onText text
     override def onBinaryMessage(ws: WebSocket, binary: Bytes) = for (rc <- reactors) rc onBinary binary

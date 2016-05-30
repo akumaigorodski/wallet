@@ -1,9 +1,12 @@
 package com.btcontract.wallet.lightning
 
+import org.bitcoinj.core.{Sha256Hash, ECKey}
+import com.btcontract.wallet.Utils.{rand, Bytes}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
 import com.btcontract.wallet.lightning.crypto.AeadChacha20
+import com.btcontract.wallet.lightning.Tools.ecdh
+import com.btcontract.wallet.lightning.proto
 import org.bitcoinj.core.Utils.readUint32
-import com.btcontract.wallet.Utils.Bytes
 
 
 case class Encryptor(chacha: AeadChacha20, nonce: Long)
@@ -32,5 +35,33 @@ object Decryptor {
   def add(state: Decryptor, data: Bytes): Decryptor = if (data.isEmpty) state else state match {
     case Decryptor(_, _, buffer, Some(headLen), bodies) => body(jt.concat(buffer, data), state, headLen)
     case Decryptor(_, _, buffer, None, _) => header(jt.concat(buffer, data), state)
+  }
+}
+
+trait SesData
+case object NoSesData extends SesData
+case class SessionData(theirSesKey: Bytes, enc: Encryptor, dec: Decryptor) extends SesData
+class AuthHandler extends StateMachine[SesData]('WaitForSesKey :: Nil, NoSesData)
+{
+  val sesKey = new ECKey(rand)
+  def doProcess(vs: Any) = (vs, data, state) match {
+    case (message: Bytes, NoSesData, 'WaitForSesKey :: _) =>
+
+      // First 4 bytes is overall message length
+      val theirSessionPubKey = message.slice(4, 33 + 4)
+      val sharedSecret = ecdh(theirSessionPubKey, sesKey.getPrivKeyBytes)
+      val sendingKey = Sha256Hash hash jt.concat(sharedSecret, sesKey.getPubKey)
+      val receivingKey = Sha256Hash hash jt.concat(sharedSecret, theirSessionPubKey)
+      val decryptor = Decryptor(new AeadChacha20(receivingKey), 0)
+      val encryptor = Encryptor(new AeadChacha20(sendingKey), 0)
+
+      // Build auth structures
+      val protoPubkey = Tools bytes2BitcoinPubkey LNSeed.idKey.getPubKey
+      val protoSig = Tools tsToSignature LNSeed.idKey.sign(Sha256Hash twiceOf theirSessionPubKey)
+      val protoAuth = (new proto.authenticate.Builder).node_id(protoPubkey).session_sig(protoSig).build
+      val protoPkt = (new proto.pkt.Builder).auth(protoAuth).build
+
+      // Once websocket is available we have to send encrypted protoPkt
+      become(SessionData(theirSessionPubKey, encryptor, decryptor), 'waitForAuth)
   }
 }
