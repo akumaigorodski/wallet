@@ -21,7 +21,7 @@ public final class HMacSha256 {
         return out;
     }
 
-    public static byte[] make(byte[] data, byte[] key) {
+    public static byte[] make(byte[] key, byte[] data) {
         return hmacSha256(createHmacSha256Digest(key), data);
     }
 }

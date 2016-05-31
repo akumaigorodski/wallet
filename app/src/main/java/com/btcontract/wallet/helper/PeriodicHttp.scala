@@ -25,7 +25,7 @@ object JsonHttpUtils {
   // Observable which processes responses of form [ok, ...] or [error, why]
   def thunder[T](path: String, trans: Vector[JsValue] => T, params: Object*) = {
     val httpRequest = HttpRequest.post(s"http://10.0.2.2:9001/$path", true, params:_*)
-    if (app.orbotAllowed && app.orbotAllowed) httpRequest.useProxy("127.0.0.1", 8118)
+    if (app.orbotOnline) httpRequest.useProxy("127.0.0.1", 8118)
 
     obsOn(httpRequest.connectTimeout(15000).body.parseJson, IOScheduler.apply) map {
       case JsArray(JsString("error") +: JsString(why) +: _) => throw new ProtocolException(why)

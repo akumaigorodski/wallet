@@ -18,9 +18,9 @@ public abstract class AbstractKit extends AbstractIdleService {
     public static final String BTC_DENOMINATION = "btc_denomination";
     public static final String CURRENCY = "currency2";
 
+    // Related to lightning network
     public static final String BLIND_LAST_TERMS = "blind_last_terms";
     public static final String BLIND_AUTO_BUY = "blind_auto_buy";
-    public static final String USE_ORBOT = "use_orbot";
 
     public volatile BlockChain blockChain;
     public volatile PeerGroup peerGroup;

@@ -29,7 +29,7 @@ dependencies {
     compile 'com.madgag.spongycastle:pg:1.54.0.0'
     compile 'com.madgag.spongycastle:prov:1.54.0.0'
     compile 'com.madgag.spongycastle:pkix:1.54.0.0'
-    compile 'org.bitcoinj:bitcoinj-core:0.14.1'
+    compile 'org.bitcoinj:bitcoinj-core:0.14.2'
 
     // UI and layout
     compile 'org.apmem.tools:layouts:1.10@aar'
@@ -41,13 +41,14 @@ dependencies {
 
     // Networking
     compile 'com.github.kevinsawicki:http-request:6.0'
-    compile 'com.neovisionaries:nv-websocket-client:1.25'
+    compile 'com.neovisionaries:nv-websocket-client:1.27'
     compile 'com.google.code.ndef-tools-for-android:ndeftools:1.2.4'
 
     // Utils
     compile 'com.google.zxing:core:3.2.1'
     compile 'com.journeyapps:zxing-android-embedded:3.1.0@aar'
+    compile 'com.softwaremill.quicklens:quicklens_2.11:1.4.7'
     compile 'info.guardianproject.netcipher:netcipher:1.2.1'
-    compile 'org.scala-lang:scala-library:2.11.7'
+    compile 'org.scala-lang:scala-library:2.11.8'
     compile 'io.reactivex:rxscala_2.11:0.26.0'
 }
