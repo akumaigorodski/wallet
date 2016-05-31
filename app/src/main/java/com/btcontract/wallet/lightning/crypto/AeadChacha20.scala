@@ -20,7 +20,7 @@ class AeadChacha20(asymmetricKey: Bytes) {
     finalResult
   }
 
-  def mkPoly(data: Bytes, nonce: Bytes) = new Bytes(16) match { case output =>
+  def mkPoly(data: Bytes, nonce: Bytes): Bytes = new Bytes(16) match { case output =>
     val polykey = chacha20Run(new Bytes(32), nonce, encrypt = true, skip = false)
     Poly3105.crypto_onetimeauth(output, 0, data, 0, data.length, polykey)
     output

@@ -37,8 +37,7 @@ case class NormalData(sesData: SessionData, theirNodeKey: ECKey) extends AuthSta
 case class SessionData(theirSesKey: Bytes, enc: Encryptor, dec: Decryptor) extends AuthState
 
 class AuthHandler(sesKey: ECKey, socket: Websocket)
-extends StateMachine[AuthState]('WaitForSesKey :: Nil, NoSesData)
-{
+extends StateMachine[AuthState]('WaitForSesKey :: Nil, NoSesData) {
   def respond(enc: Encryptor, data: Bytes) = jt.writeUInt32(data.length.toLong) match { case header =>
     val (ciphertext1, mac1) = enc.chacha.encrypt(jt writeUInt64 enc.nonce, header, Array.emptyByteArray)
     val (ciphertext2, mac2) = enc.chacha.encrypt(jt writeUInt64 enc.nonce + 1, data, Array.emptyByteArray)
@@ -98,7 +97,7 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, NoSesData)
           bodies map proto.pkt.ADAPTER.decode foreach transfer
           data = nd.modify(_.sesData.dec).setTo(dec2)
 
-        // Accumulate chunks until we get a message
+        // Again accumulate chunks until we get a message
         case _ => data = nd.modify(_.sesData.dec).setTo(dec1)
       }
 
