@@ -1,5 +1,6 @@
 package com.btcontract.wallet.lightning
 
+import com.softwaremill.quicklens._
 import org.bitcoinj.core.{Sha256Hash, ECKey}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
 import com.btcontract.wallet.lightning.crypto.AeadChacha20
@@ -8,10 +9,6 @@ import com.btcontract.wallet.helper.Websocket
 import org.bitcoinj.core.Utils.readUint32
 import com.btcontract.wallet.Utils.Bytes
 
-
-case class Encryptor(chacha: AeadChacha20, nonce: Long)
-case class Decryptor(chacha: AeadChacha20, nonce: Long, buffer: Bytes = Array.empty,
-                     header: Option[Int] = None, bodies: Vector[Bytes] = Vector.empty)
 
 object Decryptor {
   def header(buf1: Bytes, state: Decryptor) = if (buf1.length < 20) state.copy(buffer = buf1) else {
@@ -30,6 +27,10 @@ object Decryptor {
   }
 }
 
+case class Encryptor(chacha: AeadChacha20, nonce: Long)
+case class Decryptor(chacha: AeadChacha20, nonce: Long, buffer: Bytes = Array.empty,
+                     header: Option[Int] = None, bodies: Vector[Bytes] = Vector.empty)
+
 trait AuthState
 case object NoSesData extends AuthState
 case class NormalData(sesData: SessionData, theirNodeKey: ECKey) extends AuthState
@@ -42,7 +43,7 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, NoSesData)
     val (ciphertext1, mac1) = enc.chacha.encrypt(jt writeUInt64 enc.nonce, header, Array.emptyByteArray)
     val (ciphertext2, mac2) = enc.chacha.encrypt(jt writeUInt64 enc.nonce + 1, data, Array.emptyByteArray)
     socket add jt.concat(ciphertext1, mac1, ciphertext2, mac2)
-    enc.copy(nonce = enc.nonce + 2)
+    enc.modify(_.nonce).using(_ + 2)
   }
 
   def transfer(pack: proto.pkt) = {
@@ -79,12 +80,12 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, NoSesData)
           val theirNodeKey = ECKey fromPublicOnly protoAuth.node_id.key.toByteArray
 
           // Should we do something if the tail is not empty?
-          val sd1 = sd.copy(dec = dec1.copy(bodies = tail, header = None), enc = sd.enc)
+          val sd1 = sd.modify(_.dec.bodies).setTo(tail).modify(_.dec.header).setTo(None)
           theirNodeKey.verifyOrThrow(Sha256Hash twiceOf sesKey.getPubKey, theirSignature)
           become(NormalData(sd1, theirNodeKey), 'normal)
 
         // Accumulate chunks until we get a message
-        case _ => data = sd.copy(dec = dec1)
+        case _ => data = sd.modify(_.dec).setTo(dec1)
       }
 
     // Successfully authorized, now waiting for messages
@@ -93,19 +94,17 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, NoSesData)
 
       dec1.bodies match {
         case bodies if bodies.nonEmpty =>
-          bodies map proto.pkt.ADAPTER.decode foreach transfer
           val dec2 = dec1.copy(header = None, bodies = Vector.empty)
-          data = NormalData(nd.sesData.copy(dec = dec2), nd.theirNodeKey)
+          bodies map proto.pkt.ADAPTER.decode foreach transfer
+          data = nd.modify(_.sesData.dec).setTo(dec2)
 
-        case _ =>
-          val sd1 = nd.sesData.copy(dec = dec1)
-          data = NormalData(sd1, nd.theirNodeKey)
+        // Accumulate chunks until we get a message
+        case _ => data = nd.modify(_.sesData.dec).setTo(dec1)
       }
 
     // Got a request to send a packet to counterparty
     case (pack: proto.pkt, nd: NormalData, 'normal :: rest) =>
       val enc1 = respond(nd.sesData.enc, pack.encode)
-      val sd1 = nd.sesData.copy(enc = enc1)
-      data = nd.copy(sesData = sd1)
+      data = nd.modify(_.sesData.enc).setTo(enc1)
   }
 }
