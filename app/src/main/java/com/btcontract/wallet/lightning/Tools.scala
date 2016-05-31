@@ -1,15 +1,14 @@
 package com.btcontract.wallet.lightning
 
 import org.bitcoinj.crypto.{HDKeyDerivation, ChildNumber, TransactionSignature}
+import com.btcontract.wallet.Utils.{rand, none, runAnd, Bytes}
 import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
-import com.btcontract.wallet.Utils.{rand, wrap, none, Bytes}
 import javax.crypto.spec.{SecretKeySpec, IvParameterSpec}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
 import org.bitcoinj.core.{BloomFilter, Sha256Hash}
 
 import org.spongycastle.jce.ECNamedCurveTable
 import org.bitcoinj.core.ECKey.ECDSASignature
-import com.btcontract.wallet.lightning.proto
 import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.core.Utils.HEX
 import java.math.BigInteger
@@ -57,13 +56,12 @@ object Tools { me =>
 
   // PubKey bytes to proto
   def bytes2BitcoinPubkey(bytes: Bytes) = {
-    val bitcoinPubkey = new proto.bitcoin_pubkey.Builder
-    val bs = ByteString.of(LNSeed.idKey.getPubKey:_*)
-    bitcoinPubkey.key(bs).build
+    val bs = ByteString.of(bytes, 0, bytes.length)
+    new proto.bitcoin_pubkey(bs)
   }
 
   // Proto signature conversion
-  def tsToSignature(ts: ECDSASignature) = {
+  def ts2Signature(ts: ECDSASignature) = {
     val inR = new ByteArrayInputStream(fixSize(ts.r.toByteArray).reverse)
     val inS = new ByteArrayInputStream(fixSize(ts.s.toByteArray).reverse)
     new proto.signature(jt uint64 inR, jt uint64 inR, jt uint64 inR,
@@ -71,13 +69,13 @@ object Tools { me =>
       jt uint64 inS, jt uint64 inS)
   }
 
-  def signature2Bytes(protosig: proto.signature) = {
+  def signature2ts(protosig: proto.signature) = {
     val (rbos, sbos) = (new ByteArrayOutputStream, new ByteArrayOutputStream)
     jt.writeUInt64(rbos, protosig.r1, protosig.r2, protosig.r3, protosig.r4)
     jt.writeUInt64(sbos, protosig.s1, protosig.s2, protosig.s3, protosig.s4)
     val r = new BigInteger(1, rbos.toByteArray.reverse)
     val s = new BigInteger(1, sbos.toByteArray.reverse)
-    new TransactionSignature(r, s).encodeToBitcoin
+    new TransactionSignature(r, s)
   }
 
   // Proto sha256 conversion
@@ -117,8 +115,8 @@ object LNSeed {
 
 // A general purpose State Machine
 abstract class StateMachine[T](var state: List[Symbol], var data: T) { me =>
-  def become(nData: T, ns: Symbol) = wrap { data = nData } { state = ns :: state take 3 }
-  def process(change: Any) = try synchronized(me doProcess change) catch error
+  def become(nData: T, ns: Symbol) = runAnd { data = nData } { state = ns :: state take 3 }
+  def process(change: Any) = try me.synchronized(me doProcess change) catch error
   def error: PartialFunction[Throwable, Unit] = none
   def doProcess(change: Any)
 }

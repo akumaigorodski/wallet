@@ -5,12 +5,12 @@ import com.neovisionaries.ws.client.{WebSocket, WebSocketFactory}
 import com.btcontract.wallet.Utils.{Bytes, app, none}
 import concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Success
 
 
-class Websocket(urlAddress: String) {
-  type Heads = java.util.Map[String, SockHeader]
+class Websocket(url: String) { me =>
   type SockHeader = java.util.List[String]
+  type Heads = java.util.Map[String, SockHeader]
+  var stack: Iterator[Any] = Iterator.empty
   var socket = Option.empty[WebSocket]
   var reactors = List.empty[WsReactor]
 
@@ -25,17 +25,19 @@ class Websocket(urlAddress: String) {
   def connect = {
     val factory = new WebSocketFactory setConnectionTimeout 15000
     if (app.orbotOnline) factory.getProxySettings setHost "127.0.0.1" setPort 8118
-    Future(factory.createSocket(urlAddress).addListener(adapter).connect) onComplete {
-      case Success(ws) => socket = Some(ws) case _ => for (rc <- reactors) rc.onDisconnect
-    }
+    val attempt = Future(factory.createSocket(url).addListener(adapter).connect)
+    attempt onFailure { case _ => for (rc <- reactors) rc.onDisconnect }
+    attempt onSuccess { case sock => socket = Some apply sock }
+    attempt onSuccess { case sock => me send sock }
   }
 
-  def sendOr[T](data: T)(or: => Unit) = socket match {
-    case Some(webSocket) if webSocket.isOpen => send(data)
-    case _ => or
+  def add(data: Any) = {
+    stack = stack ++ Iterator(data)
+    for (sock <- socket if sock.isOpen) send(sock)
   }
 
-  def send[T](data: T) = for (sock <- socket) data match {
+  // stack is cleared automatically on each call
+  def send(sock: WebSocket) = for (vs <- stack) vs match {
     case binaryMessage: Bytes => sock sendBinary binaryMessage
     case textMessage: String => sock sendText textMessage
     case _ => /* format unknown so do nothing */
@@ -43,7 +45,7 @@ class Websocket(urlAddress: String) {
 
   def close = {
     reactors = List.empty
-    socket.foreach(_.disconnect)
+    for (sock <- socket) sock.disconnect
   }
 }
 
