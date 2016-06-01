@@ -24,8 +24,11 @@ object ThundercloudProtocol extends DefaultJsonProtocol { me =>
     BigInteger, BigInteger, BlindParams](BlindParams, "key", "a", "b", "c", "bInv")
 
   // Request and Charge which can be remote or NFC-based
-  implicit val requestFmt = jsonFormat[Option[Bytes], Long, String, String, Request](Request, "ephemeral", "mSatAmount", "message", "id")
-  implicit val chargeFmt = jsonFormat[Request, Bytes, Charge](Charge, "request", "lnPaymentData")
+  implicit val requestFmt = jsonFormat[Option[Bytes], Long, String, String,
+    Request](Request, "ephemeral", "mSatAmount", "message", "id")
+
+  implicit val chargeFmt = jsonFormat[Request, Bytes,
+    Charge](Charge, "request", "lnPaymentData")
 
   // Message and Wrap
   implicit val messageFmt = jsonFormat[Bytes, Bytes, Message](Message, "pubKey", "content")
@@ -37,7 +40,7 @@ object ThundercloudProtocol extends DefaultJsonProtocol { me =>
 }
 
 // A "response-to" ephemeral key, it's private part should be stored in a database
-// because my bloom filter has it, it's optional because Charge may come locally via NFC
+// because my bloom filter has it. It's optional because Charge may come locally via NFC
 case class Request(ephemeral: Option[Bytes], mSatAmount: Long, message: String, id: String)
 case class Charge(request: Request, lnPaymentData: Bytes)
 
