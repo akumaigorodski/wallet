@@ -98,3 +98,23 @@ object Fee { me =>
   def go = retry(obsOn(reloadData, IOScheduler.apply), pickInc, 1 to 30)
     .repeatWhen(_ delay 30.minute).subscribe(prov => rate = Coin valueOf prov.fee)
 }
+
+// Watch for utxos on a given addres to detect funding and contract breach
+case class Utxo(txid: String, vout: Long, amount: BigDecimal, confirmations: Long)
+
+object Insight {
+  type UtxoList = List[Utxo]
+  implicit val txFmt = jsonFormat[String, Long, BigDecimal, Long,
+    Utxo](Utxo, "txid", "vout", "amount", "confirmations")
+
+  def reloadData(addr: String) = rand nextInt 3 match {
+    case 0 => to[UtxoList](get(s"https://insight.bitpay.com/api/addr/$addr/utxo").body)
+    case 1 => to[UtxoList](get(s"https://blockexplorer.com/api/addr/$addr/utxo").body)
+    case _ => to[UtxoList](get(s"https://bitlox.io/api/addr/$addr/utxo").body)
+  }
+
+  def utxo(addr: String) = {
+    val obs = obsOn(reloadData(addr), IOScheduler.apply)
+    retry(obs, pick = pickInc, times = 1 to 3)
+  }
+}
