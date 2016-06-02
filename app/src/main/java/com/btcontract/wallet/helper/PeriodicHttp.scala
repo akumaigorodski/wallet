@@ -99,22 +99,23 @@ object Fee { me =>
     .repeatWhen(_ delay 30.minute).subscribe(prov => rate = Coin valueOf prov.fee)
 }
 
-// Watch for utxos on a given addres to detect funding and contract breach
-case class Utxo(txid: String, vout: Long, amount: BigDecimal, confirmations: Long)
+// Tx Insight API formats
+case class TxInput(txid: String, addr: String)
+case class Tx(txid: String, vin: List[TxInput], confirmations: Long)
 
 object Insight {
-  type UtxoList = List[Utxo]
-  implicit val txFmt = jsonFormat[String, Long, BigDecimal, Long,
-    Utxo](Utxo, "txid", "vout", "amount", "confirmations")
+  type TxList = List[Tx]
+  implicit val txInputFmt = jsonFormat[String, String, TxInput](TxInput, "txid", "addr")
+  implicit val txFmt = jsonFormat[String, List[TxInput], Long, Tx](Tx, "txid", "vin", "confirmations")
 
-  def reloadData(addr: String) = rand nextInt 3 match {
-    case 0 => to[UtxoList](get(s"https://insight.bitpay.com/api/addr/$addr/utxo").body)
-    case 1 => to[UtxoList](get(s"https://blockexplorer.com/api/addr/$addr/utxo").body)
-    case _ => to[UtxoList](get(s"https://bitlox.io/api/addr/$addr/utxo").body)
+  def reloadData(suffix: String) = rand nextInt 3 match {
+    case 0 => get(s"https://insight.bitpay.com/api/$suffix").body
+    case 1 => get(s"https://blockexplorer.com/api/$suffix").body
+    case _ => get(s"https://bitlox.io/api/$suffix").body
   }
 
-  def utxo(addr: String) = {
-    val obs = obsOn(reloadData(addr), IOScheduler.apply)
-    retry(obs, pick = pickInc, times = 1 to 3)
-  }
+  // Watch for utxos on a given address to detect funding or contract breach
+  def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs?from=0&to=10").parseJson
+    .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 5)
 }
+
