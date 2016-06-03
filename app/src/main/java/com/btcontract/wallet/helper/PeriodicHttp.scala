@@ -117,9 +117,9 @@ object Insight {
     case _ => get(s"https://bitlox.io/api/$suffix").body
   }
 
-  // Check utxo existance for funding and contract breach
-  def utxo(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/utxo")
-    .parseJson.convertTo[OutList], IOScheduler.apply), pickInc, 1 to 5)
+  // Check for utxo existance in case of funding and contract breach
+  def utxo(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/utxo"),
+    IOScheduler.apply) map to[OutList], pickInc, 1 to 5)
 
   // If breach detected, find an exact txid which has been spent
   def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs").parseJson
