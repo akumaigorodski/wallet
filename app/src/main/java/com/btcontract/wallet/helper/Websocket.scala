@@ -28,16 +28,15 @@ class Websocket(url: String) { me =>
     val attempt = Future(factory.createSocket(url).addListener(adapter).connect)
     attempt onFailure { case _ => for (rc <- reactors) rc.onDisconnect }
     attempt onSuccess { case sock => socket = Some apply sock }
-    attempt onSuccess { case sock => me send sock }
+    attempt onSuccess { case sock => me push sock }
   }
 
   def add(data: Any) = {
-    stack = stack ++ Iterator(data)
-    for (sock <- socket if sock.isOpen) send(sock)
+    stack = (stack.toVector :+ data).toIterator
+    for (s <- socket if s.isOpen) push(s)
   }
 
-  // stack is cleared automatically on each call
-  def send(sock: WebSocket) = for (vs <- stack) vs match {
+  def push(sock: WebSocket) = for (vs <- stack) vs match {
     case binaryMessage: Bytes => sock sendBinary binaryMessage
     case textMessage: String => sock sendText textMessage
     case _ => /* format unknown so do nothing */
@@ -45,7 +44,7 @@ class Websocket(url: String) { me =>
 
   def close = {
     reactors = List.empty
-    for (sock <- socket) sock.disconnect
+    for (s <- socket) s.disconnect
   }
 }
 

@@ -98,3 +98,31 @@ object Fee { me =>
   def go = retry(obsOn(reloadData, IOScheduler.apply), pickInc, 1 to 30)
     .repeatWhen(_ delay 30.minute).subscribe(prov => rate = Coin valueOf prov.fee)
 }
+
+// Tx Insight API formats
+case class TxInput(txid: String, addr: String)
+case class TxOutput(txid: String, confirmations: Long)
+case class Tx(txid: String, vin: List[TxInput], confirmations: Long)
+
+object Insight {
+  type TxList = List[Tx]
+  type OutList = List[TxOutput]
+  implicit val txInputFmt = jsonFormat[String, String, TxInput](TxInput, "txid", "addr")
+  implicit val txOutFmt = jsonFormat[String, Long, TxOutput](TxOutput, "txid", "confirmations")
+  implicit val txFmt = jsonFormat[String, List[TxInput], Long, Tx](Tx, "txid", "vin", "confirmations")
+
+  def reloadData(suffix: String) = rand nextInt 3 match {
+    case 0 => get(s"https://insight.bitpay.com/api/$suffix").body
+    case 1 => get(s"https://blockexplorer.com/api/$suffix").body
+    case _ => get(s"https://bitlox.io/api/$suffix").body
+  }
+
+  // Check for utxo existance in case of funding and contract breach
+  def utxo(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/utxo"),
+    IOScheduler.apply) map to[OutList], pickInc, 1 to 5)
+
+  // If breach detected, find an exact txid which has been spent
+  def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs").parseJson
+    .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 5)
+}
+

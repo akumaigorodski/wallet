@@ -5,9 +5,9 @@ import org.bitcoinj.core.Sha256Hash
 
 
 object ShaChain {
-  type KnownHashes = Seq[KnownHash]
+  type HashSeq = Seq[KnownHash]
   case class KnownHash(hash: Bytes, index: Long)
-  case class Hashes(known: KnownHashes, maxIndex: Long)
+  case class KnownHashes(known: HashSeq, maxIndex: Long)
 
   def canDerive(start: Long, end: Long) = (~start & end) == 0
   def shaChainFromSeed(seed: Bytes, idx: Long): Bytes = derive(seed, 0xffffffffffffffffL, idx)
@@ -26,15 +26,15 @@ object ShaChain {
     hash
   }
 
-  def getHash(chain: Hashes, index: Long) = {
+  def getHash(chain: KnownHashes, index: Long) = {
     def derivable(known: KnownHash) = canDerive(known.index, index)
     def deriveKnown(known: KnownHash) = derive(known.hash, known.index, index)
     chain.known find derivable map deriveKnown
   }
 
-  def addHash(chain: Hashes, hash: Bytes, index: Long) = {
-    def updateKnown(known: KnownHashes, acc: KnownHashes): KnownHashes = known match {
-      case KnownHash(knownBytes, knownIndex) :: tail if canDerive(index, knownIndex) =>
+  def addHash(chain: KnownHashes, hash: Bytes, index: Long) = {
+    def updateKnown(known: HashSeq, acc: HashSeq): HashSeq = known match {
+      case KnownHash(knownBytes, knownIndex) :: _ if canDerive(index, knownIndex) =>
         assert(derive(hash, index, knownIndex) sameElements knownBytes)
         acc :+ KnownHash(hash, index)
 
@@ -44,6 +44,6 @@ object ShaChain {
 
     val fresh = index == 0 && chain.known.isEmpty
     assert(index == chain.maxIndex + 1 | fresh, "Index exists")
-    Hashes(updateKnown(chain.known, Seq.empty), index)
+    KnownHashes(updateKnown(chain.known, Seq.empty), index)
   }
 }
