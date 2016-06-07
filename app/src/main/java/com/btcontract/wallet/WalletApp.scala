@@ -5,13 +5,14 @@ import R.string._
 import org.bitcoinj.core._
 
 import org.bitcoinj.core.listeners.TransactionConfidenceEventListener
+import com.btcontract.wallet.lightning.thundercloud.OpenHelper
 import info.guardianproject.netcipher.proxy.OrbotHelper
 import collection.JavaConverters.asScalaBufferConverter
 import com.google.common.util.concurrent.Service.State
 import org.bitcoinj.net.discovery.DnsDiscovery
 import org.bitcoinj.wallet.KeyChain.KeyPurpose
 import org.bitcoinj.wallet.Wallet.BalanceType
-import org.bitcoinj.crypto.KeyCrypterScrypt
+import com.btcontract.wallet.lightning.Tools
 import com.google.protobuf.ByteString
 import android.app.Application
 import android.widget.Toast
@@ -20,8 +21,9 @@ import java.io.File
 import org.bitcoinj.wallet.listeners.{WalletChangeEventListener, WalletCoinsSentEventListener, WalletCoinsReceivedEventListener}
 import org.bitcoinj.uri.{BitcoinURIParseException, OptionalFieldValidationException}
 import org.bitcoinj.uri.{RequiredFieldValidationException, BitcoinURI}
+import org.bitcoinj.wallet.{DeterministicSeed, Wallet, Protos}
 import android.content.{ClipData, ClipboardManager, Context}
-import org.bitcoinj.wallet.{Wallet, Protos}
+import org.bitcoinj.crypto.{ChildNumber, KeyCrypterScrypt}
 import State.{STARTING, RUNNING}
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
@@ -86,6 +88,15 @@ class WalletApp extends Application {
     }
   }
 
+  object LNData {
+    private var seed: DeterministicSeed = null
+    lazy val db = new OpenHelper(app, "lightning.db", 1)
+    lazy val idKey = Tools.derive(new ChildNumber(0) :: Nil, 101)(seed)
+    def commitKey(x: Int) = Tools.derive(new ChildNumber(x) :: Nil, 100)(seed)
+    def setSeed(newSeed: DeterministicSeed) = seed = newSeed
+    def seedAbsent = seed == null
+  }
+
   abstract class WalletKit extends AbstractKit {
     def autoSaveOn = wallet.autosaveToFile(walletFile, 500, MILLISECONDS, null)
     def freshOuts = wallet.calculateAllSpendCandidates(false, true).asScala
@@ -111,7 +122,7 @@ class WalletApp extends Application {
       wallet addCoinsReceivedEventListener Vibr.generalTracker
       wallet addTransactionConfidenceEventListener Vibr.generalTracker
       peerGroup addPeerDiscovery new DnsDiscovery(params)
-      peerGroup.setUserAgent(Utils.appName, "1.072")
+      peerGroup.setUserAgent(appName, "1.072")
       peerGroup setDownloadTxDependencies 0
       peerGroup setPingIntervalMsec 10000
       peerGroup setMaxConnections 10

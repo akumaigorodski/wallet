@@ -2,12 +2,12 @@ package com.btcontract.wallet.lightning
 
 import com.softwaremill.quicklens._
 import org.bitcoinj.core.{Sha256Hash, ECKey}
+import com.btcontract.wallet.Utils.{Bytes, app}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
 import com.btcontract.wallet.lightning.crypto.AeadChacha20
 import com.btcontract.wallet.lightning.Tools.ecdh
 import com.btcontract.wallet.helper.Websocket
 import org.bitcoinj.core.Utils.readUint32
-import com.btcontract.wallet.Utils.Bytes
 
 
 object Decryptor {
@@ -62,8 +62,8 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, NoSesData) {
       val encryptor = Encryptor(new AeadChacha20(sendingKey), 0)
 
       // Respond with my encrypted auth info and wait for their auth
-      val protoPubkey = Tools bytes2BitcoinPubkey LNSeed.idKey.getPubKey
-      val protoSig = Tools ts2Signature LNSeed.idKey.sign(Sha256Hash twiceOf theirSessionPubKey)
+      val protoPubkey = Tools bytes2BitcoinPubkey app.LNData.idKey.getPubKey
+      val protoSig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSessionPubKey)
       val protoAuth = (new proto.authenticate.Builder).node_id(protoPubkey).session_sig(protoSig).build
       val enc1 = respond(encryptor, (new proto.pkt.Builder).auth(protoAuth).build.encode)
       become(SessionData(theirSessionPubKey, enc1, decryptor), 'waitForAuth)

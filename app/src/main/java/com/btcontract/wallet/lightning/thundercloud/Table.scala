@@ -5,10 +5,6 @@ import com.btcontract.wallet.Utils.none
 import android.content.Context
 
 
-trait Table {
-  val id = "_id"
-}
-
 object PendingBlindTokens extends Table {
   // params is a Json of List[BlindParams], tokens is a Json of List[BigInteger] clear tokens
   val (table, params, tokens, sesPubkey, rHash) = ("pblindtokens", "params", "tokens", "seskey", "rhash")
@@ -17,15 +13,14 @@ object PendingBlindTokens extends Table {
   def killSql(key: Long) = s"DELETE FROM $table WHERE $id = $key"
 
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
-    $params TEXT NOT NULL, $tokens TEXT NOT NULL, $sesPubkey TEXT NOT NULL,
-    $rHash TEXT NOT NULL)"""
+    $params TEXT NOT NULL, $tokens TEXT NOT NULL, $sesPubkey TEXT NOT NULL, $rHash TEXT NOT NULL)"""
 }
 
 object BlindTokens extends Table {
   val (table, token, signature, key) = ("blindtokens", "token", "signature", "key")
   def newSql = s"INSERT OR IGNORE INTO $table ($token, $signature, $key) VALUES (?, ?, ?)"
-  def selectOneSql = s"SELECT * FROM $table ORDER BY $id LIMIT 1"
   def killSql(key: Long) = s"DELETE FROM $table WHERE $id = $key"
+  def selectOneSql = s"SELECT * FROM $table LIMIT 1"
 
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
     $token TEXT NOT NULL, $signature TEXT NOT NULL, $key TEXT NOT NULL)"""
@@ -33,9 +28,9 @@ object BlindTokens extends Table {
 
 object EphemeralKeys extends Table {
   val (table, privKey, stamp, used) = ("ephemeralkeys", "privkey", "stamp", "used")
-  def newSql = s"INSERT OR IGNORE INTO $table ($privKey, $stamp, $used) VALUES (?, ?, ?)"
+  def newSql = s"INSERT OR IGNORE INTO $table ($privKey, $stamp, $used) VALUES (?, ?, 0)"
   def killSql(cutoff: Long) = s"DELETE FROM $table WHERE $used = 1 AND $stamp < $cutoff"
-  def selectAllSql = s"SELECT FROM $table ORDER BY $id"
+  def selectAllSql = s"SELECT * FROM $table"
 
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
     $privKey TEXT NOT NULL, $stamp INTEGER NOT NULL, $used INTEGER NOT NULL)"""
@@ -61,8 +56,9 @@ object Payments extends Table {
     COMMIT"""
 }
 
-class OpenHelper(context: Context, version: Int)
-extends SQLiteOpenHelper(context, "lightning.db", null, version)
+trait Table { val id = "_id" }
+class OpenHelper(context: Context, name: String, version: Int)
+extends SQLiteOpenHelper(context, name, null, version)
 {
   lazy val db = getWritableDatabase
   def txWrap(run: => Unit) = try run finally db.endTransaction

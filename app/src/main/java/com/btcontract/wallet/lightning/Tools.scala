@@ -104,15 +104,6 @@ object AES {
   def dec(data: Bytes, key: Bytes, initVector: Bytes) = decCypher(key, initVector) doFinal data
 }
 
-object LNSeed {
-  private var seed: DeterministicSeed = null
-  // Commit tx keys are located at /M/100H/0H/x, id will be at /M/101H/0H/0
-  def commitKey(x: Int) = Tools.derive(new ChildNumber(x) :: Nil, 100)(seed)
-  lazy val idKey = Tools.derive(new ChildNumber(0) :: Nil, 101)(seed)
-  def setSeed(newSeed: DeterministicSeed) = seed = newSeed
-  def seedAbsent = seed == null
-}
-
 // A general purpose State Machine
 abstract class StateMachine[T](var state: List[Symbol], var data: T) { me =>
   def become(nData: T, ns: Symbol) = runAnd { data = nData } { state = ns :: state take 3 }
