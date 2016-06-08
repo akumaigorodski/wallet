@@ -37,7 +37,8 @@ object Tools { me =>
 
     val mult = pubPoint.multiply(bigPriv).normalize
     val prefix = if (mult.getYCoord.toBigInteger testBit 0) 0x03 else 0x02
-    Sha256Hash hash prefix.toByte +: mult.getXCoord.toBigInteger.toByteArray.takeRight(32)
+    val x = mult.getXCoord.toBigInteger.toByteArray.takeRight(32)
+    Sha256Hash.hash(prefix.toByte +: x)
   }
 
   // Bloom filter for incoming Requests and Responses

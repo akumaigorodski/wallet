@@ -32,12 +32,11 @@ case class Decryptor(chacha: AeadChacha20, nonce: Long, buffer: Bytes = Array.em
                      header: Option[Int] = None, bodies: Vector[Bytes] = Vector.empty)
 
 trait AuthState
-case object NoSesData extends AuthState
 case class NormalData(sesData: SessionData, theirNodeKey: ECKey) extends AuthState
 case class SessionData(theirSesKey: Bytes, enc: Encryptor, dec: Decryptor) extends AuthState
 
 class AuthHandler(sesKey: ECKey, socket: Websocket)
-extends StateMachine[AuthState]('WaitForSesKey :: Nil, NoSesData) {
+extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
   def respond(enc: Encryptor, data: Bytes) = jt.writeUInt32(data.length.toLong) match { case header =>
     val (ciphertext1, mac1) = enc.chacha.encrypt(jt writeUInt64 enc.nonce, header, Array.emptyByteArray)
     val (ciphertext2, mac2) = enc.chacha.encrypt(jt writeUInt64 enc.nonce + 1, data, Array.emptyByteArray)
@@ -49,24 +48,24 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, NoSesData) {
     // Send packet to channel state machine
   }
 
-  def doProcess(vs: Any) = (vs, data, state) match {
-    // Presumably sent our handshake, now waiting for their
-    case (msg: Bytes, NoSesData, 'WaitForSesKey :: rest) =>
-      val theirSessionPubKey = msg.slice(4, 33 + 4)
+  def doProcess(change: Any) = (change, data, state) match {
+    // Presumably sent our handshake, waiting for their response
+    case (msg: Bytes, null, 'WaitForSesKey :: rest) =>
+      val theirSesPubKey = msg.slice(4, 33 + 4)
 
       // Generate shared secret and encryption keys
-      val sharedSecret = ecdh(theirSessionPubKey, sesKey.getPrivKeyBytes)
+      val sharedSecret = ecdh(theirSesPubKey, sesKey.getPrivKeyBytes)
       val sendingKey = Sha256Hash hash jt.concat(sharedSecret, sesKey.getPubKey)
-      val receivingKey = Sha256Hash hash jt.concat(sharedSecret, theirSessionPubKey)
+      val receivingKey = Sha256Hash hash jt.concat(sharedSecret, theirSesPubKey)
       val decryptor = Decryptor(new AeadChacha20(receivingKey), 0)
       val encryptor = Encryptor(new AeadChacha20(sendingKey), 0)
 
       // Respond with my encrypted auth info and wait for their auth
       val protoPubkey = Tools bytes2BitcoinPubkey app.LNData.idKey.getPubKey
-      val protoSig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSessionPubKey)
+      val protoSig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSesPubKey)
       val protoAuth = (new proto.authenticate.Builder).node_id(protoPubkey).session_sig(protoSig).build
       val enc1 = respond(encryptor, (new proto.pkt.Builder).auth(protoAuth).build.encode)
-      become(SessionData(theirSessionPubKey, enc1, decryptor), 'waitForAuth)
+      become(SessionData(theirSesPubKey, enc1, decryptor), 'waitForAuth)
 
     // Sent our auth data, waiting for their auth data
     case (chunk: Bytes, sd: SessionData, 'waitForAuth :: rest) =>

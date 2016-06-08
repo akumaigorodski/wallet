@@ -58,5 +58,8 @@
             android:screenOrientation="portrait" android:theme="@style/LiteBar"
             android:icon="@drawable/ic_ln"/>
 
+        <activity android:launchMode="singleTask" android:name="TCEmailActivity"
+            android:screenOrientation="portrait" android:theme="@style/NoBar"/>
+
     </application>
 </manifest>

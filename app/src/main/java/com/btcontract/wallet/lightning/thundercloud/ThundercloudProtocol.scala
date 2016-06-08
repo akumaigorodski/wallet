@@ -20,8 +20,12 @@ object ThundercloudProtocol extends DefaultJsonProtocol { me =>
   }
 
   def jsonToString(json: JsValue) = json.convertTo[String]
-  implicit val blindParamsFmt = jsonFormat[ECPoint, BigInteger, BigInteger,
-    BigInteger, BigInteger, BlindParams](BlindParams, "key", "a", "b", "c", "bInv")
+  implicit val blindParamFmt = jsonFormat[ECPoint, BigInteger, BigInteger,
+    BigInteger, BigInteger, BlindParam](BlindParam, "key", "a", "b", "c", "bInv")
+
+  // Remember blind tokens settings in memory
+  implicit val blindMemoFmt = jsonFormat[List[BlindParam], List[BigInteger], String,
+    String, BlindMemo](BlindMemo, "params", "clear", "sesHash", "rHash")
 
   // Request and Charge which can be remote or NFC-based
   implicit val requestFmt = jsonFormat[Option[Bytes], Long, String, String,

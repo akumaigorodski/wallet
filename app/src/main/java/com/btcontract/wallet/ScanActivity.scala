@@ -20,16 +20,6 @@ class ScanActivity extends TimerActivity with BarcodeCallback { me =>
     rawText => if (System.currentTimeMillis - lastAttempt > 3000) tryParse(rawText)
   }
 
-  override def possibleResultPoints(pts: Points) = none
-  override def onResume = wrap(super.onResume)(reader.resume)
-  override def onPause = wrap(super.onPause)(reader.pause)
-  override def onCreate(savedInstState: Bundle) =
-  {
-    super.onCreate(savedInstState)
-    setContentView(R.layout.activity_scan)
-    reader decodeContinuous me
-  }
-
   def tryParse(text: String) = try {
     beepSoundPlayer.playRawResource(R.raw.beep, false)
     lastAttempt = System.currentTimeMillis
@@ -41,4 +31,14 @@ class ScanActivity extends TimerActivity with BarcodeCallback { me =>
     Toast.makeText(app, text, Toast.LENGTH_LONG).show
     mkForm(alert setMessage err, null, null)
   } finally reader.pause
+
+  override def possibleResultPoints(pts: Points) = none
+  override def onResume = wrap(super.onResume)(reader.resume)
+  override def onPause = wrap(super.onPause)(reader.pause)
+  override def onCreate(savedInstState: Bundle) =
+  {
+    super.onCreate(savedInstState)
+    setContentView(R.layout.activity_scan)
+    reader decodeContinuous me
+  }
 }

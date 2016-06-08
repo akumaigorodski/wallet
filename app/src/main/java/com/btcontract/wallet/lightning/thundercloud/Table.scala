@@ -5,18 +5,7 @@ import com.btcontract.wallet.Utils.none
 import android.content.Context
 
 
-object PendingBlindTokens extends Table {
-  // params is a Json of List[BlindParams], tokens is a Json of List[BigInteger] clear tokens
-  val (table, params, tokens, sesPubkey, rHash) = ("pblindtokens", "params", "tokens", "seskey", "rhash")
-  def newSql = s"INSERT OR IGNORE INTO $table ($params, $tokens, $sesPubkey, $rHash) VALUES (?, ?, ?, ?)"
-  def selectOneSql = s"SELECT * FROM $table WHERE $rHash = ? LIMIT 1"
-  def killSql(key: Long) = s"DELETE FROM $table WHERE $id = $key"
-
-  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
-    $params TEXT NOT NULL, $tokens TEXT NOT NULL, $sesPubkey TEXT NOT NULL, $rHash TEXT NOT NULL)"""
-}
-
-object BlindTokens extends Table {
+object ClearTokens extends Table {
   val (table, token, signature, key) = ("blindtokens", "token", "signature", "key")
   def newSql = s"INSERT OR IGNORE INTO $table ($token, $signature, $key) VALUES (?, ?, ?)"
   def killSql(key: Long) = s"DELETE FROM $table WHERE $id = $key"
@@ -41,9 +30,9 @@ object Payments extends Table {
   // Waiting means we have to look outside of database (at CHANGEs and received/sent HTLCs)
   val strings = ("payments", "data", "incoming", "rhash", "r", "status", "identity", "stamp")
   val (table, data, incoming, rHash, rValue, status, identity, stamp) = strings
-
-  def newSql(inc: Int, stp: Long) = s"""INSERT OR IGNORE INTO $table ($data, $incoming, $rHash,
-    $rValue, $status, $identity, $stamp) VALUES (?, $inc, ?, ?, $waiting, ?, $stp)"""
+  def newSql(inc: Int, stp: Long, stat: Int) = s"""INSERT OR IGNORE INTO $table
+    ($data, $incoming, $rHash, $rValue, $status, $identity, $stamp)
+    VALUES (?, $inc, ?, ?, $stat, ?, $stp)"""
 
   // Identity here refers to Thundercloud inner message id, not to be mixed with HTLC id
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT, $data TEXT NOT NULL,
@@ -67,9 +56,8 @@ extends SQLiteOpenHelper(context, name, null, version)
   def select(sql: String, params: String*) = db.rawQuery(sql, params.toArray)
 
   def onCreate(dbs: SQLiteDatabase) = {
-    dbs execSQL PendingBlindTokens.createSql
     dbs execSQL EphemeralKeys.createSql
-    dbs execSQL BlindTokens.createSql
+    dbs execSQL ClearTokens.createSql
     dbs execSQL Payments.createSql
   }
 }
