@@ -6,6 +6,7 @@ import android.app.LoaderManager.LoaderCallbacks
 import com.btcontract.wallet.Utils.runAnd
 import com.btcontract.wallet.Utils.none
 import org.bitcoinj.core.Utils.HEX
+import java.math.BigInteger
 import android.os.Handler
 import android.net.Uri
 
@@ -19,7 +20,7 @@ class RichCursor(c: Cursor) extends Iterable[RichCursor] { me =>
 
   // Take value but do not close yet
   def string(key: String) = c.getString(c getColumnIndex key)
-  def long(key: String) = c.getLong(c getColumnIndex key)
+  def bigInt(key: String) = new BigInteger(me string key)
   def bytes(key: String) = HEX decode string(key)
 
   def iterator = new Iterator[RichCursor] {

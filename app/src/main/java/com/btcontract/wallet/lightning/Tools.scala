@@ -18,7 +18,6 @@ import okio.ByteString
 
 object Tools { me =>
   def uuid = HEX.encode(rand getBytes 64)
-  def stringToHex(src: String) = HEX.encode(src getBytes "UTF-8")
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
 
   // Second 0 means "Bitcoin" according to BIP44

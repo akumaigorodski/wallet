@@ -6,9 +6,9 @@ import android.content.Context
 
 
 object ClearTokens extends Table {
-  val (table, token, signature, key) = ("blindtokens", "token", "signature", "key")
-  def newSql = s"INSERT OR IGNORE INTO $table ($token, $signature, $key) VALUES (?, ?, ?)"
-  def killSql(key: Long) = s"DELETE FROM $table WHERE $id = $key"
+  val (table, key, token, signature) = ("blindtokens", "key", "token", "signature")
+  def newSql = s"INSERT OR IGNORE INTO $table ($key, $token, $signature) VALUES (?, ?, ?)"
+  def killSql(keyId: Long) = s"DELETE FROM $table WHERE $id = $keyId"
   def selectOneSql = s"SELECT * FROM $table LIMIT 1"
 
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,

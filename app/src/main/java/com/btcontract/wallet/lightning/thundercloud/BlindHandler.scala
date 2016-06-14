@@ -7,60 +7,43 @@ import ThundercloudProtocol._
 import org.bitcoinj.core.Utils.HEX
 import com.btcontract.wallet.lightning.Tools
 import com.btcontract.wallet.lightning.StateMachine
-import com.btcontract.wallet.helper.JsonHttpUtils.thunder
+import com.btcontract.wallet.helper.JsonHttpUtils._
+import rx.lang.scala.{Scheduler, Observable => Obs}
 import com.btcontract.wallet.Utils.{Bytes, app}
 import org.bitcoinj.core.ECKey
 import com.btcontract.wallet.AbstractKit
 import spray.json.{JsNumber => JN, JsString => JS}
+import BlindHandler.SeqBigInteger
+import scala.util.Try
 
 
-trait BlindState
-case class BlindTerms(signerQ: ECKey, sesKey: ECKey, amount: Int, price: Int) extends BlindState
-case class BlindMemo(params: List[BlindParam], clear: List[BigInteger], sesHash: String, rHash: String) extends BlindState
-
-object BlindHandler {
-
+// Store tokens info and their connection to payment data in memory
+case class BlindMemo(params: Seq[BlindParam], clears: SeqBigInteger, sesKeyHex: String, rHash: String) {
+  def complete(charge: Charge) = (copy(rHash = HEX encode charge.lnPaymentData).toJson.toString, charge)
 }
 
-class BlindHandler extends StateMachine[BlindState](Nil, null) {
-  def fetchSignKeys = thunder("blindtokens/info", identity) foreach {
+object BlindHandler {
+  type SeqBigInteger = Seq[BigInteger]
+  def sendData = thunder("blindtokens/info", identity) flatMap {
     case JS(signerQ) +: JS(signerR) +: JN(qty) +: JN(price) +: rest =>
+      val signerSessionPubKey = ECKey.fromPublicOnly(HEX decode signerR)
+      val signerMasterPubKey = ECKey.fromPublicOnly(HEX decode signerQ)
+      val sesKeyHex = signerSessionPubKey.getPublicKeyAsHex
+
+      // Prepare a list of BlindParam and a list of BigInteger clear tokens for each BlindParam
+      val blinder = new ECBlind(signerMasterPubKey.getPubKeyPoint, signerSessionPubKey.getPubKeyPoint)
+      val memo = BlindMemo(blinder makeList qty.toInt, blinder.generator take qty.toInt, sesKeyHex, rHash = null)
+      val blindTokens = memo.clears zip memo.params map { case (clearToken, param) => param blind clearToken }
 
       // Only if proposed terms are within range
-      if (qty < app.LNData.minTokensNum) become(null, 'qtyTooLow)
-      else if (price > app.LNData.maxPriceSat) become(null, 'priceTooHigh)
-      else this process BlindTerms(ECKey.fromPublicOnly(HEX decode signerQ),
-        ECKey.fromPublicOnly(HEX decode signerR), qty.toInt, price.toInt)
-
-    case _ =>
-      // Some weird response...
-      become(null, 'wrongFormat)
+      if (qty < app.LNData.minTokensNum) throw new Exception("tooFewTokens")
+      else if (price > app.LNData.maxPriceSat) throw new Exception("tooHighPrice")
+      else thunder("blindtokens/buy", _.head.convertTo[Charge], "lang", app getString lang,
+        "tokens", blindTokens.toJson.toString, "seskey", sesKeyHex) map memo.complete
   }
 
-  def provideTokens(bt: BlindTerms) = {
-    val blinder = new ECBlind(bt.signerQ.getPubKeyPoint, bt.sesKey.getPubKeyPoint)
-    val (params, clears) = (blinder makeList bt.amount, blinder.generator take bt.amount)
-    val blindTokens = params zip clears map { case (parameter, token) => parameter blind token }
-
-    // Send purchase request and wait for lightning charge as response
-    val obs = thunder("blindtokens/buy", _.to[Charge], "lang", app getString lang,
-      "tokens", Tools stringToHex blindTokens.toJson.toString,
-      "seskey", bt.sesKey.getPubKeyHash)
-
-    obs foreach { charge =>
-      val bm = BlindMemo(params.toList, clears.toList, bt.sesKey.getPublicKeyAsHex, "rHash")
-      app.prefs.edit.putString(AbstractKit.BLIND_LAST_PARAMS, bm.toJson.toString).commit
-      become(bm, 'awaitPayment)
-    }
-  }
-
-  def addTokens(memo: BlindMemo) = {
-
-  }
-
-  def doProcess(change: Any) = (change, data) match {
-    case (rValue: Bytes, memo: BlindMemo) => addTokens(memo)
-    case (blindTerms: BlindTerms, null) => provideTokens(blindTerms)
-    case ('initialize, null) => fetchSignKeys
-  }
+  def tryRestore(raw: String) = Try apply to[BlindMemo](raw)
+  def getClearSigs(rValue: String, memo: BlindMemo) = thunder("blindtokens/redeem",
+    _.to[SeqBigInteger] zip memo.params map { case (sig, param) => param unblind sig },
+    "rvalue", rValue, "seskey", memo.sesKeyHex)
 }
