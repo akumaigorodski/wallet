@@ -122,4 +122,15 @@
     <string name="ln_search">Search</string>
     <string name="ln_wallet">Lightning wallet</string>
     <string name="ln_tor_on">Using Tor via Orbot</string>
+
+    <string name="tc_email">Your Lightning email</string>
+    <string name="tc_identity">Your Lightning Identity</string>
+    <string name="tc_email_set">Set new Lightning email</string>
+    <string name="tc_email_wait">&#8226;&#8226;&#8226;</string>
+    <string name="tc_email_absent">Email is not set</string>
+    <string name="tc_identity_share">Share Identity</string>
+
+    <string name="tc_identity_not_active">Your Lightning email address has been set but it is not active yet. You should now receive a confirmation message to %1$s</string>
+    <string name="tc_identity_qr">Once you get a confirmation message please scan an attached QR code using this wallet\'s QR scanner.</string>
+    <string name="tc_identity_what"><a href='https://btcontract.com'>what is all this?</a></string>
 </resources>

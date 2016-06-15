@@ -2,4 +2,111 @@
     android:layout_height="fill_parent" android:layout_width="fill_parent"
     style="@style/StandardLinearLayout">
 
+    <ImageView
+        android:id="@+id/tcIdentityProgress"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:src="@drawable/ic_launcher"
+        android:visibility="gone"/>
+
+    <LinearLayout
+        style="@style/StandardLinearLayout"
+        android:id="@+id/tcIdentityEmailNew"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:visibility="gone">
+
+        <EditText
+            style="@style/Info"
+            android:hint="@string/tc_email"
+            android:layout_width="wrap_content"
+            android:inputType="textEmailAddress"
+            android:id="@+id/tcIdentityEmailText"/>
+
+        <Button
+            style="@style/MarginInfo"
+            android:text="@string/tc_email_set"
+            android:layout_width="wrap_content"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        style="@style/StandardLinearLayout"
+        android:id="@+id/tcIdentityEmailConfirm"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:visibility="gone">
+
+        <TextView
+            style="@style/Info"
+            android:layout_width="wrap_content"
+            android:id="@+id/tcIdentityEmailNotYet"/>
+
+        <TextView
+            style="@style/MarginInfo"
+            android:layout_width="wrap_content"
+            android:text="@string/tc_identity_qr"/>
+
+        <Button
+            style="@style/BaseText" android:drawableLeft="@drawable/ic_fullscreen_black_18dp"
+            android:layout_width="wrap_content" android:text="@string/action_scan"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        style="@style/StandardLinearLayout"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:id="@+id/tcIdentityInfo"
+        android:visibility="gone">
+
+        <TextView
+            style="@style/Info"
+            android:text="@string/tc_identity"
+            android:layout_width="wrap_content"/>
+
+        <TextView
+            android:maxWidth="230sp"
+            android:textColor="#1BA2E0"
+            android:id="@+id/tcIdentityKey"
+            android:layout_width="wrap_content"
+            style="@style/MarginInfo"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tc_identity_share"/>
+
+        <TextView
+            style="@style/MarginInfo"
+            android:layout_width="wrap_content"
+            android:text="@string/tc_identity_what"/>
+
+        <TextView
+            style="@style/Info"
+            android:text="@string/tc_email"
+            android:layout_width="wrap_content"/>
+
+        <Button
+            android:layout_marginTop="10dp"
+            android:text="@string/tc_email_set"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:maxWidth="230sp"
+            android:textColor="#1BA2E0"
+            android:id="@+id/tcIdentityEmail"
+            android:layout_width="wrap_content"
+            android:text="@string/tc_email_wait"
+            style="@style/MarginInfo"/>
+
+        <Button
+            android:enabled="false"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/tcIdentityEmailCopy"
+            android:text="@string/copy_to_clipboard"/>
+
+    </LinearLayout>
 </LinearLayout>

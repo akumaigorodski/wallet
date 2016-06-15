@@ -4,8 +4,8 @@ import org.bitcoinj.crypto.{HDKeyDerivation, ChildNumber, TransactionSignature}
 import com.btcontract.wallet.Utils.{rand, none, runAnd, Bytes}
 import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 import javax.crypto.spec.{SecretKeySpec, IvParameterSpec}
+import org.bitcoinj.core.{ECKey, BloomFilter, Sha256Hash}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
-import org.bitcoinj.core.{BloomFilter, Sha256Hash}
 
 import org.spongycastle.jce.ECNamedCurveTable
 import org.bitcoinj.core.ECKey.ECDSASignature
@@ -18,6 +18,7 @@ import okio.ByteString
 
 object Tools { me =>
   def uuid = HEX.encode(rand getBytes 64)
+  def humanIdentity(key: ECKey) = key.getPublicKeyAsHex grouped 5 mkString "\u0020"
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
 
   // Second 0 means "Bitcoin" according to BIP44
