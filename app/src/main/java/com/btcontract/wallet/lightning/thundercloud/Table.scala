@@ -1,8 +1,9 @@
 package com.btcontract.wallet.lightning.thundercloud
 
 import android.database.sqlite.{SQLiteDatabase, SQLiteOpenHelper}
-import com.btcontract.wallet.Utils.none
+import com.btcontract.wallet.Utils.{none, runAnd}
 import android.content.Context
+import android.net.Uri
 
 
 object ClearTokens extends Table {
@@ -16,9 +17,11 @@ object ClearTokens extends Table {
 }
 
 object EphemeralKeys extends Table {
-  val (table, privKey, stamp, used) = ("ephemeralkeys", "privkey", "stamp", "used")
-  def newSql = s"INSERT OR IGNORE INTO $table ($privKey, $stamp, $used) VALUES (?, ?, 0)"
-  def killSql(cutoff: Long) = s"DELETE FROM $table WHERE $used = 1 AND $stamp < $cutoff"
+  val (table, privKey, stamp, used, limit, plus) = ("ephemeralkeys", "privkey", "stamp", "used", 10, 25)
+  def newSql(stp: Long) = s"INSERT OR IGNORE INTO $table ($privKey, $stamp, $used) VALUES (?, $stp, 0)"
+  def killUsedOldSql = s"DELETE FROM $table WHERE $used = 1 AND $stamp < ${86400 * 1000 * 4}"
+  def markUsedSql(keyId: Long) = s"UPDATE $table SET $used = 1 WHERE $id = $keyId"
+  def selectUnusedSql = s"SELECT * FROM $table WHERE $used = 0 LIMIT $limit"
   def selectAllSql = s"SELECT * FROM $table"
 
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,11 +52,11 @@ trait Table { val id = "_id" }
 class OpenHelper(context: Context, name: String, version: Int)
 extends SQLiteOpenHelper(context, name, null, version)
 {
-  lazy val db = getWritableDatabase
-  def txWrap(run: => Unit) = try run finally db.endTransaction
+  lazy val base = getWritableDatabase
   def onUpgrade(db: SQLiteDatabase, oldVer: Int, newVer: Int) = none
-  def change(sql: String, params: String*) = db.execSQL(sql, params.toArray)
-  def select(sql: String, params: String*) = db.rawQuery(sql, params.toArray)
+  def change(sql: String, params: String*) = base.execSQL(sql, params.toArray)
+  def select(sql: String, params: String*) = base.rawQuery(sql, params.toArray)
+  def sqlPath(tbl: String) = Uri parse s"sqlite://com.btcontract.wallet/table/$tbl"
 
   def onCreate(dbs: SQLiteDatabase) = {
     dbs execSQL EphemeralKeys.createSql

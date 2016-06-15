@@ -11,17 +11,12 @@ import android.os.Handler
 import android.net.Uri
 
 
-class RichCursor(c: Cursor) extends Iterable[RichCursor] { me =>
-  def closeAfter[T](transform: RichCursor => T) = try transform(me) finally c.close
-  def toString(default: String) = closeAfter(_ => if (c.moveToFirst) c getString 0 else default)
-  def toLong(default: Long) = closeAfter(_ => if (c.moveToFirst) c getLong 0 else default)
-  def toInt(default: Int) = closeAfter(_ => if (c.moveToFirst) c getInt 0 else default)
-  def fillWindow = runAnd(me)(c.getCount)
-
-  // Take value but do not close yet
+class RichCursor(val c: Cursor) extends Iterable[RichCursor] { me =>
+  def closeAfter[T](work: RichCursor => T) = try work(me) finally c.close
   def string(key: String) = c.getString(c getColumnIndex key)
   def bigInt(key: String) = new BigInteger(me string key)
-  def bytes(key: String) = HEX decode string(key)
+  def long(key: String) = c.getLong(c getColumnIndex key)
+  def fillWindow = runAnd(me)(c.getCount)
 
   def iterator = new Iterator[RichCursor] {
     def hasNext = c.getPosition < c.getCount - 1

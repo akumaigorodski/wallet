@@ -70,7 +70,7 @@ object FiatRates { me =>
     case _ => me toRates bitpayNorm(get("https://bitpay.com/rates").body)
   }
 
-  def go = retry(obsOn(reloadData, IOScheduler.apply), pickInc, 1 to 30)
+  def go = retry(obsOn(reloadData, IOScheduler.apply), pickInc, 1 to 10)
     .repeatWhen(_ delay 15.minute).subscribe(fresh => rates = Success apply fresh)
 }
 
@@ -95,7 +95,7 @@ object Fee { me =>
     case _ => to[CypherFee](get("http://api.blockcypher.com/v1/btc/main").body)
   }
 
-  def go = retry(obsOn(reloadData, IOScheduler.apply), pickInc, 1 to 30)
+  def go = retry(obsOn(reloadData, IOScheduler.apply), pickInc, 1 to 10)
     .repeatWhen(_ delay 30.minute).subscribe(prov => rate = Coin valueOf prov.fee)
 }
 
@@ -119,10 +119,10 @@ object Insight {
 
   // Check for utxo existance in case of funding and contract breach
   def utxo(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/utxo"),
-    IOScheduler.apply) map to[OutList], pickInc, 1 to 5)
+    IOScheduler.apply) map to[OutList], pickInc, 1 to 3)
 
   // If breach detected, find an exact txid which has been spent
   def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs").parseJson
-    .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 5)
+    .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 3)
 }
 
