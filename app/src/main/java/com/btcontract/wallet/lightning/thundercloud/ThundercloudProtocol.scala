@@ -38,9 +38,9 @@ object ThundercloudProtocol extends DefaultJsonProtocol { me =>
   implicit val messageFmt = jsonFormat[Bytes, Bytes, Message](Message, "pubKey", "content")
   implicit val wrapFmt = jsonFormat[Message, Long, Wrap](Wrap, "data", "stamp")
 
-  // User signed email and server signed email
-  implicit val smFmt = jsonFormat[String, String, String, SignedMail](SignedMail, "email", "pubKey", "signature")
-  implicit val ssmFmt = jsonFormat[SignedMail, String, ServerSignedMail](ServerSignedMail, "client", "signature")
+  // User signed email to key mapping
+  implicit val smFmt = jsonFormat[String, String, String,
+    SignedMail](SignedMail, "email", "pubKey", "signature")
 }
 
 // A "response-to" ephemeral key, it's private part should be stored in a database
@@ -52,8 +52,7 @@ case class Charge(request: Request, lnPaymentData: Bytes)
 case class Message(pubKey: Bytes, content: Bytes)
 case class Wrap(data: Message, stamp: Long)
 
-// Client and server signed email to key mappings
-case class ServerSignedMail(client: SignedMail, signature: String)
+// Client signed email
 case class SignedMail(email: String, pubKey: String, signature: String) {
   def dataHash = Sha256Hash.of(email + pubKey + signature getBytes "UTF-8")
   def pubKeyClass = ECKey.fromPublicOnly(HEX decode pubKey)

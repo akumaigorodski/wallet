@@ -15,11 +15,6 @@ class ScanActivity extends TimerActivity with BarcodeCallback { me =>
   type Points = java.util.List[com.google.zxing.ResultPoint]
   var lastAttempt = System.currentTimeMillis
 
-  // Only try to decode result if 3 seconds elapsed
-  override def barcodeResult(res: BarcodeResult) = Option(res.getText) foreach {
-    rawText => if (System.currentTimeMillis - lastAttempt > 3000) tryParse(rawText)
-  }
-
   def tryParse(text: String) = try {
     beepSoundPlayer.playRawResource(R.raw.beep, false)
     lastAttempt = System.currentTimeMillis
@@ -32,9 +27,16 @@ class ScanActivity extends TimerActivity with BarcodeCallback { me =>
     mkForm(alert setMessage err, null, null)
   } finally reader.pause
 
+  // Only try to decode result if 3 seconds elapsed
+  override def barcodeResult(res: BarcodeResult) = Option(res.getText) foreach {
+    rawText => if (System.currentTimeMillis - lastAttempt > 3000) tryParse(rawText)
+  }
+
   override def possibleResultPoints(pts: Points) = none
   override def onResume = wrap(super.onResume)(reader.resume)
   override def onPause = wrap(super.onPause)(reader.pause)
+
+  // Initialize this activity, method is run once
   override def onCreate(savedInstState: Bundle) =
   {
     super.onCreate(savedInstState)

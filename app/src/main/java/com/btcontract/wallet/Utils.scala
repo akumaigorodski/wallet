@@ -163,18 +163,6 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     getMenuInflater.inflate(R.menu.transactions_ops, menu)
   }
 
-  override def onResume = {
-    app.TransData.value match {
-      case Some(addr: Address) => doPay(null) setAddressValue addr
-      case Some(uri: BitcoinURI) => doPay(null) set uri
-      case _ => // Incompatible data
-    }
-
-    // Clear value right away
-    app.TransData.value = None
-    super.onResume
-  }
-
   // Top bar reactions
   def goQRScan(top: View) = me goTo classOf[ScanActivity]
   def goLNWallet(top: View) = me goTo classOf[LNTxsActivity]

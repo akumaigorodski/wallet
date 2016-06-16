@@ -21,6 +21,8 @@ object JsonHttpUtils {
   def pickInc(err: Throwable, next: Int) = next.second
   def obsOn[T](provider: => T, scheduler: Scheduler) = Obs.just(null).subscribeOn(scheduler).map(_ => provider)
   def retry[T](obs: Obs[T], pick: Selector, times: Range) = obs.retryWhen(_.zipWith(Obs from times)(pick) flatMap Obs.timer)
+  def to[T : JsonFormat](raw: String) = raw.parseJson.convertTo[T]
+  val get = HttpRequest.get(_: String, true) connectTimeout 15000
 
   // Observable which processes responses of form [ok, ...] or [error, why]
   def thunder[T](path: String, trans: Vector[JsValue] => T, params: Object*) = {
@@ -33,9 +35,6 @@ object JsonHttpUtils {
       case _ => throw new Throwable
     }
   }
-
-  def to[T : JsonFormat](raw: String) = raw.parseJson.convertTo[T]
-  val get = HttpRequest.get(_: String, true) connectTimeout 15000
 }
 
 // Fiat rates containers
@@ -125,4 +124,3 @@ object Insight {
   def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs").parseJson
     .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 3)
 }
-

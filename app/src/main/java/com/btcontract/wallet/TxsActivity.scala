@@ -16,6 +16,7 @@ import collection.JavaConversions.asScalaBuffer
 import android.view.View.OnClickListener
 import android.app.AlertDialog.Builder
 import android.text.format.DateFormat
+import org.bitcoinj.uri.BitcoinURI
 import java.text.SimpleDateFormat
 import org.bitcoinj.wallet.Wallet
 import android.graphics.Typeface
@@ -157,6 +158,18 @@ class TxsActivity extends InfoActivity { me =>
 
     app.kit.peerGroup removeDisconnectedEventListener constListener
     app.kit.peerGroup removeConnectedEventListener constListener
+  }
+
+  override def onResume = {
+    app.TransData.value match {
+      case Some(addr: Address) => wrap { doPay(null) setAddressValue addr } { app.TransData.value = None }
+      case Some(uri: BitcoinURI) => wrap { doPay(null) set uri } { app.TransData.value = None }
+      case Some(app.TransData.THUNDERSECRET :: _) => me exitTo classOf[TCEmailActivity]
+      case Some(app.TransData.LIGHTNING :: _) => me exitTo classOf[LNTxsActivity]
+      case _ => // Incompatible data, just do nothing
+    }
+
+    super.onResume
   }
 
   def showAll(v: View) = {

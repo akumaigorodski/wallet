@@ -56,24 +56,28 @@ class WalletApp extends Application {
   def plurOrZero(opts: Array[String], number: Int) = if (number > 0) plur(opts, number) format number else opts(0)
   def orbotOnline = OrbotHelper isOrbotRunning this
 
-  def setBuffer(bufferMessage: String) = {
-    val mgr = getSystemService(CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
-    mgr setPrimaryClip ClipData.newPlainText(Utils.appName, bufferMessage)
+  def setBuffer(bufferTextMessage: String) = {
+    val manager = getSystemService(CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
+    manager setPrimaryClip ClipData.newPlainText(appName, bufferTextMessage)
     Toast.makeText(this, copied_to_clipboard, Toast.LENGTH_LONG).show
   }
 
   // Startup actions
-  override def onCreate = Utils.wrap(super.onCreate) {
-    chainFile = new File(getFilesDir, s"${Utils.appName}.spvchain")
-    walletFile = new File(getFilesDir, s"${Utils.appName}.wallet")
-    Utils.startupAppReference = this
+  override def onCreate = wrap(super.onCreate) {
+    chainFile = new File(getFilesDir, s"$appName.spvchain")
+    walletFile = new File(getFilesDir, s"$appName.wallet")
+    startupAppReference = this
   }
 
   object TransData {
     var value = Option.empty[Any]
+    val LIGHTNING = "lightning:identity"
+    val THUNDERSECRET = "thundercloud:secret"
+
     def setValue(text: String) = value = Option {
-      // Both getTo and BitcoinUri may throw so watch over
-      if (text startsWith "bitcoin") new BitcoinURI(params, text)
+      if (text startsWith THUNDERSECRET) THUNDERSECRET :: text.replace(s"$THUNDERSECRET:", "") :: Nil
+      else if (text startsWith LIGHTNING) LIGHTNING :: text.replace(s"$LIGHTNING:", "") :: Nil
+      else if (text startsWith "bitcoin") new BitcoinURI(params, text)
       else getTo(text)
     }
 

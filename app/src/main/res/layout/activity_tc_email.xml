@@ -21,12 +21,13 @@
             android:hint="@string/tc_email"
             android:layout_width="wrap_content"
             android:inputType="textEmailAddress"
-            android:id="@+id/tcIdentityEmailText"/>
+            android:id="@+id/tcIdentityEmailInput"/>
 
         <Button
             style="@style/MarginInfo"
             android:text="@string/tc_email_set"
-            android:layout_width="wrap_content"/>
+            android:layout_width="wrap_content"
+            android:onClick="setNewEmail"/>
 
     </LinearLayout>
 
@@ -48,8 +49,9 @@
             android:text="@string/tc_identity_qr"/>
 
         <Button
-            style="@style/BaseText" android:drawableLeft="@drawable/ic_fullscreen_black_18dp"
-            android:layout_width="wrap_content" android:text="@string/action_scan"/>
+            android:drawableLeft="@drawable/ic_fullscreen_black_18dp"
+            android:layout_width="wrap_content" android:text="@string/action_scan"
+            android:onClick="goQRScan" style="@style/BaseText"/>
 
     </LinearLayout>
 
@@ -73,6 +75,7 @@
             style="@style/MarginInfo"/>
 
         <Button
+            android:onClick="shareIdentity"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/tc_identity_share"/>
@@ -91,7 +94,8 @@
             android:layout_marginTop="10dp"
             android:text="@string/tc_email_set"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:onClick="goNewEmail"/>
 
         <TextView
             android:maxWidth="230sp"
