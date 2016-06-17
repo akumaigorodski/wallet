@@ -7,10 +7,10 @@ import android.net.Uri
 
 
 object ClearTokens extends Table {
-  val (table, key, token, signature) = ("blindtokens", "key", "token", "signature")
+  val (table, key, token, signature, limit) = ("blindtokens", "key", "token", "signature", 10)
   def newSql = s"INSERT OR IGNORE INTO $table ($key, $token, $signature) VALUES (?, ?, ?)"
   def killSql(keyId: Long) = s"DELETE FROM $table WHERE $id = $keyId"
-  def selectOneSql = s"SELECT * FROM $table LIMIT 1"
+  def selectSql = s"SELECT * FROM $table LIMIT $limit"
 
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
     $token TEXT NOT NULL, $signature TEXT NOT NULL, $key TEXT NOT NULL)"""

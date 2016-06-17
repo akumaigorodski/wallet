@@ -33,7 +33,7 @@ class Websocket(url: String) { me =>
 
   def add(data: Any) = {
     stack = (stack.toVector :+ data).toIterator
-    for (s <- socket if s.isOpen) push(s)
+    socket.filter(_.isOpen).foreach(push)
   }
 
   def push(sock: WebSocket) = for (vs <- stack) vs match {
@@ -44,7 +44,7 @@ class Websocket(url: String) { me =>
 
   def close = {
     reactors = List.empty
-    for (s <- socket) s.disconnect
+    socket.foreach(_.disconnect)
   }
 }
 

@@ -78,6 +78,7 @@ class RequestActivity extends TimerActivity { me =>
         val top = pay.tc map btcHuman getOrElse btcAddress
         showInfo(drawAll(top, bottom), pay.string, pay.string)
 
+      // Unknown format
       case _ => finish
     }
   }

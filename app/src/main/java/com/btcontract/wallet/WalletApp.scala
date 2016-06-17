@@ -98,9 +98,13 @@ class WalletApp extends Application {
     private var seed: DeterministicSeed = null
     lazy val db = new OpenHelper(app, "lightning.db", 1)
     lazy val idKey = Tools.derive(new ChildNumber(0) :: Nil, 101)(seed)
-    def commitKey(x: Int) = Tools.derive(new ChildNumber(x) :: Nil, 100)(seed)
     def setSeed(newSeed: DeterministicSeed) = seed = newSeed
     def seedAbsent = seed == null
+
+    // Randomly chosen deterministic LN commitment key
+    def commitKey = rand nextInt 100000 match { case ordNum =>
+      ordNum -> Tools.derive(new ChildNumber(ordNum) :: Nil, 100)(seed)
+    }
   }
 
   abstract class WalletKit extends AbstractKit {
