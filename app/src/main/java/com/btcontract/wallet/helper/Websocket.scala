@@ -10,7 +10,7 @@ import scala.concurrent.Future
 class Websocket(url: String) { me =>
   type SockHeader = java.util.List[String]
   type Heads = java.util.Map[String, SockHeader]
-  var stack: Iterator[Any] = Iterator.empty
+  private var stack: Iterator[Any] = Iterator.empty
   var socket = Option.empty[WebSocket]
   var reactors = List.empty[WsReactor]
 
@@ -39,7 +39,7 @@ class Websocket(url: String) { me =>
   def push(sock: WebSocket) = for (vs <- stack) vs match {
     case binaryMessage: Bytes => sock sendBinary binaryMessage
     case textMessage: String => sock sendText textMessage
-    case _ => /* format unknown so do nothing */
+    case _ => // format unknown so do nothing
   }
 
   def close = {

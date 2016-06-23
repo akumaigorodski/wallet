@@ -107,8 +107,8 @@ object AES {
 
 // A general purpose State Machine
 abstract class StateMachine[T](var state: List[Symbol], var data: T) { me =>
-  def become(nData: T, ns: Symbol) = runAnd { data = nData } { state = ns :: state take 3 }
-  def process(change: Any) = try me.synchronized(me doProcess change) catch error
+  def become(fresh: T, ns: Symbol) = runAnd { data = fresh } { state = ns :: state take 3 }
+  def process(change: Any) = try me synchronized doProcess(change) catch error
   def error: PartialFunction[Throwable, Unit] = none
   def doProcess(change: Any)
 }

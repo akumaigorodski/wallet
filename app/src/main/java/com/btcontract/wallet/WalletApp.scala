@@ -101,9 +101,9 @@ class WalletApp extends Application {
     def setSeed(newSeed: DeterministicSeed) = seed = newSeed
     def seedAbsent = seed == null
 
-    // Randomly chosen deterministic LN commitment key
-    def commitKey = rand nextInt 100000 match { case ordNum =>
-      ordNum -> Tools.derive(new ChildNumber(ordNum) :: Nil, 100)(seed)
+    // Monotonically increases every 10 seconds
+    def commitKey = (System.currentTimeMillis / 10000).toInt match {
+      case ord => ord -> Tools.derive(new ChildNumber(ord) :: Nil, 100)(seed)
     }
   }
 

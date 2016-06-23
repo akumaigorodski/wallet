@@ -4,46 +4,40 @@ import com.btcontract.wallet.Utils.Bytes
 import org.bitcoinj.core.Sha256Hash
 
 
-object ShaChain {
-  type HashSeq = Seq[KnownHash]
-  case class KnownHash(hash: Bytes, index: Long)
-  case class KnownHashes(known: HashSeq, maxIndex: Long)
+object ShaChain { me =>
+  type Index = Seq[Boolean]
+  type MapIndexHash = Map[Index, Bytes]
+  case class Node(parent: Option[Node], value: Bytes, height: Int)
 
-  def canDerive(start: Long, end: Long) = (~start & end) == 0
-  def shaChainFromSeed(seed: Bytes, idx: Long): Bytes = derive(seed, 0xffffffffffffffffL, idx)
-  def flip(in: Bytes, idx: Int): Bytes = in.updated(idx / 8, in(idx / 8).^(1 << idx % 8).toByte)
+  // Each bool represents a move down the tree
+  // A binary representation of index as a sequence of 64 booleans
+  implicit def moves(index: Long): Index = for (i <- 63 to 0 by -1) yield index.&(1L << i) != 0
+  def flip(in: Bytes, index: Int) = in.updated(index / 8, in(index / 8).^(1 << index % 8).toByte)
+  def shaChainFromSeed(hash: Bytes, index: Long) = derive(Node(None, hash, 0), index).value
+  def derive(node: Node, directions: Index): Node = (node /: directions)(child)
 
-  def derive(seed: Bytes, start: Long, end: Long) : Bytes = {
-    assert(canDerive(start, end), s"Can't derive from $start to $end")
-    val branchesNumber = start ^ end
-    var hash = seed
+  // False means left, true means right
+  def child(node: Node, right: Boolean): Node = {
+    def childHash = Sha256Hash hash flip(node.value, 63 - node.height)
+    Node(Some(node), if (right) childHash else node.value, node.height + 1)
+  }
 
-    for (i <- 63 to 0 by -1) {
-      val foo = (branchesNumber >> i) & 1
-      if (foo != 0) hash = Sha256Hash hash flip(hash, i)
+  // Hashes are supposed to be received in reverse order so
+  // we have parent :+ true which we should be able to recompute
+  // since its a left node so its hash is the same as its parent's hash
+  def checkRecompute(hashes: MapIndexHash, hash: Bytes, index: Index) = {
+    val recomputed = child(Node(None, hash, index.length), right = true).value
+    getHash(hashes, index :+ true).forall(_ sameElements recomputed)
+  }
+
+  def addHash(hashes: MapIndexHash, hash: Bytes, index: Index): MapIndexHash =
+    if (index.last) hashes.updated(index, hash) else index dropRight 1 match { case index1 =>
+      assert(checkRecompute(hashes, hash, index1), "Hash recomputation check failed")
+      addHash(hashes - (index1 :+ false) - (index1 :+ true), hash, index1)
     }
 
-    hash
-  }
-
-  def getHash(chain: KnownHashes, index: Long) = {
-    def derivable(known: KnownHash) = canDerive(known.index, index)
-    def deriveKnown(known: KnownHash) = derive(known.hash, known.index, index)
-    chain.known find derivable map deriveKnown
-  }
-
-  def addHash(chain: KnownHashes, hash: Bytes, index: Long) = {
-    def updateKnown(known: HashSeq, acc: HashSeq): HashSeq = known match {
-      case KnownHash(knownBytes, knownIndex) :: _ if canDerive(index, knownIndex) =>
-        assert(derive(hash, index, knownIndex) sameElements knownBytes)
-        acc :+ KnownHash(hash, index)
-
-      case Nil => acc :+ KnownHash(hash, index)
-      case head :: tail => updateKnown(tail, acc :+ head)
+  def getHash(hashes: MapIndexHash, index: Index) =
+    hashes.keys collectFirst { case idx if index startsWith idx =>
+      derive(Node(None, hashes(idx), idx.length), index drop idx.length).value
     }
-
-    val fresh = index == 0 && chain.known.isEmpty
-    assert(index == chain.maxIndex + 1 | fresh, "Index exists")
-    KnownHashes(updateKnown(chain.known, Seq.empty), index)
-  }
 }
