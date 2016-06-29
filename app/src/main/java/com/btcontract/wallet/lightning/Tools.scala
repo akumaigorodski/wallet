@@ -17,7 +17,6 @@ import okio.ByteString
 
 
 object Tools { me =>
-  def uuid = HEX.encode(rand getBytes 64)
   def humanIdentity(key: ECKey) = key.getPublicKeyAsHex grouped 5 mkString "\u0020"
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
 
