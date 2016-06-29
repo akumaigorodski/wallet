@@ -4,8 +4,8 @@ import com.softwaremill.quicklens._
 import org.bitcoinj.core.{Sha256Hash, ECKey}
 import com.btcontract.wallet.Utils.{Bytes, app}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
+import com.btcontract.wallet.lightning.Tools.{ecdh, toPkt}
 import com.btcontract.wallet.lightning.crypto.AeadChacha20
-import com.btcontract.wallet.lightning.Tools.ecdh
 import com.btcontract.wallet.helper.Websocket
 import org.bitcoinj.core.Utils.readUint32
 
@@ -37,7 +37,7 @@ case class SessionData(theirSesKey: Bytes, enc: Encryptor, dec: Decryptor) exten
 
 class AuthHandler(sesKey: ECKey, socket: Websocket)
 extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
-  def respond(enc: Encryptor, data: Bytes) = jt.writeUInt32(data.length.toLong) match { case header =>
+  def respond(data: Bytes, enc: Encryptor) = jt writeUInt32 data.length.toLong match { case header =>
     val (ciphertext1, mac1) = enc.chacha.encrypt(jt writeUInt64 enc.nonce, header, Array.emptyByteArray)
     val (ciphertext2, mac2) = enc.chacha.encrypt(jt writeUInt64 enc.nonce + 1, data, Array.emptyByteArray)
     socket add jt.concat(ciphertext1, mac1, ciphertext2, mac2)
@@ -61,10 +61,9 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
       val encryptor = Encryptor(new AeadChacha20(sendingKey), 0)
 
       // Respond with my encrypted auth info and wait for their auth
-      val protoPubkey = Tools bytes2BitcoinPubkey app.LNData.idKey.getPubKey
-      val protoSig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSesPubKey)
-      val protoAuth = (new proto.authenticate.Builder).node_id(protoPubkey).session_sig(protoSig).build
-      val enc1 = respond(encryptor, (new proto.pkt.Builder).auth(protoAuth).build.encode)
+      val myPubkey = Tools bytes2BitcoinPubkey app.LNData.idKey.getPubKey
+      val mySig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSesPubKey)
+      val enc1 = respond(toPkt(new proto.authenticate.Builder node_id myPubkey session_sig mySig), encryptor)
       become(SessionData(theirSesPubKey, enc1, decryptor), 'waitForAuth)
 
     // Sent our auth data, waiting for their auth data
@@ -101,8 +100,8 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
       }
 
     // Got a request to send a packet to counterparty
-    case (pack: proto.pkt, nd: NormalData, 'normal :: rest) =>
-      val enc1 = respond(nd.sesData.enc, pack.encode)
+    case (message: AnyRef, nd: NormalData, 'normal :: rest) =>
+      val enc1 = respond(toPkt(message), nd.sesData.enc)
       data = nd.modify(_.sesData.enc).setTo(enc1)
   }
 }

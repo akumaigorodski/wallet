@@ -12,7 +12,7 @@ object ShaChain { me =>
 
   // Each bool represents a move down the tree
   // A binary representation of an index as a sequence of 64 booleans
-  def moves(index: Long): Index = for (i <- 63 to 0 by -1) yield index.&(1L << i) != 0
+  def moves(index: Long) = for (i <- 63 to 0 by -1) yield index.&(1L << i) != 0
   def flip(in: Bytes, index: Int) = in.updated(index / 8, in(index / 8).^(1 << index % 8).toByte)
   def shaChainFromSeed(hash: Bytes, index: Long) = derive(Node(None, hash, 0), me moves index).value
   def derive(node: Node, directions: Index): Node = (node /: directions)(derive)

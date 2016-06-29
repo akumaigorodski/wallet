@@ -20,6 +20,12 @@ object Tools { me =>
   def humanIdentity(key: ECKey) = key.getPublicKeyAsHex grouped 5 mkString "\u0020"
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
 
+  // Wrap inner protobuf messages into a pkt
+  def toPkt(some: AnyRef) = (new proto.pkt.Builder, some) match {
+    case (bld, con: proto.authenticate.Builder) => bld.auth(con.build).build.encode
+    case _ => throw new Exception("Pkt content unknown")
+  }
+
   // Second 0 means "Bitcoin" according to BIP44
   // Deriving /M/nH/0H/<arbitrary depth> deterministic keys
   def derive(way: List[ChildNumber], n: Int)(seed: DeterministicSeed) = {
@@ -106,7 +112,7 @@ object AES {
 
 // A general purpose State Machine
 abstract class StateMachine[T](var state: List[Symbol], var data: T) { me =>
-  def become(fresh: T, ns: Symbol) = runAnd { data = fresh } { state = ns :: state take 3 }
+  def become(fresh: T, ns: Symbol) = runAnd { data = fresh } { state = ns :: state take 2 }
   def process(change: Any) = try me synchronized doProcess(change) catch error
   def error: PartialFunction[Throwable, Unit] = none
   def doProcess(change: Any)

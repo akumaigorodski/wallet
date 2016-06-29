@@ -101,9 +101,10 @@ class WalletApp extends Application {
     def setSeed(newSeed: DeterministicSeed) = seed = newSeed
     def seedAbsent = seed == null
 
-    // Monotonically increases every 10 seconds
-    def commitKey = (System.currentTimeMillis / 10000).toInt match {
-      case ord => ord -> Tools.derive(new ChildNumber(ord) :: Nil, 100)(seed)
+    def commitKey = {
+      // Monotonically increases every 10 seconds
+      val ord = (System.currentTimeMillis / 10000).toInt
+      Tools.derive(new ChildNumber(ord) :: Nil, 100)(seed)
     }
   }
 
