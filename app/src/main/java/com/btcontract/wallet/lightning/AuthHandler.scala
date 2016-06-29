@@ -75,17 +75,17 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
           val protoAuth = proto.pkt.ADAPTER.decode(first).auth
           val theirSignature = Tools signature2ts protoAuth.session_sig
           val theirNodeKey = ECKey fromPublicOnly protoAuth.node_id.key.toByteArray
-
-          // Should we do something if the tail is not empty?
           val sd1 = sd.modify(_.dec.bodies).setTo(tail).modify(_.dec.header).setTo(None)
           theirNodeKey.verifyOrThrow(Sha256Hash twiceOf sesKey.getPubKey, theirSignature)
           become(NormalData(sd1, theirNodeKey), 'normal)
+          process(Array.emptyByteArray)
 
         // Accumulate chunks until we get a message
         case _ => data = sd.modify(_.dec).setTo(dec1)
       }
 
     // Successfully authorized, now waiting for messages
+    // Also just process remaining messages if chunk is empty
     case (chunk: Bytes, nd: NormalData, 'normal :: rest) =>
       val dec1 = Decryptor.add(nd.sesData.dec, chunk)
 

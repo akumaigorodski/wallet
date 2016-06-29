@@ -8,7 +8,7 @@ import com.btcontract.wallet.Utils.Bytes
 
 
 object ChannelTypes {
-  type PktSeq = Seq[proto.pkt]
+  type PktVec = Vector[proto.pkt]
 }
 
 // If anchorAmount is None we don't fund a channel
@@ -27,8 +27,8 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Lon
 
 case class OurCommit(index: Long, spec: CommitmentSpec, publishableTx: Transaction)
 case class TheirCommit(index: Long, spec: CommitmentSpec, theirRevocationHash: Bytes)
-case class OurChanges(proposed: PktSeq, signed: PktSeq, acked: PktSeq)
-case class TheirChanges(proposed: PktSeq, acked: PktSeq)
+case class OurChanges(proposed: PktVec, signed: PktVec, acked: PktVec)
+case class TheirChanges(proposed: PktVec, acked: PktVec)
 
 case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelParams, ourChanges: OurChanges, theirChanges: TheirChanges,
                        ourCommit: OurCommit, theirCommit: TheirCommit, theirNextCommitInfo: Either[TheirCommit, Bytes],
