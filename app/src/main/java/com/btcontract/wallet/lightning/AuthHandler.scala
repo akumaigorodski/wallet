@@ -60,10 +60,13 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
       val decryptor = Decryptor(new AeadChacha20(receivingKey), 0)
       val encryptor = Encryptor(new AeadChacha20(sendingKey), 0)
 
-      // Respond with my encrypted auth info and wait for their auth
+      // Create my authenticate in return for theirs
       val myPubkey = Tools bytes2BitcoinPubkey app.LNData.idKey.getPubKey
       val mySig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSesPubKey)
-      val enc1 = respond(toPkt(new proto.authenticate.Builder node_id myPubkey session_sig mySig), encryptor)
+      val myAuth = new proto.authenticate.Builder node_id myPubkey session_sig mySig
+
+      // Respond and wait for their auth
+      val enc1 = respond(toPkt(myAuth).encode, encryptor)
       become(SessionData(theirSesPubKey, enc1, decryptor), 'waitForAuth)
 
     // Sent our auth data, waiting for their auth data
@@ -76,6 +79,8 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
           val theirSignature = Tools signature2ts protoAuth.session_sig
           val theirNodeKey = ECKey fromPublicOnly protoAuth.node_id.key.toByteArray
           val sd1 = sd.modify(_.dec.bodies).setTo(tail).modify(_.dec.header).setTo(None)
+
+          // If signature matches, enter normal state and process possible messages
           theirNodeKey.verifyOrThrow(Sha256Hash twiceOf sesKey.getPubKey, theirSignature)
           become(NormalData(sd1, theirNodeKey), 'normal)
           process(Array.emptyByteArray)
@@ -101,7 +106,7 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
 
     // Got a request to send a packet to counterparty
     case (message: AnyRef, nd: NormalData, 'normal :: rest) =>
-      val enc1 = respond(toPkt(message), nd.sesData.enc)
+      val enc1 = respond(toPkt(message).encode, nd.sesData.enc)
       data = nd.modify(_.sesData.enc).setTo(enc1)
   }
 }

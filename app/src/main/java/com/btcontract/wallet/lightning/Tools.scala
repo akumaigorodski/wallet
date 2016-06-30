@@ -19,10 +19,17 @@ import okio.ByteString
 object Tools { me =>
   def humanIdentity(key: ECKey) = key.getPublicKeyAsHex grouped 5 mkString "\u0020"
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
+  val rToHash = sha2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
 
   // Wrap inner protobuf messages into a pkt
   def toPkt(some: AnyRef) = (new proto.pkt.Builder, some) match {
-    case (bld, con: proto.authenticate.Builder) => bld.auth(con.build).build.encode
+    case (bld, con: proto.update_fulfill_htlc.Builder) => bld.update_fulfill_htlc(con.build).build
+    case (bld, con: proto.update_fail_htlc.Builder) => bld.update_fail_htlc(con.build).build
+    case (bld, con: proto.authenticate.Builder) => bld.auth(con.build).build
+
+    case (bld, con: proto.update_fulfill_htlc) => bld.update_fulfill_htlc(con).build
+    case (bld, con: proto.update_fail_htlc) => bld.update_fail_htlc(con).build
+    case (bld, con: proto.authenticate) => bld.auth(con).build
     case _ => throw new Exception("Pkt content unknown")
   }
 
