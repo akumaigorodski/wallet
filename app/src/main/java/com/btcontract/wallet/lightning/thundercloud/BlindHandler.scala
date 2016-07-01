@@ -14,7 +14,7 @@ import scala.util.Try
 
 // Store tokens info and their connection to payment data in memory
 case class BlindMemo(params: Seq[BlindParam], clears: Seq[BigInteger], sesKeyHex: String, rHash: String) {
-  def completeCopy(charge: Charge) = (copy(rHash = HEX encode charge.lnPaymentData).toJson.toString, charge)
+  def chargeBlindMemo(charge: Charge) = (charge, copy(rHash = HEX encode charge.lnPaymentData).toJson.toString)
 }
 
 object BlindHandler {
@@ -30,9 +30,9 @@ object BlindHandler {
       val blindTokens = memo.clears zip memo.params map { case (clearToken, param) => param blind clearToken }
 
       // Only if proposed terms are within range
-      if (qty < app.LNData.minTokensNum) throw new Exception("tooFewTokens")
-      else if (price > app.LNData.maxPriceSat) throw new Exception("tooHighPrice")
-      else thunder("blindtokens/buy", vec => memo completeCopy vec.head.convertTo[Charge],
+      if (qty < 100) throw new Exception("tooFewTokens")
+      else if (price > 50000) throw new Exception("tooHighPrice")
+      else thunder("blindtokens/buy", memo chargeBlindMemo _.head.convertTo[Charge],
         "lang", app getString lang, "tokens", blindTokens.toJson.toString, "seskey", sesKeyHex)
   }
 

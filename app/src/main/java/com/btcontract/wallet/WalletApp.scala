@@ -93,8 +93,6 @@ class WalletApp extends Application {
   }
 
   object LNData {
-    val minTokensNum = 100
-    val maxPriceSat = 50000
     private var seed: DeterministicSeed = null
     lazy val db = new OpenHelper(app, "lightning.db", 1)
     lazy val idKey = Tools.derive(new ChildNumber(0) :: Nil, 101)(seed)

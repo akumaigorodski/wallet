@@ -2,7 +2,7 @@ package com.btcontract.wallet.helper
 
 import com.neovisionaries.ws.client.{WebSocketFrame, WebSocketAdapter}
 import com.neovisionaries.ws.client.{WebSocket, WebSocketFactory}
-import com.btcontract.wallet.Utils.{Bytes, app, none}
+import com.btcontract.wallet.Utils.{Bytes, runAnd, app, none}
 import concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -10,7 +10,6 @@ import scala.concurrent.Future
 class Websocket(url: String) { me =>
   type SockHeader = java.util.List[String]
   type Heads = java.util.Map[String, SockHeader]
-  private var stack: Iterator[Any] = Iterator.empty
   var socket = Option.empty[WebSocket]
   var reactors = List.empty[WsReactor]
 
@@ -28,18 +27,12 @@ class Websocket(url: String) { me =>
     val attempt = Future(factory.createSocket(url).addListener(adapter).connect)
     attempt onFailure { case _ => for (rc <- reactors) rc.onDisconnect }
     attempt onSuccess { case sock => socket = Some apply sock }
-    attempt onSuccess { case sock => me push sock }
   }
 
-  def add(data: Any) = {
-    stack = (stack.toVector :+ data).toIterator
-    socket.filter(_.isOpen).foreach(push)
-  }
-
-  def push(sock: WebSocket) = for (vs <- stack) vs match {
-    case binaryMessage: Bytes => sock sendBinary binaryMessage
-    case textMessage: String => sock sendText textMessage
-    case _ => // format unknown so do nothing
+  def send(data: Any, whenOffline: => Unit)(next: => Unit) = (socket, data) match {
+    case (Some(sock), binary: Bytes) if sock.isOpen => runAnd(sock sendBinary binary)(next)
+    case (Some(sock), text: String) if sock.isOpen => runAnd(sock sendText text)(next)
+    case _ => whenOffline
   }
 
   def close = {

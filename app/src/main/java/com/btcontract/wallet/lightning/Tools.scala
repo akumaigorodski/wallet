@@ -6,7 +6,6 @@ import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 import javax.crypto.spec.{SecretKeySpec, IvParameterSpec}
 import org.bitcoinj.core.{ECKey, BloomFilter, Sha256Hash}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
-
 import org.spongycastle.jce.ECNamedCurveTable
 import org.bitcoinj.core.ECKey.ECDSASignature
 import org.bitcoinj.wallet.DeterministicSeed
@@ -19,7 +18,7 @@ import okio.ByteString
 object Tools { me =>
   def humanIdentity(key: ECKey) = key.getPublicKeyAsHex grouped 5 mkString "\u0020"
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
-  val rToHash = sha2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
+  val rProto2Proto = sha2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
 
   // Wrap inner protobuf messages into a pkt
   def toPkt(some: AnyRef) = (new proto.pkt.Builder, some) match {
