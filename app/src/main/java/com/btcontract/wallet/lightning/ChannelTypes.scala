@@ -1,11 +1,12 @@
 package com.btcontract.wallet.lightning
 
+import Tools._
 import ChannelTypes._
 import org.bitcoinj.core._
 import com.softwaremill.quicklens._
-import Tools.{r2HashProto, toPkt, sha2Bytes, bytes2Sha}
 import crypto.ShaChain.HashesWithLastIndex
 import com.btcontract.wallet.Utils.Bytes
+import crypto.ShaChain
 
 
 object ChannelTypes {
@@ -139,5 +140,34 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
       val theirNextCommitInfo1 = Left apply TheirCommit(theirCommit.index + 1, spec1, theirNextRevocationHash)
       val ourChanges1 = ourChanges.copy(proposed = Vector.empty, signed = ourChanges.signed ++ ourChanges.proposed)
       new proto.update_commit(theirTxSig) -> copy(theirNextCommitInfo = theirNextCommitInfo1, ourChanges = ourChanges1)
+  }
+
+  def receiveCommit(commit: proto.update_commit) = {
+    // First we must check if their transaction signature is valid
+    val spec1 = ourCommit.spec.reduce(ourChanges.acked, theirChanges.acked ++ theirChanges.proposed)
+    val ourNextRevocationHash = Sha256Hash hash ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index + 1)
+    val ourTx = makeOurTx(ourParams, theirParams, ourCommit.publishableTx.getInputs, ourNextRevocationHash, spec1)
+    val ourSignedTx = Scripts.addSigs(ourParams, theirParams, anchorOutput.getValue.value, ourTx, commit.sig)
+    Scripts.checkSigOrThrow(ourSignedTx, anchorOutput)
+
+    // We will send our revocation preimage and our next revocation hash
+    val ourRevocationPreimage = ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index)
+    val ourNextRevocationHash1 = Sha256Hash hash ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index + 2)
+    val theirChanges1 = theirChanges.copy(proposed = Vector.empty, acked = theirChanges.acked ++ theirChanges.proposed)
+    val revocProto = new proto.update_revocation(Tools bytes2Sha ourRevocationPreimage, Tools bytes2Sha ourNextRevocationHash1)
+    revocProto -> copy(ourCommit = OurCommit(ourCommit.index + 1, spec1, ourSignedTx), theirChanges = theirChanges1)
+  }
+
+  def receiveRevocation(revoc: proto.update_revocation) = theirNextCommitInfo match {
+    // Receiving an unexpected update_revocation message while not waiting for a revocation
+    case Right(theirNextRevocationHash) => throw new Exception("RevocationHashInstedOfCommit")
+
+    case Left(theirNextCommit) =>
+      // We receive a revocation because we just sent them a sig for their next commit tx
+      require(preimg2HashProto(revoc.revocation_preimage) == bytes2Sha(theirCommit.theirRevocationHash), "InvalidPreimage")
+      copy(theirPreimages = ShaChain.revAddHash(theirPreimages, sha2Bytes(revoc.revocation_preimage), theirCommit.index),
+        ourChanges = ourChanges.copy(signed = Vector.empty, acked = ourChanges.acked ++ ourChanges.signed),
+        theirNextCommitInfo = Right apply sha2Bytes(revoc.next_revocation_hash),
+        theirCommit = theirNextCommit)
   }
 }

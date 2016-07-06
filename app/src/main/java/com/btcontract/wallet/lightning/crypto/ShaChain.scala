@@ -15,7 +15,8 @@ object ShaChain { me =>
   // A binary representation of an index as a sequence of 64 booleans
   def moves(index: Long) = for (i <- 63 to 0 by -1) yield index.&(1l << i) != 0
   def flip(in: Bytes, index: Int) = in.updated(index / 8, in(index / 8).^(1 << index % 8).toByte)
-  def shaChainFromSeed(hash: Bytes, index: Long) = derive(Node(None, hash, 0), me moves index).value
+  def revIndexFromSeed(hash: Bytes, idx: Long) = derive(Node(None, hash, 0), me moves largestIndex - idx).value
+  def revAddHash(hwli: HashesWithLastIndex, hash: Bytes, idx: Long) = addHash(hwli, hash, largestIndex - idx)
   def derive(node: Node, directions: Index): Node = (node /: directions)(derive)
 
   // Generate the next node down the tree hierarchy

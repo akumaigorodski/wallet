@@ -18,6 +18,7 @@ import okio.ByteString
 object Tools { me =>
   def humanIdentity(key: ECKey) = key.getPublicKeyAsHex grouped 5 mkString "\u0020"
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
+  val preimg2HashProto = sha2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
   val r2HashProto = rval2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
 
   // Bloom filter for incoming Requests and Responses
