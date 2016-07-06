@@ -40,7 +40,7 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
   def respond(data: Bytes, enc: Encryptor) = jt writeUInt32 data.length.toLong match { case header =>
     val (ciphertext1, mac1) = enc.chacha.encrypt(jt writeUInt64 enc.nonce, header, Array.emptyByteArray)
     val (ciphertext2, mac2) = enc.chacha.encrypt(jt writeUInt64 enc.nonce + 1, data, Array.emptyByteArray)
-    socket add jt.concat(ciphertext1, mac1, ciphertext2, mac2)
+    socket send jt.concat(ciphertext1, mac1, ciphertext2, mac2)
     enc.modify(_.nonce).using(_ + 2)
   }
 
@@ -61,7 +61,7 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
       val encryptor = Encryptor(new AeadChacha20(sendingKey), 0)
 
       // Create my authenticate in return for theirs
-      val myPubkey = Tools bytes2BitcoinPubkey app.LNData.idKey.getPubKey
+      val myPubkey = Tools bytes2ProtoPubkey app.LNData.idKey.getPubKey
       val mySig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSesPubKey)
       val myAuth = new proto.authenticate.Builder node_id myPubkey session_sig mySig
 
@@ -76,11 +76,9 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
       dec1.bodies match {
         case first +: tail =>
           val protoAuth = proto.pkt.ADAPTER.decode(first).auth
-          val theirSignature = Tools signature2ts protoAuth.session_sig
+          val theirSignature = Tools signature2Ts protoAuth.session_sig
           val theirNodeKey = ECKey fromPublicOnly protoAuth.node_id.key.toByteArray
           val sd1 = sd.modify(_.dec.bodies).setTo(tail).modify(_.dec.header).setTo(None)
-
-          // If signature matches, enter normal state and process possible messages
           theirNodeKey.verifyOrThrow(Sha256Hash twiceOf sesKey.getPubKey, theirSignature)
           become(NormalData(sd1, theirNodeKey), 'normal)
           process(Array.emptyByteArray)

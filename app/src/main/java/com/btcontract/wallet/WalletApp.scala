@@ -99,16 +99,9 @@ class WalletApp extends Application {
     def setSeed(newSeed: DeterministicSeed) = seed = newSeed
     def seedAbsent = seed == null
 
-    // ID monotonically rises every 5 secs
-    // Will exceed Integer MaxValue in ~20 years
-    def riseInt = (System.currentTimeMillis / 5000).toInt
+    // ID monotonically rises every 10 secs
+    def riseInt = (System.currentTimeMillis / 10000).toInt
     def newCommitKey = Tools.derive(new ChildNumber(riseInt) :: Nil, 100)(seed)
-
-    def newCommitId = {
-      val prev = prefs.getInt(AbstractKit.LN_HTLC_LAST_ID, riseInt)
-      prefs.edit.putInt(AbstractKit.LN_HTLC_LAST_ID, prev + 1).commit
-      prev
-    }
   }
 
   abstract class WalletKit extends AbstractKit {

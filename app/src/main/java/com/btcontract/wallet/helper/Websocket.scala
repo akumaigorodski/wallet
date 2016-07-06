@@ -2,7 +2,7 @@ package com.btcontract.wallet.helper
 
 import com.neovisionaries.ws.client.{WebSocketFrame, WebSocketAdapter}
 import com.neovisionaries.ws.client.{WebSocket, WebSocketFactory}
-import com.btcontract.wallet.Utils.{Bytes, runAnd, app, none}
+import com.btcontract.wallet.Utils.{Bytes, app, none}
 import concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -29,15 +29,11 @@ class Websocket(url: String) { me =>
     attempt onSuccess { case sock => socket = Some apply sock }
   }
 
-  def send(data: Any, whenOffline: => Unit)(next: => Unit) = (socket, data) match {
-    case (Some(sock), binary: Bytes) if sock.isOpen => runAnd(sock sendBinary binary)(next)
-    case (Some(sock), text: String) if sock.isOpen => runAnd(sock sendText text)(next)
-    case _ => whenOffline
-  }
-
-  def close = {
-    reactors = List.empty
-    socket.foreach(_.disconnect)
+  def isOpen = socket.forall(_.isOpen)
+  def send(data: Any) = (socket, data) match {
+    case (Some(sock), binary: Bytes) => sock sendBinary binary
+    case (Some(sock), text: String) => sock sendText text
+    case _ => // Unknown data format, do nothing
   }
 }
 

@@ -3,7 +3,7 @@ package com.btcontract.wallet.lightning
 import ChannelTypes._
 import org.bitcoinj.core._
 import com.softwaremill.quicklens._
-import Tools.{rProto2Proto, toPkt, sha2Bytes, bytes2Sha}
+import Tools.{r2HashProto, toPkt, sha2Bytes, bytes2Sha}
 import crypto.ShaChain.HashesWithLastIndex
 import com.btcontract.wallet.Utils.Bytes
 
@@ -28,8 +28,7 @@ case class OurChannelParams(delay: Int, commitPrivKey: ECKey, finalPrivKey: ECKe
 case class TheirChannelParams(delay: Int, commitPubKey: ECKey, finalPubKey: ECKey,
                               minDepth: Int, initialFeeRate: Long)
 
-// Direction true means IN, false means OUT
-case class Htlc(direction: Boolean, id: Long, amountMsat: Int, rHash: Bytes,
+case class Htlc(incoming: Boolean, id: Long, amountMsat: Int, rHash: Bytes,
                 nextNodeIds: Seq[String], previousChannelId: Option[Bytes], expiry: Int)
 
 case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Long,
@@ -45,8 +44,8 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Lon
   // direction = false means we are sending an update_fulfill_htlc
   // message which means that we are fulfilling an HTLC they've sent
   def fulfillHtlc(direction: Boolean, u: proto.update_fulfill_htlc) =
-    htlcs collectFirst { case htlc if u.id == htlc.id && rProto2Proto(u.r) == bytes2Sha(htlc.rHash) => htlc } match {
-      case Some(htlc) if htlc.direction => copy(amountThemMsat = amountThemMsat + htlc.amountMsat, htlcs = htlcs - htlc)
+    htlcs collectFirst { case htlc if u.id == htlc.id && r2HashProto(u.r) == bytes2Sha(htlc.rHash) => htlc } match {
+      case Some(htlc) if htlc.incoming => copy(amountThemMsat = amountThemMsat + htlc.amountMsat, htlcs = htlcs - htlc)
       case Some(htlc) => copy(amountUsMsat = amountUsMsat + htlc.amountMsat, htlcs = htlcs - htlc)
       case _ => me
     }
@@ -54,7 +53,7 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Lon
   // direction = false means we are sending an update_fail_htlc
   // message which means that we are failing an HTLC they've sent
   def failHtlc(direction: Boolean, fail: proto.update_fail_htlc) = htlcs.find(_.id == fail.id) match {
-    case Some(htlc) if htlc.direction => copy(amountUsMsat = amountUsMsat + htlc.amountMsat, htlcs = htlcs - htlc)
+    case Some(htlc) if htlc.incoming => copy(amountUsMsat = amountUsMsat + htlc.amountMsat, htlcs = htlcs - htlc)
     case Some(htlc) => copy(amountThemMsat = amountThemMsat + htlc.amountMsat, htlcs = htlcs - htlc)
     case _ => me
   }
@@ -80,8 +79,8 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Lon
   }
 }
 
-case class OurCommit(spec: CommitmentSpec, publishableTx: Transaction)
-case class TheirCommit(spec: CommitmentSpec, theirRevocationHash: Bytes)
+case class OurCommit(index: Long, spec: CommitmentSpec, publishableTx: Transaction)
+case class TheirCommit(index: Long, spec: CommitmentSpec, theirRevocationHash: Bytes)
 case class OurChanges(proposed: PktVec, signed: PktVec, acked: PktVec)
 case class TheirChanges(proposed: PktVec, acked: PktVec)
 
@@ -103,7 +102,7 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
   def sendFulfill(fulfill: proto.update_fulfill_htlc) =
     // They have previously sent this HTLC to me, now I have an r-value and propose to fulfill it
     theirChanges.acked collectFirst { case pkt if id(fulfill.id)(pkt) => pkt.update_add_htlc } match {
-      case Some(foundHtlc) if rProto2Proto(fulfill.r) == foundHtlc.r_hash => me addOurProposal toPkt(fulfill)
+      case Some(foundHtlc) if r2HashProto(fulfill.r) == foundHtlc.r_hash => me addOurProposal toPkt(fulfill)
       case Some(foundHtlc) => throw new Exception("Invalid htlc preimage for id" + fulfill.id)
       case None => throw new Exception("sendFulfill")
     }
@@ -111,7 +110,7 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
   def receiveFulfill(fulfill: proto.update_fulfill_htlc) =
     // I have previously sent this HTLC to them, now I receive a fulfill with an r-value
     ourChanges.acked collectFirst { case pkt if id(fulfill.id)(pkt) => pkt.update_add_htlc } match {
-      case Some(foundHtlc) if rProto2Proto(fulfill.r) == foundHtlc.r_hash => me addTheirProposal toPkt(fulfill)
+      case Some(foundHtlc) if r2HashProto(fulfill.r) == foundHtlc.r_hash => me addTheirProposal toPkt(fulfill)
       case Some(foundHtlc) => throw new Exception("Invalid htlc preimage for id" + fulfill.id)
       case None => throw new Exception("receiveFulfill")
     }
@@ -134,10 +133,11 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
       // Sign all our proposals + their acked proposals
       val spec1 = theirCommit.spec.reduce(theirChanges.acked, ourChanges.acked ++ ourChanges.signed ++ ourChanges.proposed)
       val theirTx = makeTheirTx(ourParams, theirParams, ourCommit.publishableTx.getInputs, theirNextRevocationHash, spec1)
+      val theirTxSig = Scripts.signTx(ourParams, theirParams, anchorOutput.getValue.value, theirTx)
 
       // Their commitment now includes all our changes + their acked changes
+      val theirNextCommitInfo1 = Left apply TheirCommit(theirCommit.index + 1, spec1, theirNextRevocationHash)
       val ourChanges1 = ourChanges.copy(proposed = Vector.empty, signed = ourChanges.signed ++ ourChanges.proposed)
-      val commitments1 = copy(theirNextCommitInfo = Left apply TheirCommit(spec1, theirNextRevocationHash), ourChanges = ourChanges1)
-      (new proto.update_commit.Builder sig Scripts.signTx(ourParams, theirParams, anchorOutput.getValue.value, theirTx), commitments1)
+      new proto.update_commit(theirTxSig) -> copy(theirNextCommitInfo = theirNextCommitInfo1, ourChanges = ourChanges1)
   }
 }

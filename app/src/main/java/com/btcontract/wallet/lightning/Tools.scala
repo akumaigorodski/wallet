@@ -18,7 +18,14 @@ import okio.ByteString
 object Tools { me =>
   def humanIdentity(key: ECKey) = key.getPublicKeyAsHex grouped 5 mkString "\u0020"
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
-  val rProto2Proto = sha2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
+  val r2HashProto = rval2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
+
+  // Bloom filter for incoming Requests and Responses
+  def mkBloom(ephemeralKeys: Seq[Bytes], identityKey: Bytes) = {
+    val bloomFilter = new BloomFilter(ephemeralKeys.size + 1, 0.00001, rand.nextInt)
+    for (nextKey <- identityKey +: ephemeralKeys) bloomFilter insert nextKey
+    HEX encode bloomFilter.bitcoinSerialize
+  }
 
   // Wrap inner protobuf messages into a pkt
   def toPkt(some: AnyRef) = (new proto.pkt.Builder, some) match {
@@ -52,13 +59,6 @@ object Tools { me =>
     Sha256Hash.hash(prefix.toByte +: x)
   }
 
-  // Bloom filter for incoming Requests and Responses
-  def mkBloom(ephemeralKeys: Seq[Bytes], identityKey: Bytes) = {
-    val bloomFilter = new BloomFilter(ephemeralKeys.size + 1, 0.00001, rand.nextInt)
-    for (nextKey <- identityKey +: ephemeralKeys) bloomFilter insert nextKey
-    HEX encode bloomFilter.bitcoinSerialize
-  }
-
   // Fix signature size
   def fixSize(raw: Bytes): Bytes = raw.length match {
     case s if s < 32 => jt.concat(Array.fill(32 - s)(0.toByte), raw)
@@ -67,26 +67,26 @@ object Tools { me =>
   }
 
   // PubKey bytes to proto
-  def bytes2BitcoinPubkey(bytes: Bytes) = {
+  def bytes2ProtoPubkey(bytes: Bytes) = {
     val bs = ByteString.of(bytes, 0, bytes.length)
     new proto.bitcoin_pubkey(bs)
   }
 
   // Proto signature conversion
   def ts2Signature(ts: ECDSASignature) = {
-    val inR = new ByteArrayInputStream(fixSize(ts.r.toByteArray).reverse)
-    val inS = new ByteArrayInputStream(fixSize(ts.s.toByteArray).reverse)
+    val inR = new ByteArrayInputStream(me fixSize ts.r.toByteArray)
+    val inS = new ByteArrayInputStream(me fixSize ts.s.toByteArray)
     new proto.signature(jt uint64 inR, jt uint64 inR, jt uint64 inR,
       jt uint64 inR, jt uint64 inS, jt uint64 inS,
       jt uint64 inS, jt uint64 inS)
   }
 
-  def signature2ts(protosig: proto.signature) = {
+  def signature2Ts(protosig: proto.signature) = {
     val (rbos, sbos) = (new ByteArrayOutputStream, new ByteArrayOutputStream)
     jt.writeUInt64(rbos, protosig.r1, protosig.r2, protosig.r3, protosig.r4)
     jt.writeUInt64(sbos, protosig.s1, protosig.s2, protosig.s3, protosig.s4)
-    val r = new BigInteger(1, rbos.toByteArray.reverse)
-    val s = new BigInteger(1, sbos.toByteArray.reverse)
+    val r = new BigInteger(1, rbos.toByteArray)
+    val s = new BigInteger(1, sbos.toByteArray)
     new TransactionSignature(r, s)
   }
 
@@ -98,6 +98,17 @@ object Tools { me =>
   def sha2Bytes(ps: proto.sha256_hash) = {
     val outputStream = new ByteArrayOutputStream
     jt.writeUInt64(outputStream, ps.a, ps.b, ps.c, ps.d)
+    outputStream.toByteArray
+  }
+
+  // Proto rval conversion
+  def bytes2Rval(rval: Bytes) = new ByteArrayInputStream(rval) match { case in =>
+    new proto.rval(jt uint64 in, jt uint64 in, jt uint64 in, jt uint64 in)
+  }
+
+  def rval2Bytes(rv: proto.rval) = {
+    val outputStream = new ByteArrayOutputStream
+    jt.writeUInt64(outputStream, rv.a, rv.b, rv.c, rv.d)
     outputStream.toByteArray
   }
 }
