@@ -100,14 +100,11 @@ object Fee { me =>
 
 // Tx Insight API formats
 case class TxInput(txid: String, addr: String)
-case class TxOutput(txid: String, confirmations: Long)
 case class Tx(txid: String, vin: List[TxInput], confirmations: Long)
 
 object Insight {
   type TxList = List[Tx]
-  type OutList = List[TxOutput]
   implicit val txInputFmt = jsonFormat[String, String, TxInput](TxInput, "txid", "addr")
-  implicit val txOutFmt = jsonFormat[String, Long, TxOutput](TxOutput, "txid", "confirmations")
   implicit val txFmt = jsonFormat[String, List[TxInput], Long, Tx](Tx, "txid", "vin", "confirmations")
 
   def reloadData(suffix: String) = rand nextInt 3 match {
@@ -116,11 +113,9 @@ object Insight {
     case _ => get(s"https://bitlox.io/api/$suffix").body
   }
 
-  // Check for utxo existance in case of funding and contract breach
-  def utxo(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/utxo"),
-    IOScheduler.apply) map to[OutList], pickInc, 1 to 3)
-
-  // If breach detected, find an exact txid which has been spent
+  // Usage 1: watch transaction depth by it's id
+  // Usage 2: search for a tx whose input has our anchor txid,
+  // if such a tx is found it means our anchor output has been spent!
   def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs").parseJson
-    .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 3)
+    .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 10)
 }

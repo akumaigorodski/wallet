@@ -35,22 +35,19 @@ trait AuthState
 case class NormalData(sesData: SessionData, theirNodeKey: ECKey) extends AuthState
 case class SessionData(theirSesKey: Bytes, enc: Encryptor, dec: Decryptor) extends AuthState
 
-class AuthHandler(sesKey: ECKey, socket: Websocket)
-extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
+abstract class AuthHandler(sesKey: ECKey, sock: Websocket)
+extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
   def respond(data: Bytes, enc: Encryptor) = jt writeUInt32 data.length.toLong match { case header =>
     val (ciphertext1, mac1) = enc.chacha.encrypt(jt writeUInt64 enc.nonce, header, Array.emptyByteArray)
     val (ciphertext2, mac2) = enc.chacha.encrypt(jt writeUInt64 enc.nonce + 1, data, Array.emptyByteArray)
-    socket send jt.concat(ciphertext1, mac1, ciphertext2, mac2)
+    sock send jt.concat(ciphertext1, mac1, ciphertext2, mac2)
     enc.modify(_.nonce).using(_ + 2)
   }
 
-  def transfer(pack: proto.pkt) = {
-    // Send packet to channel state machine
-  }
-
+  def sendToChannel(pack: proto.pkt)
   def doProcess(change: Any) = (change, data, state) match {
     // Presumably sent our handshake, waiting for their response
-    case (msg: Bytes, null, 'WaitForSesKey :: rest) =>
+    case (msg: Bytes, null, 'waitForSesKey :: rest) =>
       val theirSesPubKey = msg.slice(4, 33 + 4)
 
       // Generate shared secret and encryption keys
@@ -95,7 +92,7 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
       dec1.bodies match {
         case bodies if bodies.nonEmpty =>
           val dec2 = dec1.copy(header = None, bodies = Vector.empty)
-          bodies map proto.pkt.ADAPTER.decode foreach transfer
+          bodies map proto.pkt.ADAPTER.decode foreach sendToChannel
           data = nd.modify(_.sesData.dec).setTo(dec2)
 
         // Again accumulate chunks until we get a message
@@ -106,5 +103,9 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
     case (message: AnyRef, nd: NormalData, 'normal :: rest) =>
       val enc1 = respond(toPkt(message).encode, nd.sesData.enc)
       data = nd.modify(_.sesData.enc).setTo(enc1)
+
+    case (somehting: AnyRef, _, _) =>
+      // Let know if received an unhandled message in some state
+      println(s"Unhandled $somehting in AuthHandler at $state : $data")
   }
 }

@@ -17,17 +17,17 @@ object ShaChain { me =>
   def flip(in: Bytes, index: Int) = in.updated(index / 8, in(index / 8).^(1 << index % 8).toByte)
   def revIndexFromSeed(hash: Bytes, idx: Long) = derive(Node(None, hash, 0), me moves largestIndex - idx).value
   def revAddHash(hwli: HashesWithLastIndex, hash: Bytes, idx: Long) = addHash(hwli, hash, largestIndex - idx)
-  def derive(node: Node, directions: Index): Node = (node /: directions)(derive)
+  def derive(node: Node, treeDirections: Index) = (node /: treeDirections)(deriveChild)
 
   // Generate the next node down the tree hierarchy
-  def derive(node: Node, right: Boolean): Node = Node(parent = Some(node), if (right)
+  def deriveChild(node: Node, right: Boolean) = Node(parent = Some(node), if (right)
     Sha256Hash hash flip(node.value, 63 - node.height) else node.value, node.height + 1)
 
   // Hashes are supposed to be received in reverse order so
   // we have parent :+ true which we should be able to recompute
   // since a left node's hash is the same as it's parent node's hash
   def checkRecompute(hashes: MapIndexHash, hash: Bytes, idx1: Index) = {
-    val check1 = derive(Node(None, hash, idx1.length), right = true).value
+    val check1 = deriveChild(Node(None, hash, idx1.length), right = true).value
     doGetHash(hashes, idx1 :+ true).forall(_ sameElements check1)
   }
 

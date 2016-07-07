@@ -12,19 +12,22 @@ import crypto.ShaChain
 object ChannelTypes {
   type PktVec = Vector[proto.pkt]
   def makeOurTx(ourParams: OurChannelParams, theirParams: TheirChannelParams,
-                inputs: java.util.List[TransactionInput], ourRevocationHash: Bytes, spec: CommitmentSpec) =
-                Scripts.makeCommitTx(inputs, ourParams.finalPrivKey.getPubKey, theirParams.finalPubKey.getPubKey,
-                  ourParams.delay, ourRevocationHash, spec)
+    inputs: java.util.List[TransactionInput], ourRevocationHash: Bytes, spec: CommitmentSpec) =
+    Scripts.makeCommitTx(inputs, ourParams.finalPrivKey.getPubKey, theirParams.finalPubKey.getPubKey,
+      ourParams.delay, ourRevocationHash, spec)
 
   def makeTheirTx(ourParams: OurChannelParams, theirParams: TheirChannelParams,
-                  inputs: java.util.List[TransactionInput], theirRevocationHash: Bytes, spec: CommitmentSpec) =
-                  Scripts.makeCommitTx(inputs, theirParams.finalPubKey.getPubKey, ourParams.finalPrivKey.getPubKey,
-                    theirParams.delay, theirRevocationHash, spec)
+    inputs: java.util.List[TransactionInput], theirRevocationHash: Bytes, spec: CommitmentSpec) =
+    Scripts.makeCommitTx(inputs, theirParams.finalPubKey.getPubKey, ourParams.finalPrivKey.getPubKey,
+      theirParams.delay, theirRevocationHash, spec)
 }
+
+trait ChannelData
 
 // If anchorAmount is None we don't fund a channel
 case class OurChannelParams(delay: Int, commitPrivKey: ECKey, finalPrivKey: ECKey, minDepth: Int,
-                            initialFeeRate: Long, anchorAmount: Option[Long], shaSeed: Bytes)
+                            initialFeeRate: Long, anchorAmount: Option[Long],
+                            shaSeed: Bytes) extends ChannelData
 
 case class TheirChannelParams(delay: Int, commitPubKey: ECKey, finalPubKey: ECKey,
                               minDepth: Int, initialFeeRate: Long)
@@ -80,14 +83,16 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Lon
   }
 }
 
+case class AnchorTxData(output: TransactionOutput, txId: String, address: String)
 case class OurCommit(index: Long, spec: CommitmentSpec, publishableTx: Transaction)
 case class TheirCommit(index: Long, spec: CommitmentSpec, theirRevocationHash: Bytes)
 case class OurChanges(proposed: PktVec, signed: PktVec, acked: PktVec)
 case class TheirChanges(proposed: PktVec, acked: PktVec)
 
-case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelParams, ourChanges: OurChanges, theirChanges: TheirChanges,
-                       ourCommit: OurCommit, theirCommit: TheirCommit, theirNextCommitInfo: Either[TheirCommit, Bytes],
-                       theirPreimages: HashesWithLastIndex, anchorOutput: TransactionOutput) { me =>
+case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelParams,
+                       ourChanges: OurChanges, theirChanges: TheirChanges, ourCommit: OurCommit, theirCommit: TheirCommit,
+                       theirNextCommitInfo: Either[TheirCommit, Bytes], theirPreimages: HashesWithLastIndex,
+                       anchorData: AnchorTxData) extends ChannelData { me =>
 
   def anchorId = {
     val inputs = ourCommit.publishableTx.getInputs
@@ -105,7 +110,7 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
     theirChanges.acked collectFirst { case pkt if id(fulfill.id)(pkt) => pkt.update_add_htlc } match {
       case Some(foundHtlc) if r2HashProto(fulfill.r) == foundHtlc.r_hash => me addOurProposal toPkt(fulfill)
       case Some(foundHtlc) => throw new Exception("Invalid htlc preimage for id" + fulfill.id)
-      case None => throw new Exception("sendFulfill")
+      case None => throw new RuntimeException("sendFulfill")
     }
 
   def receiveFulfill(fulfill: proto.update_fulfill_htlc) =
@@ -113,28 +118,28 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
     ourChanges.acked collectFirst { case pkt if id(fulfill.id)(pkt) => pkt.update_add_htlc } match {
       case Some(foundHtlc) if r2HashProto(fulfill.r) == foundHtlc.r_hash => me addTheirProposal toPkt(fulfill)
       case Some(foundHtlc) => throw new Exception("Invalid htlc preimage for id" + fulfill.id)
-      case None => throw new Exception("receiveFulfill")
+      case None => throw new RuntimeException("receiveFulfill")
     }
 
   // I fail an acked HTLC they've previously sent to me
   def sendFail(fail: proto.update_fail_htlc) = theirChanges.acked exists id(fail.id) match {
-    case true => me addOurProposal toPkt(some = fail) case false => throw new Exception("sendFail")
+    case true => me addOurProposal toPkt(fail) case false => throw new RuntimeException("sendFail")
   }
 
   // I got their failure for an acked HTLC I've previously sent
   def receiveFail(fail: proto.update_fail_htlc) = ourChanges.acked exists id(fail.id) match {
-    case true => me addTheirProposal toPkt(some = fail) case false => throw new Exception("receiveFail")
+    case true => me addTheirProposal toPkt(fail) case false => throw new RuntimeException("receiveFail")
   }
 
   def sendCommit = theirNextCommitInfo match {
     // Attempting to sign twice waiting for the first revocation message
-    case Left(theirNextCommit) => throw new Exception("sendCommit")
+    case Left(theirNextCommit) => throw new RuntimeException("sendCommit")
 
     case Right(theirNextRevocationHash) =>
       // Sign all our proposals + their acked proposals
       val spec1 = theirCommit.spec.reduce(theirChanges.acked, ourChanges.acked ++ ourChanges.signed ++ ourChanges.proposed)
       val theirTx = makeTheirTx(ourParams, theirParams, ourCommit.publishableTx.getInputs, theirNextRevocationHash, spec1)
-      val theirTxSig = Scripts.signTx(ourParams, theirParams, anchorOutput.getValue.value, theirTx)
+      val theirTxSig = Scripts.signCommitTx(ourParams, theirParams, anchorData.output.getValue.value, theirTx)
 
       // Their commitment now includes all our changes + their acked changes
       val theirNextCommitInfo1 = Left apply TheirCommit(theirCommit.index + 1, spec1, theirNextRevocationHash)
@@ -147,8 +152,8 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
     val spec1 = ourCommit.spec.reduce(ourChanges.acked, theirChanges.acked ++ theirChanges.proposed)
     val ourNextRevocationHash = Sha256Hash hash ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index + 1)
     val ourTx = makeOurTx(ourParams, theirParams, ourCommit.publishableTx.getInputs, ourNextRevocationHash, spec1)
-    val ourSignedTx = Scripts.addSigs(ourParams, theirParams, anchorOutput.getValue.value, ourTx, commit.sig)
-    Scripts.checkSigOrThrow(ourSignedTx, anchorOutput)
+    val ourSignedTx = Scripts.addSigs(ourParams, theirParams, anchorData.output.getValue.value, ourTx, commit.sig)
+    Scripts.checkSigOrThrow(ourSignedTx, anchorData.output)
 
     // We will send our revocation preimage and our next revocation hash
     val ourRevocationPreimage = ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index)
@@ -160,7 +165,7 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
 
   def receiveRevocation(revoc: proto.update_revocation) = theirNextCommitInfo match {
     // Receiving an unexpected update_revocation message while not waiting for a revocation
-    case Right(theirNextRevocationHash) => throw new Exception("RevocationHashInstedOfCommit")
+    case Right(theirNextRevocationHash) => throw new RuntimeException("RevocationHashNotCommit")
 
     case Left(theirNextCommit) =>
       // We receive a revocation because we just sent them a sig for their next commit tx
@@ -170,4 +175,19 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
         theirNextCommitInfo = Right apply sha2Bytes(revoc.next_revocation_hash),
         theirCommit = theirNextCommit)
   }
+}
+
+// Channel states for mutual closing process
+case class ChannelTerminating(commits: Commitments, ourClearing: proto.close_clearing) extends ChannelData
+case class ChannelClearing(commits: Commitments, ourClearing: proto.close_clearing, theirClearing: proto.close_clearing) extends ChannelData
+case class ChannelNegotiating(channelClearing: ChannelClearing, ourSignature: proto.close_signature) extends ChannelData
+
+case class ChannelClosing(commits: Commitments, ourSignature: Option[proto.close_signature] = None,
+                          mutualClosePublished: Option[Transaction] = None, ourCommitPublished: Option[Transaction] = None,
+                          theirCommitPublished: Option[Transaction] = None, revokedPublished: Seq[Transaction] = Seq.empty)
+                          extends ChannelData {
+
+  require(mutualClosePublished.isDefined | ourCommitPublished.isDefined |
+    theirCommitPublished.isDefined | revokedPublished.nonEmpty,
+    "At least one tx has to be published")
 }

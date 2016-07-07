@@ -34,7 +34,7 @@ class AeadChacha20(asymmetricKey: Bytes) {
 
   def decrypt(mac: Bytes, nonce: Bytes, cipher: Bytes, aad: Bytes) = {
     val check = jt.concat(aad, jt writeUInt64 aad.length, cipher, jt writeUInt64 cipher.length)
-    assert(mkPoly(data = check, nonce) sameElements mac, Poly3105.INVALID_MAC)
+    assert(mac sameElements mkPoly(data = check, nonce), Poly3105.INVALID_MAC)
     chacha20Run(cipher, nonce, encrypt = false, skip = true)
   }
 }

@@ -31,11 +31,19 @@ object Tools { me =>
   // Wrap inner protobuf messages into a pkt
   def toPkt(some: AnyRef) = (new proto.pkt.Builder, some) match {
     case (bld, con: proto.update_fulfill_htlc.Builder) => bld.update_fulfill_htlc(con.build).build
+    case (bld, con: proto.update_revocation.Builder) => bld.update_revocation(con.build).build
     case (bld, con: proto.update_fail_htlc.Builder) => bld.update_fail_htlc(con.build).build
+    case (bld, con: proto.close_signature.Builder) => bld.close_signature(con.build).build
+    case (bld, con: proto.close_clearing.Builder) => bld.close_clearing(con.build).build
+    case (bld, con: proto.update_commit.Builder) => bld.update_commit(con.build).build
     case (bld, con: proto.authenticate.Builder) => bld.auth(con.build).build
 
     case (bld, con: proto.update_fulfill_htlc) => bld.update_fulfill_htlc(con).build
+    case (bld, con: proto.update_revocation) => bld.update_revocation(con).build
     case (bld, con: proto.update_fail_htlc) => bld.update_fail_htlc(con).build
+    case (bld, con: proto.close_signature) => bld.close_signature(con).build
+    case (bld, con: proto.close_clearing) => bld.close_clearing(con).build
+    case (bld, con: proto.update_commit) => bld.update_commit(con).build
     case (bld, con: proto.authenticate) => bld.auth(con).build
     case _ => throw new Exception("Pkt content unknown")
   }
@@ -130,7 +138,7 @@ object AES {
 
 // A general purpose State Machine
 abstract class StateMachine[T](var state: List[Symbol], var data: T) { me =>
-  def become(fresh: T, ns: Symbol) = runAnd { data = fresh } { state = ns :: state take 2 }
+  def become(fresh: T, ns: Symbol) = runAnd(state = ns :: state take 2)(data = fresh)
   def process(change: Any) = try me synchronized doProcess(change) catch error
   def error: PartialFunction[Throwable, Unit] = none
   def doProcess(change: Any)
