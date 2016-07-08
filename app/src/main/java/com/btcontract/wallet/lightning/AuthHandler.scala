@@ -104,8 +104,8 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
       val enc1 = respond(toPkt(message).encode, nd.sesData.enc)
       data = nd.modify(_.sesData.enc).setTo(enc1)
 
-    case (somehting: AnyRef, _, _) =>
+    case (something: Any, _, _) =>
       // Let know if received an unhandled message in some state
-      println(s"Unhandled $somehting in AuthHandler at $state : $data")
+      println(s"Unhandled $something in AuthHandler at $state : $data")
   }
 }

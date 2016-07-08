@@ -25,8 +25,8 @@ object ChannelTypes {
 trait ChannelData
 
 // If anchorAmount is None we don't fund a channel
-case class OurChannelParams(delay: Int, commitPrivKey: ECKey, finalPrivKey: ECKey, minDepth: Int,
-                            initialFeeRate: Long, anchorAmount: Option[Long],
+case class OurChannelParams(delay: Int, commitPrivKey: ECKey, finalPrivKey: ECKey,
+                            minDepth: Int, initialFeeRate: Long, anchorAmount: Option[Long],
                             shaSeed: Bytes) extends ChannelData
 
 case class TheirChannelParams(delay: Int, commitPubKey: ECKey, finalPubKey: ECKey,
@@ -35,9 +35,9 @@ case class TheirChannelParams(delay: Int, commitPubKey: ECKey, finalPubKey: ECKe
 case class Htlc(incoming: Boolean, id: Long, amountMsat: Int, rHash: Bytes,
                 nextNodeIds: Seq[String], previousChannelId: Option[Bytes], expiry: Int)
 
-case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Long,
-                          initAmountThemMsat: Long, amountUsMsat: Long,
-                          amountThemMsat: Long) { me =>
+case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long,
+                          initAmountUsMsat: Long, initAmountThemMsat: Long,
+                          amountUsMsat: Long, amountThemMsat: Long) { me =>
 
   def addHtlc(direction: Boolean, u: proto.update_add_htlc) = {
     val htlc = Htlc(direction, u.id, u.amount_msat, sha2Bytes(u.r_hash), Seq.empty, None, u.expiry.blocks)
@@ -89,7 +89,8 @@ case class TheirCommit(index: Long, spec: CommitmentSpec, theirRevocationHash: B
 case class OurChanges(proposed: PktVec, signed: PktVec, acked: PktVec)
 case class TheirChanges(proposed: PktVec, acked: PktVec)
 
-case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelParams,
+// Non empty ourClearing means I've sent a proposition to close a channel but do not have an answer yet
+case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: OurChannelParams, theirParams: TheirChannelParams,
                        ourChanges: OurChanges, theirChanges: TheirChanges, ourCommit: OurCommit, theirCommit: TheirCommit,
                        theirNextCommitInfo: Either[TheirCommit, Bytes], theirPreimages: HashesWithLastIndex,
                        anchorData: AnchorTxData) extends ChannelData { me =>
@@ -178,16 +179,20 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
 }
 
 // Channel states for mutual closing process
-case class ChannelTerminating(commits: Commitments, ourClearing: proto.close_clearing) extends ChannelData
-case class ChannelClearing(commits: Commitments, ourClearing: proto.close_clearing, theirClearing: proto.close_clearing) extends ChannelData
-case class ChannelNegotiating(channelClearing: ChannelClearing, ourSignature: proto.close_signature) extends ChannelData
+// Counterparty has agreed to close a channel but we have an unresolved HTLC's
+case class ChannelClearing(commits: Commitments, ourClearing: proto.close_clearing,
+                           theirClearing: proto.close_clearing) extends ChannelData
+
+case class ChannelFeeNegotiating(commits: Commitments, ourSignature: proto.close_signature,
+                                 ourClearing: proto.close_clearing, theirClearing: proto.close_clearing)
+                                 extends ChannelData
 
 case class ChannelClosing(commits: Commitments, ourSignature: Option[proto.close_signature] = None,
                           mutualClosePublished: Option[Transaction] = None, ourCommitPublished: Option[Transaction] = None,
                           theirCommitPublished: Option[Transaction] = None, revokedPublished: Seq[Transaction] = Seq.empty)
                           extends ChannelData {
 
-  require(mutualClosePublished.isDefined | ourCommitPublished.isDefined |
-    theirCommitPublished.isDefined | revokedPublished.nonEmpty,
-    "At least one tx has to be published")
+  require(mutualClosePublished.isDefined | ourCommitPublished.isDefined
+    | theirCommitPublished.isDefined | revokedPublished.nonEmpty,
+    "At least one tx has to be published in this state")
 }
