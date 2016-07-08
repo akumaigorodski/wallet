@@ -31,7 +31,32 @@ import TransactionConfidence.ConfidenceType.DEAD
 import OnScrollListener.SCROLL_STATE_IDLE
 
 
-class TxsActivity extends InfoActivity { me =>
+trait HumanTimeDisplay { me: TimerActivity =>
+  lazy val time = new SimpleDateFormat(timeString).format(_: java.util.Date)
+  lazy val bigFont = FontSystem.getFloat(getContentResolver, FontSystem.FONT_SCALE, 1) > 1
+
+  // Should be accessed after activity is initialized
+  lazy val timeString = DateFormat is24HourFormat me match {
+    case false if scrWidth < 2.2 => "MM/dd/yy' <font color=#999999>'h:mm'<small>'a'</small></font>'"
+    case false if scrWidth < 2.7 & bigFont => "MM/dd/yy' <font color=#999999>'h:mm'<small>'a'</small></font>'"
+    case false if scrWidth < 2.7 => "MM/dd/yy' <font color=#999999>'h:mm'<small>'a'</small></font>'"
+    case false if bigFont => "MMM dd, yyyy' <font color=#999999>'h:mm'<small>'a'</small></font>'"
+    case false => "MMMM dd, yyyy' <font color=#999999>'h:mm'<small>'a'</small></font>'"
+
+    case true if scrWidth < 2.2 => "d MMM yyyy' <font color=#999999>'HH:mm'</font>'"
+    case true if scrWidth < 2.7 & bigFont => "d MMM yyyy' <font color=#999999>'HH:mm'</font>'"
+    case true if scrWidth < 2.7 => "d MMM yyyy' <font color=#999999>'HH:mm'</font>'"
+    case true if bigFont => "d MMM yyyy' <font color=#999999>'HH:mm'</font>'"
+    case true => "d MMMM yyyy' <font color=#999999>'HH:mm'</font>'"
+  }
+
+  // Relative or absolute date
+  def when(now: Long, dat: java.util.Date) = dat.getTime match { case ago =>
+    if (now - ago < 129600000) getRelativeTimeSpanString(ago, now, 0).toString else time(dat)
+  }
+}
+
+class TxsActivity extends InfoActivity with HumanTimeDisplay { me =>
   def onFail(e: Throwable): Unit = new Builder(me).setMessage(err_general).show
   lazy val adapter = new TxsListAdapter(R.layout.frag_transaction_line)
   lazy val all = getLayoutInflater.inflate(R.layout.frag_txs_all, null)
@@ -50,12 +75,6 @@ class TxsActivity extends InfoActivity { me =>
     def onWalletChanged(w: Wallet) = none
   }
 
-  // Relative or absolute date
-  private[this] var time: java.util.Date => String = null
-  def when(now: Long, dat: java.util.Date) = dat.getTime match { case ago =>
-    if (now - ago < 129600000) getRelativeTimeSpanString(ago, now, 0).toString else time(dat)
-  }
-
   def tell(freshTransaction: Transaction) = {
     adapter.transactions.add(0, freshTransaction)
     adapter.notifyDataSetChanged
@@ -65,29 +84,11 @@ class TxsActivity extends InfoActivity { me =>
   override def onCreate(savedInstanceState: Bundle) =
   {
     super.onCreate(savedInstanceState)
-    val linesNum = if (scrHeight < 4.8) 3 else if (scrHeight < 6) 4 else 5
-    val bigFont = FontSystem.getFloat(getContentResolver, FontSystem.FONT_SCALE, 1) > 1
-
-    val timeString = DateFormat is24HourFormat me match {
-      case false if scrWidth < 2.2 => "MM/dd/yy' <font color=#999999>'h:mm'<small>'a'</small></font>'"
-      case false if scrWidth < 2.7 & bigFont => "MM/dd/yy' <font color=#999999>'h:mm'<small>'a'</small></font>'"
-      case false if scrWidth < 2.7 => "MM/dd/yy' <font color=#999999>'h:mm'<small>'a'</small></font>'"
-      case false if bigFont => "MMM dd, yyyy' <font color=#999999>'h:mm'<small>'a'</small></font>'"
-      case false => "MMMM dd, yyyy' <font color=#999999>'h:mm'<small>'a'</small></font>'"
-
-      case true if scrWidth < 2.2 => "d MMM yyyy' <font color=#999999>'HH:mm'</font>'"
-      case true if scrWidth < 2.7 & bigFont => "d MMM yyyy' <font color=#999999>'HH:mm'</font>'"
-      case true if scrWidth < 2.7 => "d MMM yyyy' <font color=#999999>'HH:mm'</font>'"
-      case true if bigFont => "d MMM yyyy' <font color=#999999>'HH:mm'</font>'"
-      case true => "d MMMM yyyy' <font color=#999999>'HH:mm'</font>'"
-    }
-
-    // Highly dependent on device screen width
-    time = new SimpleDateFormat(timeString).format(_: java.util.Date)
+    val linesNum = if (scrHeight < 4.8) 3 else 5
 
     if (app.isAlive) {
       add(constListener.mkTxt, Informer.PEERS).ui.run
-      new Anim(app.kit.currentBalance, Utils.appName)
+      new Anim(app.kit.currentBalance, appName)
       setContentView(R.layout.activity_txs)
 
       list setOnItemClickListener onTap { case position =>
@@ -162,8 +163,8 @@ class TxsActivity extends InfoActivity { me =>
 
   override def onResume = {
     app.TransData.value match {
-      case Some(addr: Address) => wrap { doPay(null) setAddressValue addr } { app.TransData.value = None }
-      case Some(uri: BitcoinURI) => wrap { doPay(null) set uri } { app.TransData.value = None }
+      case Some(addr: Address) => wrap(doPay(null) setAddressValue addr)(app.TransData.value = None)
+      case Some(uri: BitcoinURI) => wrap(doPay(null) set uri)(app.TransData.value = None)
       case Some(app.TransData.THUNDERSECRET :: _) => me exitTo classOf[TCEmailActivity]
       case Some(app.TransData.LIGHTNING :: _) => me exitTo classOf[LNTxsActivity]
       case _ => // Incompatible data, just do nothing
@@ -189,8 +190,8 @@ class TxsActivity extends InfoActivity { me =>
     }
 
     var transactions: java.util.List[Transaction] = null
-    def getItem(pos: Int) = transactions get pos
-    def getItemId(txnPos: Int) = txnPos
+    def getItem(position: Int) = transactions get position
+    def getItemId(position: Int) = position
     def getCount = transactions.size
   }
 
@@ -202,15 +203,12 @@ class TxsActivity extends InfoActivity { me =>
   }
 
   class TxPlus(val tx: Transaction) {
-    lazy val value = tx getValue app.kit.wallet
-    def confs = app.plurOrZero(txsConfs, tx.getConfidence.getDepthInBlocks)
-    def route = if (value.isPositive) sumIn else sumOut
     def humanValue = route format btc(value)
-
-    def status = if (value.isPositive) feeIncoming format confs else {
-      val positiveHumanFee = Option(tx.getFee).filter(_.isPositive) map btc
-      val out = for (fee <- positiveHumanFee) yield feeDetails.format(fee, confs)
-      out getOrElse feeAbsent.format(confs)
+    lazy val value = tx getValue app.kit.wallet
+    def route = if (value.isPositive) sumIn else sumOut
+    def confs = app.plurOrZero(txsConfs, tx.getConfidence.getDepthInBlocks)
+    def status = if (value.isPositive) feeIncoming format confs else tx.getFee match {
+      case null => feeAbsent format confs case fee => feeDetails.format(Utils btc fee, confs)
     }
   }
 
