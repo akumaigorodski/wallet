@@ -99,13 +99,17 @@ object Fee { me =>
 }
 
 // Tx Insight API formats
+case class ScriptPubKey(asm: String)
 case class TxInput(txid: String, addr: String)
-case class Tx(txid: String, vin: List[TxInput], confirmations: Long)
+case class TxOutput(scriptPubKey: ScriptPubKey, n: Int, spentTxId: String)
+case class Tx(txid: String, vin: List[TxInput], vout: List[TxOutput], confirmations: Int)
 
 object Insight {
   type TxList = List[Tx]
+  implicit val scriptPubKeyFmt = jsonFormat[String, ScriptPubKey](ScriptPubKey, "asm")
   implicit val txInputFmt = jsonFormat[String, String, TxInput](TxInput, "txid", "addr")
-  implicit val txFmt = jsonFormat[String, List[TxInput], Long, Tx](Tx, "txid", "vin", "confirmations")
+  implicit val txOutFmt = jsonFormat[ScriptPubKey, Int, String, TxOutput](TxOutput, "scriptPubKey", "n", "spentTxId")
+  implicit val txFmt = jsonFormat[String, List[TxInput], List[TxOutput], Int, Tx](Tx, "txid", "vin", "vout", "confirmations")
 
   def reloadData(suffix: String) = rand nextInt 3 match {
     case 0 => get(s"https://insight.bitpay.com/api/$suffix").body
@@ -116,6 +120,6 @@ object Insight {
   // Usage 1: watch transaction depth by it's id
   // Usage 2: search for a tx whose input has our anchor txid,
   // if such a tx is found it means our anchor output has been spent!
-  def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs").parseJson
-    .asJsObject.fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 10)
+  def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs").parseJson.asJsObject
+    .fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 5) flatMap Obs.just
 }

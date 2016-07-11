@@ -75,13 +75,13 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
           val protoAuth = proto.pkt.ADAPTER.decode(first).auth
           val theirSignature = Tools signature2Ts protoAuth.session_sig
           val theirNodeKey = ECKey fromPublicOnly protoAuth.node_id.key.toByteArray
-          val sd1 = sd.modify(_.dec.bodies).setTo(tail).modify(_.dec.header).setTo(None)
+          val sd1 = sd.modify(_.dec.bodies).setTo(tail).modify(_.dec.header) setTo None
           theirNodeKey.verifyOrThrow(Sha256Hash twiceOf sesKey.getPubKey, theirSignature)
           become(NormalData(sd1, theirNodeKey), 'normal)
           process(Array.emptyByteArray)
 
-        // Accumulate chunks until we get a message
-        case _ => data = sd.modify(_.dec).setTo(dec1)
+        // Accumulate chunks until we get a complete message
+        case _ => become(sd.modify(_.dec) setTo dec1, 'waitForAuth)
       }
 
     // Successfully authorized, now waiting for messages
@@ -93,16 +93,16 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
         case bodies if bodies.nonEmpty =>
           val dec2 = dec1.copy(header = None, bodies = Vector.empty)
           bodies map proto.pkt.ADAPTER.decode foreach sendToChannel
-          data = nd.modify(_.sesData.dec).setTo(dec2)
+          become(nd.modify(_.sesData.dec).setTo(dec2), 'normal)
 
-        // Again accumulate chunks until we get a message
-        case _ => data = nd.modify(_.sesData.dec).setTo(dec1)
+        // Again accumulate chunks until we get a complete message
+        case _ => become(nd.modify(_.sesData.dec) setTo dec1, 'normal)
       }
 
     // Got a request to send a packet to counterparty
     case (message: AnyRef, nd: NormalData, 'normal :: rest) =>
       val enc1 = respond(toPkt(message).encode, nd.sesData.enc)
-      data = nd.modify(_.sesData.enc).setTo(enc1)
+      become(nd.modify(_.sesData.enc) setTo enc1, 'normal)
 
     case (something: Any, _, _) =>
       // Let know if received an unhandled message in some state

@@ -1,8 +1,8 @@
 package com.btcontract.wallet.lightning
 
 
-abstract class Channel(state: List[Symbol], data: ChannelData)
-extends StateMachine[ChannelData](state, data) { me =>
+abstract class Channel(params: OurChannelParams)
+extends StateMachine[ChannelData]('inactive :: Nil, null) { me =>
 
   val authHandler: AuthHandler
 }

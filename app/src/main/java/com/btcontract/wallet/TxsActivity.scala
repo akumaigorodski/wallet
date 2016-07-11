@@ -213,11 +213,6 @@ class TxsActivity extends InfoActivity with HumanTimeDisplay { me =>
   }
 
   class TxViewHolder(view: View) {
-    val transactCircle = view.findViewById(R.id.transactCircle).asInstanceOf[ImageView]
-    val transactWhen = view.findViewById(R.id.transactWhen).asInstanceOf[TextView]
-    val transactSum = view.findViewById(R.id.transactSum).asInstanceOf[TextView]
-    view setTag this
-
     def fillView(transaction: Transaction) = {
       val isConf = transaction.getConfidence.getDepthInBlocks > 0
       val isDead = transaction.getConfidence.getConfidenceType == DEAD
@@ -227,5 +222,10 @@ class TxsActivity extends InfoActivity with HumanTimeDisplay { me =>
       transactSum setTypeface Typeface.MONOSPACE
       transactWhen setText time
     }
+
+    val transactCircle = view.findViewById(R.id.transactCircle).asInstanceOf[ImageView]
+    val transactWhen = view.findViewById(R.id.transactWhen).asInstanceOf[TextView]
+    val transactSum = view.findViewById(R.id.transactSum).asInstanceOf[TextView]
+    view setTag this
   }
 }
