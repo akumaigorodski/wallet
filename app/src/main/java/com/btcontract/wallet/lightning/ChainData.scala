@@ -9,7 +9,7 @@ import com.btcontract.wallet.Utils.app
 import org.bitcoinj
 
 
-class ChainData {
+object ChainData {
   def watchTxDepthLocal(watchTxHash: String) = Obs.create[Int] { obs =>
     val lst = new bitcoinj.core.listeners.TransactionConfidenceEventListener {
       def onTransactionConfidenceChanged(w: bitcoinj.wallet.Wallet, tx: Transaction) =
@@ -22,8 +22,9 @@ class ChainData {
 
   def watchOutputSpentLocal(watchTxHash: String) = Obs.create[Transaction] { obs =>
     val recListener = new bitcoinj.wallet.listeners.WalletCoinsReceivedEventListener { me =>
-      def spendsAnchor(tx: Transaction) = tx.getInputs.asScala.exists(_.getOutpoint.getHash.toString == watchTxHash)
-      def onCoinsReceived(w: bitcoinj.wallet.Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (me spendsAnchor tx) obs onNext tx
+      def breach(tx: Transaction) = tx.getInputs.asScala.exists(_.getOutpoint.getHash.toString == watchTxHash)
+      def onCoinsReceived(w: bitcoinj.wallet.Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (me breach tx) obs onNext tx
+      app.kit.wallet.getRecentTransactions(25, false).asScala find breach foreach obs.onNext
     }
 
     app.kit.wallet addCoinsReceivedEventListener recListener
