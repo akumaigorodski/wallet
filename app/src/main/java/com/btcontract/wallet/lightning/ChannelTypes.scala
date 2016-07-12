@@ -140,20 +140,20 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
       // Sign all our proposals + their acked proposals
       val spec1 = theirCommit.spec.reduce(theirChanges.acked, ourChanges.acked ++ ourChanges.signed ++ ourChanges.proposed)
       val theirTx = makeTheirTx(ourParams, theirParams, ourCommit.publishableTx.getInputs, theirNextRevocationHash, spec1)
-      val theirTxSig = Scripts.signCommitTx(ourParams, theirParams, anchorData.output.getValue.value, theirTx)
+      val ourSigForThem = Scripts.signTx(ourParams, theirParams, anchorData.output.getValue.value, theirTx)
 
       // Their commitment now includes all our changes + their acked changes
       val theirNextCommitInfo1 = Left apply TheirCommit(theirCommit.index + 1, spec1, theirNextRevocationHash)
       val ourChanges1 = ourChanges.copy(proposed = Vector.empty, signed = ourChanges.signed ++ ourChanges.proposed)
-      new proto.update_commit(theirTxSig) -> copy(theirNextCommitInfo = theirNextCommitInfo1, ourChanges = ourChanges1)
+      new proto.update_commit(ourSigForThem) -> copy(theirNextCommitInfo = theirNextCommitInfo1, ourChanges = ourChanges1)
   }
 
   def receiveCommit(commit: proto.update_commit) = {
-    // First we must check if their transaction signature is valid
+    // First we must check if we can spend a commit using their signature
     val spec1 = ourCommit.spec.reduce(ourChanges.acked, theirChanges.acked ++ theirChanges.proposed)
     val ourNextRevocationHash = Sha256Hash hash ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index + 1)
     val ourTx = makeOurTx(ourParams, theirParams, ourCommit.publishableTx.getInputs, ourNextRevocationHash, spec1)
-    val ourSignedTx = Scripts.addSigs(ourParams, theirParams, anchorData.output.getValue.value, ourTx, commit.sig)
+    val ourSignedTx = Scripts.addTheirSigAndSignTx(ourParams, theirParams, anchorData.output.getValue, ourTx, commit.sig)
     Scripts.checkSigOrThrow(ourSignedTx, anchorData.output)
 
     // We will send our revocation preimage and our next revocation hash

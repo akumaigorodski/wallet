@@ -20,16 +20,17 @@ object ChainData {
     Subscription(app.kit.wallet removeTransactionConfidenceEventListener lst)
   }
 
-  // On each new block look 50 txs back in search for a breach
   def watchOutputSpentLocal(watchTxHash: Sha256Hash) = Obs.create[Transaction] { obs =>
     def breach(tx: Transaction) = tx.getInputs.asScala.exists(_.getOutpoint.getHash == watchTxHash)
 
     val lst = new com.btcontract.wallet.MyPeerDataListener {
-      def onBlocksDownloaded(peer: Peer, block: Block, fBlock: FilteredBlock, left: Int) = {
-        app.kit.wallet.getRecentTransactions(50, false).asScala find breach foreach obs.onNext
-      }
+      def onBlocksDownloaded(peer: Peer, block: Block, fBlock: FilteredBlock, left: Int) =
+        // After finished downloading blocks we search for a transaction which spends our anchor output
+        if (left < 1) app.kit.wallet.getRecentTransactions(500, false).asScala find breach foreach obs.onNext
     }
 
+    // Run it once on startup
+    lst.onBlocksDownloaded(null, null, null, 0)
     app.kit.peerGroup addBlocksDownloadedEventListener lst
     Subscription(app.kit.peerGroup removeBlocksDownloadedEventListener lst)
   }
