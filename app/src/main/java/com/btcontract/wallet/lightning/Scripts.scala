@@ -26,7 +26,7 @@ object Scripts {
       OP_HASH160 op OP_DUP data ripemd160(rHash) op OP_EQUAL /* is it an r-value? */ op
       /* if it's an r-value then I can spend this output in <relTimeout> number of blocks */
       OP_IF number relTimeout op OP_NOP3 /* OP_CLTV */ op OP_2DROP data ourKey.getPubKey op
-      /* else they can spend output now if they know revocation or after <absTimeout> */
+      /* or else they can spend output now if they know revocation or after <absTimeout> */
       OP_ELSE data ripemd160(commitRevoke) op OP_EQUAL op OP_NOTIF number absTimeout op
       OP_CHECKLOCKTIMEVERIFY op OP_DROP op OP_ENDIF op OP_CHECKSIG
 
