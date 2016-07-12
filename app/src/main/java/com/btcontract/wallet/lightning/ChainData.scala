@@ -1,6 +1,6 @@
 package com.btcontract.wallet.lightning
 
-import org.bitcoinj.core.{Coin, Transaction}
+import org.bitcoinj.core._
 import rx.lang.scala.{Observable => Obs, Subscription}
 import collection.JavaConverters.asScalaBufferConverter
 import scala.concurrent.duration.DurationInt
@@ -20,15 +20,18 @@ object ChainData {
     Subscription(app.kit.wallet removeTransactionConfidenceEventListener lst)
   }
 
-  def watchOutputSpentLocal(watchTxHash: String) = Obs.create[Transaction] { obs =>
-    val recListener = new bitcoinj.wallet.listeners.WalletCoinsReceivedEventListener { me =>
-      def breach(tx: Transaction) = tx.getInputs.asScala.exists(_.getOutpoint.getHash.toString == watchTxHash)
-      def onCoinsReceived(w: bitcoinj.wallet.Wallet, tx: Transaction, pb: Coin, nb: Coin) = if (me breach tx) obs onNext tx
-      app.kit.wallet.getRecentTransactions(25, false).asScala find breach foreach obs.onNext
+  // On each new block look 50 txs back in search for a breach
+  def watchOutputSpentLocal(watchTxHash: Sha256Hash) = Obs.create[Transaction] { obs =>
+    def breach(tx: Transaction) = tx.getInputs.asScala.exists(_.getOutpoint.getHash == watchTxHash)
+
+    val lst = new com.btcontract.wallet.MyPeerDataListener {
+      def onBlocksDownloaded(peer: Peer, block: Block, fBlock: FilteredBlock, left: Int) = {
+        app.kit.wallet.getRecentTransactions(50, false).asScala find breach foreach obs.onNext
+      }
     }
 
-    app.kit.wallet addCoinsReceivedEventListener recListener
-    Subscription(app.kit.wallet addCoinsReceivedEventListener recListener)
+    app.kit.peerGroup addBlocksDownloadedEventListener lst
+    Subscription(app.kit.peerGroup removeBlocksDownloadedEventListener lst)
   }
 
   def watchTxDepthRemote(data: AnchorTxData) = Insight.txs(data.address)

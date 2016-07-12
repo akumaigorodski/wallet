@@ -132,5 +132,5 @@
 
     <string name="tc_identity_not_active">Your Lightning email address has been set but it is not active yet. You should now receive a confirmation message to %1$s</string>
     <string name="tc_identity_qr">Once you get a confirmation message please scan an attached QR code using this wallet\'s QR scanner</string>
-    <string name="tc_identity_what"><![CDATA[<a href='https://btcontract.com'>what is all this?</a>]]></string>
+    <string name="tc_identity_what"><a href='https://btcontract.com'>what is all this?</a></string>
 </resources>
