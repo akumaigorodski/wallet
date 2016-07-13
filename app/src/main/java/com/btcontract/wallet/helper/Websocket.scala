@@ -30,10 +30,10 @@ class Websocket(url: String) { me =>
   }
 
   def isOpen = socket.forall(_.isOpen)
-  def send(data: Any) = (socket, data) match {
-    case (Some(sock), binary: Bytes) => sock sendBinary binary
-    case (Some(sock), text: String) => sock sendText text
-    case _ => // Unknown data format, do nothing
+  def send(data: Any) = (socket, data, isOpen) match {
+    case (Some(sock), binary: Bytes, true) => sock sendBinary binary
+    case (Some(sock), text: String, true) => sock sendText text
+    case _ => throw new Exception("socketClosed")
   }
 }
 

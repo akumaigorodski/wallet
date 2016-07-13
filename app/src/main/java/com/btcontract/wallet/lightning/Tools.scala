@@ -138,8 +138,9 @@ object AES {
 
 // A general purpose State Machine
 abstract class StateMachine[T](var state: List[Symbol], var data: T) { me =>
-  def become(fresh: T, ns: Symbol) = runAnd(state = ns :: state take 3)(data = fresh)
   def process(change: Any) = try me synchronized doProcess(change) catch error
+  def become(fresh: T, ns: Symbol) = runAnd(state = ns :: state take 3)(data = fresh)
+  def stayWith(dataOnly: T) = become(dataOnly, state.head)
   def error: PartialFunction[Throwable, Unit] = none
   def doProcess(change: Any)
 }

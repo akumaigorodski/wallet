@@ -58,13 +58,10 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
       val encryptor = Encryptor(new AeadChacha20(sendingKey), 0)
 
       // Create my authenticate in return for theirs
-      val myPubkey = Tools bytes2ProtoPubkey app.LNData.idKey.getPubKey
-      val mySig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSesPubKey)
-      val myAuth = new proto.authenticate.Builder node_id myPubkey session_sig mySig
-
-      // Respond and wait for their auth
-      val enc1 = respond(toPkt(myAuth).encode, encryptor)
-      become(SessionData(theirSesPubKey, enc1, decryptor), 'waitForAuth)
+      val pubkey = Tools bytes2ProtoPubkey app.LNData.idKey.getPubKey
+      val sig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSesPubKey)
+      val authPkt = toPkt(new proto.authenticate.Builder node_id pubkey session_sig sig).encode
+      become(SessionData(theirSesPubKey, respond(authPkt, encryptor), decryptor), 'waitForAuth)
 
     // Sent our auth data, waiting for their auth data
     case (chunk: Bytes, sd: SessionData, 'waitForAuth :: rest) =>
@@ -78,10 +75,11 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
           val sd1 = sd.modify(_.dec.bodies).setTo(tail).modify(_.dec.header) setTo None
           theirNodeKey.verifyOrThrow(Sha256Hash twiceOf sesKey.getPubKey, theirSignature)
           become(NormalData(sd1, theirNodeKey), 'normal)
+          // In case if decryptor tail is not empty
           process(Array.emptyByteArray)
 
         // Accumulate chunks until we get a complete message
-        case _ => become(sd.modify(_.dec) setTo dec1, 'waitForAuth)
+        case _ => stayWith(sd.modify(_.dec) setTo dec1)
       }
 
     // Successfully authorized, now waiting for messages
@@ -93,16 +91,16 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
         case bodies if bodies.nonEmpty =>
           val dec2 = dec1.copy(header = None, bodies = Vector.empty)
           bodies map proto.pkt.ADAPTER.decode foreach sendToChannel
-          become(nd.modify(_.sesData.dec).setTo(dec2), 'normal)
+          stayWith(nd.modify(_.sesData.dec) setTo dec2)
 
         // Again accumulate chunks until we get a complete message
-        case _ => become(nd.modify(_.sesData.dec) setTo dec1, 'normal)
+        case _ => stayWith(nd.modify(_.sesData.dec) setTo dec1)
       }
 
     // Got a request to send a packet to counterparty
     case (message: AnyRef, nd: NormalData, 'normal :: rest) =>
       val enc1 = respond(toPkt(message).encode, nd.sesData.enc)
-      become(nd.modify(_.sesData.enc) setTo enc1, 'normal)
+      stayWith(nd.modify(_.sesData.enc) setTo enc1)
 
     case (something: Any, _, _) =>
       // Let know if received an unhandled message in some state

@@ -11,23 +11,21 @@ import crypto.ShaChain
 
 object ChannelTypes {
   type PktVec = Vector[proto.pkt]
-  def makeOurTx(ourParams: OurChannelParams, theirParams: TheirChannelParams,
-    inputs: java.util.List[TransactionInput], ourRevocationHash: Bytes, spec: CommitmentSpec) =
-    Scripts.makeCommitTx(inputs, ourParams.finalPrivKey.getPubKey, theirParams.finalPubKey.getPubKey,
-      ourParams.delay, ourRevocationHash, spec)
 
   def makeTheirTx(ourParams: OurChannelParams, theirParams: TheirChannelParams,
-    inputs: java.util.List[TransactionInput], theirRevocationHash: Bytes, spec: CommitmentSpec) =
-    Scripts.makeCommitTx(inputs, theirParams.finalPubKey.getPubKey, ourParams.finalPrivKey.getPubKey,
-      theirParams.delay, theirRevocationHash, spec)
+                  inputs: java.util.List[TransactionInput], theirRevocationHash: Bytes,
+                  spec: CommitmentSpec) =
+
+    Scripts.makeCommitTx(inputs, theirParams.finalPubKey.getPubKey,
+      ourParams.finalPrivKey.getPubKey, theirParams.delay,
+      theirRevocationHash, spec)
 }
 
 trait ChannelData
 
 // If anchorAmount is None we don't fund a channel
-case class OurChannelParams(delay: Int, commitPrivKey: ECKey, finalPrivKey: ECKey,
-                            minDepth: Int, initialFeeRate: Long, anchorAmount: Option[Long],
-                            shaSeed: Bytes) extends ChannelData
+case class OurChannelParams(delay: Int, anchorAmount: Option[Long], commitPrivKey: ECKey, finalPrivKey: ECKey,
+                            minDepth: Int, initialFeeRate: Long, shaSeed: Bytes) extends ChannelData
 
 case class TheirChannelParams(delay: Int, commitPubKey: ECKey, finalPubKey: ECKey,
                               minDepth: Int, initialFeeRate: Long)
@@ -107,7 +105,7 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
   def id(id: java.lang.Long)(pkt: proto.pkt) = pkt.update_add_htlc != null && pkt.update_add_htlc.id == id
 
   def sendFulfill(fulfill: proto.update_fulfill_htlc) =
-    // They have previously sent this HTLC to me, now I have an r-value and propose to fulfill it
+  // They have previously sent this HTLC to me, now I have an r-value and propose to fulfill it
     theirChanges.acked collectFirst { case pkt if id(fulfill.id)(pkt) => pkt.update_add_htlc } match {
       case Some(foundHtlc) if r2HashProto(fulfill.r) == foundHtlc.r_hash => me addOurProposal toPkt(fulfill)
       case Some(foundHtlc) => throw new Exception("Invalid htlc preimage for id" + fulfill.id)
@@ -115,7 +113,7 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
     }
 
   def receiveFulfill(fulfill: proto.update_fulfill_htlc) =
-    // I have previously sent this HTLC to them, now I receive a fulfill with an r-value
+  // I have previously sent this HTLC to them, now I receive a fulfill with an r-value
     ourChanges.acked collectFirst { case pkt if id(fulfill.id)(pkt) => pkt.update_add_htlc } match {
       case Some(foundHtlc) if r2HashProto(fulfill.r) == foundHtlc.r_hash => me addTheirProposal toPkt(fulfill)
       case Some(foundHtlc) => throw new Exception("Invalid htlc preimage for id" + fulfill.id)
@@ -139,8 +137,9 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
     case Right(theirNextRevocationHash) =>
       // Sign all our proposals + their acked proposals
       val spec1 = theirCommit.spec.reduce(theirChanges.acked, ourChanges.acked ++ ourChanges.signed ++ ourChanges.proposed)
-      val theirTx = makeTheirTx(ourParams, theirParams, ourCommit.publishableTx.getInputs, theirNextRevocationHash, spec1)
-      val ourSigForThem = Scripts.signTx(ourParams, theirParams, anchorData.output.getValue.value, theirTx)
+      val ourSigForThem = Scripts.signTx(ourParams, theirParams, Scripts.makeCommitTx(ourCommit.publishableTx.getInputs,
+        theirParams.finalPubKey.getPubKey, ourParams.finalPrivKey.getPubKey, theirParams.delay,
+        theirNextRevocationHash, spec1), anchorData.output.getValue.value)
 
       // Their commitment now includes all our changes + their acked changes
       val theirNextCommitInfo1 = Left apply TheirCommit(theirCommit.index + 1, spec1, theirNextRevocationHash)
@@ -149,11 +148,13 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
   }
 
   def receiveCommit(commit: proto.update_commit) = {
-    // First we must check if we can spend a commit using their signature
     val spec1 = ourCommit.spec.reduce(ourChanges.acked, theirChanges.acked ++ theirChanges.proposed)
     val ourNextRevocationHash = Sha256Hash hash ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index + 1)
-    val ourTx = makeOurTx(ourParams, theirParams, ourCommit.publishableTx.getInputs, ourNextRevocationHash, spec1)
-    val ourSignedTx = Scripts.addTheirSigAndSignTx(ourParams, theirParams, anchorData.output.getValue, ourTx, commit.sig)
+    val ourSignedTx = Scripts.addTheirSigAndSignTx(ourParams, theirParams, Scripts.makeCommitTx(ourCommit.publishableTx.getInputs,
+      ourParams.finalPrivKey.getPubKey, theirParams.finalPubKey.getPubKey, ourParams.delay, ourNextRevocationHash, spec1),
+      anchorData.output.getValue, commit.sig)
+
+    // Check if we can spend a commit using their signature
     Scripts.checkSigOrThrow(ourSignedTx, anchorData.output)
 
     // We will send our revocation preimage and our next revocation hash
@@ -183,14 +184,12 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
 case class ChannelClearing(commits: Commitments, ourClearing: proto.close_clearing,
                            theirClearing: proto.close_clearing) extends ChannelData
 
-case class ChannelFeeNegotiating(commits: Commitments, ourSignature: proto.close_signature,
-                                 ourClearing: proto.close_clearing, theirClearing: proto.close_clearing)
-                                 extends ChannelData
+case class ChannelFeeNegotiating(ourSignature: proto.close_signature, ourClearing: proto.close_clearing,
+                                 theirClearing: proto.close_clearing, commits: Commitments) extends ChannelData
 
-case class ChannelClosing(commits: Commitments, ourSignature: Option[proto.close_signature] = None,
-                          mutualClosePublished: Option[Transaction] = None, ourCommitPublished: Option[Transaction] = None,
-                          theirCommitPublished: Option[Transaction] = None, revokedPublished: Seq[Transaction] = Seq.empty)
-                          extends ChannelData {
+case class ChannelClosing(ourSignature: Option[proto.close_signature] = None, mutualClosePublished: Option[Transaction] = None,
+                          ourCommitPublished: Option[Transaction] = None, theirCommitPublished: Option[Transaction] = None,
+                          revokedPublished: Seq[Transaction] = Seq.empty, commits: Commitments) extends ChannelData {
 
   require(mutualClosePublished.isDefined | ourCommitPublished.isDefined
     | theirCommitPublished.isDefined | revokedPublished.nonEmpty,
