@@ -16,6 +16,7 @@ import okio.ByteString
 
 
 object Tools { me =>
+  type PktVec = Vector[proto.pkt]
   def humanIdentity(key: ECKey) = key.getPublicKeyAsHex grouped 5 mkString "\u0020"
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
   val preimg2HashProto = sha2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha

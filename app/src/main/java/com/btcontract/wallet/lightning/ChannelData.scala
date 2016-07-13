@@ -1,25 +1,12 @@
 package com.btcontract.wallet.lightning
 
 import Tools._
-import ChannelTypes._
 import org.bitcoinj.core._
 import com.softwaremill.quicklens._
 import crypto.ShaChain.HashesWithLastIndex
 import com.btcontract.wallet.Utils.Bytes
 import crypto.ShaChain
 
-
-object ChannelTypes {
-  type PktVec = Vector[proto.pkt]
-
-  def makeTheirTx(ourParams: OurChannelParams, theirParams: TheirChannelParams,
-                  inputs: java.util.List[TransactionInput], theirRevocationHash: Bytes,
-                  spec: CommitmentSpec) =
-
-    Scripts.makeCommitTx(inputs, theirParams.finalPubKey.getPubKey,
-      ourParams.finalPrivKey.getPubKey, theirParams.delay,
-      theirRevocationHash, spec)
-}
 
 trait ChannelData
 
