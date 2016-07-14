@@ -32,8 +32,8 @@ case class Decryptor(chacha: AeadChacha20, nonce: Long, buffer: Bytes = Array.em
                      header: Option[Int] = None, bodies: Vector[Bytes] = Vector.empty)
 
 trait AuthState
-case class NormalData(sesData: SessionData, theirNodeKey: ECKey) extends AuthState
 case class SessionData(theirSesKey: Bytes, enc: Encryptor, dec: Decryptor) extends AuthState
+case class NormalData(sesData: SessionData, theirNodeKey: ECKey) extends AuthState
 
 abstract class AuthHandler(sesKey: ECKey, sock: Websocket)
 extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
@@ -58,9 +58,9 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
       val encryptor = Encryptor(new AeadChacha20(sendingKey), 0)
 
       // Create my authenticate in return for theirs
-      val pubkey = Tools bytes2ProtoPubkey app.LNData.idKey.getPubKey
+      val pubKey = Tools bytes2ProtoPubkey app.LNData.idKey.getPubKey
       val sig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSesPubKey)
-      val authPkt = toPkt(new proto.authenticate.Builder node_id pubkey session_sig sig).encode
+      val authPkt = toPkt(new proto.authenticate.Builder node_id pubKey.build session_sig sig).encode
       become(SessionData(theirSesPubKey, respond(authPkt, encryptor), decryptor), 'waitForAuth)
 
     // Sent our auth data, waiting for their auth data

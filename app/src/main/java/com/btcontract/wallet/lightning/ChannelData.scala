@@ -9,10 +9,20 @@ import crypto.ShaChain
 
 
 trait ChannelData
+case class WaitForAnchor(ourParams: OurChannelParams, theirParams: TheirChannelParams,
+                         theirRevocationHash: Bytes, theirNextRevocationHash: Bytes) extends ChannelData
 
-// If anchorAmount is None we don't fund a channel
+case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChannelParams, anchorTx: Transaction,
+                            initialCommit: TheirCommit, theirNextRevocationHash: Bytes) extends ChannelData
+
 case class OurChannelParams(delay: Int, anchorAmount: Option[Long], commitPrivKey: ECKey, finalPrivKey: ECKey,
-                            minDepth: Int, initialFeeRate: Long, shaSeed: Bytes) extends ChannelData
+                            minDepth: Int, initialFeeRate: Long, shaSeed: Bytes) extends ChannelData {
+
+  def toOpenProto(anchorIntent: proto.open_channel.anchor_offer) =
+    new proto.open_channel(new proto.locktime(null, delay), Tools bytes2Sha ShaChain.revIndexFromSeed(shaSeed, 0),
+      Tools bytes2Sha ShaChain.revIndexFromSeed(shaSeed, 1), bytes2ProtoPubkey(commitPrivKey.getPubKey).build,
+      bytes2ProtoPubkey(finalPrivKey.getPubKey).build, anchorIntent, minDepth, initialFeeRate)
+}
 
 case class TheirChannelParams(delay: Int, commitPubKey: ECKey, finalPubKey: ECKey,
                               minDepth: Int, initialFeeRate: Long)
@@ -24,9 +34,9 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long,
                           initAmountUsMsat: Long, initAmountThemMsat: Long,
                           amountUsMsat: Long, amountThemMsat: Long) { me =>
 
-  def addHtlc(direction: Boolean, u: proto.update_add_htlc) = {
-    val htlc = Htlc(direction, u.id, u.amount_msat, sha2Bytes(u.r_hash), Seq.empty, None, u.expiry.blocks)
-    if (direction) copy(amountThemMsat = amountThemMsat - htlc.amountMsat, htlcs = htlcs + htlc)
+  def addHtlc(incoming: Boolean, u: proto.update_add_htlc) = {
+    val htlc = Htlc(incoming, u.id, u.amount_msat, sha2Bytes(u.r_hash), Seq.empty, None, u.expiry.blocks)
+    if (incoming) copy(amountThemMsat = amountThemMsat - htlc.amountMsat, htlcs = htlcs + htlc)
     else copy(amountUsMsat = amountUsMsat - htlc.amountMsat, htlcs = htlcs + htlc)
   }
 
@@ -49,8 +59,8 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long,
 
   def reduce(ourChanges: PktVec, theirChanges: PktVec) = {
     val spec = copy(htlcs = Set.empty, amountUsMsat = initAmountUsMsat, amountThemMsat = initAmountThemMsat)
-    val spec1 = (spec /: ourChanges) { case (s, pkt) if pkt.update_add_htlc != null => s.addHtlc(direction = false, pkt.update_add_htlc) case (s, _) => s }
-    val spec2 = (spec1 /: theirChanges) { case (s, pkt) if pkt.update_add_htlc != null => s.addHtlc(direction = true, pkt.update_add_htlc) case (s, _) => s }
+    val spec1 = (spec /: ourChanges) { case (s, pkt) if pkt.update_add_htlc != null => s.addHtlc(incoming = false, pkt.update_add_htlc) case (s, _) => s }
+    val spec2 = (spec1 /: theirChanges) { case (s, pkt) if pkt.update_add_htlc != null => s.addHtlc(incoming = true, pkt.update_add_htlc) case (s, _) => s }
 
     val spec3 = (spec2 /: ourChanges) {
       case (s, pkt) if pkt.update_fulfill_htlc != null => s.fulfillHtlc(direction = false, pkt.update_fulfill_htlc)

@@ -38,6 +38,7 @@ object Tools { me =>
     case (bld, con: proto.close_clearing.Builder) => bld.close_clearing(con.build).build
     case (bld, con: proto.update_commit.Builder) => bld.update_commit(con.build).build
     case (bld, con: proto.authenticate.Builder) => bld.auth(con.build).build
+    case (bld, con: proto.open_channel.Builder) => bld.open(con.build).build
 
     case (bld, con: proto.update_fulfill_htlc) => bld.update_fulfill_htlc(con).build
     case (bld, con: proto.update_revocation) => bld.update_revocation(con).build
@@ -46,6 +47,7 @@ object Tools { me =>
     case (bld, con: proto.close_clearing) => bld.close_clearing(con).build
     case (bld, con: proto.update_commit) => bld.update_commit(con).build
     case (bld, con: proto.authenticate) => bld.auth(con).build
+    case (bld, con: proto.open_channel) => bld.open(con).build
     case _ => throw new Exception("Pkt content unknown")
   }
 
@@ -76,11 +78,9 @@ object Tools { me =>
     case _ => raw
   }
 
-  // PubKey bytes to proto
-  def bytes2ProtoPubkey(bytes: Bytes) = {
-    val bs = ByteString.of(bytes, 0, bytes.length)
-    new proto.bitcoin_pubkey(bs)
-  }
+  // Proto bitcoin_pubkey conversion
+  def proto2ECKey(protokey: proto.bitcoin_pubkey) = ECKey fromPublicOnly protokey.key.toByteArray
+  def bytes2ProtoPubkey(bs: Bytes) = new proto.bitcoin_pubkey.Builder key ByteString.of(bs, 0, bs.length)
 
   // Proto signature conversion
   def ts2Signature(ts: ECDSASignature) = {
