@@ -3,6 +3,7 @@ package com.btcontract.wallet.lightning
 import org.bitcoinj.core._
 import org.bitcoinj.script.ScriptOpCodes._
 import org.bitcoinj.script.{ScriptBuilder, Script}
+import scala.collection.JavaConverters.seqAsJavaListConverter
 import com.btcontract.wallet.helper.Digests.ripemd160
 import org.bitcoinj.script.Script.ALL_VERIFY_FLAGS
 import com.btcontract.wallet.Utils.Bytes
@@ -30,13 +31,9 @@ object Scripts {
       OP_ELSE data ripemd160(commitRevoke) op OP_EQUAL op OP_NOTIF number absTimeout op
       OP_CHECKLOCKTIMEVERIFY op OP_DROP op OP_ENDIF op OP_CHECKSIG
 
-  def pay2wsh(script: Script) = new ScriptBuilder op OP_0 data Sha256Hash.hash(script.getProgram)
+  def pay2wsh(s: Script) = new ScriptBuilder op OP_0 data Sha256Hash.hash(s.getProgram)
   def pay2wpkh(pubKey: ECKey) = new ScriptBuilder op OP_0 data pubKey.getPubKeyHash
-
-  def multiSig2of2(pk1: ECKey, pk2: ECKey) = {
-    val keysList = java.util.Arrays.asList(pk1, pk2)
-    ScriptBuilder.createRedeemScript(2, keysList)
-  }
+  def multiSig2of2(ks: ECKey*) = ScriptBuilder.createRedeemScript(2, ks.asJava)
 
   def redeemSecretOrDelay(delayedKey: ECKey, relTimeout: Long, keyIfSecretKnown: ECKey, hashOfSecret: Bytes) =
     new ScriptBuilder op OP_HASH160 data ripemd160(hashOfSecret) op OP_EQUAL op OP_IF data keyIfSecretKnown.getPubKey op
@@ -47,9 +44,8 @@ object Scripts {
   def makeCommitTx(inputs: Seq[TransactionInput], ourFinalKey: ECKey, theirFinalKey: ECKey,
                    theirDelay: Int, revocationHash: Bytes, commitmentSpec: CommitmentSpec): Transaction = ???
 
-  def makeFinalTx(inputs: Seq[TransactionInput], ourPubkeyScript: Script,
-                  theirPubkeyScript: Script, amountUs: Long, amountThem: Long,
-                  fee: Long): Transaction = ???
+  def makeFinalTx(inputs: Seq[TransactionInput], ourPubkeyScript: Script, theirPubkeyScript: Script,
+                  amountUs: Long, amountThem: Long, fee: Long): Transaction = ???
 
   def signTx(ourParams: OurChannelParams, theirParams: TheirChannelParams,
              tx: Transaction, anchorAmount: Long): proto.signature = ???

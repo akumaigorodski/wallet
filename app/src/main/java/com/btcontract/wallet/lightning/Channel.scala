@@ -53,15 +53,14 @@ extends StateMachine[ChannelData](state, data) { me =>
 
     case (pkt: proto.pkt, WaitForAnchor(ourParams, theirParams, theirRevocationHash,
       theirNextRevocationHash), 'openWaitForAnchor :: rest) if pkt.open_anchor != null =>
-
       val ourRevocationHash = ShaChain.revIndexFromSeed(ourParams.shaSeed, ShaChain.largestIndex)
-      val nonReversedTxHash = Sha256Hash wrap sha2Bytes(pkt.open_anchor.txid)
+      val nonReversedTxHashWrap = Sha256Hash wrap sha2Bytes(pkt.open_anchor.txid)
       val anchorAmount = pkt.open_anchor.amount.longValue
 
       // Recreate parts of their anchor transaction
       val anchorScript = Scripts pay2wsh Scripts.multiSig2of2(ourParams.commitPubKey, theirParams.commitPubKey)
       val anchorOutput = new TransactionOutput(app.params, null, Coin valueOf anchorAmount, anchorScript.build.getProgram)
-      val anchorOutPoint = new TransactionOutPoint(app.params, pkt.open_anchor.output_index.longValue, nonReversedTxHash)
+      val anchorOutPoint = new TransactionOutPoint(app.params, pkt.open_anchor.output_index.longValue, nonReversedTxHashWrap)
       val ins = new TransactionInput(app.params, null, Array.emptyByteArray, anchorOutPoint, Coin valueOf anchorAmount) :: Nil
 
       // Initialize parameters and create first pair of commitment transactions
@@ -74,7 +73,7 @@ extends StateMachine[ChannelData](state, data) { me =>
       authHandler process new proto.open_commit_sig(ourSigForThem)
       become(Commitments(None, ourParams, theirParams, OurChanges(Vector.empty, Vector.empty, Vector.empty),
         TheirChanges(Vector.empty, Vector.empty), OurCommit(0, ourSpec, ourTx), TheirCommit(0, theirSpec, theirRevocationHash),
-        Right(theirNextRevocationHash), anchorOutput, HEX encode nonReversedTxHash.getReversedBytes, None -> Map.empty),
+        Right(theirNextRevocationHash), anchorOutput, HEX encode nonReversedTxHashWrap.getReversedBytes, None -> Map.empty),
         'openWaitForAnchorConfirm)
 
     case (something: Any, _, _) =>
