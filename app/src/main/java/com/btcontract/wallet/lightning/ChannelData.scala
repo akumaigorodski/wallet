@@ -3,6 +3,7 @@ package com.btcontract.wallet.lightning
 import Tools._
 import org.bitcoinj.core._
 import com.softwaremill.quicklens._
+import collection.JavaConverters.asScalaBufferConverter
 import crypto.ShaChain.HashesWithLastIndex
 import com.btcontract.wallet.Utils.Bytes
 import crypto.ShaChain
@@ -17,6 +18,9 @@ case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChann
 
 case class OurChannelParams(delay: Int, anchorAmount: Option[Long], commitPrivKey: ECKey, finalPrivKey: ECKey,
                             minDepth: Int, initialFeeRate: Long, shaSeed: Bytes) extends ChannelData {
+
+  def finalPubKey = ECKey fromPublicOnly finalPrivKey.getPubKey
+  def commitPubKey = ECKey fromPublicOnly commitPrivKey.getPubKey
 
   def toOpenProto(anchorIntent: proto.open_channel.anchor_offer) =
     new proto.open_channel(new proto.locktime(null, delay), Tools bytes2Sha ShaChain.revIndexFromSeed(shaSeed, 0),
@@ -78,7 +82,6 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long,
   }
 }
 
-case class AnchorTxData(output: TransactionOutput, txId: String, address: String)
 case class OurCommit(index: Long, spec: CommitmentSpec, publishableTx: Transaction)
 case class TheirCommit(index: Long, spec: CommitmentSpec, theirRevocationHash: Bytes)
 case class OurChanges(proposed: PktVec, signed: PktVec, acked: PktVec)
@@ -87,14 +90,8 @@ case class TheirChanges(proposed: PktVec, acked: PktVec)
 // Non empty ourClearing means I've sent a proposition to close a channel but do not have an answer yet
 case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: OurChannelParams, theirParams: TheirChannelParams,
                        ourChanges: OurChanges, theirChanges: TheirChanges, ourCommit: OurCommit, theirCommit: TheirCommit,
-                       theirNextCommitInfo: Either[TheirCommit, Bytes], theirPreimages: HashesWithLastIndex,
-                       anchorData: AnchorTxData) extends ChannelData { me =>
-
-  def anchorId = {
-    val inputs = ourCommit.publishableTx.getInputs
-    require(inputs.size == 1, "CommitTx should have one input")
-    inputs.get(0).getOutpoint.getHash
-  }
+                       theirNextCommitInfo: Either[TheirCommit, Bytes], anchorOutput: TransactionOutput, anchorId: String,
+                       theirPreimages: HashesWithLastIndex) extends ChannelData { me =>
 
   def hasNoPendingHtlcs = ourCommit.spec.htlcs.isEmpty & theirCommit.spec.htlcs.isEmpty
   def addOurProposal(proposal: proto.pkt) = me.modify(_.ourChanges.proposed).using(_ :+ proposal)
@@ -134,9 +131,9 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
     case Right(theirNextRevocationHash) =>
       // Sign all our proposals + their acked proposals
       val spec1 = theirCommit.spec.reduce(theirChanges.acked, ourChanges.acked ++ ourChanges.signed ++ ourChanges.proposed)
-      val ourSigForThem = Scripts.signTx(ourParams, theirParams, Scripts.makeCommitTx(ourCommit.publishableTx.getInputs,
-        theirParams.finalPubKey.getPubKey, ourParams.finalPrivKey.getPubKey, theirParams.delay,
-        theirNextRevocationHash, spec1), anchorData.output.getValue.value)
+      val ourSigForThem = Scripts.signTx(ourParams, theirParams, Scripts.makeCommitTx(ourCommit.publishableTx.getInputs.asScala,
+        theirParams.finalPubKey, ourParams.finalPubKey, theirParams.delay, theirNextRevocationHash, spec1),
+        anchorOutput.getValue.value)
 
       // Their commitment now includes all our changes + their acked changes
       val theirNextCommitInfo1 = Left apply TheirCommit(theirCommit.index + 1, spec1, theirNextRevocationHash)
@@ -147,12 +144,11 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
   def receiveCommit(commit: proto.update_commit) = {
     val spec1 = ourCommit.spec.reduce(ourChanges.acked, theirChanges.acked ++ theirChanges.proposed)
     val ourNextRevocationHash = Sha256Hash hash ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index + 1)
-    val ourSignedTx = Scripts.addTheirSigAndSignTx(ourParams, theirParams, Scripts.makeCommitTx(ourCommit.publishableTx.getInputs,
-      ourParams.finalPrivKey.getPubKey, theirParams.finalPubKey.getPubKey, ourParams.delay, ourNextRevocationHash, spec1),
-      anchorData.output.getValue, commit.sig)
+    val ourSignedTx = Scripts.addTheirSigAndSignTx(ourParams, theirParams, Scripts.makeCommitTx(ourCommit.publishableTx.getInputs.asScala,
+      ourParams.finalPubKey, theirParams.finalPubKey, ourParams.delay, ourNextRevocationHash, spec1), anchorOutput.getValue, commit.sig)
 
     // Check if we can spend a commit using their signature
-    Scripts.checkSigOrThrow(ourSignedTx, anchorData.output)
+    Scripts.checkSigOrThrow(ourSignedTx, anchorOutput)
 
     // We will send our revocation preimage and our next revocation hash
     val ourRevocationPreimage = ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index)
@@ -184,11 +180,6 @@ case class ChannelClearing(commits: Commitments, ourClearing: proto.close_cleari
 case class ChannelFeeNegotiating(ourSignature: proto.close_signature, ourClearing: proto.close_clearing,
                                  theirClearing: proto.close_clearing, commits: Commitments) extends ChannelData
 
-case class ChannelClosing(ourSignature: Option[proto.close_signature] = None, mutualClosePublished: Option[Transaction] = None,
-                          ourCommitPublished: Option[Transaction] = None, theirCommitPublished: Option[Transaction] = None,
-                          revokedPublished: Seq[Transaction] = Seq.empty, commits: Commitments) extends ChannelData {
-
-  require(mutualClosePublished.isDefined | ourCommitPublished.isDefined
-    | theirCommitPublished.isDefined | revokedPublished.nonEmpty,
-    "At least one tx has to be published in this state")
-}
+case class ChannelClosing(ourSignature: Option[proto.close_signature], mutualClosePublished: Option[Transaction],
+                          ourCommitPublished: Option[Transaction], theirCommitPublished: Option[Transaction],
+                          revokedPublished: Seq[Transaction], commits: Commitments) extends ChannelData

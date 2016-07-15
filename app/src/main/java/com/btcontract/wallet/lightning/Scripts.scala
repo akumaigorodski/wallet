@@ -30,7 +30,7 @@ object Scripts {
       OP_ELSE data ripemd160(commitRevoke) op OP_EQUAL op OP_NOTIF number absTimeout op
       OP_CHECKLOCKTIMEVERIFY op OP_DROP op OP_ENDIF op OP_CHECKSIG
 
-  def pay2wsh(script: ScriptBuilder) = new ScriptBuilder op OP_0 data Sha256Hash.hash(script.build.getProgram)
+  def pay2wsh(script: Script) = new ScriptBuilder op OP_0 data Sha256Hash.hash(script.getProgram)
   def pay2wpkh(pubKey: ECKey) = new ScriptBuilder op OP_0 data pubKey.getPubKeyHash
 
   def multiSig2of2(pk1: ECKey, pk2: ECKey) = {
@@ -44,10 +44,10 @@ object Scripts {
 
   def makeAnchorTx(ourCommitPub: ECKey, theirCommitPub: ECKey, amount: Long): Transaction = ???
 
-  def makeCommitTx(inputs: java.util.List[TransactionInput], ourFinalKey: Bytes, theirFinalKey: Bytes,
+  def makeCommitTx(inputs: Seq[TransactionInput], ourFinalKey: ECKey, theirFinalKey: ECKey,
                    theirDelay: Int, revocationHash: Bytes, commitmentSpec: CommitmentSpec): Transaction = ???
 
-  def makeFinalTx(inputs: java.util.List[TransactionInput], ourPubkeyScript: Script,
+  def makeFinalTx(inputs: Seq[TransactionInput], ourPubkeyScript: Script,
                   theirPubkeyScript: Script, amountUs: Long, amountThem: Long,
                   fee: Long): Transaction = ???
 
