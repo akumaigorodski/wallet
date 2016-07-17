@@ -32,7 +32,7 @@ import Context.CLIPBOARD_SERVICE
 
 class WalletApp extends Application {
   lazy val prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
-  lazy val params = org.bitcoinj.params.TestNet3Params.get
+  lazy val params = org.bitcoinj.params.MainNetParams.get
   var walletFile, chainFile: java.io.File = null
   var kit: WalletKit = null
 
@@ -121,7 +121,7 @@ class WalletApp extends Application {
     }
 
     def useCheckPoints(time: Long) = {
-      val pts = getAssets open "checkpoints-testnet.txt"
+      val pts = getAssets open "checkpoints.txt"
       CheckpointManager.checkpoint(params, pts, store, time)
     }
 
