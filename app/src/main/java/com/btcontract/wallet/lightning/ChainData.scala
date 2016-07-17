@@ -35,11 +35,11 @@ object ChainData {
     Subscription(app.kit.peerGroup removeBlocksDownloadedEventListener lst)
   }
 
-  def watchTxDepthRemote(data: AnchorTxData) = Insight.txs(data.address)
-    .filter(_.txid == data.txId).map(_.confirmations).repeatWhen(_ delay 2.minute)
+  def watchTxDepthRemote(address: String, txId: String) = Insight.txs(address)
+    .filter(_.txid == txId).map(_.confirmations).repeatWhen(_ delay 2.minute)
     .delay(1.minute)
 
-  def watchOutputSpentRemote(data: AnchorTxData) = Insight.txs(data.address)
-    .filter(tx => tx.vin.exists(_.txid == data.txId) && tx.confirmations >= 1)
+  def watchOutputSpentRemote(address: String, txId: String) = Insight.txs(address)
+    .filter(tx => tx.vin.exists(_.txid == txId) && tx.confirmations >= 1)
     .repeatWhen(_ delay 20.minute)
 }

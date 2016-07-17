@@ -29,7 +29,7 @@
 
     <!-- headers with links -->
     <string name="mnemonic_info">Mnemonic code is super important!\n<a href='https://btcontract.com/#mnemonic-code'>Read about it</a> and be sure to save it\n\nWith mnemonic code saved you can rest assured that you\'ll never lose your precious bitcoins</string>
-    <string name="buy_info"><![CDATA[You are about to be taken to <strong>LocalBitcoins</strong> secure website where bitcoins can be safely purchased and instantly transferred to this wallet.<br><br>Would you like to proceed?]]></string>
+    <string name="buy_info"><![CDATA[<a href=https://localbitcoins.com/buy_bitcoins><strong>LocalBitcoins.com</strong></a><br>Available worldwide<br><br><a href=https://www.glidera.io/referral?client_id=539f8d462d46c7e82a6416b328301dda&buydestinationaddress=%1$s><strong>Glidera.io</strong></a><br>In USA only]]></string>
     <string name="read_settings"><![CDATA[<small>Got questions or feel lost?<br><a href=https://btcontract.com>Read a short app manual</a><br><br></small>Wallet settings]]></string>
     <string name="wallet_open">Open wallet</string>
 

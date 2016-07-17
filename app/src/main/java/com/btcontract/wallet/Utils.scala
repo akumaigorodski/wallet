@@ -152,10 +152,9 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     else if (m.getItemId == R.id.actionSettings) mkSetsForm
     else if (m.getItemId == R.id.actionBuyCoins) {
 
-      val msg = Html.fromHtml(me getString buy_info)
-      val site = new Intent(Intent.ACTION_VIEW, Uri parse "https://localbitcoins.com/buy_bitcoins")
-      val dialog = mkChoiceDialog(me startActivity site, none, dialog_ok, dialog_cancel)
-      mkForm(dialog setMessage msg, me getString action_buy, null)
+      val payTo = app.kit.currentAddress.toString
+      val msg = Html fromHtml getString(buy_info).format(payTo)
+      mkForm(negBld(dialog_cancel), me getString action_buy, msg)
     }
   }
 
