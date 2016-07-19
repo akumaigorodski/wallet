@@ -132,8 +132,7 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
       // Sign all our proposals + their acked proposals
       val spec1 = theirCommit.spec.reduce(theirChanges.acked, ourChanges.acked ++ ourChanges.signed ++ ourChanges.proposed)
       val ourSigForThem = Scripts.signTx(ourParams, theirParams, Scripts.makeCommitTx(ourCommit.publishableTx.getInputs.asScala,
-        theirParams.finalPubKey, ourParams.finalPubKey, theirParams.delay, theirNextRevocationHash, spec1),
-        anchorOutput.getValue.value)
+        theirParams.finalPubKey, ourParams.finalPubKey, theirParams.delay, theirNextRevocationHash, spec1), anchorOutput.getValue.value)
 
       // Their commitment now includes all our changes + their acked changes
       val theirNextCommitInfo1 = Left apply TheirCommit(theirCommit.index + 1, spec1, theirNextRevocationHash)

@@ -99,17 +99,13 @@ object Fee { me =>
 }
 
 // Tx Insight API formats
-case class ScriptPubKey(asm: String)
 case class TxInput(txid: String, addr: String)
-case class TxOutput(scriptPubKey: ScriptPubKey, n: Int, spentTxId: String)
-case class Tx(txid: String, vin: List[TxInput], vout: List[TxOutput], confirmations: Int)
+case class Tx(txid: String, vin: List[TxInput], confirmations: Int)
 
 object Insight {
   type TxList = List[Tx]
-  implicit val scriptPubKeyFmt = jsonFormat[String, ScriptPubKey](ScriptPubKey, "asm")
   implicit val txInputFmt = jsonFormat[String, String, TxInput](TxInput, "txid", "addr")
-  implicit val txOutFmt = jsonFormat[ScriptPubKey, Int, String, TxOutput](TxOutput, "scriptPubKey", "n", "spentTxId")
-  implicit val txFmt = jsonFormat[String, List[TxInput], List[TxOutput], Int, Tx](Tx, "txid", "vin", "vout", "confirmations")
+  implicit val txFmt = jsonFormat[String, List[TxInput], Int, Tx](Tx, "txid", "vin", "confirmations")
 
   def reloadData(suffix: String) = rand nextInt 3 match {
     case 0 => get(s"https://insight.bitpay.com/api/$suffix").body

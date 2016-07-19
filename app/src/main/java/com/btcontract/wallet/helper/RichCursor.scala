@@ -2,20 +2,17 @@ package com.btcontract.wallet.helper
 
 import android.content.{AsyncTaskLoader, CursorLoader, Context}
 import android.database.{ContentObserver, Cursor}
+import com.btcontract.wallet.Utils.{runAnd, none}
 import android.app.LoaderManager.LoaderCallbacks
-import com.btcontract.wallet.Utils.runAnd
-import com.btcontract.wallet.Utils.none
-import org.bitcoinj.core.Utils.HEX
 import java.math.BigInteger
 import android.os.Handler
 import android.net.Uri
 
-
-class RichCursor(val c: Cursor) extends Iterable[RichCursor] { me =>
-  def closeAfter[T](work: RichCursor => T) = try work(me) finally c.close
-  def string(key: String) = c.getString(c getColumnIndex key)
+case class RichCursor(c: Cursor) extends Iterable[RichCursor] { me =>
+  def closeAfter[T](run: RichCursor => T) = try run(me) finally c.close
+  def string(stringKey: String) = c.getString(c getColumnIndex stringKey)
+  def long(longKey: String) = c.getLong(c getColumnIndex longKey)
   def bigInt(key: String) = new BigInteger(me string key)
-  def long(key: String) = c.getLong(c getColumnIndex key)
   def fillWindow = runAnd(me)(c.getCount)
 
   def iterator = new Iterator[RichCursor] {
@@ -29,7 +26,7 @@ abstract class ReactLoader[T](ct: Context)
 extends AsyncTaskLoader[Cursor](ct)
 {
   def loadInBackground = getCursor match { case cursor =>
-    consume(new RichCursor(cursor) map createItem)
+    consume(RichCursor(cursor) map createItem)
     cursor
   }
 

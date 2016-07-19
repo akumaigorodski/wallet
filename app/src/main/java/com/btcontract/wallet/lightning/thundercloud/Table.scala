@@ -1,7 +1,7 @@
 package com.btcontract.wallet.lightning.thundercloud
 
 import android.database.sqlite.{SQLiteDatabase, SQLiteOpenHelper}
-import com.btcontract.wallet.Utils.{none, runAnd}
+import com.btcontract.wallet.Utils.none
 import android.content.Context
 import android.net.Uri
 
@@ -17,11 +17,11 @@ object ClearTokens extends Table {
 }
 
 object EphemeralKeys extends Table {
-  val (table, privKey, stamp, used, limit, plus) = ("ephemeralkeys", "privkey", "stamp", "used", 10, 25)
-  def newSql(stp: Long) = s"INSERT OR IGNORE INTO $table ($privKey, $stamp, $used) VALUES (?, $stp, 0)"
+  val (table, privKey, stamp, used) = ("ephemeralkeys", "privkey", "stamp", "used")
+  def newSql(s: Long) = s"INSERT OR IGNORE INTO $table ($privKey, $stamp, $used) VALUES (?, $s, 0)"
   def killUsedOldSql = s"DELETE FROM $table WHERE $used = 1 AND $stamp < ${86400 * 1000 * 4}"
   def markUsedSql(keyId: Long) = s"UPDATE $table SET $used = 1 WHERE $id = $keyId"
-  def selectUnusedSql = s"SELECT * FROM $table WHERE $used = 0 LIMIT $limit"
+  def selectUnusedSql = s"SELECT * FROM $table WHERE $used = 0 LIMIT 1"
   def selectAllSql = s"SELECT * FROM $table"
 
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,13 +39,19 @@ object Payments extends Table {
 
   // Identity here refers to Thundercloud inner message id, not to be mixed with HTLC id
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT, $data TEXT NOT NULL,
-    $incoming INTEGER NOT NULL, $rHash TEXT, $rValue TEXT, $status INTEGER NOT NULL,
-    $identity TEXT NOT NULL UNIQUE, $stamp INTEGER NOT NULL);
-    CREATE INDEX idx$identity ON $table ($identity);
-    CREATE INDEX idx$rValue ON $table ($rValue);
-    CREATE INDEX idx$rHash ON $table ($rHash);
-    CREATE INDEX idx$stamp ON $table ($stamp);
-    COMMIT"""
+    $incoming INTEGER NOT NULL, $rHash TEXT, $rValue TEXT, $status INTEGER NOT NULL, $identity TEXT NOT NULL UNIQUE,
+    $stamp INTEGER NOT NULL); CREATE INDEX idx$identity ON $table ($identity); CREATE INDEX idx$rValue ON $table ($rValue);
+    CREATE INDEX idx$rHash ON $table ($rHash); CREATE INDEX idx$stamp ON $table ($stamp); COMMIT"""
+}
+
+object Commitments extends Table {
+  val strings = ("commitments", "spendhex", "parenttxid")
+  val (table, spendHex, parentTxId) = strings
+
+  def selectSql = s"SELECT * FROM $table WHERE $parentTxId = ?"
+  def newSql = s"INSERT OR IGNORE INTO $table (spendHex, parentTxId) VALUES (?, ?)"
+  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT, $spendHex TEXT NOTNULL,
+    $parentTxId TEXT NOTNULL UNIQUE); CREATE INDEX idx$parentTxId ON $table ($parentTxId); COMMIT;"""
 }
 
 trait Table { val id = "_id" }
@@ -61,6 +67,7 @@ extends SQLiteOpenHelper(context, name, null, version)
   def onCreate(dbs: SQLiteDatabase) = {
     dbs execSQL EphemeralKeys.createSql
     dbs execSQL ClearTokens.createSql
+    dbs execSQL Commitments.createSql
     dbs execSQL Payments.createSql
   }
 }
