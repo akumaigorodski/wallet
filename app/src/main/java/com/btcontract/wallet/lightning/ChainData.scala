@@ -37,7 +37,7 @@ object ChainData {
 
   def getCommitTx(id: String) = {
     val cursor = app.LNData.db.select(Commits.selectSql, id)
-    def rc2Bytes(rc: RichCursor) = HEX.decode(rc string Commits.spendHex)
+    def rc2Bytes(rc: RichCursor) = HEX decode rc.string(Commits.spendHex)
     def bytes2Tx(rawTxData: Bytes) = new Transaction(app.params, rawTxData)
     RichCursor(cursor).closeAfter(_.toStream.headOption map rc2Bytes map bytes2Tx)
   }

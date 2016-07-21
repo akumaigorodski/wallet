@@ -57,5 +57,5 @@ object Scripts {
   // Commit tx tries to spend an anchor output
   def isBrokenTransaction(tx: Transaction, anchorOutput: TransactionOutput) = Try {
     tx.getInput(0).getScriptSig.correctlySpends(tx, 0, anchorOutput.getScriptPubKey, ALL_VERIFY_FLAGS)
-  }.isFailure
+  }
 }

@@ -100,7 +100,6 @@ class WalletApp extends Application {
     def seedAbsent = seed == null
 
     def newCommitKey = {
-      // ID monotonically rises every 10 secs
       val riseInt = (System.currentTimeMillis / 10000).toInt
       Tools.derive(new ChildNumber(riseInt) :: Nil, 100)(seed)
     }
