@@ -44,7 +44,7 @@ object Payments extends Table {
     CREATE INDEX idx$rHash ON $table ($rHash); CREATE INDEX idx$stamp ON $table ($stamp); COMMIT"""
 }
 
-object Commitments extends Table {
+object Commits extends Table {
   val strings = ("commitments", "spendhex", "parenttxid")
   val (table, spendHex, parentTxId) = strings
 
@@ -67,7 +67,7 @@ extends SQLiteOpenHelper(context, name, null, version)
   def onCreate(dbs: SQLiteDatabase) = {
     dbs execSQL EphemeralKeys.createSql
     dbs execSQL ClearTokens.createSql
-    dbs execSQL Commitments.createSql
     dbs execSQL Payments.createSql
+    dbs execSQL Commits.createSql
   }
 }

@@ -3,10 +3,11 @@ package com.btcontract.wallet.lightning
 import org.bitcoinj.core._
 import org.bitcoinj.script.ScriptOpCodes._
 import org.bitcoinj.script.{ScriptBuilder, Script}
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import collection.JavaConverters.seqAsJavaListConverter
 import com.btcontract.wallet.helper.Digests.ripemd160
 import org.bitcoinj.script.Script.ALL_VERIFY_FLAGS
 import com.btcontract.wallet.Utils.Bytes
+import util.Try
 
 
 object Scripts {
@@ -39,7 +40,7 @@ object Scripts {
     new ScriptBuilder op OP_HASH160 data ripemd160(hashOfSecret) op OP_EQUAL op OP_IF data keyIfSecretKnown.getPubKey op
       OP_ELSE number relTimeout op OP_NOP3 /* OP_CSV */ op OP_DROP data delayedKey.getPubKey op OP_ENDIF op OP_CHECKSIG
 
-  def makeAnchorTx(ourCommitPub: ECKey, theirCommitPub: ECKey, amount: Long): Transaction = ???
+  def makeAnchorTx(ourCommitPub: ECKey, theirCommitPub: ECKey, amount: Long): (Transaction, Int) = ???
 
   def makeCommitTx(inputs: Seq[TransactionInput], ourFinalKey: ECKey, theirFinalKey: ECKey,
                    theirDelay: Int, revocationHash: Bytes, commitmentSpec: CommitmentSpec): Transaction = ???
@@ -54,6 +55,7 @@ object Scripts {
                            tx: Transaction, anchorAmount: Coin, theirSig: proto.signature): Transaction = ???
 
   // Commit tx tries to spend an anchor output
-  def checkSigOrThrow(tx: Transaction, anchorOutput: TransactionOutput) =
+  def isBrokenTransaction(tx: Transaction, anchorOutput: TransactionOutput) = Try {
     tx.getInput(0).getScriptSig.correctlySpends(tx, 0, anchorOutput.getScriptPubKey, ALL_VERIFY_FLAGS)
+  }.isFailure
 }

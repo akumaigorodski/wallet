@@ -13,7 +13,6 @@
     <string name="fee_default"><![CDATA[<small>%1$s fee per kB<br><font color=#999999><small>Confirmation may take hours</small></font></small>]]></string>
     <string name="wallet_restore">Restore Wallet From Code</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
-    <string name="copy_to_clipboard">Copy to clipboard</string>
     <string name="wallet_create">Create New Wallet</string>
     <string name="wallet_empty">Wallet is empty</string>
     <string name="wallet_password">Password</string>
@@ -29,7 +28,7 @@
 
     <!-- headers with links -->
     <string name="mnemonic_info">Mnemonic code is super important!\n<a href='https://btcontract.com/#mnemonic-code'>Read about it</a> and be sure to save it\n\nWith mnemonic code saved you can rest assured that you\'ll never lose your precious bitcoins</string>
-    <string name="buy_info"><![CDATA[<a href=https://localbitcoins.com/buy_bitcoins><strong>LocalBitcoins.com</strong></a><br>Available worldwide<br><br><a href=https://www.glidera.io/referral?client_id=539f8d462d46c7e82a6416b328301dda&buydestinationaddress=%1$s><strong>Glidera.io</strong></a><br>In USA only]]></string>
+    <string name="buy_info"><![CDATA[<a href=https://localbitcoins.com/buy_bitcoins><strong>LocalBitcoins.com</strong></a><br>Available worldwide<br><br><a href=https://www.glidera.io/referral?client_id=86733e454669ce84ac3abd9bb2a1309c&buydestinationaddress=%1$s><strong>Glidera.io</strong></a><br>USA and Canada]]></string>
     <string name="read_settings"><![CDATA[<small>Got questions or feel lost?<br><a href=https://btcontract.com>Read a short app manual</a><br><br></small>Wallet settings]]></string>
     <string name="wallet_open">Open wallet</string>
 
@@ -103,7 +102,6 @@
     <string name="restore_wallet_ready">Your wallet is ready</string>
     <string name="restore_hint">Your mnemonic code</string>
     <string name="restore_wallet">Restore Wallet</string>
-    <string name="req_save">Share picture</string>
 
     <string name="txs_fee_incoming"><![CDATA[<strong>Incoming transaction</strong><br>%1$s]]></string>
     <string name="txs_fee_details"><![CDATA[<strong>Outgoing transaction</strong><br>%2$s<br><strong>%1$s</strong> fee]]></string>

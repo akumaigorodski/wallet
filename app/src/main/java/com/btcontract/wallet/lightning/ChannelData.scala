@@ -3,9 +3,9 @@ package com.btcontract.wallet.lightning
 import Tools._
 import org.bitcoinj.core._
 import com.softwaremill.quicklens._
+import com.btcontract.wallet.Utils.{app, Bytes}
 import collection.JavaConverters.asScalaBufferConverter
 import crypto.ShaChain.HashesWithLastIndex
-import com.btcontract.wallet.Utils.Bytes
 import crypto.ShaChain
 
 
@@ -14,7 +14,7 @@ case class WaitForAnchor(ourParams: OurChannelParams, theirParams: TheirChannelP
                          theirRevocationHash: Bytes, theirNextRevocationHash: Bytes) extends ChannelData
 
 case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChannelParams, anchorTx: Transaction,
-                            initialCommit: TheirCommit, theirNextRevocationHash: Bytes) extends ChannelData
+                            anchorIndex: Int, theirCommit: TheirCommit, theirNextRevocationHash: Bytes) extends ChannelData
 
 case class OurChannelParams(delay: Int, anchorAmount: Option[Long], commitPrivKey: ECKey, finalPrivKey: ECKey,
                             minDepth: Int, initialFeeRate: Long, shaSeed: Bytes) extends ChannelData {
@@ -90,9 +90,11 @@ case class TheirChanges(proposed: PktVec, acked: PktVec)
 // Non empty ourClearing means I've sent a proposition to close a channel but do not have an answer yet
 case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: OurChannelParams, theirParams: TheirChannelParams,
                        ourChanges: OurChanges, theirChanges: TheirChanges, ourCommit: OurCommit, theirCommit: TheirCommit,
-                       theirNextCommitInfo: Either[TheirCommit, Bytes], anchorOutput: TransactionOutput, anchorId: String,
-                       theirPreimages: HashesWithLastIndex) extends ChannelData { me =>
+                       theirNextCommitInfo: Either[TheirCommit, Bytes], anchorOutput: TransactionOutput,
+                       anchorId: String, theirPreimages: HashesWithLastIndex = (None, Map.empty),
+                       created: Long = System.currentTimeMillis) extends ChannelData { me =>
 
+  def anchorAddressString = app.getTo(anchorOutput).toString
   def hasNoPendingHtlcs = ourCommit.spec.htlcs.isEmpty & theirCommit.spec.htlcs.isEmpty
   def addOurProposal(proposal: proto.pkt) = me.modify(_.ourChanges.proposed).using(_ :+ proposal)
   def addTheirProposal(proposal: proto.pkt) = me.modify(_.theirChanges.proposed).using(_ :+ proposal)
@@ -147,7 +149,7 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
       ourParams.finalPubKey, theirParams.finalPubKey, ourParams.delay, ourNextRevocationHash, spec1), anchorOutput.getValue, commit.sig)
 
     // Check if we can spend a commit using their signature
-    Scripts.checkSigOrThrow(ourSignedTx, anchorOutput)
+    // Scripts.checkSigOrThrow(ourSignedTx, anchorOutput)
 
     // We will send our revocation preimage and our next revocation hash
     val ourRevocationPreimage = ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index)

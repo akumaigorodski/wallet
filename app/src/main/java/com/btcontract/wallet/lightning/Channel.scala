@@ -6,6 +6,8 @@ import com.btcontract.wallet.Utils.app
 import org.bitcoinj.core.Utils.HEX
 import crypto.ShaChain
 
+import scala.util.{Failure, Try}
+
 
 abstract class Channel(state: List[Symbol], data: ChannelData)
 extends StateMachine[ChannelData](state, data) { me =>
@@ -29,15 +31,16 @@ extends StateMachine[ChannelData](state, data) { me =>
       val theirCommitPubKey = proto2ECKey(pkt.open.commit_key)
       val theirRevocationHash = Tools sha2Bytes pkt.open.revocation_hash
       val theirNextRevocationHash = Tools sha2Bytes pkt.open.next_revocation_hash
-      val anchorTx = Scripts.makeAnchorTx(params.commitPubKey, theirCommitPubKey, amount)
-      val nonReversedTxHash = bytes2Sha(Sha256Hash hashTwice anchorTx.unsafeBitcoinSerialize)
+      val (anchorTx, anchorIdx) = Scripts.makeAnchorTx(params.commitPubKey, theirCommitPubKey, amount)
+      val nonReversedTxHashProto = bytes2Sha(Sha256Hash hashTwice anchorTx.unsafeBitcoinSerialize)
+      val theirCommit = TheirCommit(0, CommitmentSpec(Set.empty, pkt.open.initial_fee_rate,
+        initAmountUsMsat = 0, initAmountThemMsat = amount * 1000, amountUsMsat = 0,
+        amountThemMsat = amount * 1000), theirRevocationHash)
 
-      authHandler process new proto.open_anchor(nonReversedTxHash, 0, amount)
+      authHandler process new proto.open_anchor(nonReversedTxHashProto, anchorIdx, amount)
       become(WaitForCommitSig(params, TheirChannelParams(pkt.open.delay.blocks, theirCommitPubKey,
         proto2ECKey(pkt.open.final_key), pkt.open.min_depth, pkt.open.initial_fee_rate), anchorTx,
-        TheirCommit(0, CommitmentSpec(Set.empty, pkt.open.initial_fee_rate, initAmountUsMsat = 0,
-          initAmountThemMsat = amount * 1000, amountUsMsat = 0, amountThemMsat = amount * 1000),
-          theirRevocationHash), theirNextRevocationHash), 'openWaitForCommitSig)
+        anchorIdx, theirCommit, theirNextRevocationHash), 'openWaitForCommitSig)
 
     case (pkt: proto.pkt, params: OurChannelParams, 'openWaitForOpenNoAnchor :: rest)
       if pkt.open != null && pkt.open.anch == proto.open_channel.anchor_offer.WILL_CREATE_ANCHOR =>
@@ -48,14 +51,33 @@ extends StateMachine[ChannelData](state, data) { me =>
         proto2ECKey(pkt.open.final_key), pkt.open.min_depth, pkt.open.initial_fee_rate), theirRevocationHash,
         theirNextRevocationHash), 'openWaitForAnchor)
 
-    case (pkt: proto.pkt, WaitForCommitSig(ourParams, theirParams, anchorTx, initialCommit,
+    case (pkt: proto.pkt, WaitForCommitSig(ourParams, theirParams, anchorTx, anchorIdx, theirCommit,
       theirNextRevocationHash), 'openWaitForCommitSig :: rest) if pkt.open_commit_sig != null =>
+
+      val anchorAmount = anchorTx.getOutput(anchorIdx).getValue
+      val nonReversedTxHashWrap = Sha256Hash twiceOf anchorTx.unsafeBitcoinSerialize
+      val ourRevocationHash = ShaChain.revIndexFromSeed(ourParams.shaSeed, 0)
+
+      // Fully sign our transaction, ourSpec is theirSpec in 'openWaitForAnchor'
+      val anchorOutPoint = new TransactionOutPoint(app.params, anchorIdx, nonReversedTxHashWrap)
+      val ins = new TransactionInput(app.params, null, Array.emptyByteArray, anchorOutPoint, anchorAmount) :: Nil
+      val ourSpec = CommitmentSpec(Set.empty, ourParams.initialFeeRate, 0, anchorAmount.getValue * 1000, 0, anchorAmount.getValue * 1000)
+      val ourTx = Scripts.makeCommitTx(ins, ourParams.finalPubKey, theirParams.finalPubKey, ourParams.delay, ourRevocationHash, ourSpec)
+      val ourSignedTx = Scripts.addTheirSigAndSignTx(ourParams, theirParams, ourTx, anchorAmount, pkt.open_commit_sig.sig)
+
+      val spendOutput = ourSignedTx getOutput anchorIdx
+      val isFail = Scripts.isBrokenTransaction(ourSignedTx, spendOutput)
+      if (isFail) errorClosed("Bad signature") else become(Commitments(None, ourParams, theirParams,
+        OurChanges(Vector.empty, Vector.empty, Vector.empty), TheirChanges(Vector.empty, Vector.empty),
+        OurCommit(0, ourSpec, ourSignedTx), theirCommit, Right(theirNextRevocationHash), spendOutput,
+        HEX encode nonReversedTxHashWrap.getReversedBytes), 'openWaitForOurAnchorConfirm)
 
     case (pkt: proto.pkt, WaitForAnchor(ourParams, theirParams, theirRevocationHash,
       theirNextRevocationHash), 'openWaitForAnchor :: rest) if pkt.open_anchor != null =>
-      val ourRevocationHash = ShaChain.revIndexFromSeed(ourParams.shaSeed, ShaChain.largestIndex)
-      val nonReversedTxHashWrap = Sha256Hash wrap sha2Bytes(pkt.open_anchor.txid)
+
       val anchorAmount = pkt.open_anchor.amount.longValue
+      val nonReversedTxHashWrap = Sha256Hash wrap sha2Bytes(pkt.open_anchor.txid)
+      val ourRevocationHash = ShaChain.revIndexFromSeed(ourParams.shaSeed, ShaChain.largestIndex)
 
       // Recreate parts of their anchor transaction
       val anchorScript = Scripts pay2wsh Scripts.multiSig2of2(ourParams.commitPubKey, theirParams.commitPubKey)
@@ -73,11 +95,27 @@ extends StateMachine[ChannelData](state, data) { me =>
       authHandler process new proto.open_commit_sig(ourSigForThem)
       become(Commitments(None, ourParams, theirParams, OurChanges(Vector.empty, Vector.empty, Vector.empty),
         TheirChanges(Vector.empty, Vector.empty), OurCommit(0, ourSpec, ourTx), TheirCommit(0, theirSpec, theirRevocationHash),
-        Right(theirNextRevocationHash), anchorOutput, HEX encode nonReversedTxHashWrap.getReversedBytes, None -> Map.empty),
-        'openWaitForAnchorConfirm)
+        Right(theirNextRevocationHash), anchorOutput, HEX encode nonReversedTxHashWrap.getReversedBytes), 'openWaitForTheirAnchorConfirm)
+
+    case ('anchorDepthOk, c: Commitments, 'openWaitForOurAnchorConfirm :: rest) =>
+
+    case ('anchorDepthOk, c: Commitments, 'openWaitForTheirAnchorConfirm :: rest) =>
+
+    case ('anchorTimedOut, c: Commitments, 'openWaitForOurAnchorConfirm :: rest) =>
+
+    case ('anchorTimedOut, c: Commitments, 'openWaitForTheirAnchorConfirm :: rest) =>
+
+    case (pkt: proto.pkt, c: Commitments, ('openWaitForOurAnchorConfirm | 'openWaitForTheirAnchorConfirm) :: rest)
+      if pkt.open_complete != null => android.util.Log.d("CHANNEL-MESSAGE", "Received an open_complete")
 
     case (something: Any, _, _) =>
       // Let know if received an unhandled message in some state
       println(s"Unhandled $something in Channel at $state : $data")
+  }
+
+  def errorClosed(msg: String) = {
+    val protoBadSigError = new proto.error(msg)
+    authHandler process protoBadSigError
+    become(data, 'closed)
   }
 }

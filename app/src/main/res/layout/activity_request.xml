@@ -1,24 +1,33 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
+<LinearLayout
+    style="@style/StandardLinearLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent" android:layout_height="fill_parent">
 
-    <Button
-        android:enabled="false"
-        android:id="@+id/reqShare"
-        android:text="@string/req_save"
+    <LinearLayout
+        android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:orientation="horizontal"
+        android:id="@+id/restoreInfo"
+        android:gravity="center">
+
+        <Button
+            style="@style/BaseText" android:enabled="false"
+            android:drawableLeft="@drawable/ic_share_white_18dp"
+            android:paddingRight="30dp" android:paddingLeft="30dp"
+            android:layout_width="wrap_content" android:id="@+id/reqShare"/>
+
+        <Button
+            style="@style/BaseText"
+            android:paddingRight="30dp" android:paddingLeft="30dp"
+            android:drawableLeft="@drawable/ic_content_copy_white_18dp"
+            android:layout_width="wrap_content" android:id="@+id/copyData"/>
+
+    </LinearLayout>
 
     <ImageView
         android:id="@+id/reqCode"
         android:layout_marginTop="25dp"
-        android:layout_marginBottom="25dp"
         android:layout_width="@dimen/bitmap_qr_wrap_width"
         android:layout_height="@dimen/bitmap_qr_wrap_height"/>
-
-    <Button
-        android:id="@+id/copyData"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/copy_to_clipboard"/>
 
 </LinearLayout>

@@ -109,8 +109,7 @@
             android:enabled="false"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/tcIdentityEmailCopy"
-            android:text="@string/copy_to_clipboard"/>
+            android:id="@+id/tcIdentityEmailCopy"/>
 
     </LinearLayout>
 </LinearLayout>

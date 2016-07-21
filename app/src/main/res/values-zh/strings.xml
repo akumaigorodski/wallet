@@ -12,7 +12,6 @@
     <string name="fee_live"><![CDATA[<small>优先费 %1$s 每kB<br><font color=#999999><small>快速成交确认</small></font></small>]]></string>
     <string name="password_info">不设置密码的话，你会一直受到损失金钱的威胁。请选择一个至少6位字符的密码。</string>
     <string name="copied_to_clipboard">复制到剪贴板</string>
-    <string name="copy_to_clipboard">复制到剪贴板</string>
     <string name="wallet_restore">从代码还原钱包</string>
     <string name="wallet_create">创建新钱包</string>
     <string name="wallet_empty">钱包是空的</string>
@@ -29,7 +28,7 @@
 
     <!-- headers with links -->
     <string name="mnemonic_info">助记码是非常重要的！\n<a href='https://btcontract.com/#mnemonic-code'>了解更多关于</a>它，一定要保存\n\n随着助记码救了你可以放心，你永远不会失去你珍贵的比特币</string>
-    <string name="buy_info"><![CDATA[<a href=https://localbitcoins.com/buy_bitcoins><strong>LocalBitcoins.com</strong></a><br>Available worldwide<br><br><a href=https://www.glidera.io/referral?client_id=539f8d462d46c7e82a6416b328301dda&buydestinationaddress=%1$s><strong>Glidera.io</strong></a><br>In USA only]]></string>
+    <string name="buy_info"><![CDATA[<a href=https://localbitcoins.com/buy_bitcoins><strong>LocalBitcoins.com</strong></a><br>Available worldwide<br><br><a href=https://www.glidera.io/referral?client_id=86733e454669ce84ac3abd9bb2a1309c&buydestinationaddress=%1$s><strong>Glidera.io</strong></a><br>USA and Canada]]></string>
     <string name="read_settings"><![CDATA[<small>有疑问或者感到失落？<br><a href=https://btcontract.com>阅读应用程序手册</a><br><br></small>电子钱包设置]]></string>
     <string name="wallet_open">打开钱包</string>
 
@@ -102,7 +101,6 @@
     <string name="restore_wallet_ready">新的钱包准备好</string>
     <string name="restore_hint">你的助记代码</string>
     <string name="restore_wallet">还原钱包</string>
-    <string name="req_save">分享QR代码</string>
 
     <!-- activity_txs -->
     <string name="txs_fee_incoming"><![CDATA[<strong>Incoming transaction</strong><br>%1$s]]></string>

@@ -40,6 +40,7 @@ object Tools { me =>
     case (bld, con: proto.update_commit.Builder) => bld.update_commit(con.build).build
     case (bld, con: proto.authenticate.Builder) => bld.auth(con.build).build
     case (bld, con: proto.open_channel.Builder) => bld.open(con.build).build
+    case (bld, con: proto.error.Builder) => bld.error(con.build).build
 
     case (bld, con: proto.update_fulfill_htlc) => bld.update_fulfill_htlc(con).build
     case (bld, con: proto.update_revocation) => bld.update_revocation(con).build
@@ -50,7 +51,8 @@ object Tools { me =>
     case (bld, con: proto.update_commit) => bld.update_commit(con).build
     case (bld, con: proto.authenticate) => bld.auth(con).build
     case (bld, con: proto.open_channel) => bld.open(con).build
-    case _ => throw new Exception("Pkt content unknown")
+    case (bld, con: proto.error) => bld.error(con).build
+    case _ => throw new Exception(s"$some unknown")
   }
 
   // Second 0 means "Bitcoin" according to BIP44
