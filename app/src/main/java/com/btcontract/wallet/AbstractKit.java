@@ -15,7 +15,6 @@ import java.util.List;
 
 
 public abstract class AbstractKit extends AbstractIdleService {
-    public static final String LN_HTLC_LAST_ID = "ln_htlc_last_id";
     public static final String BTC_DENOMINATION = "btc_denomination";
     public static final String CURRENCY = "currency2";
 

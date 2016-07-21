@@ -45,20 +45,23 @@ object Payments extends Table {
 }
 
 object Commits extends Table {
-  val strings = ("commitments", "spendhex", "parenttxid")
-  val (table, spendHex, parentTxId) = strings
+  // Remote means saved on remote server, txId is parent
+  val strings = ("commits", "state", "spendtx", "txid", "remote")
+  val (table, channelState, spendTx, txId, remote) = strings
 
-  def selectSql = s"SELECT * FROM $table WHERE $parentTxId = ?"
-  def newSql = s"INSERT OR IGNORE INTO $table (spendHex, parentTxId) VALUES (?, ?)"
-  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT, $spendHex TEXT NOTNULL,
-    $parentTxId TEXT NOTNULL UNIQUE); CREATE INDEX idx$parentTxId ON $table ($parentTxId); COMMIT;"""
+  def selectByParentTxIdSql = s"SELECT * FROM $table WHERE $txId = ?"
+  def selectByMaxIdSql = s"SELECT * FROM $table ORDER BY $id DESC LIMIT 1"
+  def updateByIdSql(keyId: Long) = s"UPDATE $table SET $remote = 1 WHERE $id = $keyId"
+  def newSql = s"INSERT INTO $table ($channelState, $spendTx, $txId, $remote) VALUES (?, ?, ?, 0)"
+  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT, $channelState TEXT NOTNULL,
+    $spendTx TEXT NOTNULL, $txId TEXT NOTNULL, $remote INTEGER); CREATE INDEX idx$txId ON $table ($txId); COMMIT;"""
 }
 
 trait Table { val id = "_id" }
 class OpenHelper(context: Context, name: String, version: Int)
 extends SQLiteOpenHelper(context, name, null, version)
 {
-  lazy val base = getWritableDatabase
+  val base = getWritableDatabase
   def onUpgrade(db: SQLiteDatabase, oldVer: Int, newVer: Int) = none
   def change(sql: String, params: String*) = base.execSQL(sql, params.toArray)
   def select(sql: String, params: String*) = base.rawQuery(sql, params.toArray)

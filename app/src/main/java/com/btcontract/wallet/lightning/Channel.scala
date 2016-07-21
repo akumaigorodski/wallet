@@ -2,7 +2,6 @@ package com.btcontract.wallet.lightning
 
 import Tools._
 import org.bitcoinj.core._
-import com.softwaremill.quicklens._
 import com.btcontract.wallet.Utils.app
 import org.bitcoinj.core.Utils.HEX
 import crypto.ShaChain
@@ -103,17 +102,18 @@ extends StateMachine[ChannelData](state, data) { me =>
       if pkt.open_complete != null => if (w.depthOk) become(w.commits, 'normal) else me stayWith w.withHash(pkt.open_complete.blockid)
 
     // When something goes wrong with their anchor while we wait for confirmations
-    case ('anchorSpent | 'anchorTimeOut, _, 'openWaitForTheirAnchorConfirm :: rest) => errorClosed("Anchor lost")
     case (pkt: proto.pkt, _, 'openWaitForTheirAnchorConfirm :: rest) if pkt.error != null => become(data, 'closed)
+    case ('close | 'anchorSpent | 'anchorTimeOut, _, 'openWaitForTheirAnchorConfirm :: rest) =>
+      errorClosed("Anchor has been spent or timed out")
+
+    // When they close a channel while we wait for anchor we again have to spend from it
+    case (pkt: proto.pkt, w: WaitForConfirms, 'openWaitForOurAnchorConfirm :: rest)
+      if pkt.error != null => become(w.commits, 'spendingAnchor)
 
     // When something goes wrong with our anchor while we wait for confirmations, we have to spend from it
     case ('close | 'anchorSpent | 'anchorTimeOut, w: WaitForConfirms, 'openWaitForOurAnchorConfirm :: rest) =>
       authHandler process new proto.error("Anchor has been spent or timed out")
       become(w.commits, 'spendingAnchor)
-
-    // When they close a channel while we wait for anchor we again have to spend from it
-    case (pkt: proto.pkt, w: WaitForConfirms, 'openWaitForOurAnchorConfirm :: rest)
-      if pkt.error != null => become(w.commits, 'spendingAnchor)
 
     // Listening to commit tx depth after something went wrong with channel
     case (Tuple2(depth: Int, 'commit), c: Commitments, 'spendingAnchor :: rest)
