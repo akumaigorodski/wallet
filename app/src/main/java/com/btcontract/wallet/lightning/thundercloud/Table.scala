@@ -30,7 +30,7 @@ object EphemeralKeys extends Table {
 
 object Payments extends Table {
   val (waiting, paid, failed) = (1, 2, 3)
-  // Waiting means we have to look outside of database (at CHANGEs and received/sent HTLCs)
+  // Waiting means we have to look outside of database (at received/sent HTLCs states)
   val strings = ("payments", "data", "incoming", "rhash", "r", "status", "identity", "stamp")
   val (table, data, incoming, rHash, rValue, status, identity, stamp) = strings
   def newSql(inc: Int, stp: Long, stat: Int) = s"""INSERT OR IGNORE INTO $table

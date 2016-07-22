@@ -366,9 +366,9 @@ abstract class TimerActivity extends Activity { me =>
 
   // Timer utilities and toast
   override def onDestroy = wrap(super.onDestroy)(timer.cancel)
-  def toast(message: Int) = Toast.makeText(app, message, Toast.LENGTH_LONG).show
   implicit def anyToRunnable(process: => Unit): Runnable = new Runnable { def run = process }
   implicit def uiTask(process: => Runnable): TimerTask = new TimerTask { def run = me runOnUiThread process }
+  def toast(message: Int) = Toast.makeText(app, message, Toast.LENGTH_LONG).show
 
   // Run computation in Future, deal with results on UI thread
   def <[T](fun: => T, no: Throwable => Unit)(ok: T => Unit) = <<(Future(fun), no)(ok)

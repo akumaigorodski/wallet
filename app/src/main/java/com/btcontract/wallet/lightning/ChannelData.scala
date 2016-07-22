@@ -10,24 +10,25 @@ import crypto.ShaChain
 
 
 trait ChannelData {
-  type SavedState = (ChannelState, Boolean)
-  type ChannelState = (List[Symbol], ChannelData)
+  type SavedState = (ChannelSnapshot, Boolean)
+  type ChannelSnapshot = (List[Symbol], ChannelData)
 }
 
 // CHANNEL STATES
 
+// We won't fund an anchor so we're waiting for it's specs from counterparty
 case class WaitForAnchor(ourParams: OurChannelParams, theirParams: TheirChannelParams,
                          theirRevocationHash: Bytes, theirNextRevocationHash: Bytes) extends ChannelData
 
+// We will fund and anchor and we're waiting for a first commit sig from counterparty
 case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChannelParams, anchorTx: Transaction,
                             anchorIndex: Int, theirCommit: TheirCommit, theirNextRevocationHash: Bytes) extends ChannelData
 
-// We wait for local confirmations and counterparty's acknoledgment
+// We're waiting for local confirmations + counterparty's acknoledgment
 case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes], depthOk: Boolean) extends ChannelData { me =>
-  def withHash(protoSha256Hash: proto.sha256_hash) = WaitForConfirms(commits, Some(Tools sha2Bytes protoSha256Hash), depthOk)
+  def withHash(protoSha256Hash: proto.sha256_hash) = WaitForConfirms(commits, Some apply sha2Bytes(protoSha256Hash), depthOk)
 }
 
-// Channel states for mutual closing process
 // Counterparty has agreed to close a channel but we have an unresolved HTLC's
 case class ChannelClearing(commits: Commitments, ourClearing: proto.close_clearing,
                            theirClearing: proto.close_clearing) extends ChannelData
@@ -36,6 +37,7 @@ case class ChannelClearing(commits: Commitments, ourClearing: proto.close_cleari
 case class ChannelFeeNegotiating(ourSignature: proto.close_signature, ourClearing: proto.close_clearing,
                                  theirClearing: proto.close_clearing, commits: Commitments) extends ChannelData
 
+// We're waiting for spent anchor to reach required depth
 case class ChannelClosing(ourSignature: Option[proto.close_signature], mutualClosePublished: Option[Transaction],
                           ourCommitPublished: Option[Transaction], theirCommitPublished: Option[Transaction],
                           revokedPublished: Seq[Transaction], commits: Commitments) extends ChannelData
@@ -60,9 +62,8 @@ case class TheirChannelParams(delay: Int, commitPubKey: ECKey, finalPubKey: ECKe
 case class Htlc(incoming: Boolean, id: Long, amountMsat: Int, rHash: Bytes,
                 nextNodeIds: Seq[String], previousChannelId: Option[Bytes], expiry: Int)
 
-case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long,
-                          initAmountUsMsat: Long, initAmountThemMsat: Long,
-                          amountUsMsat: Long, amountThemMsat: Long) { me =>
+case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Long,
+                          initAmountThemMsat: Long, amountUsMsat: Long, amountThemMsat: Long) { me =>
 
   def addHtlc(incoming: Boolean, u: proto.update_add_htlc) = {
     val htlc = Htlc(incoming, u.id, u.amount_msat, sha2Bytes(u.r_hash), Seq.empty, None, u.expiry.blocks)
