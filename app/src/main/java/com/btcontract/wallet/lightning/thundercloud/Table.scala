@@ -45,16 +45,14 @@ object Payments extends Table {
 }
 
 object Commits extends Table {
-  // Remote means saved on remote server, txId is parent
-  val strings = ("commits", "state", "spendtx", "txid", "remote")
-  val (table, channelState, spendTx, txId, remote) = strings
+  val strings = ("commits", "spendtx", "txid")
+  val (table, commitSpendTx, txId) = strings
 
   def selectByParentTxIdSql = s"SELECT * FROM $table WHERE $txId = ?"
-  def selectByMaxIdSql = s"SELECT * FROM $table ORDER BY $id DESC LIMIT 1"
-  def updateByIdSql(keyId: Long) = s"UPDATE $table SET $remote = 1 WHERE $id = $keyId"
-  def newSql = s"INSERT INTO $table ($channelState, $spendTx, $txId, $remote) VALUES (?, ?, ?, 0)"
-  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT, $channelState TEXT NOTNULL,
-    $spendTx TEXT NOTNULL, $txId TEXT NOTNULL, $remote INTEGER); CREATE INDEX idx$txId ON $table ($txId); COMMIT;"""
+  def newSql = s"INSERT OR IGNORE INTO $table ($commitSpendTx, $txId) VALUES (?, ?)"
+  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
+    $commitSpendTx TEXT NOTNULL, $txId TEXT NOTNULL UNIQUE);
+    CREATE INDEX idx$txId ON $table ($txId); COMMIT"""
 }
 
 trait Table { val id = "_id" }

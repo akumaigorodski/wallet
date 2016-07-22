@@ -95,7 +95,7 @@ object Fee { me =>
   }
 
   def go = retry(obsOn(reloadData, IOScheduler.apply), pickInc, 1 to 10)
-    .repeatWhen(_ delay 30.minute).subscribe(prov => rate = Coin valueOf prov.fee)
+    .repeatWhen(_ delay 20.minute).subscribe(prov => rate = Coin valueOf prov.fee)
 }
 
 // Tx Insight API formats

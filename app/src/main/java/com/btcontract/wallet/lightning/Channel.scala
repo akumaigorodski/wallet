@@ -104,15 +104,15 @@ extends StateMachine[ChannelData](state, data) { me =>
     // When something goes wrong with their anchor while we wait for confirmations
     case (pkt: proto.pkt, _, 'openWaitForTheirAnchorConfirm :: rest) if pkt.error != null => become(data, 'closed)
     case ('close | 'anchorSpent | 'anchorTimeOut, _, 'openWaitForTheirAnchorConfirm :: rest) =>
-      errorClosed("Anchor has been spent or timed out")
+      errorClosed("Anchor has been spent or timed out or channel was stopped")
 
-    // When they close a channel while we wait for anchor we again have to spend from it
+    // When they close a channel while we wait for anchor we have to spend from it
     case (pkt: proto.pkt, w: WaitForConfirms, 'openWaitForOurAnchorConfirm :: rest)
       if pkt.error != null => become(w.commits, 'spendingAnchor)
 
     // When something goes wrong with our anchor while we wait for confirmations, we have to spend from it
     case ('close | 'anchorSpent | 'anchorTimeOut, w: WaitForConfirms, 'openWaitForOurAnchorConfirm :: rest) =>
-      authHandler process new proto.error("Anchor has been spent or timed out")
+      authHandler process new proto.error("Anchor has been spent or timed out or channel was stopped")
       become(w.commits, 'spendingAnchor)
 
     // Listening to commit tx depth after something went wrong with channel
@@ -128,8 +128,8 @@ extends StateMachine[ChannelData](state, data) { me =>
       println(s"Unhandled $something in Channel at $state : $data")
   }
 
-  def errorClosed(msg: String) = {
-    authHandler process new proto.error(msg)
+  def errorClosed(message: String) = {
+    authHandler process new proto.error(message)
     become(data, 'closed)
   }
 }

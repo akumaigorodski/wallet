@@ -9,12 +9,39 @@ import crypto.ShaChain.HashesWithLastIndex
 import crypto.ShaChain
 
 
-trait ChannelData
+trait ChannelData {
+  // Saved state, unique key, is saved on server
+  type ChannelMemo = (ChannelState, String, Boolean)
+  type ChannelState = (List[Symbol], ChannelData)
+}
+
+// CHANNEL STATES
+
 case class WaitForAnchor(ourParams: OurChannelParams, theirParams: TheirChannelParams,
                          theirRevocationHash: Bytes, theirNextRevocationHash: Bytes) extends ChannelData
 
 case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChannelParams, anchorTx: Transaction,
                             anchorIndex: Int, theirCommit: TheirCommit, theirNextRevocationHash: Bytes) extends ChannelData
+
+// We wait for local confirmations and counterparty's acknoledgment
+case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes], depthOk: Boolean) extends ChannelData { me =>
+  def withHash(protoSha256Hash: proto.sha256_hash) = me.modify(_.blockHash) setTo Some(Tools sha2Bytes protoSha256Hash)
+}
+
+// Channel states for mutual closing process
+// Counterparty has agreed to close a channel but we have an unresolved HTLC's
+case class ChannelClearing(commits: Commitments, ourClearing: proto.close_clearing,
+                           theirClearing: proto.close_clearing) extends ChannelData
+
+// No more unresolved HTLC's so we can negotiate on closing fee
+case class ChannelFeeNegotiating(ourSignature: proto.close_signature, ourClearing: proto.close_clearing,
+                                 theirClearing: proto.close_clearing, commits: Commitments) extends ChannelData
+
+case class ChannelClosing(ourSignature: Option[proto.close_signature], mutualClosePublished: Option[Transaction],
+                          ourCommitPublished: Option[Transaction], theirCommitPublished: Option[Transaction],
+                          revokedPublished: Seq[Transaction], commits: Commitments) extends ChannelData
+
+// CHANNEL PARAMETERS
 
 case class OurChannelParams(delay: Int, anchorAmount: Option[Long], commitPrivKey: ECKey, finalPrivKey: ECKey,
                             minDepth: Int, initialFeeRate: Long, shaSeed: Bytes) extends ChannelData {
@@ -172,24 +199,3 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
         theirCommit = theirNextCommit)
   }
 }
-
-// We wait for local confirmations and counterparty's acknoledgment
-case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes],
-                           depthOk: Boolean) extends ChannelData { me =>
-
-  def withHash(ps: proto.sha256_hash) =
-    me.modify(_.blockHash) setTo Some(Tools sha2Bytes ps)
-}
-
-// Channel states for mutual closing process
-// Counterparty has agreed to close a channel but we have an unresolved HTLC's
-case class ChannelClearing(commits: Commitments, ourClearing: proto.close_clearing,
-                           theirClearing: proto.close_clearing) extends ChannelData
-
-// No more unresolved HTLC's so we can negotiate on closing fee
-case class ChannelFeeNegotiating(ourSignature: proto.close_signature, ourClearing: proto.close_clearing,
-                                 theirClearing: proto.close_clearing, commits: Commitments) extends ChannelData
-
-case class ChannelClosing(ourSignature: Option[proto.close_signature], mutualClosePublished: Option[Transaction],
-                          ourCommitPublished: Option[Transaction], theirCommitPublished: Option[Transaction],
-                          revokedPublished: Seq[Transaction], commits: Commitments) extends ChannelData

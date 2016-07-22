@@ -1,6 +1,6 @@
 package com.btcontract.wallet
 
-import Utils.{wrap, app, none}
+import Utils.{wrap, app, none, runAnd}
 import R.string.{dialog_cancel, dialog_ok}
 import com.journeyapps.barcodescanner.BarcodeCallback
 import com.journeyapps.barcodescanner.BarcodeResult
@@ -16,11 +16,9 @@ class ScanActivity extends TimerActivity with BarcodeCallback { me =>
   var lastAttempt = System.currentTimeMillis
 
   def tryParse(text: String) = try {
-    beepSoundPlayer.playRawResource(R.raw.beep, false)
     lastAttempt = System.currentTimeMillis
-    app.TransData setValue text
-    finish
-
+    beepSoundPlayer.playRawResource(R.raw.beep, false)
+    runAnd(finish)(app.TransData setValue text)
   } catch app.TransData.onFail { err =>
     val alert = mkChoiceDialog(reader.resume, finish, dialog_ok, dialog_cancel)
     Toast.makeText(app, text, Toast.LENGTH_LONG).show
