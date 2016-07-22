@@ -10,8 +10,7 @@ import crypto.ShaChain
 
 
 trait ChannelData {
-  // Saved state, unique key, is saved on server
-  type ChannelMemo = (ChannelState, String, Boolean)
+  type SavedState = (ChannelState, Boolean)
   type ChannelState = (List[Symbol], ChannelData)
 }
 
@@ -25,7 +24,7 @@ case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChann
 
 // We wait for local confirmations and counterparty's acknoledgment
 case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes], depthOk: Boolean) extends ChannelData { me =>
-  def withHash(protoSha256Hash: proto.sha256_hash) = me.modify(_.blockHash) setTo Some(Tools sha2Bytes protoSha256Hash)
+  def withHash(protoSha256Hash: proto.sha256_hash) = WaitForConfirms(commits, Some(Tools sha2Bytes protoSha256Hash), depthOk)
 }
 
 // Channel states for mutual closing process
