@@ -17,11 +17,11 @@ object ClearTokens extends Table {
 }
 
 object EphemeralKeys extends Table {
-  val (table, privKey, stamp, used) = ("ephemeralkeys", "privkey", "stamp", "used")
+  val (table, privKey, stamp, used, limit) = ("ephemeralkeys", "privkey", "stamp", "used", 20)
   def newSql(s: Long) = s"INSERT OR IGNORE INTO $table ($privKey, $stamp, $used) VALUES (?, $s, 0)"
   def killUsedOldSql = s"DELETE FROM $table WHERE $used = 1 AND $stamp < ${86400 * 1000 * 4}"
   def markUsedSql(keyId: Long) = s"UPDATE $table SET $used = 1 WHERE $id = $keyId"
-  def selectUnusedSql = s"SELECT * FROM $table WHERE $used = 0 LIMIT 1"
+  def selectUnusedSql = s"SELECT * FROM $table WHERE $used = 0 LIMIT $limit"
   def selectAllSql = s"SELECT * FROM $table"
 
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
