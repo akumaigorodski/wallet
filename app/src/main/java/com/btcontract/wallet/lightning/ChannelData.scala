@@ -50,43 +50,42 @@ case class OurChannelParams(delay: Int, anchorAmount: Option[Long], commitPrivKe
   def finalPubKey = ECKey fromPublicOnly finalPrivKey.getPubKey
   def commitPubKey = ECKey fromPublicOnly commitPrivKey.getPubKey
 
-  def toOpenProto(anchorIntent: proto.open_channel.anchor_offer) =
-    new proto.open_channel(new proto.locktime(null, delay), Tools bytes2Sha ShaChain.revIndexFromSeed(shaSeed, 0),
-      Tools bytes2Sha ShaChain.revIndexFromSeed(shaSeed, 1), bytes2ProtoPubkey(commitPrivKey.getPubKey).build,
-      bytes2ProtoPubkey(finalPrivKey.getPubKey).build, anchorIntent, minDepth, initialFeeRate)
+  def toOpenProto(anchorIntent: proto.open_channel.anchor_offer) = new proto.open_channel(Tools blocks delay,
+    Tools bytes2Sha ShaChain.revIndexFromSeed(shaSeed, 0), Tools bytes2Sha ShaChain.revIndexFromSeed(shaSeed, 1),
+    bytes2ProtoPubkey(commitPrivKey.getPubKey).build, bytes2ProtoPubkey(finalPrivKey.getPubKey).build,
+    anchorIntent, minDepth, initialFeeRate)
 }
 
-case class TheirChannelParams(delay: Int, commitPubKey: ECKey, finalPubKey: ECKey,
-                              minDepth: Int, initialFeeRate: Long)
-
-case class Htlc(incoming: Boolean, id: Long, amountMsat: Int, rHash: Bytes,
-                nextNodeIds: Seq[String], previousChannelId: Option[Bytes], expiry: Int)
+case class TheirChannelParams(delay: Int, commitPubKey: ECKey, finalPubKey: ECKey, minDepth: Int, initialFeeRate: Long)
+case class HtlcBase(amountMsat: Int, rHash: Bytes, nextNodeIds: Seq[String], previousChannelId: Option[Bytes], expiry: Int)
+case class Htlc(base: HtlcBase, incoming: Boolean, id: Long)
 
 case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Long,
                           initAmountThemMsat: Long, amountUsMsat: Long, amountThemMsat: Long) { me =>
 
   def addHtlc(incoming: Boolean, u: proto.update_add_htlc) = {
-    val htlc = Htlc(incoming, u.id, u.amount_msat, sha2Bytes(u.r_hash), Seq.empty, None, u.expiry.blocks)
-    if (incoming) copy(amountThemMsat = amountThemMsat - htlc.amountMsat, htlcs = htlcs + htlc)
-    else copy(amountUsMsat = amountUsMsat - htlc.amountMsat, htlcs = htlcs + htlc)
+    val htlc = Htlc(HtlcBase(u.amount_msat, sha2Bytes(u.r_hash), Seq.empty, None, u.expiry.blocks), incoming, u.id)
+    if (incoming) copy(amountThemMsat = amountThemMsat - htlc.base.amountMsat, htlcs = htlcs + htlc)
+    else copy(amountUsMsat = amountUsMsat - htlc.base.amountMsat, htlcs = htlcs + htlc)
   }
 
-  // direction = false means we are sending an update_fulfill_htlc
+  // incoming = false means we are sending an update_fulfill_htlc
   // message which means that we are fulfilling an HTLC they've sent
   def fulfillHtlc(direction: Boolean, u: proto.update_fulfill_htlc) =
-    htlcs collectFirst { case htlc if u.id == htlc.id && r2HashProto(u.r) == bytes2Sha(htlc.rHash) => htlc } match {
-      case Some(htlc) if htlc.incoming => copy(amountThemMsat = amountThemMsat + htlc.amountMsat, htlcs = htlcs - htlc)
-      case Some(htlc) => copy(amountUsMsat = amountUsMsat + htlc.amountMsat, htlcs = htlcs - htlc)
+    htlcs collectFirst { case htlc if u.id == htlc.id && r2HashProto(u.r) == bytes2Sha(htlc.base.rHash) => htlc } match {
+      case Some(htlc) if htlc.incoming => copy(amountThemMsat = amountThemMsat + htlc.base.amountMsat, htlcs = htlcs - htlc)
+      case Some(htlc) => copy(amountUsMsat = amountUsMsat + htlc.base.amountMsat, htlcs = htlcs - htlc)
       case _ => me
     }
 
-  // direction = false means we are sending an update_fail_htlc
+  // incoming = false means we are sending an update_fail_htlc
   // message which means that we are failing an HTLC they've sent
-  def failHtlc(direction: Boolean, fail: proto.update_fail_htlc) = htlcs.find(_.id == fail.id) match {
-    case Some(htlc) if htlc.incoming => copy(amountUsMsat = amountUsMsat + htlc.amountMsat, htlcs = htlcs - htlc)
-    case Some(htlc) => copy(amountThemMsat = amountThemMsat + htlc.amountMsat, htlcs = htlcs - htlc)
-    case _ => me
-  }
+  def failHtlc(direction: Boolean, fail: proto.update_fail_htlc) =
+    htlcs collectFirst { case failedHtlc if fail.id == failedHtlc.id => failedHtlc } match {
+      case Some(htlc) if htlc.incoming => copy(amountUsMsat = amountUsMsat + htlc.base.amountMsat, htlcs = htlcs - htlc)
+      case Some(htlc) => copy(amountThemMsat = amountThemMsat + htlc.base.amountMsat, htlcs = htlcs - htlc)
+      case _ => me
+    }
 
   def reduce(ourChanges: PktVec, theirChanges: PktVec) = {
     val spec = copy(htlcs = Set.empty, amountUsMsat = initAmountUsMsat, amountThemMsat = initAmountThemMsat)
@@ -117,39 +116,23 @@ case class TheirChanges(proposed: PktVec, acked: PktVec)
 // Non empty ourClearing means I've sent a proposition to close a channel but do not have an answer yet
 case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: OurChannelParams, theirParams: TheirChannelParams,
                        ourChanges: OurChanges, theirChanges: TheirChanges, ourCommit: OurCommit, theirCommit: TheirCommit,
-                       theirNextCommitInfo: Either[TheirCommit, Bytes], anchorOutput: TransactionOutput,
-                       anchorId: String, theirPreimages: HashesWithLastIndex = (None, Map.empty),
-                       created: Long = System.currentTimeMillis) extends ChannelData { me =>
+                       theirNextCommitInfo: Either[TheirCommit, Bytes], anchorOutput: TransactionOutput, anchorId: String,
+                       theirPreimages: HashesWithLastIndex = (None, Map.empty), created: Long = System.currentTimeMillis,
+                       htlcIndex: Long = 0L) extends ChannelData { me =>
 
   def anchorAddressString = app.getTo(anchorOutput).toString
   def hasNoPendingHtlcs = ourCommit.spec.htlcs.isEmpty & theirCommit.spec.htlcs.isEmpty
   def addOurProposal(proposal: proto.pkt) = me.modify(_.ourChanges.proposed).using(_ :+ proposal)
   def addTheirProposal(proposal: proto.pkt) = me.modify(_.theirChanges.proposed).using(_ :+ proposal)
-  def id(id: java.lang.Long)(pkt: proto.pkt) = pkt.update_add_htlc != null && pkt.update_add_htlc.id == id
-
-  def sendFulfill(fulfill: proto.update_fulfill_htlc) =
-  // They have previously sent this HTLC to me, now I have an r-value and propose to fulfill it
-    theirChanges.acked collectFirst { case pkt if id(fulfill.id)(pkt) => pkt.update_add_htlc } match {
-      case Some(foundHtlc) if r2HashProto(fulfill.r) == foundHtlc.r_hash => me addOurProposal toPkt(fulfill)
-      case Some(foundHtlc) => throw new Exception("Invalid htlc preimage for id" + fulfill.id)
-      case None => throw new RuntimeException("sendFulfill")
-    }
-
-  def receiveFulfill(fulfill: proto.update_fulfill_htlc) =
-  // I have previously sent this HTLC to them, now I receive a fulfill with an r-value
-    ourChanges.acked collectFirst { case pkt if id(fulfill.id)(pkt) => pkt.update_add_htlc } match {
-      case Some(foundHtlc) if r2HashProto(fulfill.r) == foundHtlc.r_hash => me addTheirProposal toPkt(fulfill)
-      case Some(foundHtlc) => throw new Exception("Invalid htlc preimage for id" + fulfill.id)
-      case None => throw new RuntimeException("receiveFulfill")
-    }
+  def htlcId(id: java.lang.Long)(pkt: proto.pkt) = pkt.update_add_htlc != null && pkt.update_add_htlc.id == id
 
   // I fail an acked HTLC they've previously sent to me
-  def sendFail(fail: proto.update_fail_htlc) = theirChanges.acked exists id(fail.id) match {
+  def sendFail(fail: proto.update_fail_htlc) = theirChanges.acked exists htlcId(fail.id) match {
     case true => me addOurProposal toPkt(fail) case false => throw new RuntimeException("sendFail")
   }
 
   // I got their failure for an acked HTLC I've previously sent
-  def receiveFail(fail: proto.update_fail_htlc) = ourChanges.acked exists id(fail.id) match {
+  def receiveFail(fail: proto.update_fail_htlc) = ourChanges.acked exists htlcId(fail.id) match {
     case true => me addTheirProposal toPkt(fail) case false => throw new RuntimeException("receiveFail")
   }
 

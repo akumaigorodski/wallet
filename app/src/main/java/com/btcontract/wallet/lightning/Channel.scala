@@ -2,9 +2,11 @@ package com.btcontract.wallet.lightning
 
 import Tools._
 import org.bitcoinj.core._
-import com.btcontract.wallet.Utils.app
+import com.softwaremill.quicklens._
+import com.btcontract.wallet.Utils.{app, runAnd}
 import org.bitcoinj.core.Utils.HEX
 import crypto.ShaChain
+import okio.ByteString
 
 
 abstract class Channel(state: List[Symbol], data: ChannelData)
@@ -64,7 +66,7 @@ extends StateMachine[ChannelData](state, data) { me =>
       val ourSignedTx = Scripts.addTheirSigAndSignTx(ourParams, theirParams, ourTx, anchorAmount, pkt.open_commit_sig.sig)
 
       val spendOutput = ourSignedTx getOutput anchorIdx
-      if (Scripts.isBrokenTransaction(ourSignedTx, spendOutput).isFailure) errorClosed("Bad signature")
+      if (Scripts.isBrokenTransaction(ourSignedTx, spendOutput).isFailure) handleError("Bad signature", 'closed)
       else become(WaitForConfirms(Commitments(None, ourParams, theirParams, OurChanges(Vector.empty, Vector.empty, Vector.empty),
         TheirChanges(Vector.empty, Vector.empty), OurCommit(0, ourSpec, ourSignedTx), theirCommit, Right(theirNextRevocationHash),
         spendOutput, HEX encode nonReversedTxHashWrap.getReversedBytes), None, depthOk = false), 'openWaitForOurAnchorConfirm)
@@ -104,32 +106,73 @@ extends StateMachine[ChannelData](state, data) { me =>
     // When something goes wrong with their anchor while we wait for confirmations
     case (pkt: proto.pkt, _, 'openWaitForTheirAnchorConfirm :: rest) if pkt.error != null => become(data, 'closed)
     case ('close | 'anchorSpent | 'anchorTimeOut, _, 'openWaitForTheirAnchorConfirm :: rest) =>
-      errorClosed("Anchor has been spent or timed out or channel was stopped")
+      handleError("Anchor has been spent or timed out or channel was stopped", 'closed)
 
     // When they close a channel while we wait for anchor we have to spend from it
     case (pkt: proto.pkt, w: WaitForConfirms, 'openWaitForOurAnchorConfirm :: rest)
-      if pkt.error != null => become(w.commits, 'spendingAnchor)
+      if pkt.error != null => become(w.commits, 'closingAnchor)
 
     // When something goes wrong with our anchor while we wait for confirmations, we have to spend from it
     case ('close | 'anchorSpent | 'anchorTimeOut, w: WaitForConfirms, 'openWaitForOurAnchorConfirm :: rest) =>
-      authHandler process new proto.error("Anchor has been spent or timed out or channel was stopped")
-      become(w.commits, 'spendingAnchor)
+      handleError("Anchor has been spent or timed out or channel was stopped", 'closingAnchor)
 
     // Listening to commit tx depth after something went wrong with channel
-    case (Tuple2(depth: Int, 'commit), c: Commitments, 'spendingAnchor :: rest)
+    case (Tuple2(depth: Int, 'commit), c: Commitments, 'closingAnchor :: rest)
       if depth >= c.ourParams.minDepth => become(c, 'closed)
 
     // MAIN LOOP
 
+    // Send a brand new HTLC to them if we have enough funds
+    case (HtlcBase(msat, rHash, nextNodeIds, prevChannelId, expiry), c: Commitments, 'normal :: rest) =>
+      val reduced = c.theirCommit.spec.reduce(c.theirChanges.acked, c.ourChanges.acked ++ c.ourChanges.signed ++ c.ourChanges.proposed)
+      val availableFunds = reduced.amountThemMsat + reduced.htlcs.filterNot(_.incoming).map(htlc => -htlc.base.amountMsat).sum
 
+      if (msat > availableFunds) handleError("Insufficient funds", 'closingAnchor) else {
+        val routing = new proto.routing.Builder info ByteString.of(new proto.route(null).encode:_*)
+        val addProto = new proto.update_add_htlc(c.htlcIndex, msat, bytes2Sha(rHash), blocks(expiry), routing.build)
+        stayRespond(c.addOurProposal(Tools toPkt addProto).copy(htlcIndex = c.htlcIndex + 1), addProto)
+      }
+
+    // Receive new HTLC from them only if enough funds
+    case (pkt: proto.pkt, c: Commitments, 'normal :: rest)
+      if pkt.update_add_htlc != null =>
+
+      val reduced = c.ourCommit.spec.reduce(c.ourChanges.acked, c.theirChanges.acked ++ c.theirChanges.proposed)
+      val availableFunds = reduced.amountThemMsat + reduced.htlcs.filterNot(_.incoming).map(-_.base.amountMsat).sum
+      if (pkt.update_add_htlc.amount_msat > availableFunds) handleError("Insufficient funds", 'closingAnchor)
+      else stayWith(c addTheirProposal pkt)
+
+    // Send an HTLC fulfill for an HTLC I've sent them before
+    case (Tuple2(pkt: proto.pkt, 'send), c: Commitments, 'normal :: rest)
+      if pkt.update_fulfill_htlc != null =>
+
+      c.theirChanges.acked.find(c htlcId pkt.update_fulfill_htlc.id).map(_.update_add_htlc.r_hash) match {
+        case Some(hash) if r2HashProto(pkt.update_fulfill_htlc.r) == hash => stayRespond(c addOurProposal pkt, pkt)
+        case Some(hash) => handleError("Invalid HTLC preimage", 'normal)
+        case _ => handleError("Unknown HTLC id", 'normal)
+      }
+
+    // Receive a fulfill for an HTLC I've got before
+    case (pkt: proto.pkt, c: Commitments, 'normal :: rest)
+      if pkt.update_fulfill_htlc != null =>
+
+      c.ourChanges.acked.find(c htlcId pkt.update_fulfill_htlc.id).map(_.update_add_htlc.r_hash) match {
+        case Some(hash) if r2HashProto(pkt.update_fulfill_htlc.r) == hash => stayWith(c addTheirProposal pkt)
+        case Some(hash) => handleError("Invalid HTLC preimage", 'closingAnchor)
+        case None => handleError("Unknown HTLC id", 'closingAnchor)
+      }
 
     case (something: Any, _, _) =>
       // Let know if received an unhandled message in some state
       println(s"Unhandled $something in Channel at $state : $data")
   }
 
-  def errorClosed(message: String) = {
-    authHandler process new proto.error(message)
-    become(data, 'closed)
+  def stayRespond(newData: ChannelData, toThem: Any) =
+    runAnd(authHandler process toThem)(me stayWith newData)
+
+  def handleError(why: String, state: Symbol) = {
+    val error = new proto.error.Builder problem why
+    authHandler process error.build
+    become(data, state)
   }
 }

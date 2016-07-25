@@ -85,8 +85,8 @@ object Utils { me =>
 
   // App wide utility functions
   def btcHuman(coin: Coin) = app getString input_alt_btc format btc(coin)
+  def runAnd[T](res: T)(next: => Any) = Option(next).map(x => res).get
   def wrap(run: => Unit)(go: => Unit) = try go catch none finally run
-  def runAnd[T](res: T)(run: => Any) = Option(run).map(x => res).get
   def humanAddr(adr: Address) = s"$adr" grouped 4 mkString "\u0020"
   def none: PartialFunction[Any, Unit] = { case _ => }
 

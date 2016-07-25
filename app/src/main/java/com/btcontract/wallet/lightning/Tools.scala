@@ -34,6 +34,7 @@ object Tools { me =>
     case (bld, con: proto.update_fulfill_htlc.Builder) => bld.update_fulfill_htlc(con.build).build
     case (bld, con: proto.update_revocation.Builder) => bld.update_revocation(con.build).build
     case (bld, con: proto.update_fail_htlc.Builder) => bld.update_fail_htlc(con.build).build
+    case (bld, con: proto.update_add_htlc.Builder) => bld.update_add_htlc(con.build).build
     case (bld, con: proto.close_signature.Builder) => bld.close_signature(con.build).build
     case (bld, con: proto.open_commit_sig.Builder) => bld.open_commit_sig(con.build).build
     case (bld, con: proto.close_clearing.Builder) => bld.close_clearing(con.build).build
@@ -45,6 +46,7 @@ object Tools { me =>
     case (bld, con: proto.update_fulfill_htlc) => bld.update_fulfill_htlc(con).build
     case (bld, con: proto.update_revocation) => bld.update_revocation(con).build
     case (bld, con: proto.update_fail_htlc) => bld.update_fail_htlc(con).build
+    case (bld, con: proto.update_add_htlc) => bld.update_add_htlc(con).build
     case (bld, con: proto.close_signature) => bld.close_signature(con).build
     case (bld, con: proto.open_commit_sig) => bld.open_commit_sig(con).build
     case (bld, con: proto.close_clearing) => bld.close_clearing(con).build
@@ -82,9 +84,9 @@ object Tools { me =>
     case _ => raw
   }
 
-  // Proto bitcoin_pubkey conversion
   def proto2ECKey(protokey: proto.bitcoin_pubkey) = ECKey fromPublicOnly protokey.key.toByteArray
   def bytes2ProtoPubkey(bs: Bytes) = new proto.bitcoin_pubkey.Builder key ByteString.of(bs, 0, bs.length)
+  def blocks(num: Int) = new proto.locktime(null, num)
 
   // Proto signature conversion
   def ts2Signature(ts: ECDSASignature) = {
