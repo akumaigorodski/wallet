@@ -18,11 +18,16 @@ class ScanActivity extends TimerActivity with BarcodeCallback { me =>
   def tryParse(text: String) = try {
     lastAttempt = System.currentTimeMillis
     beepSoundPlayer.playRawResource(R.raw.beep, false)
-    runAnd(finish)(app.TransData setValue text)
+    app.TransData setValue text
+    finish
+
+    // Parsing error
   } catch app.TransData.onFail { err =>
-    val alert = mkChoiceDialog(reader.resume, finish, dialog_ok, dialog_cancel)
     Toast.makeText(app, text, Toast.LENGTH_LONG).show
-    mkForm(alert setMessage err, null, null)
+    mkForm(mkChoiceDialog(reader.resume, finish, dialog_ok,
+      dialog_cancel) setMessage err, null, null)
+
+    // Pause anyway
   } finally reader.pause
 
   // Only try to decode result if 3 seconds elapsed

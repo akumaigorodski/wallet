@@ -5,15 +5,21 @@ import org.bitcoinj.core._
 import com.softwaremill.quicklens._
 import com.btcontract.wallet.Utils.{app, runAnd}
 import org.bitcoinj.core.Utils.HEX
+import Scripts.commit2Inputs
 import crypto.ShaChain
-import okio.ByteString
 
 
 abstract class Channel(state: List[Symbol], data: ChannelData)
 extends StateMachine[ChannelData](state, data) { me =>
+
+  val INVALID_COMMIT_PREIMAGE = "InvalidCommitPreimage"
+  val UNKNOWN_HTLC_PREIMAGE = "UnknownHTLCPreimage"
+  val INVALID_COMMIT_SIG = "InvalidCommitSig"
+  val NOT_ENOUGH_FUNDS = "NotEnoughFunds"
+  val UNKNOWN_HTLC_ID = "UnknownHTLCId"
   val authHandler: AuthHandler
 
-  def doProcess(change: Any) = (change, data, state) match {
+  def doProcess(change: Any) = (data, change, state) match {
     case (paramsWithAnchor: OurChannelParams, null, 'inactive :: rest) if paramsWithAnchor.anchorAmount.isDefined =>
       authHandler process paramsWithAnchor.toOpenProto(proto.open_channel.anchor_offer.WILL_CREATE_ANCHOR)
       become(paramsWithAnchor, 'openWaitForOpenWithAnchor)
@@ -24,7 +30,7 @@ extends StateMachine[ChannelData](state, data) { me =>
 
     // INIT
 
-    case (pkt: proto.pkt, params: OurChannelParams, 'openWaitForOpenWithAnchor :: rest)
+    case (params: OurChannelParams, pkt: proto.pkt, 'openWaitForOpenWithAnchor :: rest)
       if pkt.open != null && pkt.open.anch == proto.open_channel.anchor_offer.WONT_CREATE_ANCHOR =>
 
       val amount = params.anchorAmount.get
@@ -42,7 +48,7 @@ extends StateMachine[ChannelData](state, data) { me =>
         proto2ECKey(pkt.open.final_key), pkt.open.min_depth, pkt.open.initial_fee_rate), anchorTx,
         anchorIdx, theirCommit, theirNextRevocationHash), 'openWaitForCommitSig)
 
-    case (pkt: proto.pkt, params: OurChannelParams, 'openWaitForOpenNoAnchor :: rest)
+    case (params: OurChannelParams, pkt: proto.pkt, 'openWaitForOpenNoAnchor :: rest)
       if pkt.open != null && pkt.open.anch == proto.open_channel.anchor_offer.WILL_CREATE_ANCHOR =>
 
       val theirRevocationHash = Tools sha2Bytes pkt.open.revocation_hash
@@ -51,8 +57,9 @@ extends StateMachine[ChannelData](state, data) { me =>
         proto2ECKey(pkt.open.final_key), pkt.open.min_depth, pkt.open.initial_fee_rate), theirRevocationHash,
         theirNextRevocationHash), 'openWaitForAnchor)
 
-    case (pkt: proto.pkt, WaitForCommitSig(ourParams, theirParams, anchorTx, anchorIdx, theirCommit,
-      theirNextRevocationHash), 'openWaitForCommitSig :: rest) if pkt.open_commit_sig != null =>
+    // We have sent an anchor tx info and await for their signature which will let us spend an anchor
+    case (WaitForCommitSig(ourParams, theirParams, anchorTx, anchorIdx, theirCommit, theirNextRevocationHash),
+      pkt: proto.pkt, 'openWaitForCommitSig :: rest) if pkt.open_commit_sig != null =>
 
       val anchorAmount = anchorTx.getOutput(anchorIdx).getValue
       val nonReversedTxHashWrap = Sha256Hash twiceOf anchorTx.unsafeBitcoinSerialize
@@ -71,8 +78,9 @@ extends StateMachine[ChannelData](state, data) { me =>
         TheirChanges(Vector.empty, Vector.empty), OurCommit(0, ourSpec, ourSignedTx), theirCommit, Right(theirNextRevocationHash),
         spendOutput, HEX encode nonReversedTxHashWrap.getReversedBytes), None, depthOk = false), 'openWaitForOurAnchorConfirm)
 
-    case (pkt: proto.pkt, WaitForAnchor(ourParams, theirParams, theirRevocationHash,
-      theirNextRevocationHash), 'openWaitForAnchor :: rest) if pkt.open_anchor != null =>
+    // We won't fund an achor so we wait for their anchor info to respond with signature
+    case (WaitForAnchor(ourParams, theirParams, theirRevocationHash, theirNextRevocationHash),
+      pkt: proto.pkt, 'openWaitForAnchor :: rest) if pkt.open_anchor != null =>
 
       // ourTx is just a placeholder since we can't spend it anyway
       val nonReversedTxHashWrap = Sha256Hash wrap sha2Bytes(pkt.open_anchor.txid)
@@ -97,72 +105,128 @@ extends StateMachine[ChannelData](state, data) { me =>
         Right(theirNextRevocationHash), anchorOutput, HEX encode nonReversedTxHashWrap.getReversedBytes),
         None, depthOk = false), 'openWaitForTheirAnchorConfirm)
 
-    case (Tuple2(depth: Int, 'anchor), w: WaitForConfirms, ('openWaitForOurAnchorConfirm | 'openWaitForTheirAnchorConfirm) :: rest)
-      if depth >= w.commits.ourParams.minDepth => if (w.blockHash.isDefined) become(w.commits, 'normal) else me stayWith w.copy(depthOk = true)
+    // We've got local depth confirmation, now maybe must wait for them
+    case (w: WaitForConfirms, (depth: Int, 'anchor), ('openWaitForOurAnchorConfirm |
+      'openWaitForTheirAnchorConfirm) :: rest) if depth >= w.commits.ourParams.minDepth =>
 
-    case (pkt: proto.pkt, w: WaitForConfirms, ('openWaitForOurAnchorConfirm | 'openWaitForTheirAnchorConfirm) :: rest)
-      if pkt.open_complete != null => if (w.depthOk) become(w.commits, 'normal) else me stayWith w.withHash(pkt.open_complete.blockid)
+      if (w.blockHash.isDefined) become(w.commits, 'normal)
+      else me stayWith w.copy(depthOk = true)
+
+    // We've got a confirmation from them, now maybe must wait for local
+    case (w: WaitForConfirms, pkt: proto.pkt, ('openWaitForOurAnchorConfirm |
+      'openWaitForTheirAnchorConfirm) :: rest) if pkt.open_complete != null =>
+
+      val hash = sha2Bytes(pkt.open_complete.blockid)
+      if (w.depthOk) become(fresh = w.commits, 'normal)
+      else me stayWith w.copy(blockHash = Some apply hash)
 
     // When something goes wrong with their anchor while we wait for confirmations
-    case (pkt: proto.pkt, _, 'openWaitForTheirAnchorConfirm :: rest) if pkt.error != null => become(data, 'closed)
-    case ('close | 'anchorSpent | 'anchorTimeOut, _, 'openWaitForTheirAnchorConfirm :: rest) =>
+    case (_, pkt: proto.pkt, 'openWaitForTheirAnchorConfirm :: rest)
+      if pkt.error != null => become(data, 'closed)
+
+    case (_, 'close | 'anchorSpent | 'anchorTimeOut, 'openWaitForTheirAnchorConfirm :: rest) =>
       handleError("Anchor has been spent or timed out or channel was stopped", 'closed)
 
     // When they close a channel while we wait for anchor we have to spend from it
-    case (pkt: proto.pkt, w: WaitForConfirms, 'openWaitForOurAnchorConfirm :: rest)
+    case (w: WaitForConfirms, pkt: proto.pkt, 'openWaitForOurAnchorConfirm :: rest)
       if pkt.error != null => become(w.commits, 'closingAnchor)
 
     // When something goes wrong with our anchor while we wait for confirmations, we have to spend from it
-    case ('close | 'anchorSpent | 'anchorTimeOut, w: WaitForConfirms, 'openWaitForOurAnchorConfirm :: rest) =>
+    case (w: WaitForConfirms, 'close | 'anchorSpent | 'anchorTimeOut, 'openWaitForOurAnchorConfirm :: rest) =>
       handleError("Anchor has been spent or timed out or channel was stopped", 'closingAnchor)
 
     // Listening to commit tx depth after something went wrong with channel
-    case (Tuple2(depth: Int, 'commit), c: Commitments, 'closingAnchor :: rest)
+    case (c: Commitments, (depth: Int, 'commit), 'closingAnchor :: rest)
       if depth >= c.ourParams.minDepth => become(c, 'closed)
 
     // MAIN LOOP
 
-    // Send a brand new HTLC to them if we have enough funds
-    case (HtlcBase(msat, rHash, nextNodeIds, prevChannelId, expiry), c: Commitments, 'normal :: rest) =>
+    // Send a brand new HTLC to them (make an outgoing payment) if we have enough funds
+    case (c: Commitments, HtlcBase(msat, rHash, nextNodeIds, prevChannelId, expiry), 'normal :: rest) =>
       val reduced = c.theirCommit.spec.reduce(c.theirChanges.acked, c.ourChanges.acked ++ c.ourChanges.signed ++ c.ourChanges.proposed)
       val availableFunds = reduced.amountThemMsat + reduced.htlcs.filterNot(_.incoming).map(htlc => -htlc.base.amountMsat).sum
-
-      if (msat > availableFunds) handleError("Insufficient funds", 'closingAnchor) else {
-        val routing = new proto.routing.Builder info ByteString.of(new proto.route(null).encode:_*)
-        val addProto = new proto.update_add_htlc(c.htlcIndex, msat, bytes2Sha(rHash), blocks(expiry), routing.build)
-        stayRespond(c.addOurProposal(Tools toPkt addProto).copy(htlcIndex = c.htlcIndex + 1), addProto)
-      }
+      if (msat > availableFunds) throw new Exception(NOT_ENOUGH_FUNDS) else me stayWith c.modify(_.htlcIndex).using(_ + 1)
 
     // Receive new HTLC from them only if enough funds
-    case (pkt: proto.pkt, c: Commitments, 'normal :: rest)
-      if pkt.update_add_htlc != null =>
-
+    case (c: Commitments, pkt: proto.pkt, 'normal :: rest) if pkt.update_add_htlc != null =>
       val reduced = c.ourCommit.spec.reduce(c.ourChanges.acked, c.theirChanges.acked ++ c.theirChanges.proposed)
-      val availableFunds = reduced.amountThemMsat + reduced.htlcs.filterNot(_.incoming).map(-_.base.amountMsat).sum
-      if (pkt.update_add_htlc.amount_msat > availableFunds) handleError("Insufficient funds", 'closingAnchor)
-      else stayWith(c addTheirProposal pkt)
+      val availableFunds = reduced.amountThemMsat + reduced.htlcs.filterNot(_.incoming).map(htlc => -htlc.base.amountMsat).sum
+      if (pkt.update_add_htlc.amount_msat > availableFunds) handleError(NOT_ENOUGH_FUNDS, 'closingAnchor) else stayWith(c addTheirProposal pkt)
 
     // Send an HTLC fulfill for an HTLC I've sent them before
-    case (Tuple2(pkt: proto.pkt, 'send), c: Commitments, 'normal :: rest)
-      if pkt.update_fulfill_htlc != null =>
-
-      c.theirChanges.acked.find(c htlcId pkt.update_fulfill_htlc.id).map(_.update_add_htlc.r_hash) match {
+    case (c: Commitments, (pkt: proto.pkt, 'fulfill), 'normal :: rest) if pkt.update_fulfill_htlc != null =>
+      c.findAddHtlcOpt(c.theirChanges.acked, pkt.update_fulfill_htlc.id).map(htlcAdd => htlcAdd.r_hash) match {
         case Some(hash) if r2HashProto(pkt.update_fulfill_htlc.r) == hash => stayRespond(c addOurProposal pkt, pkt)
-        case Some(hash) => handleError("Invalid HTLC preimage", 'normal)
-        case _ => handleError("Unknown HTLC id", 'normal)
+        case Some(hash) => throw new Exception(UNKNOWN_HTLC_PREIMAGE)
+        case _ => throw new Exception(UNKNOWN_HTLC_ID)
       }
 
     // Receive a fulfill for an HTLC I've got before
-    case (pkt: proto.pkt, c: Commitments, 'normal :: rest)
-      if pkt.update_fulfill_htlc != null =>
-
-      c.ourChanges.acked.find(c htlcId pkt.update_fulfill_htlc.id).map(_.update_add_htlc.r_hash) match {
+    case (c: Commitments, pkt: proto.pkt, 'normal :: rest) if pkt.update_fulfill_htlc != null =>
+      c.findAddHtlcOpt(c.theirChanges.acked, pkt.update_fulfill_htlc.id).map(add => add.r_hash) match {
         case Some(hash) if r2HashProto(pkt.update_fulfill_htlc.r) == hash => stayWith(c addTheirProposal pkt)
-        case Some(hash) => handleError("Invalid HTLC preimage", 'closingAnchor)
-        case None => handleError("Unknown HTLC id", 'closingAnchor)
+        case Some(hash) => handleError(UNKNOWN_HTLC_PREIMAGE, 'closingAnchor)
+        case None => handleError(UNKNOWN_HTLC_ID, 'closingAnchor)
       }
 
-    case (something: Any, _, _) =>
+    // Send an HTLC fail for an HTLC I've sent them before
+    case (c: Commitments, (pkt: proto.pkt, 'fail), 'normal :: rest) if pkt.update_fail_htlc != null =>
+      if (c.findAddHtlcOpt(c.theirChanges.acked, pkt.update_fail_htlc.id).isDefined) stayRespond(c addOurProposal pkt, pkt)
+      else throw new Exception(UNKNOWN_HTLC_ID)
+
+    // Receive an HTLC fail for an HTLC I've got from them before
+    case (c: Commitments, pkt: proto.pkt, 'normal :: rest) if pkt.update_fail_htlc != null =>
+      if (c.findAddHtlcOpt(c.ourChanges.acked, pkt.update_fail_htlc.id).isDefined) stayWith(c addTheirProposal pkt)
+      else handleError(UNKNOWN_HTLC_ID, 'closingAnchor)
+
+    // Send a commitment transaction to them
+    case (c: Commitments, 'commit, 'normal :: rest) =>
+      c.theirNextCommitInfo.right foreach { theirNextRevocationHash =>
+        val spec1 = c.theirCommit.spec.reduce(c.theirChanges.acked, c.ourChanges.acked ++ c.ourChanges.signed ++ c.ourChanges.proposed)
+        val ourSigForThem = Scripts.signTx(c.ourParams, c.theirParams, Scripts.makeCommitTx(c.ourCommit, c.theirParams.finalPubKey,
+          c.ourParams.finalPubKey, c.theirParams.delay, theirNextRevocationHash, spec1), c.anchorOutput.getValue.value)
+
+        // Their commitment now includes all our changes + their acked changes
+        val theirCommit1 = Left apply TheirCommit(c.theirCommit.index + 1, spec1, theirNextRevocationHash)
+        val ourChanges1 = c.ourChanges.copy(proposed = Vector.empty, signed = c.ourChanges.signed ++ c.ourChanges.proposed)
+        stayRespond(c.copy(theirNextCommitInfo = theirCommit1, ourChanges = ourChanges1), new proto.update_commit.Builder sig ourSigForThem)
+      }
+
+    // Receive a commitment transaction from them but only if it's correct
+    case (c: Commitments, pkt: proto.pkt, 'normal :: rest) if pkt.update_commit != null =>
+      val spec1 = c.ourCommit.spec.reduce(c.ourChanges.acked, c.theirChanges.acked ++ c.theirChanges.proposed)
+      val ourNextRevocationHash = Sha256Hash hash ShaChain.revIndexFromSeed(c.ourParams.shaSeed, c.ourCommit.index + 1)
+      val ourSignedTx = Scripts.addTheirSigAndSignTx(c.ourParams, c.theirParams, Scripts.makeCommitTx(c.ourCommit, c.ourParams.finalPubKey,
+        c.theirParams.finalPubKey, c.ourParams.delay, ourNextRevocationHash, spec1), c.anchorOutput.getValue, pkt.update_commit.sig)
+
+      val check = Scripts.isBrokenTransaction(ourSignedTx, c.anchorOutput)
+      if (check.isFailure) handleError(INVALID_COMMIT_SIG, 'closingAnchor) else {
+        // We will respond to them with our revocation preimage and our next revocation hash
+        val ourRevocationPreimage = ShaChain.revIndexFromSeed(c.ourParams.shaSeed, c.ourCommit.index)
+        val ourNextRevocationHash1 = Sha256Hash hash ShaChain.revIndexFromSeed(c.ourParams.shaSeed, c.ourCommit.index + 2)
+        val theirChanges1 = c.theirChanges.copy(proposed = Vector.empty, acked = c.theirChanges.acked ++ c.theirChanges.proposed)
+        val revocProto = new proto.update_revocation(Tools bytes2Sha ourRevocationPreimage, Tools bytes2Sha ourNextRevocationHash1)
+        stayRespond(c.copy(ourCommit = OurCommit(c.ourCommit.index + 1, spec1, ourSignedTx), theirChanges = theirChanges1), revocProto)
+      }
+
+    // Receive a revocation in return for our commit
+    case (c: Commitments, pkt: proto.pkt, 'normal :: rest)
+      if pkt.update_revocation != null =>
+
+      c.theirNextCommitInfo.left foreach { theirNextCommit =>
+        // Hash of their revocation preimage must be equal to current revocation hash
+        val providedHash = preimg2HashProto(pkt.update_revocation.revocation_preimage)
+        val isMismatch = providedHash != bytes2Sha(c.theirCommit.theirRevocationHash)
+
+        if (isMismatch) handleError(INVALID_COMMIT_PREIMAGE, 'closingAnchor) else {
+          val commitInfo1 = Right apply sha2Bytes(pkt.update_revocation.next_revocation_hash)
+          val changes1 = c.ourChanges.copy(signed = Vector.empty, acked = c.ourChanges.acked ++ c.ourChanges.signed)
+          val sha1 = ShaChain.revAddHash(c.theirPreimages, sha2Bytes(pkt.update_revocation.revocation_preimage), c.theirCommit.index)
+          me stayWith c.copy(theirPreimages = sha1, ourChanges = changes1, theirNextCommitInfo = commitInfo1, theirCommit = theirNextCommit)
+        }
+      }
+
+    case (_, something, _) =>
       // Let know if received an unhandled message in some state
       println(s"Unhandled $something in Channel at $state : $data")
   }
@@ -170,9 +234,8 @@ extends StateMachine[ChannelData](state, data) { me =>
   def stayRespond(newData: ChannelData, toThem: Any) =
     runAnd(authHandler process toThem)(me stayWith newData)
 
-  def handleError(why: String, state: Symbol) = {
-    val error = new proto.error.Builder problem why
-    authHandler process error.build
-    become(data, state)
+  def handleError(reason: String, newState: Symbol) = {
+    authHandler.process(new proto.error.Builder problem reason)
+    become(data, newState)
   }
 }

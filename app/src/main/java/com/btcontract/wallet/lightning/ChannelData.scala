@@ -4,7 +4,6 @@ import Tools._
 import org.bitcoinj.core._
 import com.softwaremill.quicklens._
 import com.btcontract.wallet.Utils.{app, Bytes}
-import collection.JavaConverters.asScalaBufferConverter
 import crypto.ShaChain.HashesWithLastIndex
 import crypto.ShaChain
 
@@ -25,9 +24,8 @@ case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChann
                             anchorIndex: Int, theirCommit: TheirCommit, theirNextRevocationHash: Bytes) extends ChannelData
 
 // We're waiting for local confirmations + counterparty's acknoledgment
-case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes], depthOk: Boolean) extends ChannelData { me =>
-  def withHash(protoSha256Hash: proto.sha256_hash) = WaitForConfirms(commits, Some apply sha2Bytes(protoSha256Hash), depthOk)
-}
+case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes],
+                           depthOk: Boolean) extends ChannelData
 
 // Counterparty has agreed to close a channel but we have an unresolved HTLC's
 case class ChannelClearing(commits: Commitments, ourClearing: proto.close_clearing,
@@ -124,61 +122,8 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
   def hasNoPendingHtlcs = ourCommit.spec.htlcs.isEmpty & theirCommit.spec.htlcs.isEmpty
   def addOurProposal(proposal: proto.pkt) = me.modify(_.ourChanges.proposed).using(_ :+ proposal)
   def addTheirProposal(proposal: proto.pkt) = me.modify(_.theirChanges.proposed).using(_ :+ proposal)
-  def htlcId(id: java.lang.Long)(pkt: proto.pkt) = pkt.update_add_htlc != null && pkt.update_add_htlc.id == id
 
-  // I fail an acked HTLC they've previously sent to me
-  def sendFail(fail: proto.update_fail_htlc) = theirChanges.acked exists htlcId(fail.id) match {
-    case true => me addOurProposal toPkt(fail) case false => throw new RuntimeException("sendFail")
-  }
-
-  // I got their failure for an acked HTLC I've previously sent
-  def receiveFail(fail: proto.update_fail_htlc) = ourChanges.acked exists htlcId(fail.id) match {
-    case true => me addTheirProposal toPkt(fail) case false => throw new RuntimeException("receiveFail")
-  }
-
-  def sendCommit = theirNextCommitInfo match {
-    // Attempting to sign twice waiting for the first revocation message
-    case Left(theirNextCommit) => throw new RuntimeException("sendCommit")
-
-    case Right(theirNextRevocationHash) =>
-      // Sign all our proposals + their acked proposals
-      val spec1 = theirCommit.spec.reduce(theirChanges.acked, ourChanges.acked ++ ourChanges.signed ++ ourChanges.proposed)
-      val ourSigForThem = Scripts.signTx(ourParams, theirParams, Scripts.makeCommitTx(ourCommit.publishableTx.getInputs.asScala,
-        theirParams.finalPubKey, ourParams.finalPubKey, theirParams.delay, theirNextRevocationHash, spec1), anchorOutput.getValue.value)
-
-      // Their commitment now includes all our changes + their acked changes
-      val theirNextCommitInfo1 = Left apply TheirCommit(theirCommit.index + 1, spec1, theirNextRevocationHash)
-      val ourChanges1 = ourChanges.copy(proposed = Vector.empty, signed = ourChanges.signed ++ ourChanges.proposed)
-      new proto.update_commit(ourSigForThem) -> copy(theirNextCommitInfo = theirNextCommitInfo1, ourChanges = ourChanges1)
-  }
-
-  def receiveCommit(commit: proto.update_commit) = {
-    val spec1 = ourCommit.spec.reduce(ourChanges.acked, theirChanges.acked ++ theirChanges.proposed)
-    val ourNextRevocationHash = Sha256Hash hash ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index + 1)
-    val ourSignedTx = Scripts.addTheirSigAndSignTx(ourParams, theirParams, Scripts.makeCommitTx(ourCommit.publishableTx.getInputs.asScala,
-      ourParams.finalPubKey, theirParams.finalPubKey, ourParams.delay, ourNextRevocationHash, spec1), anchorOutput.getValue, commit.sig)
-
-    // Check if we can spend a commit using their signature
-    // Scripts.checkSigOrThrow(ourSignedTx, anchorOutput)
-
-    // We will send our revocation preimage and our next revocation hash
-    val ourRevocationPreimage = ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index)
-    val ourNextRevocationHash1 = Sha256Hash hash ShaChain.revIndexFromSeed(ourParams.shaSeed, ourCommit.index + 2)
-    val theirChanges1 = theirChanges.copy(proposed = Vector.empty, acked = theirChanges.acked ++ theirChanges.proposed)
-    val revocProto = new proto.update_revocation(Tools bytes2Sha ourRevocationPreimage, Tools bytes2Sha ourNextRevocationHash1)
-    revocProto -> copy(ourCommit = OurCommit(ourCommit.index + 1, spec1, ourSignedTx), theirChanges = theirChanges1)
-  }
-
-  def receiveRevocation(revoc: proto.update_revocation) = theirNextCommitInfo match {
-    // Receiving an unexpected update_revocation message while not waiting for a revocation
-    case Right(theirNextRevocationHash) => throw new RuntimeException("RevocationHashNotCommit")
-
-    case Left(theirNextCommit) =>
-      // We receive a revocation because we just sent them a sig for their next commit tx
-      require(preimg2HashProto(revoc.revocation_preimage) == bytes2Sha(theirCommit.theirRevocationHash), "InvalidPreimage")
-      copy(theirPreimages = ShaChain.revAddHash(theirPreimages, sha2Bytes(revoc.revocation_preimage), theirCommit.index),
-        ourChanges = ourChanges.copy(signed = Vector.empty, acked = ourChanges.acked ++ ourChanges.signed),
-        theirNextCommitInfo = Right apply sha2Bytes(revoc.next_revocation_hash),
-        theirCommit = theirNextCommit)
+  def findAddHtlcOpt(packets: PktVec, id: java.lang.Long) = packets collectFirst {
+    case pkt if pkt.update_add_htlc != null && pkt.update_add_htlc.id == id => pkt.update_add_htlc
   }
 }

@@ -3,6 +3,7 @@ package com.btcontract.wallet.lightning
 import org.bitcoinj.core._
 import org.bitcoinj.script.ScriptOpCodes._
 import org.bitcoinj.script.{ScriptBuilder, Script}
+import collection.JavaConverters.asScalaBufferConverter
 import collection.JavaConverters.seqAsJavaListConverter
 import com.btcontract.wallet.helper.Digests.ripemd160
 import org.bitcoinj.script.Script.ALL_VERIFY_FLAGS
@@ -42,8 +43,9 @@ object Scripts {
 
   def makeAnchorTx(ourCommitPub: ECKey, theirCommitPub: ECKey, amount: Long): (Transaction, Int) = ???
 
-  def makeCommitTx(inputs: Seq[TransactionInput], ourFinalKey: ECKey, theirFinalKey: ECKey,
-                   theirDelay: Int, revocationHash: Bytes, commitmentSpec: CommitmentSpec): Transaction = ???
+  implicit def commit2Inputs(commit: OurCommit): Seq[TransactionInput] = commit.publishableTx.getInputs.asScala
+  def makeCommitTx(inputs: Seq[TransactionInput], ourFinalKey: ECKey, theirFinalKey: ECKey, theirDelay: Int,
+                   revocationHash: Bytes, commitmentSpec: CommitmentSpec): Transaction = ???
 
   def makeFinalTx(inputs: Seq[TransactionInput], ourPubkeyScript: Script, theirPubkeyScript: Script,
                   amountUs: Long, amountThem: Long, fee: Long): Transaction = ???

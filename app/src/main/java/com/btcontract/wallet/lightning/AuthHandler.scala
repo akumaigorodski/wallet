@@ -45,9 +45,9 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
   }
 
   def sendToChannel(pack: proto.pkt)
-  def doProcess(change: Any) = (change, data, state) match {
+  def doProcess(change: Any) = (data, change, state) match {
     // Presumably sent our handshake, waiting for their response
-    case (msg: Bytes, null, 'waitForSesKey :: rest) =>
+    case (null, msg: Bytes, 'waitForSesKey :: rest) =>
       val theirSesPubKey = msg.slice(4, 33 + 4)
 
       // Generate shared secret and encryption keys
@@ -64,7 +64,7 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
       become(SessionData(theirSesPubKey, respond(authPkt, encryptor), decryptor), 'waitForAuth)
 
     // Sent our auth data, waiting for their auth data
-    case (chunk: Bytes, sd: SessionData, 'waitForAuth :: rest) =>
+    case (sd: SessionData, chunk: Bytes, 'waitForAuth :: rest) =>
       val dec1 = Decryptor.add(sd.dec, chunk)
 
       dec1.bodies match {
@@ -84,7 +84,7 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
 
     // Successfully authorized, now waiting for messages
     // Also just process remaining messages if chunk is empty
-    case (chunk: Bytes, nd: NormalData, 'normal :: rest) =>
+    case (nd: NormalData, chunk: Bytes, 'normal :: rest) =>
       val dec1 = Decryptor.add(nd.sesData.dec, chunk)
 
       dec1.bodies match {
@@ -98,11 +98,11 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
       }
 
     // Got a request to send a packet to counterparty
-    case (message: AnyRef, nd: NormalData, 'normal :: rest) =>
+    case (nd: NormalData, message: AnyRef, 'normal :: rest) =>
       val enc1 = respond(toPkt(message).encode, nd.sesData.enc)
       stayWith(nd.modify(_.sesData.enc) setTo enc1)
 
-    case (something: Any, _, _) =>
+    case (_, something, _) =>
       // Let know if received an unhandled message in some state
       println(s"Unhandled $something in AuthHandler at $state : $data")
   }
