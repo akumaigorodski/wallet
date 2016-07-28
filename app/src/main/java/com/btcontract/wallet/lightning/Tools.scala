@@ -21,6 +21,7 @@ object Tools { me =>
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
   val preimg2HashProto = sha2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
   val r2HashProto = rval2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
+  val bytes2bs = (bytes: Bytes) => ByteString.of(bytes, 0, bytes.length)
 
   // Bloom filter for incoming Requests and Responses
   def mkBloom(ephemeralKeys: Seq[Bytes], identityKey: Bytes) = {
@@ -84,8 +85,8 @@ object Tools { me =>
     case _ => raw
   }
 
-  def proto2ECKey(protokey: proto.bitcoin_pubkey) = ECKey fromPublicOnly protokey.key.toByteArray
-  def bytes2ProtoPubkey(bs: Bytes) = new proto.bitcoin_pubkey.Builder key ByteString.of(bs, 0, bs.length)
+  def proto2ECKey(proto: proto.bitcoin_pubkey) = ECKey fromPublicOnly proto.key.toByteArray
+  def bytes2ProtoPubkey(bytes: Bytes) = new proto.bitcoin_pubkey(me bytes2bs bytes)
   def blocks(num: Int) = new proto.locktime(null, num)
 
   // Proto signature conversion

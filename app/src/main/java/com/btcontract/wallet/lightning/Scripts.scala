@@ -47,8 +47,11 @@ object Scripts {
   def makeCommitTx(inputs: Seq[TransactionInput], ourFinalKey: ECKey, theirFinalKey: ECKey, theirDelay: Int,
                    revocationHash: Bytes, commitmentSpec: CommitmentSpec): Transaction = ???
 
+  def makeFinalTx(c: Commitments, ourClearing: proto.close_clearing,
+                  theirClearing: proto.close_clearing): (Transaction, proto.close_signature) = ???
+
   def makeFinalTx(inputs: Seq[TransactionInput], ourPubkeyScript: Script, theirPubkeyScript: Script,
-                  amountUs: Long, amountThem: Long, fee: Long): Transaction = ???
+                  amountUs: Long, amountThem: Long, fee: Long): (Transaction, proto.close_signature) = ???
 
   def signTx(ourParams: OurChannelParams, theirParams: TheirChannelParams,
              tx: Transaction, anchorAmount: Long): proto.signature = ???

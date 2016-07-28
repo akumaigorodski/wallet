@@ -50,7 +50,7 @@ case class OurChannelParams(delay: Int, anchorAmount: Option[Long], commitPrivKe
 
   def toOpenProto(anchorIntent: proto.open_channel.anchor_offer) = new proto.open_channel(Tools blocks delay,
     Tools bytes2Sha ShaChain.revIndexFromSeed(shaSeed, 0), Tools bytes2Sha ShaChain.revIndexFromSeed(shaSeed, 1),
-    bytes2ProtoPubkey(commitPrivKey.getPubKey).build, bytes2ProtoPubkey(finalPrivKey.getPubKey).build,
+    bytes2ProtoPubkey(commitPrivKey.getPubKey), bytes2ProtoPubkey(finalPrivKey.getPubKey),
     anchorIntent, minDepth, initialFeeRate)
 }
 
@@ -106,17 +106,16 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Lon
   }
 }
 
+case class TheirChanges(proposed: PktVec, acked: PktVec)
+case class OurChanges(proposed: PktVec, signed: PktVec, acked: PktVec)
 case class OurCommit(index: Long, spec: CommitmentSpec, publishableTx: Transaction)
 case class TheirCommit(index: Long, spec: CommitmentSpec, theirRevocationHash: Bytes)
-case class OurChanges(proposed: PktVec, signed: PktVec, acked: PktVec)
-case class TheirChanges(proposed: PktVec, acked: PktVec)
 
-// Non empty ourClearing means I've sent a proposition to close a channel but do not have an answer yet
-case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: OurChannelParams, theirParams: TheirChannelParams,
+case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelParams,
                        ourChanges: OurChanges, theirChanges: TheirChanges, ourCommit: OurCommit, theirCommit: TheirCommit,
                        theirNextCommitInfo: Either[TheirCommit, Bytes], anchorOutput: TransactionOutput, anchorId: String,
                        theirPreimages: HashesWithLastIndex = (None, Map.empty), created: Long = System.currentTimeMillis,
-                       htlcIndex: Long = 0L) extends ChannelData { me =>
+                       clearingRequested: Option[Long] = None, htlcIndex: Long = 0L) extends ChannelData { me =>
 
   def anchorAddressString = app.getTo(anchorOutput).toString
   def hasNoPendingHtlcs = ourCommit.spec.htlcs.isEmpty & theirCommit.spec.htlcs.isEmpty
@@ -125,5 +124,10 @@ case class Commitments(ourClearing: Option[proto.close_clearing], ourParams: Our
 
   def findAddHtlcOpt(packets: PktVec, id: java.lang.Long) = packets collectFirst {
     case pkt if pkt.update_add_htlc != null && pkt.update_add_htlc.id == id => pkt.update_add_htlc
+  }
+
+  lazy val clearing = {
+    val script = Scripts pay2wpkh ourParams.finalPubKey
+    new proto.close_clearing(Tools bytes2bs script.build.getProgram)
   }
 }
