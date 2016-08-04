@@ -25,10 +25,12 @@ case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChann
                             anchorIndex: Int, theirCommit: TheirCommit, theirNextRevocationHash: Bytes) extends ChannelData
 
 // We're waiting for local confirmations + counterparty's acknoledgment before we can move on
-case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes], depthOk: Boolean) extends ChannelData
+case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes], depthOk: Boolean) extends ChannelData { me =>
+  def withBlock(message: proto.open_complete) = me.modify(_.blockHash) setTo Some(Tools sha2Bytes message.blockid)
+}
 
-// We have agreed on fee and wait for a final transaction to reach required depth
-case class WaitForClosing(commits: Commitments, finalTx: Transaction) extends ChannelData
+// The channel is closing, tx may be re-broadcasted
+case class WaitForClosing(tx: Transaction) extends ChannelData
 
 // CHANNEL PARAMETERS
 
@@ -98,8 +100,8 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Lon
 
 case class TheirChanges(proposed: PktVec, acked: PktVec)
 case class OurChanges(proposed: PktVec, signed: PktVec, acked: PktVec)
-case class OurCommit(index: Long, spec: CommitmentSpec, publishableTx: Transaction)
 case class TheirCommit(index: Long, spec: CommitmentSpec, theirRevocationHash: Bytes)
+case class OurCommit(index: Long, spec: CommitmentSpec, publishableTx: Transaction)
 
 case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelParams,
                        ourChanges: OurChanges, theirChanges: TheirChanges, ourCommit: OurCommit, theirCommit: TheirCommit,

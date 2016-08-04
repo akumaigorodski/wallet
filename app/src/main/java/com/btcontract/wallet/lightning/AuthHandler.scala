@@ -36,7 +36,7 @@ case class SessionData(theirSesKey: Bytes, enc: Encryptor, dec: Decryptor) exten
 case class NormalData(sesData: SessionData, theirNodeKey: ECKey) extends AuthState
 
 abstract class AuthHandler(sesKey: ECKey, sock: Websocket)
-extends StateMachine[AuthState]('WAIT_FOR_SES_KEY :: Nil, null) {
+extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
   def respond(data: Bytes, enc: Encryptor) = jt writeUInt32 data.length.toLong match { case header =>
     val (ciphertext1, mac1) = enc.chacha.encrypt(jt writeUInt64 enc.nonce, header, Array.emptyByteArray)
     val (ciphertext2, mac2) = enc.chacha.encrypt(jt writeUInt64 enc.nonce + 1, data, Array.emptyByteArray)
@@ -47,7 +47,7 @@ extends StateMachine[AuthState]('WAIT_FOR_SES_KEY :: Nil, null) {
   def sendToChannel(pack: proto.pkt)
   def doProcess(change: Any) = (data, change, state) match {
     // Presumably sent our handshake, waiting for their response
-    case (null, msg: Bytes, 'WAIT_FOR_SES_KEY :: rest) =>
+    case (null, msg: Bytes, 'WaitForSesKey :: rest) =>
       val theirSesPubKey = msg.slice(4, 33 + 4)
 
       // Generate shared secret and encryption keys
@@ -61,10 +61,10 @@ extends StateMachine[AuthState]('WAIT_FOR_SES_KEY :: Nil, null) {
       val pubKey = Tools bytes2ProtoPubkey app.LNData.idKey.getPubKey
       val sig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSesPubKey)
       val authPkt = toPkt(new proto.authenticate.Builder node_id pubKey session_sig sig).encode
-      become(SessionData(theirSesPubKey, respond(authPkt, encryptor), decryptor), 'WAIT_FOR_AUTH)
+      become(SessionData(theirSesPubKey, respond(authPkt, encryptor), decryptor), 'WaitForAuth)
 
     // Sent our auth data, waiting for their respected auth data
-    case (s: SessionData, chunk: Bytes, 'WAIT_FOR_AUTH :: rest) =>
+    case (s: SessionData, chunk: Bytes, 'WaitForAuth :: rest) =>
       val dec1 = Decryptor.add(s.dec, chunk)
 
       dec1.bodies match {
@@ -74,7 +74,7 @@ extends StateMachine[AuthState]('WAIT_FOR_SES_KEY :: Nil, null) {
           val theirNodeKey = ECKey fromPublicOnly protoAuth.node_id.key.toByteArray
           val sd1 = s.modify(_.dec.bodies).setTo(tail).modify(_.dec.header) setTo None
           theirNodeKey.verifyOrThrow(Sha256Hash twiceOf sesKey.getPubKey, theirSignature)
-          become(NormalData(sd1, theirNodeKey), 'NORMAL)
+          become(NormalData(sd1, theirNodeKey), 'Normal)
           // In case if decryptor tail is not empty
           process(Array.emptyByteArray)
 
@@ -84,7 +84,7 @@ extends StateMachine[AuthState]('WAIT_FOR_SES_KEY :: Nil, null) {
 
     // Successfully authorized, now waiting for messages
     // Also just process remaining messages if chunk is empty
-    case (n: NormalData, chunk: Bytes, 'NORMAL :: rest) =>
+    case (n: NormalData, chunk: Bytes, 'Normal :: rest) =>
       val dec1 = Decryptor.add(n.sesData.dec, chunk)
 
       dec1.bodies match {
@@ -98,7 +98,7 @@ extends StateMachine[AuthState]('WAIT_FOR_SES_KEY :: Nil, null) {
       }
 
     // Got a request to send a packet to counterparty
-    case (n: NormalData, message: AnyRef, 'NORMAL :: rest) =>
+    case (n: NormalData, message: AnyRef, 'Normal :: rest) =>
       val enc1 = respond(toPkt(message).encode, n.sesData.enc)
       stayWith(n.modify(_.sesData.enc) setTo enc1)
 
