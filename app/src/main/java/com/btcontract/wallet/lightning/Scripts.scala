@@ -47,9 +47,6 @@ object Scripts {
   def makeCommitTx(inputs: Seq[TransactionInput], ourFinalKey: ECKey, theirFinalKey: ECKey, theirDelay: Int,
                    revocationHash: Bytes, commitmentSpec: CommitmentSpec): Transaction = ???
 
-  def makeFinalTx(c: Commitments, ourClearing: proto.close_clearing,
-                  theirClearing: proto.close_clearing): (Transaction, proto.close_signature) = ???
-
   def makeFinalTx(inputs: Seq[TransactionInput], ourPubkeyScript: Script, theirPubkeyScript: Script,
                   amountUs: Long, amountThem: Long, fee: Long): (Transaction, proto.close_signature) = ???
 
@@ -57,10 +54,10 @@ object Scripts {
              tx: Transaction, anchorAmount: Long): proto.signature = ???
 
   def addTheirSigAndSignTx(ourParams: OurChannelParams, theirParams: TheirChannelParams,
-                           tx: Transaction, anchorAmount: Coin, theirSig: proto.signature): Transaction = ???
+                           tx: Transaction, anchorAmount: Long, theirSig: proto.signature): Transaction = ???
 
   // Commit tx tries to spend an anchor output
-  def isBrokenTransaction(tx: Transaction, anchorOutput: TransactionOutput) = Try {
+  def brokenTxCheck(tx: Transaction, anchorOutput: TransactionOutput) = Try {
     tx.getInput(0).getScriptSig.correctlySpends(tx, 0, anchorOutput.getScriptPubKey, ALL_VERIFY_FLAGS)
   }
 }

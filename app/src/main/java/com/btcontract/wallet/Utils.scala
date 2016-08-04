@@ -154,7 +154,7 @@ abstract class InfoActivity extends AnimatorActivity { me =>
 
       val payTo = app.kit.currentAddress.toString
       val msg = Html fromHtml getString(buy_info).format(payTo)
-      mkForm(negBld(dialog_cancel), me getString action_buy, msg)
+      mkForm(negBld(dialog_cancel), getString(action_buy), msg)
     }
   }
 
@@ -271,11 +271,10 @@ abstract class InfoActivity extends AnimatorActivity { me =>
 
     viewMnemonic setOnClickListener new OnClickListener {
       def onClick(viewMnemonicView: View) = rm(dialog)(openForm)
-      val warn = me getString sets_noscreen
 
       def openForm: Unit = passPlus(mkSetsForm) { password =>
-        def mk(txt: String) = new Builder(me) setCustomTitle warn setMessage txt
-        <(Mnemonic decrypt password, _ => wrong)(seed => mk(Mnemonic text seed).show)
+        def mk(txt: String) = new Builder(me) setCustomTitle getString(sets_noscreen) setMessage txt
+        <(Mnemonic decrypt password, _ => wrong)(walletSeed => mk(Mnemonic text walletSeed).show)
       }
     }
 

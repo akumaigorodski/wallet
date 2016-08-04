@@ -4,6 +4,7 @@ import Tools._
 import org.bitcoinj.core._
 import com.softwaremill.quicklens._
 import com.btcontract.wallet.Utils.{app, Bytes}
+import collection.JavaConverters.asScalaBufferConverter
 import crypto.ShaChain.HashesWithLastIndex
 import crypto.ShaChain
 
@@ -23,22 +24,11 @@ case class WaitForAnchor(ourParams: OurChannelParams, theirParams: TheirChannelP
 case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChannelParams, anchorTx: Transaction,
                             anchorIndex: Int, theirCommit: TheirCommit, theirNextRevocationHash: Bytes) extends ChannelData
 
-// We're waiting for local confirmations + counterparty's acknoledgment
-case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes],
-                           depthOk: Boolean) extends ChannelData
+// We're waiting for local confirmations + counterparty's acknoledgment before we can move on
+case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes], depthOk: Boolean) extends ChannelData
 
-// Counterparty has agreed to close a channel but we have an unresolved HTLC's
-case class ChannelClearing(commits: Commitments, ourClearing: proto.close_clearing,
-                           theirClearing: proto.close_clearing) extends ChannelData
-
-// No more unresolved HTLC's so we can negotiate on closing fee
-case class ChannelFeeNegotiating(ourSignature: proto.close_signature, ourClearing: proto.close_clearing,
-                                 theirClearing: proto.close_clearing, commits: Commitments) extends ChannelData
-
-// We're waiting for spent anchor to reach required depth
-case class ChannelClosing(ourSignature: Option[proto.close_signature], mutualClosePublished: Option[Transaction],
-                          ourCommitPublished: Option[Transaction], theirCommitPublished: Option[Transaction],
-                          revokedPublished: Seq[Transaction], commits: Commitments) extends ChannelData
+// We have agreed on fee and wait for a final transaction to reach required depth
+case class WaitForClosing(commits: Commitments, finalTx: Transaction) extends ChannelData
 
 // CHANNEL PARAMETERS
 
@@ -114,20 +104,30 @@ case class TheirCommit(index: Long, spec: CommitmentSpec, theirRevocationHash: B
 case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelParams,
                        ourChanges: OurChanges, theirChanges: TheirChanges, ourCommit: OurCommit, theirCommit: TheirCommit,
                        theirNextCommitInfo: Either[TheirCommit, Bytes], anchorOutput: TransactionOutput, anchorId: String,
-                       theirPreimages: HashesWithLastIndex = (None, Map.empty), created: Long = System.currentTimeMillis,
-                       clearingRequested: Option[Long] = None, htlcIndex: Long = 0L) extends ChannelData { me =>
+                       theirPreimages: HashesWithLastIndex = (None, Map.empty), started: Long = System.currentTimeMillis,
+                       clearingStarted: Option[Long] = None, htlcIndex: Long = 0L) extends ChannelData { me =>
 
   def anchorAddressString = app.getTo(anchorOutput).toString
-  def hasNoPendingHtlcs = ourCommit.spec.htlcs.isEmpty & theirCommit.spec.htlcs.isEmpty
+  def ourSciptPubKey = Scripts.pay2wpkh(ourParams.finalPubKey).build
+  def theirSciptPubKey = Scripts.pay2wpkh(theirParams.finalPubKey).build
   def addOurProposal(proposal: proto.pkt) = me.modify(_.ourChanges.proposed).using(_ :+ proposal)
   def addTheirProposal(proposal: proto.pkt) = me.modify(_.theirChanges.proposed).using(_ :+ proposal)
+  def finalFee = anchorOutput.getValue subtract ourCommit.publishableTx.getOutputSum div 4 multiply 2
+
+  def makeNewFeeFinalSig(them: Long, us: Long) = {
+    val newFee = (them + us) / 4 * 2 match { case fee if fee == us => fee + 2 case fee => fee }
+    makeFinalTx(newFee) match { case (transaction, closeSigProto) => closeSigProto }
+  }
+
+  def makeFinalTx(fee: Long) = Scripts.makeFinalTx(ourCommit.publishableTx.getInputs.asScala,
+    ourSciptPubKey, theirSciptPubKey, ourCommit.spec.amountUsMsat, theirCommit.spec.amountUsMsat, fee)
+
+  def checkCloseSig(closeProto: proto.close_signature) = makeFinalTx(closeProto.close_fee) match { case (tx, ourSig) =>
+    val signedFinalTx = Scripts.addTheirSigAndSignTx(ourParams, theirParams, tx, anchorOutput.getValue.value, closeProto.sig)
+    (Scripts.brokenTxCheck(signedFinalTx, anchorOutput).isSuccess, signedFinalTx, ourSig)
+  }
 
   def findAddHtlcOpt(packets: PktVec, id: java.lang.Long) = packets collectFirst {
     case pkt if pkt.update_add_htlc != null && pkt.update_add_htlc.id == id => pkt.update_add_htlc
-  }
-
-  lazy val clearing = {
-    val script = Scripts pay2wpkh ourParams.finalPubKey
-    new proto.close_clearing(Tools bytes2bs script.build.getProgram)
   }
 }

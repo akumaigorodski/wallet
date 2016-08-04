@@ -1,6 +1,6 @@
 package com.btcontract.wallet
 
-import Utils.{wrap, app, none, runAnd}
+import Utils.{wrap, app, none}
 import R.string.{dialog_cancel, dialog_ok}
 import com.journeyapps.barcodescanner.BarcodeCallback
 import com.journeyapps.barcodescanner.BarcodeResult

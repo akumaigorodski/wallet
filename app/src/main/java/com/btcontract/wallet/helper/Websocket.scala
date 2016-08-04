@@ -32,7 +32,7 @@ class Websocket(url: String) { me =>
   def send(data: Any) = (socket, data) match {
     case (Some(sock), binary: Bytes) if sock.isOpen => sock sendBinary binary
     case (Some(sock), text: String) if sock.isOpen => sock sendText text
-    case _ => throw new Exception("socketClosed")
+    case _ => throw new IllegalStateException
   }
 }
 

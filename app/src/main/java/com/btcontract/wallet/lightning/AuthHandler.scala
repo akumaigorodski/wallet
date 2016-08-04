@@ -36,7 +36,7 @@ case class SessionData(theirSesKey: Bytes, enc: Encryptor, dec: Decryptor) exten
 case class NormalData(sesData: SessionData, theirNodeKey: ECKey) extends AuthState
 
 abstract class AuthHandler(sesKey: ECKey, sock: Websocket)
-extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
+extends StateMachine[AuthState]('WAIT_FOR_SES_KEY :: Nil, null) {
   def respond(data: Bytes, enc: Encryptor) = jt writeUInt32 data.length.toLong match { case header =>
     val (ciphertext1, mac1) = enc.chacha.encrypt(jt writeUInt64 enc.nonce, header, Array.emptyByteArray)
     val (ciphertext2, mac2) = enc.chacha.encrypt(jt writeUInt64 enc.nonce + 1, data, Array.emptyByteArray)
@@ -47,7 +47,7 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
   def sendToChannel(pack: proto.pkt)
   def doProcess(change: Any) = (data, change, state) match {
     // Presumably sent our handshake, waiting for their response
-    case (null, msg: Bytes, 'waitForSesKey :: rest) =>
+    case (null, msg: Bytes, 'WAIT_FOR_SES_KEY :: rest) =>
       val theirSesPubKey = msg.slice(4, 33 + 4)
 
       // Generate shared secret and encryption keys
@@ -61,46 +61,46 @@ extends StateMachine[AuthState]('waitForSesKey :: Nil, null) {
       val pubKey = Tools bytes2ProtoPubkey app.LNData.idKey.getPubKey
       val sig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSesPubKey)
       val authPkt = toPkt(new proto.authenticate.Builder node_id pubKey session_sig sig).encode
-      become(SessionData(theirSesPubKey, respond(authPkt, encryptor), decryptor), 'waitForAuth)
+      become(SessionData(theirSesPubKey, respond(authPkt, encryptor), decryptor), 'WAIT_FOR_AUTH)
 
-    // Sent our auth data, waiting for their auth data
-    case (sd: SessionData, chunk: Bytes, 'waitForAuth :: rest) =>
-      val dec1 = Decryptor.add(sd.dec, chunk)
+    // Sent our auth data, waiting for their respected auth data
+    case (s: SessionData, chunk: Bytes, 'WAIT_FOR_AUTH :: rest) =>
+      val dec1 = Decryptor.add(s.dec, chunk)
 
       dec1.bodies match {
         case first +: tail =>
           val protoAuth = proto.pkt.ADAPTER.decode(first).auth
           val theirSignature = Tools signature2Ts protoAuth.session_sig
           val theirNodeKey = ECKey fromPublicOnly protoAuth.node_id.key.toByteArray
-          val sd1 = sd.modify(_.dec.bodies).setTo(tail).modify(_.dec.header) setTo None
+          val sd1 = s.modify(_.dec.bodies).setTo(tail).modify(_.dec.header) setTo None
           theirNodeKey.verifyOrThrow(Sha256Hash twiceOf sesKey.getPubKey, theirSignature)
-          become(NormalData(sd1, theirNodeKey), 'normal)
+          become(NormalData(sd1, theirNodeKey), 'NORMAL)
           // In case if decryptor tail is not empty
           process(Array.emptyByteArray)
 
         // Accumulate chunks until we get a complete message
-        case _ => stayWith(sd.modify(_.dec) setTo dec1)
+        case _ => stayWith(s.modify(_.dec) setTo dec1)
       }
 
     // Successfully authorized, now waiting for messages
     // Also just process remaining messages if chunk is empty
-    case (nd: NormalData, chunk: Bytes, 'normal :: rest) =>
-      val dec1 = Decryptor.add(nd.sesData.dec, chunk)
+    case (n: NormalData, chunk: Bytes, 'NORMAL :: rest) =>
+      val dec1 = Decryptor.add(n.sesData.dec, chunk)
 
       dec1.bodies match {
         case bodies if bodies.nonEmpty =>
           val dec2 = dec1.copy(header = None, bodies = Vector.empty)
           bodies map proto.pkt.ADAPTER.decode foreach sendToChannel
-          stayWith(nd.modify(_.sesData.dec) setTo dec2)
+          stayWith(n.modify(_.sesData.dec) setTo dec2)
 
         // Again accumulate chunks until we get a complete message
-        case _ => stayWith(nd.modify(_.sesData.dec) setTo dec1)
+        case _ => stayWith(n.modify(_.sesData.dec) setTo dec1)
       }
 
     // Got a request to send a packet to counterparty
-    case (nd: NormalData, message: AnyRef, 'normal :: rest) =>
-      val enc1 = respond(toPkt(message).encode, nd.sesData.enc)
-      stayWith(nd.modify(_.sesData.enc) setTo enc1)
+    case (n: NormalData, message: AnyRef, 'NORMAL :: rest) =>
+      val enc1 = respond(toPkt(message).encode, n.sesData.enc)
+      stayWith(n.modify(_.sesData.enc) setTo enc1)
 
     case (_, something, _) =>
       // Let know if received an unhandled message in some state
