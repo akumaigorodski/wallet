@@ -5,7 +5,6 @@ import org.bitcoinj.core._
 import com.softwaremill.quicklens._
 import com.btcontract.wallet.Utils.app
 import org.bitcoinj.core.Utils.HEX
-import Scripts.commit2Inputs
 import crypto.ShaChain
 
 
@@ -115,12 +114,12 @@ extends StateMachine[ChannelData](state, data) { me =>
       if (w.depthOk) become(w.commits, 'Normal) else me stayWith w.withBlock(pkt.open_complete)
 
     // We want to close a channel with their anchor
-    case (_, 'Close, 'OpenWaitTheirAnchorConfirm :: rest) =>
+    case (_, 'Uniclose, 'OpenWaitTheirAnchorConfirm :: rest) =>
       authHandler process new proto.error("Channel cancelled")
       become(null, 'Closed)
 
     // We want to close a channel with our anchor
-    case (w: WaitForConfirms, 'Close, 'OpenWaitOurAnchorConfirm :: rest) =>
+    case (w: WaitForConfirms, 'Uniclose, 'OpenWaitOurAnchorConfirm :: rest) =>
       uniclose(w.commits.ourCommit.publishableTx, "Channel cancelled")
 
     // When they send an error with their anchor broadcasted
@@ -181,23 +180,22 @@ extends StateMachine[ChannelData](state, data) { me =>
 
     // Send a commitment transaction to them
     case (c: Commitments, 'Commit, 'Normal :: rest) =>
-      c.theirNextCommitInfo.right foreach { theirNextRevocationHash =>
+      c.theirNextCommitInfo.right foreach { theirNextRevocHash =>
         val spec1 = c.theirCommit.spec.reduce(c.theirChanges.acked, c.ourChanges.acked ++ c.ourChanges.signed ++ c.ourChanges.proposed)
-        val ourSigForThem = Scripts.signTx(c.ourParams, c.theirParams, Scripts.makeCommitTx(c.ourCommit, c.theirParams.finalPubKey,
-          c.ourParams.finalPubKey, c.theirParams.delay, theirNextRevocationHash, spec1), c.anchorOutput.getValue.value)
-
-        val protoCommit = new proto.update_commit(ourSigForThem)
-        val theirCommit1 = Left apply TheirCommit(c.theirCommit.index + 1, spec1, theirNextRevocationHash)
-        val oc1 = c.ourChanges.copy(proposed = Vector.empty, signed = c.ourChanges.signed ++ c.ourChanges.proposed)
-        stayRespond(c.copy(theirNextCommitInfo = theirCommit1, ourChanges = oc1), protoCommit)
+        val protoSig = Scripts.signTx(c.ourParams, c.theirParams, c.theirCommitTx(theirNextRevocHash, spec1), c.anchorOutput.getValue.value)
+        val ourChanges1 = c.ourChanges.copy(proposed = Vector.empty, signed = c.ourChanges.signed ++ c.ourChanges.proposed)
+        val theirCommit1 = Left apply TheirCommit(c.theirCommit.index + 1, spec1, theirNextRevocHash)
+        val c1 = c.copy(theirNextCommitInfo = theirCommit1, ourChanges = ourChanges1)
+        val protoCommit = new proto.update_commit(protoSig)
+        stayRespond(c1, protoCommit)
       }
 
     // Receive a commitment transaction from them if it is correct
     case (c: Commitments, pkt: proto.pkt, 'Normal :: rest) if has(pkt.update_commit) =>
       val spec1 = c.ourCommit.spec.reduce(c.ourChanges.acked, c.theirChanges.acked ++ c.theirChanges.proposed)
       val ourNextRevocationHash = Sha256Hash hash ShaChain.revIndexFromSeed(c.ourParams.shaSeed, c.ourCommit.index + 1)
-      val ourSignedTx = Scripts.addTheirSigAndSignTx(c.ourParams, c.theirParams, Scripts.makeCommitTx(c.ourCommit, c.ourParams.finalPubKey,
-        c.theirParams.finalPubKey, c.ourParams.delay, ourNextRevocationHash, spec1), c.anchorOutput.getValue.value, pkt.update_commit.sig)
+      val ourSignedTx = Scripts.addTheirSigAndSignTx(c.ourParams, c.theirParams, c.ourCommitTx(ourNextRevocationHash, spec1),
+        c.anchorOutput.getValue.value, pkt.update_commit.sig)
 
       if (Scripts.brokenTxCheck(ourSignedTx, c.anchorOutput).isSuccess) {
         // We will respond to them with our revocation preimage and our next revocation hash
@@ -220,7 +218,8 @@ extends StateMachine[ChannelData](state, data) { me =>
         me stayWith c.copy(theirPreimages = chain1, ourChanges = changes1, theirNextCommitInfo = commitInfo1, theirCommit = theirNextCommit)
       } else uniclose(c.ourCommit.publishableTx, INVALID_COMMIT_PREIMAGE)
 
-    // Reacting to error messages, uniclose and mutual close commands
+    // Reacting to error messages, uniclose, mutual close and channel breach
+    case (c: Commitments, tx: Transaction, 'Normal :: rest) => uniclose(tx, "Channel breach")
     case (c: Commitments, 'Uniclose, 'Normal :: rest) => uniclose(c.ourCommit.publishableTx, "Bye")
     case (c: Commitments, 'Close, 'Normal :: rest) if c.clearingStarted.isEmpty => me mutualCloseRespond c
     case (c: Commitments, pkt: proto.pkt, 'Normal :: rest) if has(pkt.close_clearing) => me mutualCloseRespond c

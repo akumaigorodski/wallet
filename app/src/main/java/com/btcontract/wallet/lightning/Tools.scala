@@ -33,18 +33,6 @@ object Tools { me =>
 
   // Wrap inner protobuf messages into a pkt
   def toPkt(some: AnyRef) = (new proto.pkt.Builder, some) match {
-    case (bld, con: proto.update_fulfill_htlc.Builder) => bld.update_fulfill_htlc(con.build).build
-    case (bld, con: proto.update_revocation.Builder) => bld.update_revocation(con.build).build
-    case (bld, con: proto.update_fail_htlc.Builder) => bld.update_fail_htlc(con.build).build
-    case (bld, con: proto.update_add_htlc.Builder) => bld.update_add_htlc(con.build).build
-    case (bld, con: proto.close_signature.Builder) => bld.close_signature(con.build).build
-    case (bld, con: proto.open_commit_sig.Builder) => bld.open_commit_sig(con.build).build
-    case (bld, con: proto.close_clearing.Builder) => bld.close_clearing(con.build).build
-    case (bld, con: proto.update_commit.Builder) => bld.update_commit(con.build).build
-    case (bld, con: proto.authenticate.Builder) => bld.auth(con.build).build
-    case (bld, con: proto.open_channel.Builder) => bld.open(con.build).build
-    case (bld, con: proto.error.Builder) => bld.error(con.build).build
-
     case (bld, con: proto.update_fulfill_htlc) => bld.update_fulfill_htlc(con).build
     case (bld, con: proto.update_revocation) => bld.update_revocation(con).build
     case (bld, con: proto.update_fail_htlc) => bld.update_fail_htlc(con).build
@@ -86,7 +74,7 @@ object Tools { me =>
     case _ => raw
   }
 
-  def proto2ECKey(proto: proto.bitcoin_pubkey) = ECKey fromPublicOnly proto.key.toByteArray
+  def proto2ECKey(message: proto.bitcoin_pubkey) = ECKey fromPublicOnly message.key.toByteArray
   def bytes2ProtoPubkey(bytes: Bytes) = new proto.bitcoin_pubkey(me bytes2bs bytes)
   def blocks(num: Int) = new proto.locktime(null, num)
 

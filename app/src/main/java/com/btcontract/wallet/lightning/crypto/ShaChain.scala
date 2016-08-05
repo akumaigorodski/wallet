@@ -28,7 +28,7 @@ object ShaChain { me =>
   // since a left node's hash is the same as it's parent node's hash
   def checkRecompute(hashes: MapIndexHash, hash: Bytes, idx1: Index) = {
     val check1 = deriveChild(Node(None, hash, idx1.length), right = true).value
-    doGetHash(hashes, idx1 :+ true).forall(_ sameElements check1)
+    getHash(hashes, idx1 :+ true).forall(_ sameElements check1)
   }
 
   def doAddHash(hashes: MapIndexHash, hash: Bytes, index: Index): MapIndexHash =
@@ -42,24 +42,9 @@ object ShaChain { me =>
     Some(index) -> doAddHash(hwli._2, hash, me moves index)
   }
 
-  def doGetHash(hashes: MapIndexHash, index: Index) =
+  def getHash(hashes: MapIndexHash, index: Index) =
     hashes.keys collectFirst { case idx if index startsWith idx =>
       val startingNode = Node(None, hashes(idx), idx.length)
       derive(startingNode, index drop idx.length).value
     }
-
-  def getHash(hwli: HashesWithLastIndex, index: Long) = hwli match {
-    case (Some(lastIdx), hs) if index >= lastIdx => doGetHash(hs, me moves index)
-    case _ => None
-  }
-
-  // Search for a known hash matching a check predicate
-  def findHash(hwli: HashesWithLastIndex)(check: Bytes => Boolean) = {
-    def doFind(pos: Long): Option[Bytes] = if (pos > largestIndex) None else getHash(hwli, pos) match {
-      case correctHash @ Some(generatedHash) if check(generatedHash) => correctHash case _ => doFind(pos + 1)
-    }
-
-    // Start from last known
-    hwli._1 flatMap doFind
-  }
 }

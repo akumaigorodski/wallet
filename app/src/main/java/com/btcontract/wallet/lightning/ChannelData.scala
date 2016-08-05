@@ -35,7 +35,7 @@ case class WaitForClosing(tx: Transaction) extends ChannelData
 // CHANNEL PARAMETERS
 
 case class OurChannelParams(delay: Int, anchorAmount: Option[Long], commitPrivKey: ECKey, finalPrivKey: ECKey,
-                            minDepth: Int, initialFeeRate: Long, shaSeed: Bytes) extends ChannelData {
+                            minDepth: Int, initialFeeRate: Long, shaSeed: Bytes) extends ChannelData { me =>
 
   def finalPubKey = ECKey fromPublicOnly finalPrivKey.getPubKey
   def commitPubKey = ECKey fromPublicOnly commitPrivKey.getPubKey
@@ -118,18 +118,30 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
 
   def makeNewFeeFinalSig(them: Long, us: Long) = {
     val newFee = (them + us) / 4 * 2 match { case fee if fee == us => fee + 2 case fee => fee }
-    makeFinalTx(newFee) match { case (transaction, closeSigProto) => closeSigProto }
+    finalTx(newFee) match { case (transaction, closeSigProto) => closeSigProto }
   }
 
-  def makeFinalTx(fee: Long) = Scripts.makeFinalTx(ourCommit.publishableTx.getInputs.asScala,
+  // Their commitment tx as we see it
+  def theirCommitTx(revocationHash: Bytes, spec: CommitmentSpec) =
+    Scripts.makeCommitTx(ourCommit.publishableTx.getInputs.asScala,
+      theirParams.finalPubKey, ourParams.finalPubKey, theirParams.delay,
+      revocationHash, spec)
+
+  // Our commit tx as they see it
+  def ourCommitTx(revocationHash: Bytes, spec: CommitmentSpec) =
+    Scripts.makeCommitTx(ourCommit.publishableTx.getInputs.asScala,
+      ourParams.finalPubKey, theirParams.finalPubKey, ourParams.delay,
+      revocationHash, spec)
+
+  def finalTx(fee: Long) = Scripts.makeFinalTx(ourCommit.publishableTx.getInputs.asScala,
     ourSciptPubKey, theirSciptPubKey, ourCommit.spec.amountUsMsat, theirCommit.spec.amountUsMsat, fee)
 
-  def checkCloseSig(closeProto: proto.close_signature) = makeFinalTx(closeProto.close_fee) match { case (tx, ourSig) =>
+  def checkCloseSig(closeProto: proto.close_signature) = finalTx(closeProto.close_fee) match { case (tx, ourSig) =>
     val signedFinalTx = Scripts.addTheirSigAndSignTx(ourParams, theirParams, tx, anchorOutput.getValue.value, closeProto.sig)
     (Scripts.brokenTxCheck(signedFinalTx, anchorOutput).isSuccess, signedFinalTx, ourSig)
   }
 
   def findAddHtlcOpt(packets: PktVec, id: java.lang.Long) = packets collectFirst {
-    case pkt if pkt.update_add_htlc != null && pkt.update_add_htlc.id == id => pkt.update_add_htlc
+    case pkt if has(pkt.update_add_htlc) && pkt.update_add_htlc.id == id => pkt.update_add_htlc
   }
 }

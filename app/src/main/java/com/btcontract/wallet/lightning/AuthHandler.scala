@@ -68,8 +68,8 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
       val dec1 = Decryptor.add(s.dec, chunk)
 
       dec1.bodies match {
-        case first +: tail =>
-          val protoAuth = proto.pkt.ADAPTER.decode(first).auth
+        case firstBody +: tail =>
+          val protoAuth = proto.pkt.ADAPTER.decode(firstBody).auth
           val theirSignature = Tools signature2Ts protoAuth.session_sig
           val theirNodeKey = ECKey fromPublicOnly protoAuth.node_id.key.toByteArray
           val sd1 = s.modify(_.dec.bodies).setTo(tail).modify(_.dec.header) setTo None

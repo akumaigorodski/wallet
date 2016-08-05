@@ -29,9 +29,14 @@ object ChainData {
     .filter(tx => tx.vin.exists(_.txid == c.anchorId) && tx.confirmations > 0)
     .repeatWhen(_ delay 20.minute)
 
-  // Save a tx which spends a given parent txId and retrieve it from database
-  def txCursor(parentId: String) = app.LNData.db.select(Commits.selectByParentTxIdSql, parentId)
-  def saveTx(id: String, tx: Transaction) = app.LNData.db.change(Commits.newSql, HEX encode tx.bitcoinSerialize, id)
-  def txOption(c: Cursor) = RichCursor(c).closeAfter(_.toStream.headOption.map(_ string Commits.commitSpendTx) map hex2Tx)
-  def hex2Tx(txHex: String) = new Transaction(app.params, HEX decode txHex)
+  def saveTx(id: String, tx: Transaction) = {
+    val punishTx = HEX encode tx.bitcoinSerialize
+    app.LNData.db.change(Commits.newSql, punishTx, id)
+  }
+
+  def getTx(parentCommitTxId: String) = {
+    def hex2Tx(hex: String) = new Transaction(app.params, HEX decode hex)
+    val cursor = app.LNData.db.select(Commits.selectByParentTxIdSql, parentCommitTxId)
+    RichCursor(cursor).closeAfter(_.toStream.headOption.map(_ string Commits.commitSpendTx) map hex2Tx)
+  }
 }
