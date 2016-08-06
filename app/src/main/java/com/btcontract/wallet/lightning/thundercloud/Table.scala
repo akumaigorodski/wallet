@@ -45,14 +45,15 @@ object Payments extends Table {
 }
 
 object Commits extends Table {
-  val strings = ("commits", "spendtx", "txid")
-  val (table, commitSpendTx, txId) = strings
+  val strings = ("commits", "breachtx", "txid", "remote")
+  val (table, commitBreachTx, txId, remote) = strings
 
   def selectByParentTxIdSql = s"SELECT * FROM $table WHERE $txId = ?"
-  def newSql = s"INSERT OR IGNORE INTO $table ($commitSpendTx, $txId) VALUES (?, ?)"
-  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
-    $commitSpendTx TEXT NOTNULL, $txId TEXT NOTNULL UNIQUE);
-    CREATE INDEX idx$txId ON $table ($txId); COMMIT"""
+  def markRemoteSql = s"UPDATE $table SET $remote = 1 WHERE $ixId = ?"
+  def selectLocalSql = s"SELECT * FROM $table WHERE $remote = 0 LIMIT 20"
+  def newSql = s"INSERT OR IGNORE INTO $table ($commitBreachTx, $txId, $remote) VALUES (?, ?, 0)"
+  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT, $commitBreachTx TEXT NOTNULL,
+    $txId TEXT NOTNULL UNIQUE, $remote INTEGER NOT NULL); CREATE INDEX idx$txId ON $table ($txId); COMMIT"""
 }
 
 trait Table { val id = "_id" }
