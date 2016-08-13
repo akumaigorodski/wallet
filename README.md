@@ -1,5 +1,5 @@
 Android Studio with Scala plugin is required if you wish to compile it yourself.  
-Direct link to APK file: https://github.com/btcontract/bitcoins/blob/master/app/app-release.apk  
+Direct link to APK file: https://github.com/btcontract/wallet/blob/master/app/app-release.apk  
 
 Genuine Simple Bitcoin Wallet is ONLY available on the following app stores:
 Google: https://play.google.com/store/apps/details?id=com.btcontract.wallet  
