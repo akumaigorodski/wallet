@@ -180,7 +180,7 @@ class TxsActivity extends InfoActivity with HumanTimeDisplay { me =>
     }
   }
 
-  // Adapter
+  // Adapter for transactions list
   class TxsListAdapter(id: Int) extends BaseAdapter {
     def getView(transactionPosition: Int, convertView: View, parent: ViewGroup) = {
       val view = if (null == convertView) getLayoutInflater.inflate(id, null) else convertView
@@ -195,10 +195,9 @@ class TxsActivity extends InfoActivity with HumanTimeDisplay { me =>
     def getCount = transactions.size
   }
 
-  def getPays(outs: Outputs, acc: Pays, way: Boolean) = {
-    for (out <- outs if out.isMine(app.kit.wallet) == way) try {
-      acc += PayData(tc = Success(out.getValue), adr = app getTo out)
-    } catch none
+  def getPays(outs: mutable.Buffer[TransactionOutput], acc: mutable.Buffer[PayData], way: Boolean) = {
+    def add(output: TransactionOutput) = acc += PayData(app getTo output, Success apply output.getValue)
+    for (output <- outs if output.isMine(app.kit.wallet) == way) try add(output) catch none
     acc
   }
 

@@ -67,16 +67,16 @@ object Tools { me =>
     Sha256Hash.hash(prefix.toByte +: x)
   }
 
+  def proto2ECKey(message: proto.bitcoin_pubkey) = ECKey fromPublicOnly message.key.toByteArray
+  def bytes2ProtoPubkey(bytes: Bytes) = new proto.bitcoin_pubkey(me bytes2bs bytes)
+  def blocks(num: Int) = new proto.locktime(null, num)
+
   // Fix signature size
   def fixSize(raw: Bytes): Bytes = raw.length match {
     case s if s < 32 => jt.concat(Array.fill(32 - s)(0.toByte), raw)
     case s if s > 32 => raw takeRight 32
     case _ => raw
   }
-
-  def proto2ECKey(message: proto.bitcoin_pubkey) = ECKey fromPublicOnly message.key.toByteArray
-  def bytes2ProtoPubkey(bytes: Bytes) = new proto.bitcoin_pubkey(me bytes2bs bytes)
-  def blocks(num: Int) = new proto.locktime(null, num)
 
   // Proto signature conversion
   def ts2Signature(ts: ECDSASignature) = {

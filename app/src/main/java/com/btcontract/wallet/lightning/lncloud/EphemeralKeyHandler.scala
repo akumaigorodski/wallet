@@ -1,4 +1,4 @@
-package com.btcontract.wallet.lightning.thundercloud
+package com.btcontract.wallet.lightning.lncloud
 
 import EphemeralKeys.{selectUnusedSql, markUsedSql, newSql}
 import com.btcontract.wallet.Utils.{rand, app}

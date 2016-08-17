@@ -1,31 +1,33 @@
 package com.btcontract.wallet.helper
 
+import spray.json._
+import JsonHttpUtils._
+import DefaultJsonProtocol._
+
 import scala.util.{Try, Success}
 import rx.lang.scala.{Scheduler, Observable => Obs}
 import scala.concurrent.duration.{Duration, DurationInt}
-import com.btcontract.wallet.Utils.{Rates, nullFail, rand, app}
-import com.btcontract.wallet.Utils.{strDollar, strEuro, strYuan}
+import com.btcontract.wallet.Utils.{nullFail, rand, app, strDollar, strEuro, strYuan}
 
 import com.github.kevinsawicki.http.HttpRequest
 import rx.lang.scala.schedulers.IOScheduler
 import java.net.ProtocolException
 import org.bitcoinj.core.Coin
 
-import spray.json._
-import JsonHttpUtils._
-import DefaultJsonProtocol._
-
 
 object JsonHttpUtils {
-  type Selector = (Throwable, Int) => Duration
+  def obsOn[T](provider: => T, scheduler: Scheduler) =
+    Obs.just(null).subscribeOn(scheduler).map(_ => provider)
+
+  def retry[T](obs: Obs[T], pick: (Throwable, Int) => Duration, times: Range) =
+    obs.retryWhen(_.zipWith(Obs from times)(pick) flatMap Obs.timer)
+
   def pickInc(err: Throwable, next: Int) = next.second
-  def obsOn[T](provider: => T, scheduler: Scheduler) = Obs.just(null).subscribeOn(scheduler).map(_ => provider)
-  def retry[T](obs: Obs[T], pick: Selector, times: Range) = obs.retryWhen(_.zipWith(Obs from times)(pick) flatMap Obs.timer)
   def to[T : JsonFormat](raw: String) = raw.parseJson.convertTo[T]
   val get = HttpRequest.get(_: String, true) connectTimeout 15000
 
   // Observable which processes responses of form [ok, ...] or [error, why]
-  def thunder[T](path: String, trans: Vector[JsValue] => T, params: Object*) = {
+  def lncloud[T](path: String, trans: Vector[JsValue] => T, params: Object*) = {
     val httpRequest = HttpRequest.post(s"http://10.0.2.2:9001/$path", true, params:_*)
     if (app.orbotOnline) httpRequest.useProxy("127.0.0.1", 8118)
 
@@ -48,6 +50,7 @@ case class Blockchain(usd: ChainRate, eur: ChainRate, cny: ChainRate) extends Ra
 case class Bitaverage(usd: AvgRate, eur: AvgRate, cny: AvgRate) extends RateProvider
 
 object FiatRates { me =>
+  type Rates = Map[String, Double]
   type RatesMap = Map[String, Rate]
   type BitpayList = List[BitpayRate]
   var rates: Try[Rates] = nullFail
@@ -100,11 +103,14 @@ object Fee { me =>
 
 // Tx Insight API formats
 case class TxInput(txid: String, addr: String)
+case class TxOutput(txid: String, vout: Int, scriptPubKey: String)
 case class Tx(txid: String, vin: List[TxInput], confirmations: Int)
 
 object Insight {
   type TxList = List[Tx]
+  type TxOutputList = List[TxOutput]
   implicit val txInputFmt = jsonFormat[String, String, TxInput](TxInput, "txid", "addr")
+  implicit val txOutputFmt = jsonFormat[String, Int, String, TxOutput](TxOutput, "txid", "vout", "scriptPubKey")
   implicit val txFmt = jsonFormat[String, List[TxInput], Int, Tx](Tx, "txid", "vin", "confirmations")
 
   def reloadData(suffix: String) = rand nextInt 3 match {
@@ -118,4 +124,8 @@ object Insight {
   // if such a tx is found it means our anchor output has been spent!
   def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs").parseJson.asJsObject
     .fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 5) flatMap Obs.just
+
+  // Usage: check which utxos we can spend after CLTV timeout in case of uniclose
+  def utxos(addrs: String*) = retry(obsOn(reloadData(s"addrs/${addrs mkString ","}/utxo"),
+    IOScheduler.apply) map to[TxOutputList], pickInc, 1 to 5)
 }

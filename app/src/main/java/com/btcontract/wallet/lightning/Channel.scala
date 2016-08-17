@@ -136,6 +136,7 @@ extends StateMachine[ChannelData](state, data) { me =>
 
     // MAIN LOOP
 
+    // THIS IS NOT FINISHED YET
     // Send a brand new HTLC to them (make an outgoing payment) if we have enough funds and not in a clearing process
     case (c: Commitments, HtlcBase(msat, rHash, nextNodeIds, prevChannelId, expiry), 'Normal :: rest) if c.clearingStarted.isEmpty =>
       val reduced = c.theirCommit.spec.reduce(c.theirChanges.acked, c.ourChanges.acked ++ c.ourChanges.signed ++ c.ourChanges.proposed)

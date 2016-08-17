@@ -5,7 +5,7 @@ import R.string._
 import org.bitcoinj.core._
 
 import org.bitcoinj.core.listeners.TransactionConfidenceEventListener
-import com.btcontract.wallet.lightning.thundercloud.OpenHelper
+import com.btcontract.wallet.lightning.lncloud.OpenHelper
 import info.guardianproject.netcipher.proxy.OrbotHelper
 import collection.JavaConverters.asScalaBufferConverter
 import com.google.common.util.concurrent.Service.State
@@ -100,7 +100,7 @@ class WalletApp extends Application {
     def seedAbsent = seed == null
 
     def newCommitKey = {
-      val riseInt = (System.currentTimeMillis / 10000).toInt
+      val riseInt = (System.currentTimeMillis / 1000 / 60).toInt
       Tools.derive(new ChildNumber(riseInt) :: Nil, 100)(seed)
     }
   }

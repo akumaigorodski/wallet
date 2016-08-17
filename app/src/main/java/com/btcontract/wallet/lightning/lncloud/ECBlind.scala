@@ -1,4 +1,4 @@
-package com.btcontract.wallet.lightning.thundercloud
+package com.btcontract.wallet.lightning.lncloud
 
 import org.spongycastle.math.ec.ECPoint
 import com.btcontract.wallet.Utils.rand

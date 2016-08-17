@@ -7,7 +7,7 @@ import scala.concurrent.duration.DurationInt
 import com.btcontract.wallet.Utils.app
 import org.bitcoinj.core.Utils.HEX
 import android.database.Cursor
-import thundercloud.Commits
+import lncloud.Commits
 import org.bitcoinj
 
 
@@ -37,6 +37,6 @@ object ChainData {
   def getTx(parentCommitTxId: String) = {
     def hex2Tx(hex: String) = new Transaction(app.params, HEX decode hex)
     val cursor = app.LNData.db.select(Commits.selectByParentTxIdSql, parentCommitTxId)
-    RichCursor(cursor).closeAfter(_.toStream.headOption.map(_ string Commits.commitSpendTx) map hex2Tx)
+    RichCursor(cursor).closeAfter(_.toStream.headOption.map(_ string Commits.punishTx) map hex2Tx)
   }
 }

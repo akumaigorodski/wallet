@@ -1,4 +1,4 @@
-package com.btcontract.wallet.lightning.thundercloud
+package com.btcontract.wallet.lightning.lncloud
 
 import spray.json._
 import ThundercloudProtocol._
@@ -18,7 +18,7 @@ case class BlindMemo(params: Seq[BlindParam], clears: Seq[BigInteger], sesKeyHex
 }
 
 object BlindHandler {
-  def sendData = thunder("blindtokens/info", identity) flatMap {
+  def sendData = lncloud("blindtokens/info", identity) flatMap {
     case JS(signerQ) +: JS(signerR) +: JN(qty) +: JN(price) +: rest =>
       val signerSessionPubKey = ECKey.fromPublicOnly(HEX decode signerR)
       val signerMasterPubKey = ECKey.fromPublicOnly(HEX decode signerQ)
@@ -32,12 +32,12 @@ object BlindHandler {
       // Only if proposed terms are within range
       if (qty < 100) throw new Exception("tooFewTokens")
       else if (price > 50000) throw new Exception("tooHighPrice")
-      else thunder("blindtokens/buy", memo chargeBlindMemo _.head.convertTo[Charge],
+      else lncloud("blindtokens/buy", memo chargeBlindMemo _.head.convertTo[Charge],
         "lang", app getString lang, "tokens", blindTokens.toJson.toString, "seskey", sesKeyHex)
   }
 
   def tryRestore(raw: String) = Try apply to[BlindMemo](raw)
-  def getClearSigs(rValue: String, memo: BlindMemo) = thunder("blindtokens/redeem",
+  def getClearSigs(rValue: String, memo: BlindMemo) = lncloud("blindtokens/redeem",
     sigHats => for (sigHat <- sigHats) yield sigHat.convertTo[BigInteger],
     "rvalue", rValue, "seskey", memo.sesKeyHex)
 }

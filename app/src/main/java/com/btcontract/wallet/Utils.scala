@@ -18,9 +18,7 @@ import org.bitcoinj.store.SPVBlockStore
 import android.app.AlertDialog.Builder
 import android.util.DisplayMetrics
 import org.bitcoinj.uri.BitcoinURI
-import scala.collection.mutable
 import scala.concurrent.Future
-import android.net.Uri
 
 import org.bitcoinj.wallet.{SendRequest, Wallet}
 import org.bitcoinj.wallet.Wallet.{ExceededMaxTransactionSize, CouldNotAdjustDownwards}
@@ -45,9 +43,6 @@ import Context.INPUT_METHOD_SERVICE
 object Utils { me =>
   type Bytes = Array[Byte]
   type TryCoin = Try[Coin]
-  type Rates = Map[String, Double]
-  type Pays = mutable.Buffer[PayData]
-  type Outputs = mutable.Buffer[TransactionOutput]
 
   // Cannot have lazy var so use this construct
   var startupAppReference: WalletApp = null
@@ -56,6 +51,7 @@ object Utils { me =>
   val passType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
   val textType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
 
+  // Mapping from text to Android id integer
   val Seq(strDollar, strEuro, strYuan) = List("dollar", "euro", "yuan")
   val fiatMap = Map(typeUSD -> strDollar, typeEUR -> strEuro, typeCNY -> strYuan)
   val revFiatMap = Map(strDollar -> typeUSD, strEuro -> typeEUR, strYuan -> typeCNY)
@@ -91,7 +87,7 @@ object Utils { me =>
   def none: PartialFunction[Any, Unit] = { case _ => }
 
   // Fiat rates related functions, all transform a Try monad
-  def currentFiatName = app.prefs.getString(AbstractKit.CURRENCY, "dollar")
+  def currentFiatName = app.prefs.getString(AbstractKit.CURRENCY, strDollar)
   def currentRate = for (rates <- FiatRates.rates) yield rates(currentFiatName)
 
   // Iff we have rates and amount then fiat price

@@ -2,7 +2,7 @@ package com.btcontract.wallet
 
 import R.string._
 import android.widget._
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 import org.bitcoinj.core.{PeerGroup, BlockChain}
 import com.btcontract.wallet.helper.{FiatRates, Fee}
 import org.bitcoinj.wallet.WalletProtobufSerializer
@@ -25,6 +25,10 @@ class MainActivity extends TimerActivity with ViewSwitch { me =>
   lazy val views = findViewById(R.id.mainProgress).asInstanceOf[ImageView] ::
     findViewById(R.id.mainChoice).asInstanceOf[LinearLayout] :: Nil
 
+  // Either proceed anyway or quit an application
+  def onFail(code: Int): Unit = mkForm(mkChoiceDialog(next, finish,
+    dialog_ok, dialog_cancel) setMessage code, null, null)
+
   // Initialize this activity, method is run once
   override def onCreate(savedState: Bundle) =
   {
@@ -32,15 +36,10 @@ class MainActivity extends TimerActivity with ViewSwitch { me =>
     setContentView(R.layout.activity_main)
     greet setMovementMethod LinkMovementMethod.getInstance
 
-    Try(getIntent.getDataString) match {
-      case ok@Success(dataNotNull: String) =>
-        // If only we actually have some string, try to process it and inform on error
-        ok.map(app.TransData.setValue).map(_ => next) recover app.TransData.onFail { code =>
-          mkForm(mkChoiceDialog(next, finish, dialog_ok, dialog_cancel) setMessage code, null, null)
-        }
-
-      // Usual launch
-      case _ => next
+    // Proceed if no data present or data is correct, show choice otherwise
+    Try(getIntent.getDataString).filter(_ != null).map(app.TransData.setValue) match {
+      case Failure(gotNull: NoSuchElementException) | Success(setSuccess: Unit) => next
+      case Failure(error) => app.TransData.onFail(onFail)(error)
     }
 
     // Periodic http

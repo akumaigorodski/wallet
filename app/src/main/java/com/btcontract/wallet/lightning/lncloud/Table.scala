@@ -1,4 +1,4 @@
-package com.btcontract.wallet.lightning.thundercloud
+package com.btcontract.wallet.lightning.lncloud
 
 import android.database.sqlite.{SQLiteDatabase, SQLiteOpenHelper}
 import com.btcontract.wallet.Utils.none
@@ -37,7 +37,7 @@ object Payments extends Table {
     ($data, $incoming, $rHash, $rValue, $status, $identity, $stamp)
     VALUES (?, $inc, ?, ?, $stat, ?, $stp)"""
 
-  // Identity here refers to Thundercloud inner message id, not to be mixed with HTLC id
+  // Identity here refers to LnCloud inner message id, not to be mixed with HTLC id
   def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT, $data TEXT NOT NULL,
     $incoming INTEGER NOT NULL, $rHash TEXT, $rValue TEXT, $status INTEGER NOT NULL, $identity TEXT NOT NULL UNIQUE,
     $stamp INTEGER NOT NULL); CREATE INDEX idx$identity ON $table ($identity); CREATE INDEX idx$rValue ON $table ($rValue);
@@ -45,19 +45,22 @@ object Payments extends Table {
 }
 
 object Commits extends Table {
-  val strings = ("commits", "spendtx", "txid")
-  val (table, commitSpendTx, txId) = strings
+  val strings = ("commits", "breachtxid", "punishTx", "remote")
+  val (table, breachTxId, punishTx, remote) = strings
 
-  def selectByParentTxIdSql = s"SELECT * FROM $table WHERE $txId = ?"
-  def newSql = s"INSERT OR IGNORE INTO $table ($commitSpendTx, $txId) VALUES (?, ?)"
-  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT,
-    $commitSpendTx TEXT NOTNULL, $txId TEXT NOTNULL UNIQUE);
-    CREATE INDEX idx$txId ON $table ($txId); COMMIT"""
+  def selectAllLocalSql = s"SELECT * FROM $table WHERE $remote = 0"
+  def selectByParentTxIdSql = s"SELECT * FROM $table WHERE $breachTxId = ?"
+  def markRemoteSql = s"UPDATE $table SET $remote = 1 WHERE $breachTxId = ?"
+
+  // Punish tx spends funds released by breachTxId (revoked commit tx)
+  def newSql = s"""INSERT OR IGNORE INTO $table ($breachTxId, $punishTx, $remote) VALUES (?, ?, 0)"""
+  def createSql = s"""CREATE TABLE $table ($id INTEGER PRIMARY KEY AUTOINCREMENT, $breachTxId TEXT NOTNULL UNIQUE,
+    $punishTx TEXT NOTNULL, $remote INTEGER NOT NULL);CREATE INDEX idx$breachTxId ON $table ($breachTxId); COMMIT"""
 }
 
 trait Table { val id = "_id" }
 class OpenHelper(context: Context, name: String, version: Int)
-extends SQLiteOpenHelper(context, name, null, version)
+  extends SQLiteOpenHelper(context, name, null, version)
 {
   val base = getWritableDatabase
   def onUpgrade(db: SQLiteDatabase, oldVer: Int, newVer: Int) = none

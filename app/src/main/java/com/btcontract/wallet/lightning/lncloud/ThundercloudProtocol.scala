@@ -1,6 +1,7 @@
-package com.btcontract.wallet.lightning.thundercloud
+package com.btcontract.wallet.lightning.lncloud
 
 import java.math.BigInteger
+import org.bitcoinj.core.ECKey.ECDSASignature
 import org.bitcoinj.core.Utils.HEX
 import org.spongycastle.math.ec.ECPoint
 import com.btcontract.wallet.Utils.Bytes
@@ -38,13 +39,17 @@ object ThundercloudProtocol extends DefaultJsonProtocol { me =>
   implicit val messageFmt = jsonFormat[Bytes, Bytes, Message](Message, "pubKey", "content")
   implicit val wrapFmt = jsonFormat[Message, Long, Wrap](Wrap, "data", "stamp")
 
+  // WatchdogTx for temote observing of channel breaches
+  implicit val watchdogTxFmt = jsonFormat[String, String, String,
+    WatchdogTx](WatchdogTx, "prefix", "txEnc", "iv")
+
   // User signed email to key mapping
   implicit val smFmt = jsonFormat[String, String, String,
     SignedMail](SignedMail, "email", "pubKey", "signature")
 }
 
 // A "response-to" ephemeral key, it's private part should be stored in a database
-// because my bloom filter has it. It's optional because Charge may come locally via NFC
+// because my bloom filter has it, it's optional because Charge may come locally via NFC
 case class Request(ephemeral: Option[Bytes], mSatAmount: Long, message: String, id: String)
 case class Charge(request: Request, lnPaymentData: Bytes)
 
@@ -52,9 +57,16 @@ case class Charge(request: Request, lnPaymentData: Bytes)
 case class Message(pubKey: Bytes, content: Bytes)
 case class Wrap(data: Message, stamp: Long)
 
+// Prefix is first 16 bytes of txId, key is last 16 bytes
+case class WatchdogTx(prefix: String, txEnc: String, iv: String)
+
 // Client signed email
 case class SignedMail(email: String, pubKey: String, signature: String) {
-  def dataHash = Sha256Hash.of(email + pubKey + signature getBytes "UTF-8")
-  def pubKeyClass = ECKey.fromPublicOnly(HEX decode pubKey)
+  def totalHash = Sha256Hash.of(email + pubKey + signature getBytes "UTF-8")
+  def identityPubECKey = ECKey.fromPublicOnly(HEX decode pubKey)
   def emailHash = Sha256Hash.of(email getBytes "UTF-8")
+
+  def checkSig = HEX decode signature match { case sig =>
+    identityPubECKey.verify(emailHash, ECDSASignature decodeFromDER sig)
+  }
 }
