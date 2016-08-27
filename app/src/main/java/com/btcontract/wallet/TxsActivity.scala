@@ -165,7 +165,7 @@ class TxsActivity extends InfoActivity with HumanTimeDisplay { me =>
     app.TransData.value match {
       case Some(addr: Address) => wrap(doPay(null) setAddressValue addr)(app.TransData.value = None)
       case Some(uri: BitcoinURI) => wrap(doPay(null) set uri)(app.TransData.value = None)
-      case Some(app.TransData.THUNDERSECRET :: _) => me exitTo classOf[TCEmailActivity]
+      case Some(app.TransData.LNCLOUDSECRET :: _) => me exitTo classOf[TCEmailActivity]
       case Some(app.TransData.LIGHTNING :: _) => me exitTo classOf[LNTxsActivity]
       case _ => // Incompatible data, just do nothing
     }

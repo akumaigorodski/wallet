@@ -83,8 +83,8 @@ object Utils { me =>
   def btcHuman(coin: Coin) = app getString input_alt_btc format btc(coin)
   def wrap(run: => Unit)(go: => Unit) = try go catch none finally run
   def humanAddr(adr: Address) = s"$adr" grouped 4 mkString "\u0020"
-  def runAnd[T](result: T)(action: => Any) = { action; result }
   def none: PartialFunction[Any, Unit] = { case _ => }
+  def runAnd[T](result: T)(action: Any) = result
 
   // Fiat rates related functions, all transform a Try monad
   def currentFiatName = app.prefs.getString(AbstractKit.CURRENCY, strDollar)
@@ -177,7 +177,7 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     val ok = alert getButton BUTTON_POSITIVE
     ok setOnClickListener new OnClickListener {
       def onClick(proceed: View) = man.result match {
-        case Failure(seemsAmountIsEmpty) => toast(dialog_sum_empty)
+        case Failure(amountIsEmpty) => toast(dialog_sum_empty)
         case Success(cn) if Try(btcAddr).isFailure => toast(dialog_addr_wrong)
         case Success(cn) if cn isLessThan MIN_NONDUST_OUTPUT => toast(dialog_sum_dusty)
         case _ => rm(alert)(next.showForm)
@@ -214,8 +214,7 @@ abstract class InfoActivity extends AnimatorActivity { me =>
         val dialog = mkForm(negBld(dialog_cancel), Html fromHtml pay.pretty(sumIn), listCon)
 
         listCon setOnItemClickListener onTap { position =>
-          def next = choose(position, pay.string)
-          rm(dialog)(next)
+          rm(dialog) { /**/ choose(position, pay.string) /**/ }
         }
 
         app.TransData.value = Option(pay)
@@ -534,11 +533,6 @@ abstract class CompletePay(host: AnimatorActivity) {
   val infos = feeLive :: feeDefault :: Nil map Html.fromHtml
   val slot = android.R.layout.select_dialog_singlechoice
 
-  val pay: PayData
-  val title: String
-  def errorAction
-  def confirm
-
   def showForm = {
     form.asInstanceOf[LinearLayout].addView(passAsk, 0)
     host.mkForm(dialog, host.str2View(Html fromHtml title), form)
@@ -570,6 +564,11 @@ abstract class CompletePay(host: AnimatorActivity) {
     host.mkForm(info setMessage errorMessage, null, null)
     host.del(Informer.DECSEND).run
   } catch none
+
+  val pay: PayData
+  val title: String
+  def errorAction
+  def confirm
 }
 
 abstract class TextChangedWatcher extends TextWatcher {

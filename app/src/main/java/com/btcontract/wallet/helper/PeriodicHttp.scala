@@ -22,7 +22,7 @@ object JsonHttpUtils {
   def retry[T](obs: Obs[T], pick: (Throwable, Int) => Duration, times: Range) =
     obs.retryWhen(_.zipWith(Obs from times)(pick) flatMap Obs.timer)
 
-  def pickInc(err: Throwable, next: Int) = next.second
+  def pickInc(err: Throwable, next: Int) = next.seconds
   def to[T : JsonFormat](raw: String) = raw.parseJson.convertTo[T]
   val get = HttpRequest.get(_: String, true) connectTimeout 15000
 
@@ -90,10 +90,13 @@ object Fee { me =>
   implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee, "3")
   implicit val bitgoFeeFmt = jsonFormat[Long, BitgoFee](BitgoFee, "feePerKb")
 
-  def reloadData = rand nextInt 4 match {
-    case 0 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=3").body)
-    case 1 => to[InsightFee](get("http://bitlox.io/api/utils/estimatefee?nbBlocks=3").body)
-    case 2 => to[BitgoFee](get("https://www.bitgo.com/api/v1/tx/fee?numBlocks=3").body)
+  def reloadData = rand nextInt 7 match {
+    case 0 => to[InsightFee](get("https://bitlox.io/api/utils/estimatefee?nbBlocks=3").body)
+    case 1 => to[InsightFee](get(s"https://localbitcoinschain.com/api/utils/estimatefee?nbBlocks=3").body)
+    case 2 => to[InsightFee](get(s"https://search.bitaccess.co/api/utils/estimatefee?nbBlocks=3").body)
+    case 3 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=3").body)
+    case 4 => to[InsightFee](get(s"https://live.coin.space/api/utils/estimatefee?nbBlocks=3").body)
+    case 5 => to[BitgoFee](get("https://www.bitgo.com/api/v1/tx/fee?numBlocks=3").body)
     case _ => to[CypherFee](get("http://api.blockcypher.com/v1/btc/main").body)
   }
 
@@ -113,9 +116,12 @@ object Insight {
   implicit val txOutputFmt = jsonFormat[String, Int, String, TxOutput](TxOutput, "txid", "vout", "scriptPubKey")
   implicit val txFmt = jsonFormat[String, List[TxInput], Int, Tx](Tx, "txid", "vin", "confirmations")
 
-  def reloadData(suffix: String) = rand nextInt 3 match {
-    case 0 => get(s"https://insight.bitpay.com/api/$suffix").body
-    case 1 => get(s"https://blockexplorer.com/api/$suffix").body
+  def reloadData(suffix: String) = rand nextInt 6 match {
+    case 0 => get(s"https://localbitcoinschain.com/api/$suffix").body
+    case 1 => get(s"https://search.bitaccess.co/api/$suffix").body
+    case 2 => get(s"https://insight.bitpay.com/api/$suffix").body
+    case 3 => get(s"https://blockexplorer.com/api/$suffix").body
+    case 4 => get(s"https://live.coin.space/api/$suffix").body
     case _ => get(s"https://bitlox.io/api/$suffix").body
   }
 

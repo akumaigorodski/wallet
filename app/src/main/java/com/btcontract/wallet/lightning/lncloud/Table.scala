@@ -45,7 +45,7 @@ object Payments extends Table {
 }
 
 object Commits extends Table {
-  val strings = ("commits", "breachtxid", "punishTx", "remote")
+  val strings = ("commits", "breachtxid", "punishtx", "remote")
   val (table, breachTxId, punishTx, remote) = strings
 
   def selectAllLocalSql = s"SELECT * FROM $table WHERE $remote = 0"

@@ -72,10 +72,10 @@ class WalletApp extends Application {
   object TransData {
     var value = Option.empty[Any]
     val LIGHTNING = "lightning:identity"
-    val THUNDERSECRET = "thundercloud:secret"
+    val LNCLOUDSECRET = "lncloud:secret"
 
     def setValue(text: String) = value = Option {
-      if (text startsWith THUNDERSECRET) THUNDERSECRET :: text.replace(s"$THUNDERSECRET:", "") :: Nil
+      if (text startsWith LNCLOUDSECRET) LNCLOUDSECRET :: text.replace(s"$LNCLOUDSECRET:", "") :: Nil
       else if (text startsWith LIGHTNING) LIGHTNING :: text.replace(s"$LIGHTNING:", "") :: Nil
       else if (text startsWith "bitcoin") new BitcoinURI(params, text)
       else getTo(text)

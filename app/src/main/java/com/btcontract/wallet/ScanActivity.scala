@@ -15,6 +15,14 @@ class ScanActivity extends TimerActivity with BarcodeCallback { me =>
   type Points = java.util.List[com.google.zxing.ResultPoint]
   var lastAttempt = System.currentTimeMillis
 
+  // Initialize this activity, method is run once
+  override def onCreate(savedInstState: Bundle) =
+  {
+    super.onCreate(savedInstState)
+    setContentView(R.layout.activity_scan)
+    reader decodeContinuous me
+  }
+
   def tryParse(text: String) = try {
     lastAttempt = System.currentTimeMillis
     beepSoundPlayer.playRawResource(R.raw.beep, false)
@@ -38,12 +46,4 @@ class ScanActivity extends TimerActivity with BarcodeCallback { me =>
   override def possibleResultPoints(pts: Points) = none
   override def onResume = wrap(super.onResume)(reader.resume)
   override def onPause = wrap(super.onPause)(reader.pause)
-
-  // Initialize this activity, method is run once
-  override def onCreate(savedInstState: Bundle) =
-  {
-    super.onCreate(savedInstState)
-    setContentView(R.layout.activity_scan)
-    reader decodeContinuous me
-  }
 }

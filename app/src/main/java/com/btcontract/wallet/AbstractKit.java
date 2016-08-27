@@ -16,8 +16,7 @@ import java.util.List;
 
 public abstract class AbstractKit extends AbstractIdleService {
     public static final String BTC_DENOMINATION = "btc_denomination";
-    public static final String LN_CHANNEL_STATE = "ln_channel_state";
-    public static final String CURRENCY = "currency2";
+    public static final String CURRENCY = "chosen_currency";
 
     public volatile BlockChain blockChain;
     public volatile PeerGroup peerGroup;

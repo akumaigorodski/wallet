@@ -6,6 +6,7 @@ import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 import javax.crypto.spec.{SecretKeySpec, IvParameterSpec}
 import org.bitcoinj.core.{ECKey, BloomFilter, Sha256Hash}
 import com.btcontract.wallet.lightning.{JavaTools => jt}
+
 import org.spongycastle.jce.ECNamedCurveTable
 import org.bitcoinj.core.ECKey.ECDSASignature
 import org.bitcoinj.wallet.DeterministicSeed
@@ -20,7 +21,7 @@ object Tools { me =>
   def has(value: Any) = value != null
   def humanIdentity(key: ECKey) = key.getPublicKeyAsHex grouped 5 mkString "\u0020"
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
-  val preimg2HashProto = sha2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
+  val pre2HashProto = sha2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
   val r2HashProto = rval2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
   val bytes2bs = (bytes: Bytes) => ByteString.of(bytes, 0, bytes.length)
 
@@ -37,12 +38,19 @@ object Tools { me =>
     case (bld, con: proto.update_revocation) => bld.update_revocation(con).build
     case (bld, con: proto.update_fail_htlc) => bld.update_fail_htlc(con).build
     case (bld, con: proto.update_add_htlc) => bld.update_add_htlc(con).build
-    case (bld, con: proto.close_signature) => bld.close_signature(con).build
-    case (bld, con: proto.open_commit_sig) => bld.open_commit_sig(con).build
-    case (bld, con: proto.close_clearing) => bld.close_clearing(con).build
     case (bld, con: proto.update_commit) => bld.update_commit(con).build
-    case (bld, con: proto.authenticate) => bld.auth(con).build
+    case (bld, con: proto.update_fee) => bld.update_fee(con).build
+
+    case (bld, con: proto.close_signature) => bld.close_signature(con).build
+    case (bld, con: proto.close_shutdown) => bld.close_shutdown(con).build
+
+    case (bld, con: proto.open_commit_sig) => bld.open_commit_sig(con).build
+    case (bld, con: proto.open_complete) => bld.open_complete(con).build
+    case (bld, con: proto.open_anchor) => bld.open_anchor(con).build
     case (bld, con: proto.open_channel) => bld.open(con).build
+
+    case (bld, con: proto.reconnect) => bld.reconnect(con).build
+    case (bld, con: proto.authenticate) => bld.auth(con).build
     case (bld, con: proto.error) => bld.error(con).build
     case _ => throw new Exception(s"$some unknown")
   }
@@ -69,7 +77,8 @@ object Tools { me =>
 
   def proto2ECKey(message: proto.bitcoin_pubkey) = ECKey fromPublicOnly message.key.toByteArray
   def bytes2ProtoPubkey(bytes: Bytes) = new proto.bitcoin_pubkey(me bytes2bs bytes)
-  def blocks(num: Int) = new proto.locktime(null, num)
+  def locktime2Blocks(locktime: proto.locktime) = locktime.blocks.toInt
+  def blocks2Locktime(num: Int) = new proto.locktime(null, num)
 
   // Fix signature size
   def fixSize(raw: Bytes): Bytes = raw.length match {
@@ -136,7 +145,7 @@ object AES {
 // A general purpose State Machine
 abstract class StateMachine[T](var state: List[Symbol], var data: T) { me =>
   def process(change: Any) = try me synchronized doProcess(change) catch error
-  def become(fresh: T, ns: Symbol) = runAnd(state = ns :: state take 3)(data = fresh)
+  def become(fresh: T, ns: Symbol) = runAnd(state = ns :: state take 2)(data = fresh)
   def stayWith(dataOnly: T) = become(dataOnly, state.head)
   def error: PartialFunction[Throwable, Unit] = none
   def doProcess(change: Any)

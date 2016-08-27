@@ -1,12 +1,13 @@
 package com.btcontract.wallet.lightning.lncloud
 
-import java.math.BigInteger
-import org.bitcoinj.core.ECKey.ECDSASignature
-import org.bitcoinj.core.Utils.HEX
-import org.spongycastle.math.ec.ECPoint
-import com.btcontract.wallet.Utils.Bytes
-import org.bitcoinj.core.{Sha256Hash, ECKey}
 import spray.json._
+import org.bitcoinj.core.{Sha256Hash, ECKey}
+
+import org.bitcoinj.core.ECKey.ECDSASignature
+import com.btcontract.wallet.Utils.Bytes
+import org.spongycastle.math.ec.ECPoint
+import org.bitcoinj.core.Utils.HEX
+import java.math.BigInteger
 
 
 object ThundercloudProtocol extends DefaultJsonProtocol { me =>

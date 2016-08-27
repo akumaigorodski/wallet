@@ -6,7 +6,6 @@ import com.btcontract.wallet.helper.{RichCursor, Insight}
 import scala.concurrent.duration.DurationInt
 import com.btcontract.wallet.Utils.app
 import org.bitcoinj.core.Utils.HEX
-import android.database.Cursor
 import lncloud.Commits
 import org.bitcoinj
 
@@ -22,16 +21,18 @@ object ChainData {
     Subscription(app.kit.wallet removeTransactionConfidenceEventListener lst)
   }
 
-  def watchTxDepthRemote(c: Commitments) = Insight.txs(c.anchorAddressString)
+  def watchTxDepthRemote(c: Commitments) = Insight.txs(app.getTo(c.anchorOutput).toString)
     .filter(_.txid == c.anchorId).map(_.confirmations).repeatWhen(_ delay 2.minute)
 
-  def watchOutputSpentRemote(c: Commitments) = Insight.txs(c.anchorAddressString)
-    .filter(tx => tx.vin.exists(_.txid == c.anchorId) && tx.confirmations > 0)
+  // This should return revoked or unrevoked commit tx id
+  def watchAnchorSpentRemote(c: Commitments) = Insight.txs(app.getTo(c.anchorOutput).toString)
+    .filter(tx => tx.vin.exists(_.txid == c.anchorId) && tx.confirmations > 0).map(_.txid)
     .repeatWhen(_ delay 20.minute)
 
+  // Punishment for revoked commit tx
   def saveTx(id: String, tx: Transaction) = {
     val punishTx = HEX encode tx.bitcoinSerialize
-    app.LNData.db.change(Commits.newSql, punishTx, id)
+    app.LNData.db.change(Commits.newSql, id, punishTx)
   }
 
   def getTx(parentCommitTxId: String) = {
