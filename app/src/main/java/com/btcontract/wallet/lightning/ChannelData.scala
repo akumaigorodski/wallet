@@ -1,9 +1,10 @@
 package com.btcontract.wallet.lightning
 
 import com.btcontract.wallet.Utils.Bytes
-import com.btcontract.wallet.lightning.crypto.ShaChain.HashesWithLastIndex
+import crypto.ShaChain.HashesWithLastIndex
 import crypto.ShaChain
-import org.bitcoinj.core.{TransactionOutput, Transaction, Sha256Hash, ECKey}
+import collection.JavaConverters.asScalaBufferConverter
+import org.bitcoinj.core.{TransactionOutput, Transaction, ECKey}
 import com.softwaremill.quicklens._
 import Tools._
 
@@ -11,6 +12,21 @@ import Tools._
 trait ChannelData {
   // Third Boolean indicates whether it was saved remotely
   type ChannelSnapshot = (List[Symbol], ChannelData, Boolean)
+}
+
+// CHANNEL STATES
+
+// We won't fund an anchor so we're waiting for it's specs from counterparty
+case class WaitForAnchor(ourParams: OurChannelParams, theirParams: TheirChannelParams,
+                         theirRevocationHash: Bytes, theirNextRevocationHash: Bytes) extends ChannelData
+
+// We will fund and anchor and we're waiting for a first commit sig from counterparty
+case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChannelParams, anchorTx: Transaction,
+                            anchorIndex: Int, theirCommit: TheirCommit, theirNextRevocationHash: Bytes) extends ChannelData
+
+// We're waiting for local confirmations + counterparty's acknoledgment before we can move on
+case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes], depthOk: Boolean) extends ChannelData { me =>
+  def withBlock(complete: proto.open_complete) = me.modify(_.blockHash) setTo Some(Tools sha2Bytes complete.blockid)
 }
 
 // STATIC CHANNEL PARAMETERS
@@ -32,7 +48,10 @@ case class OurChannelParams(delay: Int, anchorAmount: Option[Long], commitPrivKe
 
 // Changes pile up until we update our commitment
 case class TheirChanges(proposed: PktVec, acked: PktVec)
-case class OurChanges(proposed: PktVec, signed: PktVec, acked: PktVec)
+case class OurChanges(proposed: PktVec, signed: PktVec, acked: PktVec) {
+  def fulfills: PartialFunction[proto.pkt, proto.rval] = { case pkt if has(pkt.update_fulfill_htlc) => pkt.update_fulfill_htlc.r }
+  def hashRValMap = (proposed ++ signed ++ acked).collect(fulfills).map(rValue => r2HashProto(rValue) -> rValue).toMap
+}
 
 // We need to track our commit and our view of their commit
 // In case if they spend their commit we can use ours to claim the funds
@@ -84,9 +103,36 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Lon
 case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelParams, ourChanges: OurChanges, theirChanges: TheirChanges,
                        ourCommit: OurCommit, theirCommit: TheirCommit, theirNextCommitInfo: Either[TheirCommit, proto.sha256_hash],
                        anchorOutput: TransactionOutput, anchorId: String, theirPreimages: HashesWithLastIndex = (None, Map.empty),
-                       started: Long = System.currentTimeMillis, shutdownStarted: Option[Long] = None) { me =>
+                       started: Long = System.currentTimeMillis, shutdownStarted: Option[Long] = None) extends ChannelData { me =>
 
   def addOurProposal(proposal: proto.pkt) = me.modify(_.ourChanges.proposed).using(_ :+ proposal)
   def addTheirProposal(proposal: proto.pkt) = me.modify(_.theirChanges.proposed).using(_ :+ proposal)
-  def finalFee = anchorOutput.getValue subtract ourCommit.publishableTx.getOutputSum div 4 multiply 2
+  def finalFee = anchorOutput.getValue.subtract(ourCommit.publishableTx.getOutputSum) div 4 multiply 2
+
+  // OUR AND THEIR COMMIT TXS
+
+  def makeOurTxTemplate(ourRevHash: Bytes) =
+    Scripts.makeCommitTxTemplate(ourFinalKey = ourParams.finalPubKey,
+      theirParams.finalPubKey, ourParams.delay, ourRevHash, ourCommit.spec)
+
+  // spec may come from theirCommit or theirNextCommitInfo
+  def makeTheirTxTemplate(theirRevHash: Bytes, spec: CommitmentSpec) =
+    Scripts.makeCommitTxTemplate(theirParams.finalPubKey, ourParams.finalPubKey,
+      theirParams.delay, theirRevHash, spec)
+
+  // FINAL TX AND FEE NEGOTIATIONS
+
+  def finalTx(fee: Long) = Scripts.makeFinalTx(ourCommit.publishableTx.getInputs.asScala,
+    ourParams.finalPubKey, theirParams.finalPubKey, ourCommit.spec.amountUsMsat,
+    theirCommit.spec.amountUsMsat, fee)
+
+  def makeNewFeeFinalSig(them: Long, us: Long) = {
+    val newFee = (them + us) / 4 * 2 match { case fee if fee == us => fee + 2 case fee => fee }
+    finalTx(newFee) match { case (transaction, closeSigProto) => closeSigProto }
+  }
+
+  def checkCloseSig(closeProto: proto.close_signature) = finalTx(closeProto.close_fee) match { case (tx, ourSig) =>
+    val signedFinalTx = Scripts.addTheirSigAndSignTx(ourParams, theirParams, tx, anchorOutput.getValue.value, closeProto.sig)
+    (Scripts.brokenTxCheck(signedFinalTx, anchorOutput).isSuccess, signedFinalTx, ourSig)
+  }
 }

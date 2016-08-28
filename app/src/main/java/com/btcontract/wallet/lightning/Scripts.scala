@@ -14,6 +14,9 @@ import util.Try
 
 
 object Scripts {
+  val MIN_AMOUNT_MSAT = 546000
+  type Templates = List[OutputTemplate]
+
   // Script for an HTLC we send to them
   def scriptPubKeyHtlcSend(ourKey: ECKey, theirKey: ECKey, absTimeout: Int,
                            relTimeout: Int, rHash: Bytes, commitRevoke: Bytes) =
@@ -47,30 +50,63 @@ object Scripts {
     OP_HASH160 data ripemd160(hashOfSecret) op OP_EQUAL op OP_IF data keyIfSecretKnown op OP_ELSE number relTimeout op
     OP_NOP3 /* OP_CSV */ op OP_DROP data delayedKey op OP_ENDIF op OP_CHECKSIG
 
-  def makeAnchorTx: (Transaction, Int) = ???
+  def makeAnchorTx(ourCommitPub: ECKey, theirCommitPub: ECKey,
+                   amount: Long): (Transaction, Int) = ???
 
-  def makeCommitTx: Transaction = ???
+  def makeFinalTx(inputs: Seq[TransactionInput], ourFinalKey: ECKey, theirFinalKey: ECKey, amountUs: Long,
+                  amountThem: Long, fee: Long): (Transaction, proto.close_signature) = ???
 
-  def makeBreachTx: Transaction = ???
+  // When they publish a revoked tx, we can spend it easily
+  def makePunishTx(theirTxTemplate: TxTemplate, revPreimage: Bytes,
+                   privateKey: ECKey): Transaction = ???
 
-  def makeFinalTx: (Transaction, proto.close_signature) = ???
+  def signTx(ourParams: OurChannelParams, theirParams: TheirChannelParams,
+             tx: Transaction, anchorAmount: Long): proto.signature = ???
 
-  def signTx: proto.signature = ???
+  def addTheirSigAndSignTx(ourParams: OurChannelParams, theirParams: TheirChannelParams, tx: Transaction,
+                           anchorAmount: Long, theirSig: proto.signature): Transaction = ???
 
-  def addTheirSigAndSignTx: Transaction = ???
+  def claimReceivedHtlc(theirSpentTx: Transaction, htlcTemplate: HtlcTemplate,
+                        paymentPreimage: Bytes, privateKey: ECKey): Transaction = ???
+
+  def claimSentHtlc(theirSpentTx: Transaction, htlcTemplate: HtlcTemplate,
+                    privateKey: ECKey): Transaction = ???
+
+  def claimReceivedHtlcs(theirSpentTx: Transaction, theirTxTemplate: TxTemplate,
+                         commitments: Commitments): Seq[Transaction] = ???
+
+  def claimSentHtlcs(theirSpentTx: Transaction, theirTxTemplate: TxTemplate,
+                     commitments: Commitments): Seq[Transaction] = ???
+
+  // We may need this for both our and their commitments
+  def makeCommitTxTemplate(ourFinalKey: ECKey, theirFinalKey: ECKey, theirDelay: Int,
+                           revHash: Bytes, spec: CommitmentSpec) = {
+
+    // Calculate how much each side gets after applying a fee
+    val goodHtlcs = spec.htlcs.filter(_.add.amount_msat >= MIN_AMOUNT_MSAT).toList
+    val feeMsat = (338 + 32 * goodHtlcs.size) * spec.feeRate / 2000 * 2000
+    val (amtUsMsat, amtThemMsat) = applyFees(feeMsat, spec)
+
+    // Create templates for us, them and for in-flight HTLCs
+    val htlcTemplates = for (htlc <- goodHtlcs) yield HtlcTemplate(htlc, ourFinalKey, theirFinalKey, theirDelay, revHash)
+    val theirTemplate = P2WSHTemplate(Coin valueOf amtUsMsat / 1000, ourFinalKey, theirFinalKey, theirDelay, revHash)
+    val ourTemplate = P2WPKHTemplate(Coin valueOf amtThemMsat / 1000, theirFinalKey)
+
+    // TxTemplate allows us to spend our tx and spend from spent commit tx
+    val theirTemplateList = if (amtThemMsat >= MIN_AMOUNT_MSAT) theirTemplate :: Nil else Nil
+    val ourTemplateList = if (amtUsMsat >= MIN_AMOUNT_MSAT) ourTemplate :: Nil else Nil
+    TxTemplate(ourTemplateList, theirTemplateList, htlcTemplates)
+  }
 
   // Commit tx tries to spend an anchor output
   def brokenTxCheck(tx: Transaction, anchorOutput: TransactionOutput) = Try {
     tx.getInput(0).getScriptSig.correctlySpends(tx, 0, anchorOutput.getScriptPubKey, ALL_VERIFY_FLAGS)
   }
 
-  def computeFee2(feeRate: Long, htlcNum: Int) =
-    (338 + 32 * htlcNum) * feeRate / 2000 * 2
-
-  def applyFees(us: Long, them: Long, fee: Long) =
-    if (us < fee / 2) 0L -> Math.max(0L, them - fee + us)
-    else if (them < fee / 2) Math.max(us - fee + them, 0L) -> 0L
-    else (us - fee / 2, them - fee / 2)
+  def applyFees(fee: Long, spec: CommitmentSpec) =
+    if (spec.amountUsMsat < fee / 2) 0L -> Math.max(0L, spec.amountThemMsat - fee + spec.amountUsMsat)
+    else if (spec.amountThemMsat < fee / 2) Math.max(spec.amountUsMsat - fee + spec.amountThemMsat, 0L) -> 0L
+    else (spec.amountUsMsat - fee / 2, spec.amountThemMsat - fee / 2)
 
   def memcmp(a: Bytes, b: Bytes): Int = (a, b) match {
     case (xNone, yNone) if xNone.isEmpty & yNone.isEmpty => 0
@@ -87,25 +123,31 @@ object Scripts {
 // TX META STRUCTURE
 
 trait OutputTemplate {
-  def txOut: TransactionOutput
-  def redeemScript: Script
-  def amount: Long
+  val txOut: TransactionOutput
+  val redeemScript: Script
+  val amount: Coin
 }
 
 case class HtlcTemplate(htlc: Htlc, ourKey: ECKey, theirKey: ECKey, delay: Int, revHash: Bytes) extends OutputTemplate {
   def incoming = scriptPubKeyHtlcReceive(ourKey, theirKey, locktime2Blocks(htlc.add.expiry), delay, sha2Bytes(htlc.add.r_hash), revHash)
   def outgoing = scriptPubKeyHtlcSend(ourKey, theirKey, locktime2Blocks(htlc.add.expiry), delay, sha2Bytes(htlc.add.r_hash), revHash)
-  def txOut = new TransactionOutput(app.params, null, Coin valueOf amount, pay2wsh(redeemScript).build.getProgram)
-  def redeemScript = if (htlc.incoming) incoming.build else outgoing.build
-  def amount = htlc.add.amount_msat / 1000
+  lazy val txOut = new TransactionOutput(app.params, null, amount, pay2wsh(redeemScript).build.getProgram)
+  lazy val redeemScript = if (htlc.incoming) incoming.build else outgoing.build
+  lazy val amount = Coin valueOf htlc.add.amount_msat / 1000
 }
 
-case class P2WSHTemplate(amount: Long, ourFinalKey: ECKey, theirFinalKey: ECKey, theirDelay: Int, revHash: Bytes) extends OutputTemplate {
-  def redeemScript = redeemSecretOrDelay(delayedKey = ourFinalKey.getPubKey, theirFinalKey.getPubKey, relTimeout = theirDelay, revHash).build
-  def txOut = new TransactionOutput(app.params, null, Coin valueOf amount, pay2wsh(redeemScript).build.getProgram)
+case class P2WSHTemplate(amount: Coin, ourFinalKey: ECKey, theirFinalKey: ECKey, theirDelay: Int, revHash: Bytes) extends OutputTemplate {
+  lazy val redeemScript = redeemSecretOrDelay(delayedKey = ourFinalKey.getPubKey, theirFinalKey.getPubKey, theirDelay, revHash).build
+  lazy val txOut = new TransactionOutput(app.params, null, amount, pay2wsh(redeemScript).build.getProgram)
 }
 
-case class P2WPKHTemplate(amount: Long, key: ECKey) extends OutputTemplate {
-  def txOut = new TransactionOutput(app.params, null, Coin valueOf amount, pay2wpkh(key).build.getProgram)
-  def redeemScript = redeemPubKey(key.getPubKey).build
+case class P2WPKHTemplate(amount: Coin, key: ECKey) extends OutputTemplate {
+  lazy val txOut = new TransactionOutput(app.params, null, amount, pay2wpkh(key).build.getProgram)
+  lazy val redeemScript = redeemPubKey(key.getPubKey).build
+}
+
+case class TxTemplate(ourOut: Templates, theirOut: Templates, htlcOuts: Templates) {
+  def ordredOutputs = (ourOut ::: theirOut ::: htlcOuts).map(_.txOut) sortWith isLessThan
+  def weHaveAnOutput = ourOut.nonEmpty || htlcOuts.nonEmpty
+  def tx(inputs: TransactionInput*) = ???
 }

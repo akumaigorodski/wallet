@@ -106,14 +106,11 @@ object Fee { me =>
 
 // Tx Insight API formats
 case class TxInput(txid: String, addr: String)
-case class TxOutput(txid: String, vout: Int, scriptPubKey: String)
 case class Tx(txid: String, vin: List[TxInput], confirmations: Int)
 
 object Insight {
   type TxList = List[Tx]
-  type TxOutputList = List[TxOutput]
   implicit val txInputFmt = jsonFormat[String, String, TxInput](TxInput, "txid", "addr")
-  implicit val txOutputFmt = jsonFormat[String, Int, String, TxOutput](TxOutput, "txid", "vout", "scriptPubKey")
   implicit val txFmt = jsonFormat[String, List[TxInput], Int, Tx](Tx, "txid", "vin", "confirmations")
 
   def reloadData(suffix: String) = rand nextInt 6 match {
@@ -130,8 +127,4 @@ object Insight {
   // if such a tx is found it means our anchor output has been spent!
   def txs(addr: String) = retry(obsOn(reloadData(s"addrs/$addr/txs").parseJson.asJsObject
     .fields("items").convertTo[TxList], IOScheduler.apply), pickInc, 1 to 5) flatMap Obs.just
-
-  // Usage: check which utxos we can spend after CLTV timeout in case of uniclose
-  def utxos(addrs: String*) = retry(obsOn(reloadData(s"addrs/${addrs mkString ","}/utxo"),
-    IOScheduler.apply) map to[TxOutputList], pickInc, 1 to 5)
 }
