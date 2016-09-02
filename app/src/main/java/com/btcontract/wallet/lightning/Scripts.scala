@@ -45,13 +45,13 @@ object Scripts {
   def pay2wpkh(pubKey: ECKey) = new ScriptBuilder op OP_0 data ripemd160(pubKey.getPubKeyHash)
   def multiSig2of2(ks: ECKey*) = ScriptBuilder.createRedeemScript(2, ks.asJava)
 
+  // OP_HASH160: The input is hashed twice: first with SHA-256 and then with RIPEMD-160
   def redeemPubKey(pubKey: Bytes) = new ScriptBuilder op OP_DUP op OP_HASH160 data ripemd160(pubKey) op OP_EQUALVERIFY op OP_CHECKSIG
-  def redeemSecretOrDelay(delayedKey: Bytes, keyIfSecretKnown: Bytes, relTimeout: Int, hashOfSecret: Bytes) = new ScriptBuilder op
-    OP_HASH160 data ripemd160(hashOfSecret) op OP_EQUAL op OP_IF data keyIfSecretKnown op OP_ELSE number relTimeout op
+  def redeemSecretOrDelay(delayedKey: Bytes, keyIfSecretKnown: Bytes, relTimeout: Int, revHash: Bytes) = new ScriptBuilder op
+    OP_HASH160 data ripemd160(revHash) op OP_EQUAL op OP_IF data keyIfSecretKnown op OP_ELSE number relTimeout op
     OP_NOP3 /* OP_CSV */ op OP_DROP data delayedKey op OP_ENDIF op OP_CHECKSIG
 
-  def makeAnchorTx(ourCommitPub: ECKey, theirCommitPub: ECKey,
-                   amount: Long): (Transaction, Int) = ???
+  def makeAnchorTx(ourParams: OurChannelParams, theirCommitKey: ECKey): Anchor = ???
 
   def makeFinalTx(inputs: Seq[TransactionInput], ourFinalKey: ECKey, theirFinalKey: ECKey, amountUs: Long,
                   amountThem: Long, fee: Long): (Transaction, proto.close_signature) = ???
@@ -85,16 +85,16 @@ object Scripts {
     // Calculate how much each side gets after applying a fee
     val goodHtlcs = spec.htlcs.filter(_.add.amount_msat >= MIN_AMOUNT_MSAT).toList
     val feeMsat = (338 + 32 * goodHtlcs.size) * spec.feeRate / 2000 * 2000
-    val (amtUsMsat, amtThemMsat) = applyFees(feeMsat, spec)
+    val (amountUsMsat, amountThemMsat) = applyFees(feeMsat, spec)
 
     // Create templates for us, them and for in-flight HTLCs
     val htlcTemplates = for (htlc <- goodHtlcs) yield HtlcTemplate(htlc, ourFinalKey, theirFinalKey, theirDelay, revHash)
-    val theirTemplate = P2WSHTemplate(Coin valueOf amtUsMsat / 1000, ourFinalKey, theirFinalKey, theirDelay, revHash)
-    val ourTemplate = P2WPKHTemplate(Coin valueOf amtThemMsat / 1000, theirFinalKey)
+    val theirTemplate = P2WSHTemplate(Coin valueOf amountUsMsat / 1000, ourFinalKey, theirFinalKey, theirDelay, revHash)
+    val ourTemplate = P2WPKHTemplate(Coin valueOf amountThemMsat / 1000, theirFinalKey)
 
     // TxTemplate allows us to spend our tx and spend from spent commit tx
-    val theirTemplateList = if (amtThemMsat >= MIN_AMOUNT_MSAT) theirTemplate :: Nil else Nil
-    val ourTemplateList = if (amtUsMsat >= MIN_AMOUNT_MSAT) ourTemplate :: Nil else Nil
+    val theirTemplateList = if (amountThemMsat >= MIN_AMOUNT_MSAT) List(theirTemplate) else Nil
+    val ourTemplateList = if (amountUsMsat >= MIN_AMOUNT_MSAT) List(ourTemplate) else Nil
     TxTemplate(ourTemplateList, theirTemplateList, htlcTemplates)
   }
 
@@ -128,16 +128,16 @@ trait OutputTemplate {
   val amount: Coin
 }
 
-case class HtlcTemplate(htlc: Htlc, ourKey: ECKey, theirKey: ECKey, delay: Int, revHash: Bytes) extends OutputTemplate {
-  def incoming = scriptPubKeyHtlcReceive(ourKey, theirKey, locktime2Blocks(htlc.add.expiry), delay, sha2Bytes(htlc.add.r_hash), revHash)
-  def outgoing = scriptPubKeyHtlcSend(ourKey, theirKey, locktime2Blocks(htlc.add.expiry), delay, sha2Bytes(htlc.add.r_hash), revHash)
+case class HtlcTemplate(htlc: Htlc, ourKey: ECKey, theirKey: ECKey, csvTimeout: Int, revHash: Bytes) extends OutputTemplate {
+  def incoming = scriptPubKeyHtlcReceive(ourKey, theirKey, locktime2Blocks(htlc.add.expiry), csvTimeout, sha2Bytes(htlc.add.r_hash), revHash)
+  def outgoing = scriptPubKeyHtlcSend(ourKey, theirKey, locktime2Blocks(htlc.add.expiry), csvTimeout, sha2Bytes(htlc.add.r_hash), revHash)
   lazy val txOut = new TransactionOutput(app.params, null, amount, pay2wsh(redeemScript).build.getProgram)
   lazy val redeemScript = if (htlc.incoming) incoming.build else outgoing.build
   lazy val amount = Coin valueOf htlc.add.amount_msat / 1000
 }
 
-case class P2WSHTemplate(amount: Coin, ourFinalKey: ECKey, theirFinalKey: ECKey, theirDelay: Int, revHash: Bytes) extends OutputTemplate {
-  lazy val redeemScript = redeemSecretOrDelay(delayedKey = ourFinalKey.getPubKey, theirFinalKey.getPubKey, theirDelay, revHash).build
+case class P2WSHTemplate(amount: Coin, ourFinalKey: ECKey, theirFinalKey: ECKey, csvTimeout: Int, revHash: Bytes) extends OutputTemplate {
+  lazy val redeemScript = redeemSecretOrDelay(delayedKey = ourFinalKey.getPubKey, theirFinalKey.getPubKey, csvTimeout, revHash).build
   lazy val txOut = new TransactionOutput(app.params, null, amount, pay2wsh(redeemScript).build.getProgram)
 }
 
@@ -149,5 +149,7 @@ case class P2WPKHTemplate(amount: Coin, key: ECKey) extends OutputTemplate {
 case class TxTemplate(ourOut: Templates, theirOut: Templates, htlcOuts: Templates) {
   def ordredOutputs = (ourOut ::: theirOut ::: htlcOuts).map(_.txOut) sortWith isLessThan
   def weHaveAnOutput = ourOut.nonEmpty || htlcOuts.nonEmpty
-  def tx(inputs: TransactionInput*) = ???
+
+  def makeTx(prevCommitTx: Transaction): Transaction = ???
+  def makeTx(anchorInput: TransactionInput): Transaction = ???
 }

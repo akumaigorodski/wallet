@@ -3,8 +3,9 @@ package com.btcontract.wallet.lightning
 import com.btcontract.wallet.Utils.Bytes
 import crypto.ShaChain.HashesWithLastIndex
 import crypto.ShaChain
+import org.bitcoinj.core.Utils.HEX
 import collection.JavaConverters.asScalaBufferConverter
-import org.bitcoinj.core.{TransactionOutput, Transaction, ECKey}
+import org.bitcoinj.core.{Sha256Hash, TransactionOutput, Transaction, ECKey}
 import com.softwaremill.quicklens._
 import Tools._
 
@@ -18,18 +19,26 @@ trait ChannelData {
 
 // We won't fund an anchor so we're waiting for it's specs from counterparty
 case class WaitForAnchor(ourParams: OurChannelParams, theirParams: TheirChannelParams,
-                         theirRevocationHash: Bytes, theirNextRevocationHash: Bytes) extends ChannelData
+                         theirRevocationHash: proto.sha256_hash, theirNextRevocationHash: proto.sha256_hash) extends ChannelData
 
 // We will fund and anchor and we're waiting for a first commit sig from counterparty
-case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChannelParams, anchorTx: Transaction,
-                            anchorIndex: Int, theirCommit: TheirCommit, theirNextRevocationHash: Bytes) extends ChannelData
+case class WaitForCommitSig(ourParams: OurChannelParams, theirParams: TheirChannelParams, anchor: Anchor,
+                            theirCommit: TheirCommit, theirNextRevocationHash: proto.sha256_hash) extends ChannelData
 
 // We're waiting for local confirmations + counterparty's acknoledgment before we can move on
-case class WaitForConfirms(commits: Commitments, blockHash: Option[Bytes], depthOk: Boolean) extends ChannelData { me =>
-  def withBlock(complete: proto.open_complete) = me.modify(_.blockHash) setTo Some(Tools sha2Bytes complete.blockid)
-}
+case class WaitForConfirms(commits: Commitments, theyConfirmed: Boolean, depthOk: Boolean) extends ChannelData
+
+// The channel is closing, tx may be re-broadcasted
+case class WaitForUniclose(commit: OurCommit) extends ChannelData
 
 // STATIC CHANNEL PARAMETERS
+
+case class Anchor(tx: Transaction, idx: Int) {
+  val hash = Sha256Hash twiceOf tx.unsafeBitcoinSerialize
+  val id = HEX encode hash.getReversedBytes
+  val value = output.getValue.value
+  def output = tx getOutput idx
+}
 
 case class TheirChannelParams(delay: Int, commitPubKey: ECKey, finalPubKey: ECKey, minDepth: Int, initialFeeRate: Long)
 case class OurChannelParams(delay: Int, anchorAmount: Option[Long], commitPrivKey: ECKey, finalPrivKey: ECKey, minDepth: Int,
@@ -40,8 +49,7 @@ case class OurChannelParams(delay: Int, anchorAmount: Option[Long], commitPrivKe
 
   def toOpenProto(anchorOfferProto: proto.open_channel.anchor_offer) = new proto.open_channel(blocks2Locktime(delay),
     Tools bytes2Sha ShaChain.revIndexFromSeed(shaSeed, 0), Tools bytes2Sha ShaChain.revIndexFromSeed(shaSeed, 1),
-    bytes2ProtoPubkey(commitPrivKey.getPubKey), bytes2ProtoPubkey(finalPrivKey.getPubKey),
-    anchorOfferProto, minDepth, initialFeeRate)
+    ecKey2Proto(commitPubKey), ecKey2Proto(finalPubKey), anchorOfferProto, minDepth, initialFeeRate)
 }
 
 // CURRENT CHANNEL STATE
@@ -103,7 +111,7 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Lon
 case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelParams, ourChanges: OurChanges, theirChanges: TheirChanges,
                        ourCommit: OurCommit, theirCommit: TheirCommit, theirNextCommitInfo: Either[TheirCommit, proto.sha256_hash],
                        anchorOutput: TransactionOutput, anchorId: String, theirPreimages: HashesWithLastIndex = (None, Map.empty),
-                       started: Long = System.currentTimeMillis, shutdownStarted: Option[Long] = None) extends ChannelData { me =>
+                       start: Long = System.currentTimeMillis, shutdown: Option[Long] = None) extends ChannelData { me =>
 
   def addOurProposal(proposal: proto.pkt) = me.modify(_.ourChanges.proposed).using(_ :+ proposal)
   def addTheirProposal(proposal: proto.pkt) = me.modify(_.theirChanges.proposed).using(_ :+ proposal)

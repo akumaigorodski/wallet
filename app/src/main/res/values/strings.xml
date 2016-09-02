@@ -22,7 +22,7 @@
     <string name="sets_rescan">Rescan blockchain</string>
 
     <string name="password_new">New password</string>
-    <string name="password_old">Wallet password</string>
+    <string name="password_old">Current password</string>
     <string name="password_wrong">Wrong wallet password</string>
     <string name="password_too_short">Password is too short</string>
 

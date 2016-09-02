@@ -22,7 +22,7 @@
     <string name="sets_mnemonic">Посмотреть мнемо-код</string>
 
     <string name="password_new">Новый пароль</string>
-    <string name="password_old">Пароль кошелька</string>
+    <string name="password_old">Текущий пароль</string>
     <string name="password_wrong">Введен неверный пароль</string>
     <string name="password_too_short">Пароль слишком короткий</string>
 

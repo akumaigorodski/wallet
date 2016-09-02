@@ -58,7 +58,7 @@ extends StateMachine[AuthState]('WaitForSesKey :: Nil, null) {
       val encryptor = Encryptor(new AeadChacha20(sendingKey), 0)
 
       // Create my authenticate in return for theirs
-      val pubKey = Tools bytes2ProtoPubkey app.LNData.idKey.getPubKey
+      val pubKey = Tools ecKey2Proto app.LNData.idKey
       val sig = Tools ts2Signature app.LNData.idKey.sign(Sha256Hash twiceOf theirSesPubKey)
       val authPkt = toPkt(new proto.authenticate.Builder node_id pubKey session_sig sig).encode
       become(SessionData(theirSesPubKey, respond(authPkt, encryptor), decryptor), 'WaitForAuth)

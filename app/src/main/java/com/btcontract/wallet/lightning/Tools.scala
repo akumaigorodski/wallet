@@ -21,8 +21,8 @@ object Tools { me =>
   def has(value: Any) = value != null
   def humanIdentity(key: ECKey) = key.getPublicKeyAsHex grouped 5 mkString "\u0020"
   def decodeSignature(bts: Bytes) = TransactionSignature.decodeFromBitcoin(bts, true, true)
-  val pre2HashProto = sha2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
-  val r2HashProto = rval2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha
+  val pre2HashProto = sha2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha // For preimage
+  val r2HashProto = rval2Bytes _ andThen Sha256Hash.hash andThen bytes2Sha // For r-value
   val bytes2bs = (bytes: Bytes) => ByteString.of(bytes, 0, bytes.length)
 
   // Bloom filter for incoming Requests and Responses
@@ -64,19 +64,15 @@ object Tools { me =>
   }
 
   // Shared secret for secp256k1
-  def ecdh(pub: Bytes, priv: Bytes) = {
-    val ecSpec = ECNamedCurveTable getParameterSpec "secp256k1"
-    val pubPoint = ecSpec.getCurve decodePoint pub
-    val bigPriv = new BigInteger(1, priv)
-
-    val mult = pubPoint.multiply(bigPriv).normalize
-    val prefix = if (mult.getYCoord.toBigInteger testBit 0) 0x03 else 0x02
-    val x = mult.getXCoord.toBigInteger.toByteArray.takeRight(32)
-    Sha256Hash.hash(prefix.toByte +: x)
+  def ecdh(pub: Bytes, priv: Bytes) = new BigInteger(1, priv) match { case bigPriv =>
+    val mult = ECNamedCurveTable.getParameterSpec("secp256k1").getCurve.decodePoint(pub).multiply(bigPriv).normalize
+    val yCoordPrefix = if (mult.getYCoord.toBigInteger testBit 0) 0x03.toByte else 0x02.toByte
+    val xCoordSuffix = mult.getXCoord.toBigInteger.toByteArray takeRight 32
+    Sha256Hash.hash(yCoordPrefix +: xCoordSuffix)
   }
 
   def proto2ECKey(message: proto.bitcoin_pubkey) = ECKey fromPublicOnly message.key.toByteArray
-  def bytes2ProtoPubkey(bytes: Bytes) = new proto.bitcoin_pubkey(me bytes2bs bytes)
+  def ecKey2Proto(key: ECKey) = new proto.bitcoin_pubkey(me bytes2bs key.getPubKey)
   def locktime2Blocks(locktime: proto.locktime) = locktime.blocks.toInt
   def blocks2Locktime(num: Int) = new proto.locktime(null, num)
 

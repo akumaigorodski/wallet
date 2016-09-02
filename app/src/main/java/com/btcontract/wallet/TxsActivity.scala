@@ -138,10 +138,9 @@ class TxsActivity extends InfoActivity with HumanTimeDisplay { me =>
       }
 
       // Wire up general listeners
-      app.kit.wallet addTransactionConfidenceEventListener tracker
-      app.kit.wallet addCoinsReceivedEventListener tracker
       app.kit.wallet addCoinsSentEventListener tracker
-
+      app.kit.wallet addCoinsReceivedEventListener tracker
+      app.kit.wallet addTransactionConfidenceEventListener tracker
       app.kit.peerGroup addBlocksDownloadedEventListener new CatchTracker
       app.kit.peerGroup addDisconnectedEventListener constListener
       app.kit.peerGroup addConnectedEventListener constListener
@@ -149,14 +148,13 @@ class TxsActivity extends InfoActivity with HumanTimeDisplay { me =>
   }
 
   override def onDestroy = wrap(super.onDestroy) {
-    app.kit.wallet removeReorganizeEventListener transactionsTracker
-    app.kit.wallet removeTransactionConfidenceEventListener transactionsTracker
-    app.kit.wallet removeCoinsReceivedEventListener transactionsTracker
+    app.kit.wallet removeCoinsSentEventListener tracker
+    app.kit.wallet removeCoinsReceivedEventListener tracker
     app.kit.wallet removeCoinsSentEventListener transactionsTracker
     app.kit.wallet removeTransactionConfidenceEventListener tracker
-    app.kit.wallet removeCoinsReceivedEventListener tracker
-    app.kit.wallet removeCoinsSentEventListener tracker
-
+    app.kit.wallet removeReorganizeEventListener transactionsTracker
+    app.kit.wallet removeCoinsReceivedEventListener transactionsTracker
+    app.kit.wallet removeTransactionConfidenceEventListener transactionsTracker
     app.kit.peerGroup removeDisconnectedEventListener constListener
     app.kit.peerGroup removeConnectedEventListener constListener
   }

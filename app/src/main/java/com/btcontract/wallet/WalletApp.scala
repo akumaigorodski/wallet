@@ -94,7 +94,7 @@ class WalletApp extends Application {
 
   object LNData {
     private var seed: DeterministicSeed = null
-    lazy val db = new OpenHelper(app, "lightning.db", 1)
+    lazy val db = new OpenHelper(app, "ln.db", 1)
     lazy val idKey = Tools.derive(new ChildNumber(0) :: Nil, 101)(seed)
     def setSeed(newSeed: DeterministicSeed) = seed = newSeed
     def seedAbsent = seed == null
