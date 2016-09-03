@@ -1,20 +1,25 @@
 package com.btcontract.wallet.lightning
 
 import Tools._
+import StateMachine._
 import org.bitcoinj.core._
 import com.softwaremill.quicklens._
+
 import com.btcontract.wallet.Utils.{Bytes, app}
 import org.bitcoinj.core.Utils.HEX
 import crypto.ShaChain
 
 
+object StateMachine {
+  val NOT_ENOUGH_FUNDS = "Not enough funds"
+  val CHANNEL_CANCELLED = "Channed has been cancelled"
+  val UNKNOWN_HTLC_PREIMAGE = "Unknown Htlc preimage"
+  val UNKNOWN_HTLC_ID = "Unknown Htlc id"
+}
+
 abstract class Channel(state: List[Symbol], data: ChannelData)
 extends StateMachine[ChannelData](state, data) { me =>
 
-  val NOT_ENOUGH_FUNDS = "Not enough funds"
-  val CHANNEL_CANCELLED = "Channed cancelled"
-  val UNKNOWN_HTLC_PREIMAGE = "Unknown Htlc preimage"
-  val UNKNOWN_HTLC_ID = "Unknown Htlc id"
   val authHandler: AuthHandler
 
   def doProcess(change: Any) = (data, change, state.head) match {
@@ -114,9 +119,11 @@ extends StateMachine[ChannelData](state, data) { me =>
       else respondStay(completeProto, wfc.modify(_.depthOk) setTo true)
 
     // They have confirmed an achor, maybe wait for us
-    case (wfc @ WaitForConfirms(commits, false, depthOk), pkt: proto.pkt,
+    case (wfc @ WaitForConfirms(commits, false, depthOkAlready), pkt: proto.pkt,
       'OpenWaitOurAnchorConfirm | 'OpenWaitTheirAnchorConfirm) if has(pkt.open_complete) =>
-      if (depthOk) become(commits, 'Normal) else stayWith(wfc.modify(_.theyConfirmed) setTo true)
+
+      if (depthOkAlready) become(commits, 'Normal)
+      else stayWith(wfc.modify(_.theyConfirmed) setTo true)
 
     // Uniclose a channel with their anchor
     case (_, 'Uniclose, 'OpenWaitTheirAnchorConfirm) =>
@@ -132,21 +139,21 @@ extends StateMachine[ChannelData](state, data) { me =>
       become(null, 'Closed)
 
     // They have uniclosed a channel with our anchor broadcasted
-    case (w: WaitForConfirms, pkt: proto.pkt, 'OpenWaitOurAnchorConfirm)
-      if has(pkt.error) => become(WaitForUniclose(w.commits.ourCommit), 'Uniclose)
+    case (w: WaitForConfirms, pkt: proto.pkt, 'OpenWaitOurAnchorConfirm) if has(pkt.error) =>
+      become(WaitForUniclose(w.commits.ourCommit), 'Uniclose)
 
     // MAIN LOOP
 
-    // Our available funds as seen by them, including all pending changes
-    // Send a brand new HTLC to them if we have enough funds and not in a clearing process
+    // Send a brand new HTLC to them if we have enough funds
     case (c: Commitments, htlc: proto.update_add_htlc, 'Normal) if c.shutdown.isEmpty =>
+      // Our available funds with pending changes as seen by them, pending incoming htlcs can't be spent
       val amount = c.theirCommit.spec.reduce(c.theirChanges.acked, c.ourChanges.proposed).amountThemMsat
       if (htlc.amount_msat > amount) throw new RuntimeException(NOT_ENOUGH_FUNDS)
-      else respondStay(newData = c addOurProposal toPkt(htlc), toThem = htlc)
+      else respondStay(data = c addOurProposal toPkt(htlc), toThem = htlc)
 
     // Receive a brand new HTLC from them if they have enough funds
-    // Their available funds as seen by us, including all pending changes
     case (c: Commitments, pkt: proto.pkt, 'Normal) if has(pkt.update_add_htlc) =>
+      // Their available funds with pending changes as seen by us, pending incoming htlcs can't be spent
       val amount = c.ourCommit.spec.reduce(c.ourChanges.acked, c.theirChanges.proposed).amountThemMsat
       if (pkt.update_add_htlc.amount_msat > amount) uniclose(c.ourCommit, NOT_ENOUGH_FUNDS)
       else stayWith(c addTheirProposal pkt)
@@ -155,7 +162,7 @@ extends StateMachine[ChannelData](state, data) { me =>
     case (c: Commitments, fulfill: proto.update_fulfill_htlc, 'Normal) =>
       c.ourCommit.spec.htlcs collectFirst { case htlc if htlc.add.id == fulfill.id => htlc.add } match {
         case Some(add) if r2HashProto(fulfill.r) != add.r_hash => throw new RuntimeException(UNKNOWN_HTLC_PREIMAGE)
-        case Some(add) => respondStay(newData = c addOurProposal toPkt(fulfill), toThem = fulfill)
+        case Some(add) => respondStay(data = c addOurProposal toPkt(fulfill), toThem = fulfill)
         case None => throw new RuntimeException(UNKNOWN_HTLC_ID)
       }
 
@@ -170,7 +177,7 @@ extends StateMachine[ChannelData](state, data) { me =>
     // Send an HTLC fail for an HTLC they have sent to me before
     case (c: Commitments, fail: proto.update_fail_htlc, 'Normal) =>
       val theirHtlcFound = c.ourCommit.spec.htlcs.exists(_.add.id == fail.id)
-      if (theirHtlcFound) respondStay(newData = c addOurProposal toPkt(fail), toThem = fail)
+      if (theirHtlcFound) respondStay(data = c addOurProposal toPkt(fail), toThem = fail)
       else throw new RuntimeException(UNKNOWN_HTLC_ID)
 
     // Receive a fail for an HTLC I've sent to them before
@@ -181,16 +188,16 @@ extends StateMachine[ChannelData](state, data) { me =>
 
   // HELPERS
 
-  def respondStay(toThem: Any, newData: ChannelData) = {
+  def respondStay(toThem: Any, data: ChannelData) = {
     // Method for responding and staying in a current state
     authHandler process toThem
-    stayWith(newData)
+    stayWith(data)
   }
 
-  def respondBecome(toThem: Any, newData: ChannelData, newState: Symbol) = {
-    // Method for responding and transitioning into a new state
+  def respondBecome(toThem: Any, data: ChannelData, state: Symbol) = {
+    // Method for responding and transitioning into a new state if success
     authHandler process toThem
-    become(newData, newState)
+    become(data, state)
   }
 
   def uniclose(commit: OurCommit, reasonWhy: String) = {

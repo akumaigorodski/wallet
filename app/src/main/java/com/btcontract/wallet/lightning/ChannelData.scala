@@ -113,6 +113,8 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
                        anchorOutput: TransactionOutput, anchorId: String, theirPreimages: HashesWithLastIndex = (None, Map.empty),
                        start: Long = System.currentTimeMillis, shutdown: Option[Long] = None) extends ChannelData { me =>
 
+  def weHaveChanges = theirChanges.acked.nonEmpty | ourChanges.proposed.nonEmpty
+  def theyHaveChanges = ourChanges.acked.nonEmpty | theirChanges.proposed.nonEmpty
   def addOurProposal(proposal: proto.pkt) = me.modify(_.ourChanges.proposed).using(_ :+ proposal)
   def addTheirProposal(proposal: proto.pkt) = me.modify(_.theirChanges.proposed).using(_ :+ proposal)
   def finalFee = anchorOutput.getValue.subtract(ourCommit.publishableTx.getOutputSum) div 4 multiply 2
