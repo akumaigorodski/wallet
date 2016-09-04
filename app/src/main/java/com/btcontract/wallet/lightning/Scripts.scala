@@ -148,8 +148,8 @@ case class P2WPKHTemplate(amount: Coin, key: ECKey) extends OutputTemplate {
 
 case class TxTemplate(ourOut: Templates, theirOut: Templates, htlcOuts: Templates) {
   def ordredOutputs = (ourOut ::: theirOut ::: htlcOuts).map(_.txOut) sortWith isLessThan
-  def weHaveAnOutput = ourOut.nonEmpty || htlcOuts.nonEmpty
+  def hasAnOutput = ourOut.nonEmpty | htlcOuts.nonEmpty
 
   def makeTx(prevCommitTx: Transaction): Transaction = ???
-  def makeTx(anchorInput: TransactionInput): Transaction = ???
+  def makeTx(anchorInput: TransactionInput*): Transaction = ???
 }

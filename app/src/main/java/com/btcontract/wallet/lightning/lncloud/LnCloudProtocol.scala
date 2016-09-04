@@ -10,7 +10,7 @@ import org.bitcoinj.core.Utils.HEX
 import java.math.BigInteger
 
 
-object ThundercloudProtocol extends DefaultJsonProtocol { me =>
+object LnCloudProtocol extends DefaultJsonProtocol { me =>
   implicit object BigIntegerFormat extends JsonFormat[BigInteger] {
     def write(bigInteger: BigInteger) = JsString apply bigInteger.toString
     def read(json: JsValue) = new BigInteger(me jsonToString json)

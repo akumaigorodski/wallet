@@ -2,7 +2,7 @@ package com.btcontract.wallet.lightning
 
 import org.bitcoinj.core._
 import rx.lang.scala.{Observable => Obs, Subscription}
-import com.btcontract.wallet.helper.{RichCursor, Insight}
+import com.btcontract.wallet.helper.{Tx, RichCursor, Insight}
 import scala.concurrent.duration.DurationInt
 import com.btcontract.wallet.Utils.app
 import org.bitcoinj.core.Utils.HEX
@@ -21,13 +21,16 @@ object ChainData {
     Subscription(app.kit.wallet removeTransactionConfidenceEventListener lst)
   }
 
-  def watchTxDepthRemote(c: Commitments) = Insight.txs(app.getTo(c.anchorOutput).toString)
-    .filter(_.txid == c.anchorId).map(_.confirmations).repeatWhen(_ delay 2.minute)
+  def watchTxDepthRemote(c: Commitments) =
+    Insight.txs(app.getTo(c.anchorOutput).toString)
+      .filter(_.txid == c.anchorId).map(_.confirmations)
+      .repeatWhen(_ delay 2.minute)
 
-  // This should return revoked or unrevoked commit tx id
-  def watchAnchorSpentRemote(c: Commitments) = Insight.txs(app.getTo(c.anchorOutput).toString)
-    .filter(tx => tx.vin.exists(_.txid == c.anchorId) && tx.confirmations > 0).map(_.txid)
-    .repeatWhen(_ delay 20.minute)
+  def watchAnchorSpentRemote(c: Commitments) = {
+    // This should return revoked or unrevoked commit tx id
+    def isSpend(tx: Tx) = tx.vin.exists(_.txid == c.anchorId) && tx.confirmations > 0
+    Insight.txs(app.getTo(c.anchorOutput).toString).filter(isSpend).map(_.txid).repeatWhen(_ delay 20.minute)
+  }
 
   // Punishment for revoked commit tx
   def saveTx(id: String, tx: Transaction) = {

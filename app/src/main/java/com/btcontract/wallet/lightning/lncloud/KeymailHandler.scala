@@ -1,7 +1,7 @@
 package com.btcontract.wallet.lightning.lncloud
 
 import spray.json._
-import ThundercloudProtocol._
+import LnCloudProtocol._
 import com.btcontract.wallet.helper.JsonHttpUtils._
 
 

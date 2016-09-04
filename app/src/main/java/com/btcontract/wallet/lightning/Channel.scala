@@ -6,6 +6,7 @@ import org.bitcoinj.core._
 import com.softwaremill.quicklens._
 
 import com.btcontract.wallet.Utils.{Bytes, app}
+import collection.JavaConverters.asScalaBufferConverter
 import org.bitcoinj.core.Utils.HEX
 import crypto.ShaChain
 
@@ -184,6 +185,28 @@ extends StateMachine[ChannelData](state, data) { me =>
     case (c: Commitments, pkt: proto.pkt, 'Normal) if has(pkt.update_fail_htlc) =>
       val ourHtlcFound = c.theirCommit.spec.htlcs.exists(_.add.id == pkt.update_fail_htlc.id)
       if (ourHtlcFound) stayWith(c addTheirProposal pkt) else uniclose(c.ourCommit, UNKNOWN_HTLC_ID)
+
+    // Send a commitment transaction to them
+    case (c: Commitments, 'Sign, 'Normal) if c.weHaveChanges =>
+      c.theirNextCommitInfo.right foreach { case theirNextRevocHash =>
+        // Our vision of their commit now includes all our + their acked changes
+        val spec1 = c.theirCommit.spec.reduce(c.theirChanges.acked, c.ourChanges.proposed)
+        val theirCommitTxTemplate = c.makeTheirTxTemplate(Tools sha2Bytes theirNextRevocHash, spec1)
+        val theirCommitTx = theirCommitTxTemplate.makeTx(c.ourCommit.publishableTx.getInputs.asScala:_*)
+        val ourSig = Scripts.signTx(c.ourParams, c.theirParams, theirCommitTx, c.anchorOutput.getValue.value)
+        // We do not actually sign a tranaction if *they* have no outputs and as such do not get paid
+        val conditionalSignature = if (theirCommitTxTemplate.hasAnOutput) ourSig else null
+        val ourSigProto = new proto.update_commit(conditionalSignature)
+
+        // Our proposed changes are now signed
+        // Their acked are included in our commit and removed
+        // Save our vision of their next commit and await revocation
+        val theirChanges1 = c.theirChanges.copy(acked = Vector.empty)
+        val nextCommit = TheirCommit(c.theirCommit.index + 1, spec1, theirNextRevocHash)
+        val ourChanges1 = c.ourChanges.copy(proposed = Vector.empty, signed = c.ourChanges.proposed)
+        val c1 = c.copy(theirNextCommitInfo = Left(nextCommit), theirChanges = theirChanges1, ourChanges = ourChanges1)
+        respondStay(data = c1, toThem = ourSigProto)
+      }
   }
 
   // HELPERS
