@@ -5,6 +5,8 @@ import Scripts._
 import org.bitcoinj.core._
 import org.bitcoinj.script.ScriptOpCodes._
 import org.bitcoinj.script.{ScriptBuilder, Script}
+
+import collection.JavaConverters.asScalaBufferConverter
 import collection.JavaConverters.seqAsJavaListConverter
 import com.btcontract.wallet.helper.Digests.ripemd160
 import org.bitcoinj.script.Script.ALL_VERIFY_FLAGS
@@ -56,27 +58,21 @@ object Scripts {
   def makeFinalTx(inputs: Seq[TransactionInput], ourFinalKey: ECKey, theirFinalKey: ECKey, amountUs: Long,
                   amountThem: Long, fee: Long): (Transaction, proto.close_signature) = ???
 
-  // When they publish a revoked tx, we can spend it easily
-  def makePunishTx(theirTxTemplate: TxTemplate, revPreimage: Bytes,
-                   privateKey: ECKey): Transaction = ???
-
   def signTx(ourParams: OurChannelParams, theirParams: TheirChannelParams,
              tx: Transaction, anchorAmount: Long): proto.signature = ???
 
   def addTheirSigAndSignTx(ourParams: OurChannelParams, theirParams: TheirChannelParams, tx: Transaction,
                            anchorAmount: Long, theirSig: proto.signature): Transaction = ???
 
-  def claimReceivedHtlc(theirSpentTx: Transaction, htlcTemplate: HtlcTemplate,
-                        paymentPreimage: Bytes, privateKey: ECKey): Transaction = ???
+  def claimRevokedCommitTx(theirTxTemplate: TxTemplate, revPreimage: Bytes, privateKey: ECKey): (Transaction, Transaction) = ???
 
-  def claimSentHtlc(theirSpentTx: Transaction, htlcTemplate: HtlcTemplate,
-                    privateKey: ECKey): Transaction = ???
+  def claimReceivedHtlc(theirSpentTx: Transaction, htlcTemplate: HtlcTemplate, paymentPreimage: Bytes, privateKey: ECKey): Transaction = ???
 
-  def claimReceivedHtlcs(theirSpentTx: Transaction, theirTxTemplate: TxTemplate,
-                         commitments: Commitments): Seq[Transaction] = ???
+  def claimSentHtlc(theirSpentTx: Transaction, htlcTemplate: HtlcTemplate, privateKey: ECKey): Transaction = ???
 
-  def claimSentHtlcs(theirSpentTx: Transaction, theirTxTemplate: TxTemplate,
-                     commitments: Commitments): Seq[Transaction] = ???
+  def claimReceivedHtlcs(theirSpentTx: Transaction, theirTxTemplate: TxTemplate, commitments: Commitments): Seq[Transaction] = ???
+
+  def claimSentHtlcs(theirSpentTx: Transaction, theirTxTemplate: TxTemplate, commitments: Commitments): Seq[Transaction] = ???
 
   // We may need this for both our and their commitments
   def makeCommitTxTemplate(ourFinalKey: ECKey, theirFinalKey: ECKey, theirDelay: Int,
@@ -99,8 +95,9 @@ object Scripts {
   }
 
   // Commit tx tries to spend an anchor output
-  def brokenTxCheck(tx: Transaction, anchorOutput: TransactionOutput) = Try {
-    tx.getInput(0).getScriptSig.correctlySpends(tx, 0, anchorOutput.getScriptPubKey, ALL_VERIFY_FLAGS)
+  def brokenTxCheck(tx: Transaction, outsToSpend: TransactionOutput*) = Try {
+    for (Tuple2(out, idx) <- outsToSpend.zipWithIndex) tx.getInput(idx).getScriptSig
+      .correctlySpends(tx, idx, out.getScriptPubKey, ALL_VERIFY_FLAGS)
   }
 
   def applyFees(fee: Long, spec: CommitmentSpec) =
@@ -148,8 +145,7 @@ case class P2WPKHTemplate(amount: Coin, key: ECKey) extends OutputTemplate {
 
 case class TxTemplate(ourOut: Templates, theirOut: Templates, htlcOuts: Templates) {
   def ordredOutputs = (ourOut ::: theirOut ::: htlcOuts).map(_.txOut) sortWith isLessThan
-  def hasAnOutput = ourOut.nonEmpty | htlcOuts.nonEmpty
-
-  def makeTx(prevCommitTx: Transaction): Transaction = ???
+  def makeTx(prevCommitTx: Transaction): Transaction = makeTx(prevCommitTx.getInputs.asScala:_*)
   def makeTx(anchorInput: TransactionInput*): Transaction = ???
+  def hasAnOutput = ourOut.nonEmpty | htlcOuts.nonEmpty
 }

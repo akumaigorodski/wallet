@@ -21,21 +21,19 @@ object ChainData {
     Subscription(app.kit.wallet removeTransactionConfidenceEventListener lst)
   }
 
-  def watchTxDepthRemote(c: Commitments) =
-    Insight.txs(app.getTo(c.anchorOutput).toString)
-      .filter(_.txid == c.anchorId).map(_.confirmations)
-      .repeatWhen(_ delay 2.minute)
+  // When anchor is launched we need to constantly check if it's confirmed yet
+  def watchTxDepthRemote(c: Commitments) = Insight.txs(app.getTo(c.anchorOutput).toString)
+    .filter(_.txid == c.anchorId).map(_.confirmations).repeatWhen(_ delay 2.minute)
 
-  def watchAnchorSpentRemote(c: Commitments) = {
-    // This should return revoked or unrevoked commit tx id
-    def isSpend(tx: Tx) = tx.vin.exists(_.txid == c.anchorId) && tx.confirmations > 0
-    Insight.txs(app.getTo(c.anchorOutput).toString).filter(isSpend).map(_.txid).repeatWhen(_ delay 20.minute)
-  }
+  // When channel is active we can't solely rely on server so we check anchor from time to time
+  def watchAnchorSpentRemote(c: Commitments) = Insight.txs(app.getTo(c.anchorOutput).toString)
+    .filter(tx => tx.vin.exists(_.txid == c.anchorId) && tx.confirmations > 0)
+    .map(_.txid).repeatWhen(_ delay 20.minute)
 
   // Punishment for revoked commit tx
-  def saveTx(id: String, tx: Transaction) = {
-    val punishTx = HEX encode tx.bitcoinSerialize
-    app.LNData.db.change(Commits.newSql, id, punishTx)
+  def saveTx(id: String, tx: Transaction) = util.Try {
+    val serializedPunishTx = HEX encode tx.bitcoinSerialize
+    app.LNData.db.change(Commits.newSql, id, serializedPunishTx)
   }
 
   def getTx(parentCommitTxId: String) = {

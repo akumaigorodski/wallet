@@ -14,7 +14,13 @@ import crypto.ShaChain
 object StateMachine {
   val NOT_ENOUGH_FUNDS = "Not enough funds"
   val CHANNEL_CANCELLED = "Channed has been cancelled"
+  val COMMIT_SIG_MISMATCH = "Commit signature mismatch"
+  val COMMIT_SIG_EXPECTED = "Commit signature expected"
+  val COMMIT_SIG_UNEXPECTED = "Commit signature unexpected"
+  val INVALID_COMMIT_PREIMAGE = "Invalid commit preimage"
+  val INVALID_CLOSING_SIG = "Invalid closing signature"
   val UNKNOWN_HTLC_PREIMAGE = "Unknown Htlc preimage"
+  val INVALID_PUNISH_TX = "Invalid punish tx"
   val UNKNOWN_HTLC_ID = "Unknown Htlc id"
 }
 
@@ -186,30 +192,118 @@ extends StateMachine[ChannelData](state, data) { me =>
       val ourHtlcFound = c.theirCommit.spec.htlcs.exists(_.add.id == pkt.update_fail_htlc.id)
       if (ourHtlcFound) stayWith(c addTheirProposal pkt) else uniclose(c.ourCommit, UNKNOWN_HTLC_ID)
 
-    // Send a commitment transaction to them
+    // SEND COMMIT: ourChanges[proposed -> signed], theirChanges[acked -> x]
+    // RECEIVE COMMIT: ourChanges[acked -> x], theirChanges[proposed -> acked]
+    // RECEIVE REVOCATION: ourChanges[signed -> acked]
+
+    // Send a commit tx signature to them
     case (c: Commitments, 'Sign, 'Normal) if c.weHaveChanges =>
-      c.theirNextCommitInfo.right foreach { case theirNextRevocHash =>
+      c.theirNextCommitInfo.right foreach { theirNextRevocHash =>
         // Our vision of their commit now includes all our + their acked changes
         val spec1 = c.theirCommit.spec.reduce(c.theirChanges.acked, c.ourChanges.proposed)
-        val theirCommitTxTemplate = c.makeTheirTxTemplate(Tools sha2Bytes theirNextRevocHash, spec1)
-        val theirCommitTx = theirCommitTxTemplate.makeTx(c.ourCommit.publishableTx.getInputs.asScala:_*)
-        val ourSig = Scripts.signTx(c.ourParams, c.theirParams, theirCommitTx, c.anchorOutput.getValue.value)
-        // We do not actually sign a tranaction if *they* have no outputs and as such do not get paid
-        val conditionalSignature = if (theirCommitTxTemplate.hasAnOutput) ourSig else null
+        val theirNextCommitTemplate = c.makeTheirTxTemplate(Tools sha2Bytes theirNextRevocHash, spec1)
+        val theirNextTx = theirNextCommitTemplate makeTx c.ourCommit.publishableTx
+
+        // But we do not provide a signature if *they* have no outputs and as such do not get paid
+        val ourSig = Scripts.signTx(c.ourParams, c.theirParams, theirNextTx, c.anchorOutput.getValue.value)
+        val conditionalSignature = if (theirNextCommitTemplate.hasAnOutput) ourSig else null
         val ourSigProto = new proto.update_commit(conditionalSignature)
 
         // Our proposed changes are now signed
         // Their acked are included in our commit and removed
-        // Save our vision of their next commit and await revocation
+        // Save *our* vision of their next commit and await revoc
         val theirChanges1 = c.theirChanges.copy(acked = Vector.empty)
-        val nextCommit = TheirCommit(c.theirCommit.index + 1, spec1, theirNextRevocHash)
+        val theirCommit1 = TheirCommit(c.theirCommit.index + 1, spec1, theirNextRevocHash)
         val ourChanges1 = c.ourChanges.copy(proposed = Vector.empty, signed = c.ourChanges.proposed)
-        val c1 = c.copy(theirNextCommitInfo = Left(nextCommit), theirChanges = theirChanges1, ourChanges = ourChanges1)
+        val c1 = c.copy(theirChanges = theirChanges1, theirNextCommitInfo = Left(theirCommit1), ourChanges = ourChanges1)
         respondStay(data = c1, toThem = ourSigProto)
+      }
+
+    // Receive a commit tx signature
+    // Automatically respond with revocation
+    case (c: Commitments, pkt: proto.pkt, 'Normal)
+      if has(pkt.update_commit) & c.theyHaveChanges =>
+      // We will send a revocation preimage for our previous commit
+      val currentPreimage = ShaChain.revIndexFromSeed(c.ourParams.shaSeed, c.ourCommit.index)
+      val ourNextRevHash1 = Sha256Hash hash ShaChain.revIndexFromSeed(c.ourParams.shaSeed, c.ourCommit.index + 1)
+      val ourNextRevHash2 = Sha256Hash hash ShaChain.revIndexFromSeed(c.ourParams.shaSeed, c.ourCommit.index + 2)
+
+      // They send a sig of *their* vision of *our* commit so we reconstruct it
+      val spec1 = c.ourCommit.spec.reduce(c.ourChanges.acked, c.theirChanges.proposed)
+      val ourCommitTxTemplate = c.makeOurTxTemplate(ourRevHash = ourNextRevHash1, spec1)
+      val ourCommitTx = ourCommitTxTemplate.makeTx(prevCommitTx = c.ourCommit.publishableTx)
+      val ourCommit1 = c.ourCommit.copy(c.ourCommit.index + 1, spec1, ourCommitTx)
+
+      pkt.update_commit.sig match {
+        case sig: proto.signature if ourCommitTxTemplate.hasAnOutput =>
+          val ourSignedTx = Scripts.addTheirSigAndSignTx(c.ourParams, c.theirParams,
+            ourCommitTx, c.anchorOutput.getValue.value, pkt.update_commit.sig)
+
+          // Once we have constructed our commit tx, we have to check their signature
+          if (Scripts.brokenTxCheck(ourSignedTx, c.anchorOutput).isFailure) uniclose(c.ourCommit, COMMIT_SIG_MISMATCH)
+          else commitReceived(c, ourCommit1, ourSignedTx, currentPreimage, nextRevHash = ourNextRevHash2)
+
+        case sig: proto.signature => uniclose(c.ourCommit, COMMIT_SIG_UNEXPECTED)
+        case null if ourCommitTxTemplate.hasAnOutput => uniclose(c.ourCommit, COMMIT_SIG_EXPECTED)
+        case null => commitReceived(c, ourCommit1, ourCommitTx, currentPreimage, ourNextRevHash2)
+      }
+
+    // Uniclose if supplied preimage does not match their current revocation hash
+    case (c: Commitments, pkt: proto.pkt, 'Normal) if has(pkt.update_revocation) =>
+      uniclose(c.ourCommit, INVALID_COMMIT_PREIMAGE)
+
+    // Receive a revocation in return for our commit
+    case (c: Commitments, pkt: proto.pkt, 'Normal) if has(pkt.update_revocation)
+      && c.theirCommit.preimageMatch(pkt.update_revocation.revocation_preimage) =>
+
+      c.theirNextCommitInfo.left foreach { theirNextCommit =>
+        val preimageBytes = Tools sha2Bytes pkt.update_revocation.revocation_preimage
+        // We have their revocation preimage for *our* view of their *current* commit, so we make it a revoked one
+        val theirCommitTemplate = c.makeTheirTxTemplate(Tools sha2Bytes c.theirCommit.revocationHash, c.theirCommit.spec)
+        val (theirCommitTx, ourPunishTx) = Scripts.claimRevokedCommitTx(theirCommitTemplate, preimageBytes, c.ourParams.finalPrivKey)
+        ChainData.saveTx(theirCommitTx.getHashAsString, ourPunishTx)
+
+        // We update *our* view of *their* current commit with a new one because an old one is revoked now
+        if (Scripts.brokenTxCheck(ourPunishTx, theirCommitTx.getOutputs.asScala:_*).isFailure) uniclose(c.ourCommit, INVALID_PUNISH_TX)
+        else me stayWith c.copy(ourChanges = c.ourChanges.copy(signed = Vector.empty, acked = c.ourChanges.acked ++ c.ourChanges.signed),
+          theirNextCommitInfo = Right(pkt.update_revocation.next_revocation_hash), theirCommit = theirNextCommit)
+      }
+
+    // SHUTDOWN AND UNICLOSE
+
+    // Received an error while in Normal state, have to uniclose
+    case (c: Commitments, pkt: proto.pkt, 'Normal) if has(pkt.error) =>
+      become(WaitForUniclose(c.ourCommit), 'Uniclose)
+
+    // Send or receive a bilateral shutdown request
+    case (c: Commitments, 'Shutdown, 'Normal) if c.shutdown.isEmpty => me shutdownRespond c
+    case (c: Commitments, pkt: proto.pkt, 'Normal) if has(pkt.close_shutdown) => me shutdownRespond c
+
+    // Fee negotiations
+    case (c: Commitments, pkt: proto.pkt, 'Normal)
+      if has(pkt.close_signature) && c.shutdown.isDefined =>
+
+      c checkCloseSig pkt.close_signature match {
+        case (true, tx, ourSig) if pkt.close_signature.close_fee == ourSig.close_fee => become(WaitForShutdown(tx), 'Finalize)
+        case (true, _, ourSig) => authHandler process c.makeNewFeeFinalSig(pkt.close_signature.close_fee, ourSig.close_fee)
+        case _ => uniclose(c.ourCommit, INVALID_CLOSING_SIG)
       }
   }
 
   // HELPERS
+
+  def commitReceived(c: Commitments, ourCommit: OurCommit, tx: Transaction, preimage: Bytes, nextRevHash: Bytes): Unit = {
+    val theirChanges1 = c.theirChanges.copy(proposed = Vector.empty, acked = c.theirChanges.acked ++ c.theirChanges.proposed)
+    val c1 = c.copy(ourCommit = ourCommit, ourChanges = c.ourChanges.copy(acked = Vector.empty), theirChanges = theirChanges1)
+    val revProto = new proto.update_revocation(Tools bytes2Sha preimage, Tools bytes2Sha nextRevHash)
+    respondStay(data = c1, toThem = revProto)
+  }
+
+  def shutdownRespond(c: Commitments) = {
+    val ourScriptPubKey = Scripts.pay2wpkh(c.ourParams.finalPubKey).build
+    val message = new proto.close_shutdown(Tools bytes2bs ourScriptPubKey.getProgram)
+    respondStay(data = c.copy(shutdown = Some apply System.currentTimeMillis), toThem = message)
+  }
 
   def respondStay(toThem: Any, data: ChannelData) = {
     // Method for responding and staying in a current state

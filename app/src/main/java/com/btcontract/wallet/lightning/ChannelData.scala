@@ -30,6 +30,7 @@ case class WaitForConfirms(commits: Commitments, theyConfirmed: Boolean, depthOk
 
 // The channel is closing, tx may be re-broadcasted
 case class WaitForUniclose(commit: OurCommit) extends ChannelData
+case class WaitForShutdown(finalTx: Transaction) extends ChannelData
 
 // STATIC CHANNEL PARAMETERS
 
@@ -110,8 +111,8 @@ case class CommitmentSpec(htlcs: Set[Htlc], feeRate: Long, initAmountUsMsat: Lon
 
 case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelParams, ourChanges: OurChanges, theirChanges: TheirChanges,
                        ourCommit: OurCommit, theirCommit: TheirCommit, theirNextCommitInfo: Either[TheirCommit, proto.sha256_hash],
-                       anchorOutput: TransactionOutput, anchorId: String, theirPreimages: HashesWithLastIndex = (None, Map.empty),
-                       start: Long = System.currentTimeMillis, shutdown: Option[Long] = None) extends ChannelData { me =>
+                       anchorOutput: TransactionOutput, anchorId: String, start: Long = System.currentTimeMillis,
+                       shutdown: Option[Long] = None) extends ChannelData { me =>
 
   def weHaveChanges = theirChanges.acked.nonEmpty | ourChanges.proposed.nonEmpty
   def theyHaveChanges = ourChanges.acked.nonEmpty | theirChanges.proposed.nonEmpty
@@ -121,9 +122,9 @@ case class Commitments(ourParams: OurChannelParams, theirParams: TheirChannelPar
 
   // OUR AND THEIR COMMIT TXS
 
-  def makeOurTxTemplate(ourRevHash: Bytes) =
-    Scripts.makeCommitTxTemplate(ourFinalKey = ourParams.finalPubKey,
-      theirParams.finalPubKey, ourParams.delay, ourRevHash, ourCommit.spec)
+  def makeOurTxTemplate(ourRevHash: Bytes, spec: CommitmentSpec) =
+    Scripts.makeCommitTxTemplate(ourParams.finalPubKey, theirParams.finalPubKey,
+      ourParams.delay, ourRevHash, spec)
 
   // spec may come from theirCommit or theirNextCommitInfo
   def makeTheirTxTemplate(theirRevHash: Bytes, spec: CommitmentSpec) =
