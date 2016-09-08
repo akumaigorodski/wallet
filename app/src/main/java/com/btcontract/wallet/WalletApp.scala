@@ -5,14 +5,12 @@ import R.string._
 import org.bitcoinj.core._
 
 import org.bitcoinj.core.listeners.TransactionConfidenceEventListener
-import com.btcontract.wallet.lightning.lncloud.OpenHelper
 import info.guardianproject.netcipher.proxy.OrbotHelper
 import collection.JavaConverters.asScalaBufferConverter
 import com.google.common.util.concurrent.Service.State
 import org.bitcoinj.net.discovery.DnsDiscovery
 import org.bitcoinj.wallet.KeyChain.KeyPurpose
 import org.bitcoinj.wallet.Wallet.BalanceType
-import com.btcontract.wallet.lightning.Tools
 import com.google.protobuf.ByteString
 import android.app.Application
 import android.widget.Toast
@@ -32,7 +30,7 @@ import Context.CLIPBOARD_SERVICE
 
 class WalletApp extends Application {
   lazy val prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
-  lazy val params = org.bitcoinj.params.MainNetParams.get
+  lazy val params = org.bitcoinj.params.TestNet3Params.get
   var walletFile, chainFile: java.io.File = null
   var kit: WalletKit = null
 
@@ -71,13 +69,9 @@ class WalletApp extends Application {
 
   object TransData {
     var value = Option.empty[Any]
-    val LIGHTNING = "lightning:identity"
-    val LNCLOUDSECRET = "lncloud:secret"
 
     def setValue(text: String) = value = Option {
-      if (text startsWith LNCLOUDSECRET) LNCLOUDSECRET :: text.replace(s"$LNCLOUDSECRET:", "") :: Nil
-      else if (text startsWith LIGHTNING) LIGHTNING :: text.replace(s"$LIGHTNING:", "") :: Nil
-      else if (text startsWith "bitcoin") new BitcoinURI(params, text)
+      if (text startsWith "bitcoin") new BitcoinURI(params, text)
       else getTo(text)
     }
 
@@ -89,19 +83,6 @@ class WalletApp extends Application {
       case _: BitcoinURIParseException => err(err_uri)
       case _: ArithmeticException => err(err_neg)
       case _: Throwable => err(err_general)
-    }
-  }
-
-  object LNData {
-    private var seed: DeterministicSeed = null
-    lazy val db = new OpenHelper(app, "ln.db", 1)
-    lazy val idKey = Tools.derive(new ChildNumber(0) :: Nil, 101)(seed)
-    def setSeed(newSeed: DeterministicSeed) = seed = newSeed
-    def seedAbsent = seed == null
-
-    def newCommitKey = {
-      val riseInt = (System.currentTimeMillis / 1000 / 60).toInt
-      Tools.derive(new ChildNumber(riseInt) :: Nil, 100)(seed)
     }
   }
 
@@ -120,7 +101,7 @@ class WalletApp extends Application {
     }
 
     def useCheckPoints(time: Long) = {
-      val pts = getAssets open "checkpoints.txt"
+      val pts = getAssets open "checkpoints-testnet.txt"
       CheckpointManager.checkpoint(params, pts, store, time)
     }
 
