@@ -160,7 +160,7 @@ abstract class InfoActivity extends AnimatorActivity { me =>
 
   // Top bar reactions
   def goQRScan(top: View) = me goTo classOf[ScanActivity]
-  def goLNWallet(top: View) = me goTo classOf[LNTxsActivity]
+  def goLNWallet(top: View) = ??? //me goTo classOf[LNTxsActivity]
 
   def doReceive(top: View) = {
     val payData = PayData(app.kit.currentAddress, nullFail)
