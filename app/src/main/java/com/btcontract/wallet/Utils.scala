@@ -7,9 +7,9 @@ import android.view._
 import android.widget._
 import org.bitcoinj.core._
 import org.bitcoinj.core.listeners._
-
 import android.widget.RadioGroup.OnCheckedChangeListener
 import info.hoang8f.android.segmented.SegmentedGroup
+
 import concurrent.ExecutionContext.Implicits.global
 import android.view.inputmethod.InputMethodManager
 import org.bitcoinj.crypto.KeyCrypterException
@@ -18,26 +18,26 @@ import org.bitcoinj.store.SPVBlockStore
 import android.app.AlertDialog.Builder
 import android.util.DisplayMetrics
 import org.bitcoinj.uri.BitcoinURI
+
 import scala.concurrent.Future
-
 import org.bitcoinj.wallet.{SendRequest, Wallet}
-import org.bitcoinj.wallet.Wallet.{ExceededMaxTransactionSize, CouldNotAdjustDownwards}
+import org.bitcoinj.wallet.Wallet.{CouldNotAdjustDownwards, ExceededMaxTransactionSize}
 import org.bitcoinj.wallet.listeners.{WalletChangeEventListener, WalletCoinsReceivedEventListener, WalletCoinsSentEventListener}
-
-import R.id.{amtInSat, amtInBtc, amtInBit, typeUSD, typeEUR, typeCNY}
-import com.btcontract.wallet.helper.{RandomGenerator, Fee, FiatRates}
-import android.text.method.{LinkMovementMethod, DigitsKeyListener}
-import android.content.{DialogInterface, Context, Intent}
-import java.text.{DecimalFormatSymbols, DecimalFormat}
+import R.id.{amtInBit, amtInBtc, amtInSat, typeCNY, typeEUR, typeUSD}
+import com.btcontract.wallet.helper.{Fee, FiatRates, RandomGenerator}
+import android.text.method.{DigitsKeyListener, LinkMovementMethod}
+import android.content.{Context, DialogInterface, Intent}
+import java.text.{DecimalFormat, DecimalFormatSymbols}
 import java.util.{Locale, Timer, TimerTask}
-import scala.util.{Failure, Success, Try}
-import android.app.{Dialog, Activity}
 
+import scala.util.{Failure, Success, Try}
+import android.app.{Activity, Dialog}
 import DialogInterface.BUTTON_POSITIVE
 import ViewGroup.LayoutParams.WRAP_CONTENT
 import InputMethodManager.HIDE_NOT_ALWAYS
 import Transaction.MIN_NONDUST_OUTPUT
 import Context.INPUT_METHOD_SERVICE
+import android.view.WindowManager.LayoutParams
 
 
 object Utils { me =>
@@ -265,11 +265,13 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     }
 
     viewMnemonic setOnClickListener new OnClickListener {
-      def onClick(viewMnemonicView: View) = rm(dialog)(openForm)
-
-      def openForm: Unit = passPlus(mkSetsForm) { password =>
-        def mk(txt: String) = new Builder(me) setCustomTitle getString(sets_noscreen) setMessage txt
-        <(Mnemonic decrypt password, _ => wrong)(walletSeed => mk(Mnemonic text walletSeed).show)
+      def onClick(viewMnemonic: View) = rm(dialog)(openForm)
+      def openForm: Unit = passPlus(back = mkSetsForm) { password =>
+        <(fun = Mnemonic decrypt password, _ => wrong) { walletSeed =>
+          getWindow.setFlags(LayoutParams.FLAG_SECURE, LayoutParams.FLAG_SECURE)
+          val bld = new Builder(me) setCustomTitle getString(sets_noscreen)
+          bld.setMessage(Mnemonic text walletSeed).show
+        }
       }
     }
 

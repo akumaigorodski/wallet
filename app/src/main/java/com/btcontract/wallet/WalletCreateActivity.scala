@@ -5,12 +5,12 @@ import org.bitcoinj.store.SPVBlockStore
 import android.text.TextUtils
 import android.os.Bundle
 import android.view.View
-
-import android.widget.{EditText, Button, TextView, LinearLayout}
+import android.widget.{Button, EditText, LinearLayout, TextView}
 import org.bitcoinj.wallet.{DeterministicSeed, Wallet}
-import org.bitcoinj.core.{PeerGroup, BlockChain}
-import Utils.{wrap, app}
+import org.bitcoinj.core.{BlockChain, PeerGroup}
+import Utils.{app, wrap}
 import R.string._
+import android.view.WindowManager.LayoutParams
 
 
 object Mnemonic {
@@ -39,6 +39,7 @@ class WalletCreateActivity extends TimerActivity with ViewSwitch { me =>
     super.onCreate(savedState)
     setContentView(R.layout.activity_create)
     info setMovementMethod LinkMovementMethod.getInstance
+    getWindow.setFlags(LayoutParams.FLAG_SECURE, LayoutParams.FLAG_SECURE)
 
     createPass addTextChangedListener new TextChangedWatcher {
       override def onTextChanged(s: CharSequence, st: Int, n: Int, af: Int) = {
