@@ -7,9 +7,9 @@ android {
 
     defaultConfig {
         applicationId "com.btcontract.wallet"
-        versionName "1.073"
+        versionName "1.074"
         minSdkVersion 15
-        versionCode 45
+        versionCode 46
     }
 
     buildTypes {
@@ -29,7 +29,7 @@ dependencies {
     compile 'com.madgag.spongycastle:pg:1.54.0.0'
     compile 'com.madgag.spongycastle:prov:1.54.0.0'
     compile 'com.madgag.spongycastle:pkix:1.54.0.0'
-    compile 'org.bitcoinj:bitcoinj-core:0.14.3'
+    compile 'org.bitcoinj:bitcoinj-core:0.14.4'
 
     // UI and layout
     compile 'org.apmem.tools:layouts:1.10@aar'
