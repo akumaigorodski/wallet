@@ -17,6 +17,8 @@
     <string name="wallet_empty">Wallet is empty</string>
     <string name="wallet_password">Password</string>
 
+    <string name="encrypted_yes"><![CDATA[<small>Wallet is encrypted</small><br><br>]]></string>
+    <string name="encrypted_no"><![CDATA[<small>Wallet is not encrypted</small><br><br>]]></string>
     <string name="sets_pass_change">Change wallet password</string>
     <string name="sets_mnemonic">View mnemonic code</string>
     <string name="sets_rescan">Rescan blockchain</string>

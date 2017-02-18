@@ -224,8 +224,11 @@ abstract class InfoActivity extends AnimatorActivity { me =>
   }
 
   def mkSetsForm: Unit = {
+    val walletState = if (app.kit.wallet.isEncrypted) encrypted_yes else encrypted_no
+    val headerText = getString(walletState) + getString(read_settings)
+
     val form = getLayoutInflater.inflate(R.layout.frag_settings, null)
-    val dialog = mkForm(me negBld dialog_back, Html fromHtml getString(read_settings), form)
+    val dialog = mkForm(me negBld dialog_back, Html fromHtml headerText, form)
     val rescanWallet = form.findViewById(R.id.rescanWallet).asInstanceOf[Button]
     val viewMnemonic = form.findViewById(R.id.viewMnemonic).asInstanceOf[Button]
     val changePass = form.findViewById(R.id.changePass).asInstanceOf[Button]
