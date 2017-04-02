@@ -3,7 +3,7 @@ package com.btcontract.wallet
 import Utils._
 import R.string._
 import org.bitcoinj.core._
-
+import org.bitcoinj.wallet.listeners._
 import org.bitcoinj.core.listeners.TransactionConfidenceEventListener
 import info.guardianproject.netcipher.proxy.OrbotHelper
 import collection.JavaConverters.asScalaBufferConverter
@@ -11,18 +11,17 @@ import com.google.common.util.concurrent.Service.State
 import org.bitcoinj.net.discovery.DnsDiscovery
 import org.bitcoinj.wallet.KeyChain.KeyPurpose
 import org.bitcoinj.wallet.Wallet.BalanceType
+import org.bitcoinj.crypto.KeyCrypterScrypt
 import com.google.protobuf.ByteString
 import android.app.Application
 import android.widget.Toast
 import java.io.File
 
-import org.bitcoinj.wallet.listeners.{WalletChangeEventListener, WalletCoinsSentEventListener, WalletCoinsReceivedEventListener}
 import org.bitcoinj.uri.{BitcoinURIParseException, OptionalFieldValidationException}
-import org.bitcoinj.uri.{RequiredFieldValidationException, BitcoinURI}
-import org.bitcoinj.wallet.{DeterministicSeed, Wallet, Protos}
+import org.bitcoinj.uri.{BitcoinURI, RequiredFieldValidationException}
 import android.content.{ClipData, ClipboardManager, Context}
-import org.bitcoinj.crypto.{ChildNumber, KeyCrypterScrypt}
-import State.{STARTING, RUNNING}
+import org.bitcoinj.wallet.{Protos, Wallet}
+import State.{RUNNING, STARTING}
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import Context.CLIPBOARD_SERVICE

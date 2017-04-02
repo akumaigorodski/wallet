@@ -1,6 +1,11 @@
 <resources>
     <string name="lang">eng</string>
 
+    <!-- emergency mode -->
+    <string name="emerge_report">Show error report</string>
+    <string name="emerge_title">Something went wrong</string>
+    <string name="emerge_subtitle">Emergency mode</string>
+
     <!-- app wide -->
     <string name="or">or</string>
     <string name="app_name">Bitcoin</string>

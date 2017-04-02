@@ -45,6 +45,9 @@
         <activity android:launchMode="singleTask" android:name="TxsActivity"
             android:screenOrientation="portrait" android:theme="@style/LiteBar"/>
 
+        <activity android:launchMode="singleTask" android:name="EmergencyActivity"
+            android:screenOrientation="portrait" android:theme="@style/LiteBar"/>
+
         <activity android:launchMode="singleTask" android:name="ScanActivity"
             android:screenOrientation="portrait" android:theme="@style/NoBar"/>
 

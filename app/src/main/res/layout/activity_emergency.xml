@@ -1,0 +1,16 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
+    android:layout_height="fill_parent" android:layout_width="fill_parent">
+
+    <Button
+        style="@style/MarginInfo"
+        android:onClick="emergeReport"
+        android:layout_width="wrap_content"
+        android:text="@string/emerge_report"/>
+
+    <Button
+        style="@style/Info"
+        android:onClick="emergeMnemonic"
+        android:layout_width="wrap_content"
+        android:text="@string/sets_mnemonic"/>
+
+</LinearLayout>

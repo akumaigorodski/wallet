@@ -1,6 +1,11 @@
 <resources>
     <string name="lang">rus</string>
 
+    <!-- emergency mode -->
+    <string name="emerge_report">Показать отчет об ошибке</string>
+    <string name="emerge_title">Что-то пошло не так</string>
+    <string name="emerge_subtitle">Аварийный режим</string>
+
     <!-- app wide -->
     <string name="or">или</string>
     <string name="app_name">Bitcoin</string>

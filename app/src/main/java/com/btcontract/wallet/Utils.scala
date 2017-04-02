@@ -37,6 +37,7 @@ import ViewGroup.LayoutParams.WRAP_CONTENT
 import InputMethodManager.HIDE_NOT_ALWAYS
 import Transaction.MIN_NONDUST_OUTPUT
 import Context.INPUT_METHOD_SERVICE
+import android.os.Bundle
 import android.view.WindowManager.LayoutParams
 
 
@@ -361,6 +362,11 @@ abstract class TimerActivity extends Activity { me =>
   lazy val metrics = new DisplayMetrics match { case metrix =>
     getWindowManager.getDefaultDisplay getMetrics metrix
     metrix
+  }
+
+  override def onCreate(savedInstanceState: Bundle): Unit = {
+    Thread setDefaultUncaughtExceptionHandler new UncaughtHandler(me)
+    super.onCreate(savedInstanceState)
   }
 
   // Timer utilities and toast
