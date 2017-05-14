@@ -15,7 +15,7 @@
     <string name="greetings">Welcome to Simple Bitcoin Wallet!\nPlease read a <a href='https://btcontract.com'>wallet manual</a> first</string>
     <string name="password_info">Without password you are in constant danger of losing your money. Please pick one which is at least 6 characters long</string>
     <string name="fee_live"><![CDATA[<small>%1$s fee per kB<br><font color=#999999><small>Faster transaction confirmation</small></font></small>]]></string>
-    <string name="fee_default"><![CDATA[<small>%1$s fee per kB<br><font color=#999999><small>Confirmation may take hours</small></font></small>]]></string>
+    <string name="fee_default"><![CDATA[<small>%1$s fee per kB<br><font color=#999999><small>Confirmation may take days!</small></font></small>]]></string>
     <string name="wallet_restore">Restore Wallet From Code</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="wallet_create">Create New Wallet</string>

@@ -14,7 +14,7 @@
     <string name="greetings">Биткоин-кошелек\n<a href='https://btcontract.com'>инструкция пользователя</a></string>
     <string name="sets_rescan_ok">Сейчас кошелек закроется, а повторное сканирование начнется при следующем открытии</string>
     <string name="password_info">Пожалуйста, подберите хороший пароль длиной не менее 6 символов, желательно содержащий в себе заглавные буквы и цифры</string>
-    <string name="fee_default"><![CDATA[<small>%1$s комиссия за кБ<br><font color=#999999><small>Подтверждение может занять часы</small></font></small>]]></string>
+    <string name="fee_default"><![CDATA[<small>%1$s комиссия за кБ<br><font color=#999999><small>Подтверждение может занять дни!</small></font></small>]]></string>
     <string name="fee_live"><![CDATA[<small>%1$s комиссия за кБ<br><font color=#999999><small>Быстрое подтверждение транзакции</small></font></small>]]></string>
     <string name="wallet_restore">Восстановить кошелек из кода</string>
     <string name="copied_to_clipboard">Скопировано в буфер</string>

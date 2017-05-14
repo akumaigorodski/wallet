@@ -9,7 +9,7 @@ android {
         applicationId "com.btcontract.wallet"
         versionName "1.075"
         minSdkVersion 15
-        versionCode 48
+        versionCode 49
     }
 
     buildTypes {
