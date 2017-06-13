@@ -24,6 +24,7 @@
 
     <string name="sets_pass_change">Змінити пароль гаманця</string>
     <string name="sets_rescan">Пересканувати блокчейн</string>
+    <string name="sets_export_file">Експортувати файл гаманця</string>
     <string name="sets_mnemonic">Подивитись мнемо-код</string>
 
     <string name="password_new">Новий пароль</string>

@@ -19,6 +19,7 @@
 
     <string name="sets_pass_change">Cambiar contraseña de monedero</string>
     <string name="sets_rescan">Reescanear cadena de bloque</string>
+    <string name="sets_export_file">Exportar archivo de cartera</string>
     <string name="sets_mnemonic">Ver código nemotécnico</string>
 
     <string name="password_new">Nueva contraseña</string>

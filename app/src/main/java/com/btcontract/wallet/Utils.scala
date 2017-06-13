@@ -2,9 +2,11 @@ package com.btcontract.wallet
 
 import Utils._
 import R.string._
+import android.net.Uri
 import android.text._
 import android.view._
 import android.widget._
+import com.google.common.io.Files
 import org.bitcoinj.core._
 import org.bitcoinj.core.listeners._
 import android.widget.RadioGroup.OnCheckedChangeListener
@@ -232,7 +234,17 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     val dialog = mkForm(me negBld dialog_back, Html fromHtml headerText, form)
     val rescanWallet = form.findViewById(R.id.rescanWallet).asInstanceOf[Button]
     val viewMnemonic = form.findViewById(R.id.viewMnemonic).asInstanceOf[Button]
+    val exportWallet = form.findViewById(R.id.exportWallet).asInstanceOf[Button]
     val changePass = form.findViewById(R.id.changePass).asInstanceOf[Button]
+
+    exportWallet setOnClickListener new OnClickListener {
+      def onClick(restoreWalletView: View) = rm(dialog) {
+        val destinationFile = FileOps shell s"$appName.wallet"
+        Files.write(Files toByteArray app.walletFile, destinationFile)
+        val share = new Intent setAction Intent.ACTION_SEND setType "text/plain"
+        me startActivity share.putExtra(Intent.EXTRA_STREAM, Uri fromFile destinationFile)
+      }
+    }
 
     rescanWallet setOnClickListener new OnClickListener {
       def onClick(restoreWalletView: View) = rm(dialog)(openForm)

@@ -16,4 +16,9 @@
         android:id="@+id/rescanWallet"
         android:text="@string/sets_rescan"/>
 
+    <Button
+        style="@style/TransButton"
+        android:id="@+id/exportWallet"
+        android:text="@string/sets_export_file"/>
+
 </LinearLayout>

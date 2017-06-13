@@ -24,6 +24,7 @@
 
     <string name="sets_pass_change">Сменить пароль кошелька</string>
     <string name="sets_rescan">Пересканировать блокчейн</string>
+    <string name="sets_export_file">Экспорт файла кошелька</string>
     <string name="sets_mnemonic">Посмотреть мнемо-код</string>
 
     <string name="password_new">Новый пароль</string>

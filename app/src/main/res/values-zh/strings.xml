@@ -19,6 +19,7 @@
 
     <string name="sets_pass_change">更改钱包密码</string>
     <string name="sets_rescan">重扫描数据块链</string>
+    <string name="sets_export_file">导出钱包文件</string>
     <string name="sets_mnemonic">查看助记代码</string>
 
     <string name="password_old">当前钱包密码</string>

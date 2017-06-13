@@ -19,6 +19,7 @@
 
     <string name="sets_pass_change">ウォレットのパスワードを変更</string>
     <string name="sets_mnemonic">回復ニーモニックを表示</string>
+    <string name="sets_export_file">ウォレットファイルのエクスポート</string>
     <string name="sets_rescan">ブロックチェーンを再スキャン</string>
 
     <string name="password_new">新しいパスワード</string>
