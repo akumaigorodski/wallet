@@ -15,6 +15,7 @@ import java.util.List;
 
 
 public abstract class AbstractKit extends AbstractIdleService {
+    public static final String FULL_NODE_ADDRESS = "full_node_address";
     public static final String BTC_DENOMINATION = "btc_denomination";
     public static final String CURRENCY = "chosen_currency";
 

@@ -6,6 +6,12 @@
     <string name="emerge_title">Something went wrong</string>
     <string name="emerge_subtitle">Emergency mode</string>
 
+    <!-- trusted node -->
+    <string name="trusted_node_add">Add Trusted Node</string>
+    <string name="trusted_node_details"><![CDATA[Add Trusted Node<br><br><small>This is an advanced and optional feature. Please read <a href=https://btcontract.com/#trusted-node>wallet manual</a> to find out why you might need it</small>]]></string>
+    <string name="trusted_node_address">Bitcoin Node address:port\n<small>for example 192.168.0.1:8333</small></string>
+    <string name="trusted_node_added">Bitcoin Node address has been saved</string>
+
     <!-- app wide -->
     <string name="or">or</string>
     <string name="app_name">Bitcoin</string>

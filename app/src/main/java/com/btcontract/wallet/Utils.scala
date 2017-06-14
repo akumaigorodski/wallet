@@ -5,6 +5,7 @@ import R.string._
 import android.net.Uri
 import android.text._
 import android.view._
+import android.webkit.URLUtil
 import android.widget._
 import com.google.common.io.Files
 import org.bitcoinj.core._
@@ -148,6 +149,7 @@ abstract class InfoActivity extends AnimatorActivity { me =>
   // Activity lifecycle listeners management
   override def onOptionsItemSelected(m: MenuItem) = runAnd(true) {
     if (m.getItemId == R.id.actionRequestPayment) mkRequestForm
+    else if (m.getItemId == R.id.actionTrustedNode) mkTrustedNodeForm
     else if (m.getItemId == R.id.actionSettings) mkSetsForm
     else if (m.getItemId == R.id.actionBuyCoins) {
 
@@ -155,6 +157,20 @@ abstract class InfoActivity extends AnimatorActivity { me =>
       val msg = Html fromHtml getString(buy_info).format(payTo)
       mkForm(negBld(dialog_cancel), getString(action_buy), msg)
     }
+  }
+
+  def mkTrustedNodeForm = {
+    val title = Html fromHtml getString(trusted_node_details)
+    val (passAsk, address) = generatePasswordPromptView(textType, trusted_node_address)
+    mkForm(mkChoiceDialog(check(address.getText.toString), none, dialog_ok, dialog_back), title, passAsk)
+    address setText app.prefs.getString(AbstractKit.FULL_NODE_ADDRESS, "")
+
+    def check(address: String) =
+      if (address.isEmpty) app.prefs.edit.remove(AbstractKit.FULL_NODE_ADDRESS).commit
+      else {
+        app.prefs.edit.putString(AbstractKit.FULL_NODE_ADDRESS, address).commit
+        toast(trusted_node_added)
+      }
   }
 
   override def onCreateOptionsMenu(menu: Menu) = runAnd(true) {

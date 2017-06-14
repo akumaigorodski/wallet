@@ -2,6 +2,7 @@ package com.btcontract.wallet
 
 import Utils._
 import R.string._
+import com.google.common.net.InetAddresses
 import org.bitcoinj.core._
 import org.bitcoinj.wallet.listeners._
 import org.bitcoinj.core.listeners.TransactionConfidenceEventListener
@@ -25,6 +26,8 @@ import State.{RUNNING, STARTING}
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import Context.CLIPBOARD_SERVICE
+
+import scala.util.Try
 
 
 class WalletApp extends Application {
@@ -104,17 +107,23 @@ class WalletApp extends Application {
       CheckpointManager.checkpoint(params, pts, store, time)
     }
 
+    def addTrustedNode = Try {
+      val Array(host, port) = app.prefs.getString(AbstractKit.FULL_NODE_ADDRESS, "").split(":")
+      peerGroup addAddress new PeerAddress(app.params, InetAddresses forString host, port.toInt)
+    }
+
     def setupAndStartDownload = {
       wallet.allowSpendingUnconfirmedTransactions
       wallet addCoinsSentEventListener Vibr.generalTracker
       wallet addCoinsReceivedEventListener Vibr.generalTracker
       wallet addTransactionConfidenceEventListener Vibr.generalTracker
-      peerGroup addPeerDiscovery new DnsDiscovery(params)
-      peerGroup.setUserAgent(appName, "1.074")
+      //peerGroup addPeerDiscovery new DnsDiscovery(params)
+      peerGroup.setUserAgent(appName, "1.075")
       peerGroup setDownloadTxDependencies 0
       peerGroup setPingIntervalMsec 10000
       peerGroup setMaxConnections 10
       peerGroup addWallet wallet
+      addTrustedNode
       startDownload
       autoSaveOn
     }

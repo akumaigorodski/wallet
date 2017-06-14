@@ -11,6 +11,11 @@
         android:showAsAction="never"/>
 
     <item
+        android:title="@string/trusted_node_add"
+        android:id="@+id/actionTrustedNode"
+        android:showAsAction="never"/>
+
+    <item
         android:title="@string/action_settings"
         android:id="@+id/actionSettings"
         android:showAsAction="never"/>
