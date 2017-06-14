@@ -117,7 +117,7 @@ class WalletApp extends Application {
       wallet addCoinsSentEventListener Vibr.generalTracker
       wallet addCoinsReceivedEventListener Vibr.generalTracker
       wallet addTransactionConfidenceEventListener Vibr.generalTracker
-      //peerGroup addPeerDiscovery new DnsDiscovery(params)
+      peerGroup addPeerDiscovery new DnsDiscovery(params)
       peerGroup.setUserAgent(appName, "1.075")
       peerGroup setDownloadTxDependencies 0
       peerGroup setPingIntervalMsec 10000

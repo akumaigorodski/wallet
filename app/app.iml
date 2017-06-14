@@ -134,6 +134,5 @@
     <orderEntry type="library" exported="" name="android-segmented-1.0.5" level="project" />
     <orderEntry type="library" exported="" name="nv-websocket-client-1.27" level="project" />
     <orderEntry type="library" exported="" name="android-android-23" level="project" />
-    <orderEntry type="library" name="scala-sdk-2.11.8" level="application" />
   </component>
 </module>
