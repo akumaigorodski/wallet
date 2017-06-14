@@ -89,6 +89,8 @@
 
         <Button
             style="@style/Info"
+            android:visibility="gone"
+            android:id="@+id/walletOpener"
             android:onClick="openWallet"
             android:layout_marginTop="25dp"
             android:text="@string/wallet_open"

@@ -24,6 +24,9 @@ class WalletCreateActivity extends TimerActivity with ViewSwitch { me =>
   lazy val mnemonicText = findViewById(R.id.mnemonicText).asInstanceOf[TextView]
   lazy val walletReady = findViewById(R.id.walletReady).asInstanceOf[TextView]
   lazy val createWallet = findViewById(R.id.createWallet).asInstanceOf[Button]
+
+  lazy val walletOpener = findViewById(R.id.walletOpener).asInstanceOf[Button]
+
   lazy val createPass = findViewById(R.id.createPass).asInstanceOf[EditText]
   lazy val info = findViewById(R.id.mnemonicInfo).asInstanceOf[TextView]
   lazy val spin = findViewById(R.id.createSpin).asInstanceOf[TextView]
@@ -87,6 +90,7 @@ class WalletCreateActivity extends TimerActivity with ViewSwitch { me =>
   def newWallet(view: View) = hideKeys(makeNewWallet)
 
   def revealMnemonic(show: View) = {
+    walletOpener setVisibility View.VISIBLE
     mnemonicText setVisibility View.VISIBLE
     walletReady setText sets_noscreen
     show setVisibility View.GONE
