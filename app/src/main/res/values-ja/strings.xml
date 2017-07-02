@@ -43,7 +43,6 @@
 
     <!-- errors -->
     <string name="err_pass">パスワードが一致しないため、トランザクションに失敗しました。正しいパスワードを入力したことを確認してください</string>
-    <string name="err_low_funds">%1$s がこのウォレットのコインの合計金額を超えたため、トランザクションが失敗しました。資金を追加してもう一度試してください</string>
     <string name="err_empty_shrunk">手続規則に違反して出金の手数料が縮小できないため、トランザクションが失敗しました。資金を追加してもう一度試してください</string>
     <string name="err_transaction_too_large">ビットコインネットワークの処理が大きすぎるため、トランザクションが失敗しました。トランザクションの数を分割して試してください</string>
     <string name="err_different_net">リクエストが異なるネットワークに属するアドレスを含むため失敗しました</string>

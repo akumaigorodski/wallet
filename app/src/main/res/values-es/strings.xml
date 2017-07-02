@@ -43,7 +43,7 @@
 
     <!-- errors -->
     <string name="err_pass">La transacción falló porque la contraseña no coincide. Por favor, asegúrese de que ha escrito la contraseña correcta.</string>
-    <string name="err_low_funds">La transacción falló porque %1$s excede la cantidad total de monedas en este monedero. Por favor, agrege fondos e inténtelo nuevamente.</string>
+    <string name="err_low_funds">La transacción falló debido a que su monto con cargo excede la cantidad actual de monedas en esta cartera por %1$s. Por favor, agrege fondos e inténtelo nuevamente.</string>
     <string name="err_empty_shrunk">La transacción falló porque no se pudo escoger una salida para los cargos sin violar las reglas de protocolo. Por favor, agrege algunos fondos e inténtelo nuevamente.</string>
     <string name="err_transaction_too_large">La transacción falló por que es demasiado grande para que la red de Bitcoin pueda procesarla. Por favor, intente dividirla en transacciones más pequeñas.</string>
     <string name="err_optional_field">Falló porque la solicitud contiene una cantidad malformada que no pudo ser analizada.</string>

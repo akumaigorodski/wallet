@@ -83,8 +83,8 @@ case class CypherFee(medium_fee_per_kb: Long) extends FeeProvider { def fee = me
 case class InsightFee(f3: BigDecimal) extends FeeProvider { def fee = (f3 * 100000000L).toLong }
 
 object Fee { me =>
-  var rate = Coin valueOf 50000L
-  val default = Coin valueOf 25000L
+  var rate = Coin valueOf 100000L
+  val default = Coin valueOf 100000L
 
   implicit val cypherFeeFmt = jsonFormat[Long, CypherFee](CypherFee, "medium_fee_per_kb")
   implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee, "3")

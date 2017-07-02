@@ -56,7 +56,7 @@
 
     <!-- errors -->
     <string name="err_pass">Transaction failed because password did not match. Please make sure you have provided a correct password</string>
-    <string name="err_low_funds">Transaction failed because %1$s exceeds the total amount of coins in this wallet. Please add some funds and then try again</string>
+    <string name="err_low_funds">Transaction failed because it\'s amount with fee exceeds the current amount of coins in this wallet by %1$s. Please add some funds and then try again</string>
     <string name="err_empty_shrunk">Transaction failed because an output could not be shrunken for fees without violating a protocol rules. Please add some funds and then try again</string>
     <string name="err_transaction_too_large">Transaction failed because it is too big for Bitcoin network to process. Please try breaking it into a number of smaller transactions</string>
     <string name="err_different_net">Failed because request contains an address that belongs to a different network</string>

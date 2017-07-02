@@ -43,7 +43,6 @@
 
     <!-- errors -->
     <string name="err_pass">交易失败因为密码不匹配。请确保你提供了正确的密码</string>
-    <string name="err_low_funds">交易失败因为%1$s超过了此钱包中的硬币总额。请存入一些资金然后再试一下。</string>
     <string name="err_empty_shrunk">交易失败因为输出费用无法减少而不违反一个协议规则。所以请存入资金然后再试一次。</string>
     <string name="err_transaction_too_large">交易失败因为太大，比特币网络无法处理。请尝试将其分为几个小些的交易</string>
     <string name="err_optional_field">失败因为请求包含了一个格式不正确的数量导致无法解析。</string>
