@@ -79,7 +79,8 @@
             android:visibility="gone"
             android:textColor="#9999FF"
             android:id="@+id/mnemonicText"
-            android:layout_width="wrap_content"/>
+            android:layout_width="wrap_content"
+            android:textSize="26dp"/>
 
         <TextView
             style="@style/Info"

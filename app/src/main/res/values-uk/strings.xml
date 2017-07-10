@@ -6,6 +6,16 @@
     <string name="emerge_title">Щось пішло не так</string>
     <string name="emerge_subtitle">Аварійний режим</string>
 
+    <!-- developer nodes -->
+    <string name="dev_nodes_use">Підключатися до довірених вузлів</string>
+    <string name="dev_nodes_why"><![CDATA[<small><a href=https://btcontract.com>Информацiя про довiренi вузли</a>]]></string>
+
+    <!-- trusted node -->
+    <string name="trusted_node_add">Додати свій вузол</string>
+    <string name="trusted_node_details"><![CDATA[Додати свій вузол<br><br>Це необов\'язкова опція для просунутих користувачів. Почитайте <a href=https://btcontract.com/#trusted-node>інструкцію</a>, щоб дізнатися навіщо це потрібно]]></string>
+    <string name="trusted_node_address">адреса:порт Bitcoin-вузла\nнаприклад 192.168.0.1:8333</string>
+    <string name="trusted_node_added">Адреса Bitcoin-вузла збережена</string>
+
     <!-- app wide -->
     <string name="or">або</string>
     <string name="app_name">Bitcoin</string>

@@ -6,9 +6,13 @@
     <string name="emerge_title">Что-то пошло не так</string>
     <string name="emerge_subtitle">Аварийный режим</string>
 
+    <!-- developer nodes -->
+    <string name="dev_nodes_use">Подключаться к доверенным узлам</string>
+    <string name="dev_nodes_why"><![CDATA[<small><a href=https://btcontract.com>Информация о доверенных узлах</a>]]></string>
+
     <!-- trusted node -->
-    <string name="trusted_node_add">Добавить доверенный узел</string>
-    <string name="trusted_node_details"><![CDATA[Добавить доверенный узел<br><br>Это необязательная опция для продвинутых пользователей. Почитайте <a href=https://btcontract.com/#trusted-node>инструкцию</a>, чтобы узнать зачем это может быть нужно]]></string>
+    <string name="trusted_node_add">Добавить свой узел</string>
+    <string name="trusted_node_details"><![CDATA[Добавить свой узел<br><br>Это необязательная опция для продвинутых пользователей. Почитайте <a href=https://btcontract.com/#trusted-node>инструкцию</a>, чтобы узнать зачем это может быть нужно]]></string>
     <string name="trusted_node_address">Адрес:порт Биткоин-узла\nнапример 192.168.0.1:8333</string>
     <string name="trusted_node_added">Адрес Биткоин-узла сохранен</string>
 
