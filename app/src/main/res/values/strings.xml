@@ -8,7 +8,7 @@
 
     <!-- developer nodes -->
     <string name="dev_nodes_use">Connect to trusted nodes</string>
-    <string name="dev_nodes_why"><![CDATA[<small><a href=https://btcontract.com>Read more about trusted nodes</a></small>]]></string>
+    <string name="dev_nodes_why"><![CDATA[<small><a href=https://btcontract.com/#trusted-node>Read more about trusted nodes</a></small>]]></string>
 
     <!-- trusted node -->
     <string name="trusted_node_add">Add your own node</string>

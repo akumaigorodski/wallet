@@ -80,23 +80,23 @@ object FiatRates { me =>
 trait FeeProvider { def fee: Long }
 case class BitgoFee(feePerKb: Long) extends FeeProvider { def fee = feePerKb }
 case class CypherFee(medium_fee_per_kb: Long) extends FeeProvider { def fee = medium_fee_per_kb }
-case class InsightFee(f3: BigDecimal) extends FeeProvider { def fee = (f3 * 100000000L).toLong }
+case class InsightFee(f6: BigDecimal) extends FeeProvider { def fee = (f6 * 100000000L).toLong }
 
 object Fee { me =>
-  var rate = Coin valueOf 100000L
-  val default = Coin valueOf 100000L
+  var rate = Coin valueOf 50000L
+  val default = Coin valueOf 50000L
 
   implicit val cypherFeeFmt = jsonFormat[Long, CypherFee](CypherFee, "medium_fee_per_kb")
-  implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee, "3")
+  implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee, "6")
   implicit val bitgoFeeFmt = jsonFormat[Long, BitgoFee](BitgoFee, "feePerKb")
 
   def reloadData = rand nextInt 7 match {
-    case 0 => to[InsightFee](get("https://bitlox.io/api/utils/estimatefee?nbBlocks=3").body)
-    case 1 => to[InsightFee](get(s"https://localbitcoinschain.com/api/utils/estimatefee?nbBlocks=3").body)
-    case 2 => to[InsightFee](get(s"https://search.bitaccess.co/api/utils/estimatefee?nbBlocks=3").body)
-    case 3 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=3").body)
-    case 4 => to[InsightFee](get(s"https://live.coin.space/api/utils/estimatefee?nbBlocks=3").body)
-    case 5 => to[BitgoFee](get("https://www.bitgo.com/api/v1/tx/fee?numBlocks=3").body)
+    case 0 => to[InsightFee](get("https://bitlox.io/api/utils/estimatefee?nbBlocks=6").body)
+    case 1 => to[InsightFee](get(s"https://localbitcoinschain.com/api/utils/estimatefee?nbBlocks=6").body)
+    case 2 => to[InsightFee](get(s"https://search.bitaccess.co/api/utils/estimatefee?nbBlocks=6").body)
+    case 3 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=6").body)
+    case 4 => to[InsightFee](get(s"https://live.coin.space/api/utils/estimatefee?nbBlocks=6").body)
+    case 5 => to[BitgoFee](get("https://www.bitgo.com/api/v1/tx/fee?numBlocks=6").body)
     case _ => to[CypherFee](get("http://api.blockcypher.com/v1/btc/main").body)
   }
 

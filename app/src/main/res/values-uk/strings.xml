@@ -8,7 +8,7 @@
 
     <!-- developer nodes -->
     <string name="dev_nodes_use">Підключатися до довірених вузлів</string>
-    <string name="dev_nodes_why"><![CDATA[<small><a href=https://btcontract.com>Информацiя про довiренi вузли</a>]]></string>
+    <string name="dev_nodes_why"><![CDATA[<small><a href=https://btcontract.com/#trusted-node>Информацiя про довiренi вузли</a>]]></string>
 
     <!-- trusted node -->
     <string name="trusted_node_add">Додати свій вузол</string>
