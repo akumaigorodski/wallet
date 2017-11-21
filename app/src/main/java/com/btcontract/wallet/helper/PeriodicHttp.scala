@@ -90,13 +90,11 @@ object Fee { me =>
   implicit val insightFeeFmt = jsonFormat[BigDecimal, InsightFee](InsightFee, "6")
   implicit val bitgoFeeFmt = jsonFormat[Long, BitgoFee](BitgoFee, "feePerKb")
 
-  def reloadData = rand nextInt 7 match {
+  def reloadData = rand nextInt 5 match {
     case 0 => to[InsightFee](get("https://bitlox.io/api/utils/estimatefee?nbBlocks=6").body)
-    case 1 => to[InsightFee](get(s"https://localbitcoinschain.com/api/utils/estimatefee?nbBlocks=6").body)
-    case 2 => to[InsightFee](get(s"https://search.bitaccess.co/api/utils/estimatefee?nbBlocks=6").body)
-    case 3 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=6").body)
-    case 4 => to[InsightFee](get(s"https://live.coin.space/api/utils/estimatefee?nbBlocks=6").body)
-    case 5 => to[BitgoFee](get("https://www.bitgo.com/api/v1/tx/fee?numBlocks=6").body)
+    case 1 => to[InsightFee](get("https://blockexplorer.com/api/utils/estimatefee?nbBlocks=6").body)
+    case 2 => to[InsightFee](get(s"https://live.coin.space/api/utils/estimatefee?nbBlocks=6").body)
+    case 3 => to[BitgoFee](get("https://www.bitgo.com/api/v1/tx/fee?numBlocks=6").body)
     case _ => to[CypherFee](get("http://api.blockcypher.com/v1/btc/main").body)
   }
 
