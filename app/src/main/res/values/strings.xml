@@ -127,7 +127,7 @@
 
     <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_view_outside">View on BlockExplorer.com</string>
+    <string name="txs_view_outside">View on BlockCypher.com</string>
 
     <array name="txs_confs">
         <item><![CDATA[<font color=#E31300>Not confirmed yet</font>]]></item>

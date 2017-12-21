@@ -101,7 +101,7 @@ class TxsActivity extends InfoActivity with HumanTimeDisplay { me =>
 
         // Compute required variables
         val totalSum = s"${txPlus.humanValue}<br><small>${me time txPlus.tx.getUpdateTime}</small>"
-        val site = new Intent(Intent.ACTION_VIEW, Uri parse s"https://blockexplorer.com/tx/$hash")
+        val site = new Intent(Intent.ACTION_VIEW, Uri parse s"https://live.blockcypher.com/btc/tx/$hash")
         val pays = getPays(txPlus.tx.getOutputs, mutable.Buffer.empty, txPlus.value.isPositive)
         val txt = for (payment <- pays) yield Html.fromHtml(payment pretty txPlus.route)
 

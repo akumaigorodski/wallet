@@ -109,7 +109,7 @@
 
     <string name="txs_sum_out"><![CDATA[<font color=#E31300>%1$s</font>]]></string>
     <string name="txs_sum_in"><![CDATA[<font color=#1BA2E0>%1$s</font>]]></string>
-    <string name="txs_view_outside">BlockExplorer.com で表示</string>
+    <string name="txs_view_outside">BlockCypher.com で表示</string>
 
     <array name="txs_confs">
         <item><![CDATA[<font color=#E31300>まだ確認していません</font>]]></item>
