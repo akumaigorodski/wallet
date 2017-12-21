@@ -252,16 +252,6 @@ abstract class InfoActivity extends AnimatorActivity { me =>
     val viewMnemonic = form.findViewById(R.id.viewMnemonic).asInstanceOf[Button]
     val changePass = form.findViewById(R.id.changePass).asInstanceOf[Button]
 
-    val useDevNodes = form.findViewById(R.id.useDevNodes).asInstanceOf[CheckBox]
-    val useDevNodesWhy = form.findViewById(R.id.useDevNodesWhy).asInstanceOf[TextView]
-    useDevNodes setChecked app.prefs.getBoolean(AbstractKit.USE_DEVELOPER_NODES, true)
-    useDevNodesWhy setMovementMethod LinkMovementMethod.getInstance
-    useDevNodesWhy setText Html.fromHtml(me getString dev_nodes_why)
-
-    useDevNodes setOnClickListener new OnClickListener {
-      def onClick(checkbox: View) = app.prefs.edit.putBoolean(AbstractKit.USE_DEVELOPER_NODES, useDevNodes.isChecked).commit
-    }
-
     rescanWallet setOnClickListener new OnClickListener {
       def onClick(restoreWalletView: View) = rm(dialog)(openForm)
 
