@@ -27,7 +27,7 @@ import State.{RUNNING, STARTING}
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import Context.CLIPBOARD_SERVICE
 
-import scala.util.Try
+import scala.util.{Random, Try}
 
 
 class WalletApp extends Application {
@@ -118,20 +118,14 @@ class WalletApp extends Application {
       wallet addCoinsReceivedEventListener Vibr.generalTracker
       wallet addTransactionConfidenceEventListener Vibr.generalTracker
 
-      val useDevNodes = prefs.getBoolean(AbstractKit.USE_DEVELOPER_NODES, true)
+      val devNodes = List(
+        new PeerAddress(InetAddresses.forString("5.9.104.252"), 8333),
+        new PeerAddress(InetAddresses.forString("213.133.103.56"), 8333),
+        new PeerAddress(InetAddresses.forString("213.133.99.89"), 8333)
+      )
 
-      if (useDevNodes) {
-        val devNodes = List(
-          new PeerAddress(InetAddresses.forString("5.9.104.252"), 8333), // UASF
-          new PeerAddress(InetAddresses.forString("213.133.103.56"), 8333), // Core 1
-          new PeerAddress(InetAddresses.forString("213.133.99.89"), 8333) // Core 2
-        )
-
-        devNodes foreach peerGroup.addAddress
-      } else {
-        peerGroup addPeerDiscovery new DnsDiscovery(params)
-      }
-
+      peerGroup.addAddress(Random.shuffle(devNodes).head)
+      peerGroup addPeerDiscovery new DnsDiscovery(params)
       peerGroup.setUserAgent(appName, "1.075")
       peerGroup setDownloadTxDependencies 0
       peerGroup setPingIntervalMsec 10000
