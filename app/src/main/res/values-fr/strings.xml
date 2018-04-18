@@ -1,0 +1,95 @@
+<resources>
+    <string name="lang">fra</string>
+
+    <!-- emergency mode -->
+    <string name="emerge_report">Afficher le rapport d\'erreur</string>
+    <string name="emerge_title">Quelque chose ne va pas</string>
+    <string name="emerge_subtitle">Mode d\'urgence</string>
+
+    <!-- developer nodes -->
+    <string name="dev_nodes_use">Connection au nœuds de confiance</string>
+    <string name="dev_nodes_why">&lt;small&gt;&lt;a href=https://btcontract.com/#trusted-node&gt;En savoir plus sur les nœuds de confiance&lt;/a&gt;&lt;/small&gt;</string>
+
+    <!-- trusted node -->
+    <string name="trusted_node_add">Ajouter votre propre nœud</string>
+    <string name="trusted_node_added">L\'adresse du nœud Bitcoin à été sauvegardé</string>
+
+    <!-- app wide -->
+    <string name="or">ou</string>
+    <string name="app_name">Bitcoin</string>
+    <string name="sets_noscreen">De pas faire de capture d\'écran</string>
+    <string name="sets_password_ok">Le nouveau mot de passe a été défini avec succès</string>
+    <string name="password_info">Sans mot de passe vous êtes en danger constant de perdre votre argent. Veuillez en choisir un qui fait au moins 6 caractères</string>
+    <string name="wallet_restore">Restaurer un porte-monnaie depuis un code</string>
+    <string name="copied_to_clipboard">Copié dans le presse-papiers</string>
+    <string name="wallet_create">Créer un nouveau porte-monnaie</string>
+    <string name="wallet_empty">Le porte-monnaie est vide</string>
+    <string name="wallet_password">Mot de passe</string>
+
+    <string name="encrypted_yes">&lt;small&gt;Le porte-monnaie est chiffré&lt;/small&gt;&lt;br&gt;&lt;br&gt;</string>
+    <string name="encrypted_no">&lt;small&gt;Le porte-monnaie n\'est pas chiffré&lt;/small&gt;&lt;br&gt;&lt;br&gt;</string>
+    <string name="sets_pass_change">Changer le mot de passe du porte-monnaie</string>
+    <string name="sets_export_file">Exporter le fichier</string>
+    <string name="sets_mnemonic">Voir le code mnémonique</string>
+
+    <string name="password_new">Nouveau mot de passe</string>
+    <string name="password_old">Mot de passe actuel</string>
+    <string name="password_wrong">Mot de passe incorrect</string>
+    <string name="password_too_short">Le mot de passe est trop court</string>
+
+    <!-- headers with links -->
+    <string name="wallet_open">Ouvrir un porte-monnaie</string>
+
+    <!-- menu -->
+    <string name="action_settings">Paramètres du porte-monnaie</string>
+    <string name="action_request_payment">Demande de payement</string>
+    <string name="action_receive_payment">Recevoir</string>
+    <string name="action_buy">Acheter des bitcoins</string>
+    <string name="action_scan">Scanner un QR code</string>
+    <string name="action_send">Envoyer</string>
+
+    <!-- errors -->
+
+    <!-- dialogs -->
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_pay">Payer</string>
+    <string name="dialog_next">Suivant</string>
+    <string name="dialog_back">Retour</string>
+    <string name="dialog_cancel">Annuler</string>
+    <string name="input_hint_sat">montant en sat</string>
+    <string name="input_hint_btc">montant en btc</string>
+    <string name="input_hint_bit">montant en bits</string>
+    <string name="dialog_addr_wrong">Adresse Bitcoin invalide</string>
+    <string name="dialog_sum_empty">Veuillez saisir un montant</string>
+    <string name="spend_address_hint">Adresse Bitcoin</string>
+
+    <array name="dialog_request">
+    </array>
+
+    <!-- notifications -->
+    <string name="info_progress">Sync: %1$d blocs restant</string>
+    <string name="info_progress_done">La blockchain est à jour</string>
+    <string name="pass_checking">Vérification du mot de passe...</string>
+    <string name="pass_changing">NE PAS FERMER LE PORTE-MONNAIE</string>
+
+    <array name="info_peers">
+    </array>
+
+    <!-- activity_create, activity_restore, activity_request -->
+    <string name="restore_when">Quand est-ce que votre porte-monnaie a été créé ?\n
+     Laisser la date comme cela si vous n\'êtes pas sûr</string>
+    <string name="create_wallet_creating">Génération de votre porte-monnaie</string>
+    <string name="restore_wallet_restoring">Restauration du porte-monnaie\n
+     Cela peut prendre un moment</string>
+    <string name="restore_mnemonic_wrong">Le mnémonique doit avoir au moins 12 mots</string>
+    <string name="restore_wallet_ready">Votre porte-monnaie est prêt</string>
+    <string name="restore_hint">Votre code mnémonique</string>
+    <string name="restore_wallet">Restaurer le porte-monnaie</string>
+
+
+    <string name="txs_view_outside">Voir sur BlockCypher.com</string>
+
+    <array name="txs_confs">
+    </array>
+
+</resources>
