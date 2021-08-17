@@ -1,23 +1,21 @@
 package com.btcontract.wallet
 
-import java.io.{PrintWriter, StringWriter}
 import java.lang.Thread.UncaughtExceptionHandler
+import immortan.crypto.Tools.ThrowableOps
 import android.content.Intent
 import android.app.Activity
 
 
-class UncaughtHandler(ctxt: Activity)
-extends UncaughtExceptionHandler { me =>
+object UncaughtHandler {
+  val ERROR_REPORT = "errorReport"
+}
 
-  def uncaughtException(thread: Thread, exc: Throwable): Unit = {
-    val emerge: Class[EmergencyActivity] = classOf[EmergencyActivity]
-    val stackTrace: StringWriter = new StringWriter
-    val intent = new Intent(ctxt, emerge)
+class UncaughtHandler(ctxt: Activity) extends UncaughtExceptionHandler {
+  def uncaughtException(thread: Thread, exception: Throwable): Unit = {
+    val emergencyActivity = classOf[EmergencyActivity]
+    val intent = new Intent(ctxt, emergencyActivity)
 
-    exc printStackTrace new PrintWriter(stackTrace)
-    intent.putExtra("report", stackTrace.toString)
-    ctxt startActivity intent
-
+    ctxt startActivity intent.putExtra(UncaughtHandler.ERROR_REPORT, exception.stackTraceAsString)
     android.os.Process killProcess android.os.Process.myPid
     System exit 10
   }

@@ -1,0 +1,12 @@
+<ScrollView
+    style="@style/StandardLinearLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:scrollbars="none">
+
+    <LinearLayout style="@style/StandardLinearLayout">
+        <include layout="@layout/frag_input_fiat_converter"/>
+        <include layout="@layout/frag_fees"/>
+        <View style="@style/GrayDivider"/>
+    </LinearLayout>
+
+</ScrollView>

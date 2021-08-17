@@ -1,0 +1,14 @@
+<LinearLayout
+    style="@style/StandardLinearLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/chanContainer">
+
+    <ListView
+        android:scrollbars="none"
+        android:id="@+id/chanList"
+        android:clipToPadding="false"
+        android:footerDividersEnabled="false"
+        android:headerDividersEnabled="false"
+        style="@style/StandardLinearLayout"/>
+
+</LinearLayout>

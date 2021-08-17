@@ -1,0 +1,57 @@
+<resources>
+    <color name="bg">#282B30</color>
+    <color name="colorAccent">#FAFAFA</color>
+    <color name="bgalpha">#AA282B30</color>
+    <color name="text">#CFDAE6</color>
+
+    <color name="paymentAwait">#E08f04</color>
+    <color name="paymentDone">#99CC00</color>
+
+    <color name="lnLogo">#6EABFA</color>
+    <color name="btcLogo">#E08f04</color>
+    <color name="chanIndicator">#8FDCFF</color>
+
+    <color name="paymentPassiveBorder">#555555</color>
+    <color name="paymentActiveBorder">#6EABFA</color>
+
+    <color name="cardLightning">#4F5B8F</color>
+    <color name="cardBitcoinModern">#876319</color>
+    <color name="cardBitcoinLegacy">#555555</color>
+
+    <color name="buttonGreenRipple">#8BD670</color>
+    <color name="buttonGreenBorder">#5B8F36</color>
+    <color name="buttonGreenPale">#33517D2B</color>
+    <color name="buttonGreen">#517D2B</color>
+
+    <color name="buttonRedRipple">#F0473E</color>
+    <color name="buttonRedBorder">#D1231E</color>
+    <color name="buttonRed">#AF1212</color>
+
+    <color name="buttonGrayRipple">#868899</color>
+    <color name="buttonGrayBorder">#494949</color>
+
+    <color name="almostBlack">#1A1A1A</color>
+    <color name="cardOutText">#88FF88</color>
+    <color name="cardZeroText">#888888</color>
+    <color name="totalZeroText">#555555</color>
+    <color name="btcCardZeroText">#B38722</color>
+    <color name="lnCardZeroText">#7D7DB8</color>
+
+    <!-- nachos -->
+
+    <color name="chip_default_text_color">#DE000000</color>
+    <color name="chip_default_icon_background_color">#517FA4</color>
+    <color name="chip_material_background">#F0F0F0</color>
+
+    <!-- bottom navigation -->
+
+    <color name="colorBottomNavigationPrimary">#3F51B5</color>
+    <color name="colorBottomNavigationPrimaryDark">#303F9F</color>
+    <color name="colorBottomNavigationAccent">#FF4081</color>
+    <color name="colorBottomNavigationInactive">#747474</color>
+    <color name="colorBottomNavigationDisable">#3A000000</color>
+    <color name="colorBottomNavigationActiveColored">#FFFFFF</color>
+    <color name="colorBottomNavigationInactiveColored">#50FFFFFF</color>
+    <color name="colorBottomNavigationSelectedBackground">#17000000</color>
+    <color name="colorBottomNavigationNotification">#F63D2B</color>
+</resources>

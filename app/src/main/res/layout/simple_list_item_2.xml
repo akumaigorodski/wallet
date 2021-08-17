@@ -1,0 +1,20 @@
+<RelativeLayout
+    style="@style/FillingView"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:padding="15dp">
+
+    <TextView
+        android:id="@+id/text1"
+        android:textStyle="bold"
+        android:layout_centerVertical="true"
+        android:layout_alignParentStart="true"
+        style="@style/BoundedView"/>
+
+    <TextView
+        android:id="@+id/text2"
+        android:layout_centerVertical="true"
+        android:layout_alignParentEnd="true"
+        android:background="@drawable/border_yellow"
+        style="@style/ChipTextGrayMargin"/>
+
+</RelativeLayout>

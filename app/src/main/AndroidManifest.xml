@@ -1,8 +1,14 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.btcontract.wallet">
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.btcontract.wallet">
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.NFC"/>
 
     <supports-screens
         android:resizeable="true"
@@ -13,15 +19,34 @@
         android:normalScreens="true"/>
 
     <application
-        android:name="WalletApp"
         android:allowBackup="true"
-        android:label="@string/app_name"
-        android:icon="@drawable/ic_launcher">
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:requestLegacyExternalStorage="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:name="com.btcontract.wallet.WalletApp"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name">
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.btcontract.wallet"
+            android:grantUriPermissions="true"
+            android:exported="false">
+
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths"/>
+
+        </provider>
+
+        <service
+            android:stopWithTask="true"
+            android:name="com.btcontract.wallet.utils.AwaitService"/>
 
         <activity
-            android:name="MainActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/NoBar">
+            android:name="com.btcontract.wallet.MainActivity"
+            android:theme="@style/AppThemeNoActionBar">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -29,30 +54,93 @@
             </intent-filter>
 
             <intent-filter>
-                <data android:scheme="bitcoin"/>
+                <!-- receiving shared text -->
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+
+            <intent-filter>
+                <!-- receiving link clicks -->
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="lightning"/>
+                <data android:scheme="bitcoin"/>
+                <data android:scheme="lnurla"/>
+                <data android:scheme="lnurlc"/>
+                <data android:scheme="lnurlp"/>
+                <data android:scheme="lnurlw"/>
+                <data android:scheme="blw"/>
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
             </intent-filter>
         </activity>
 
-        <activity android:launchMode="singleTask" android:name="WalletCreateActivity"
-            android:screenOrientation="portrait" android:theme="@style/NoBar"/>
+        <activity
+            android:launchMode="singleTask"
+            android:name="com.btcontract.wallet.EmergencyActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"/>
 
-        <activity android:launchMode="singleTask" android:name="WalletRestoreActivity"
-            android:screenOrientation="portrait" android:theme="@style/NoBar"/>
+        <activity
+            android:name="com.btcontract.wallet.SetupActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"/>
 
-        <activity android:launchMode="singleTask" android:name="TxsActivity"
-            android:screenOrientation="portrait" android:theme="@style/LiteBar"/>
+        <activity
+            android:name="com.btcontract.wallet.HubActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"
+            android:windowSoftInputMode="adjustNothing"/>
 
-        <activity android:launchMode="singleTask" android:name="EmergencyActivity"
-            android:screenOrientation="portrait" android:theme="@style/LiteBar"/>
+        <activity
+            android:launchMode="singleTask"
+            android:name="com.btcontract.wallet.RemotePeerActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"/>
 
-        <activity android:launchMode="singleTask" android:name="ScanActivity"
-            android:screenOrientation="portrait" android:theme="@style/NoBar"/>
+        <activity
+            android:name="com.btcontract.wallet.QRChainActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"/>
 
-        <activity android:launchMode="singleTask" android:name="RequestActivity"
-            android:screenOrientation="portrait" android:theme="@style/NoBar"/>
+        <activity
+            android:launchMode="singleTask"
+            android:name="com.btcontract.wallet.QRInvoiceActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"/>
+
+        <activity
+            android:name="com.btcontract.wallet.QRSplitActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"/>
+
+        <activity
+            android:name="com.btcontract.wallet.ChanActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"/>
+
+        <activity
+            android:name="com.btcontract.wallet.SettingsActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"/>
+
+        <activity
+            android:name="com.btcontract.wallet.StatActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"/>
 
     </application>
 </manifest>

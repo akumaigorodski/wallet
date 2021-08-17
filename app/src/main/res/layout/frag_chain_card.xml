@@ -1,0 +1,48 @@
+<FrameLayout
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/FillingView">
+
+    <androidx.cardview.widget.CardView
+        card_view:cardCornerRadius="@dimen/corner_radius"
+        android:layout_marginTop="5dp"
+        android:id="@+id/chainWrap"
+        style="@style/Card">
+
+        <RelativeLayout
+            style="@style/FillingView"
+            android:id="@+id/chainContainer"
+            android:padding="15dp">
+
+            <TextView
+                android:id="@+id/chainLabel"
+                android:layout_marginEnd="3dp"
+                android:textColor="@color/colorAccent"
+                android:layout_centerVertical="true"
+                style="@style/BoundedView"/>
+
+            <TextView
+                android:id="@+id/chainBalance"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                style="@style/Emphasized"/>
+
+            <!-- No coins present -->
+
+            <ImageView
+                style="@style/BoundedView"
+                android:id="@+id/receiveBitcoinTip"
+                android:layout_alignParentEnd="true"
+                android:background="@drawable/baseline_add_24"
+                android:visibility="gone"/>
+
+            <ImageView
+                style="@style/BoundedView"
+                android:id="@+id/showMenuTip"
+                android:layout_alignParentEnd="true"
+                android:background="@drawable/baseline_more_horiz_24"
+                android:visibility="gone"/>
+
+        </RelativeLayout>
+    </androidx.cardview.widget.CardView>
+</FrameLayout>

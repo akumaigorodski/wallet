@@ -1,0 +1,27 @@
+<RelativeLayout
+    style="@style/StandardLinearLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <TextView
+        android:textAlignment="center"
+        android:layout_marginTop="40dp"
+        android:id="@+id/chainQrCaption"
+        android:layout_alignParentTop="true"
+        android:textSize="@dimen/header_size"
+        style="@style/FillingView"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:id="@+id/chainQrCodes"/>
+
+    <com.ornach.nobobutton.NoboButton
+        android:layout_marginBottom="25dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        app:nb_text="@string/add_address"
+        android:id="@+id/chainQrMore"
+        style="@style/GrayButton"/>
+
+</RelativeLayout>

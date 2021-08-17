@@ -1,7 +1,32 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/StandardLinearLayout"
-    android:layout_height="match_parent" android:layout_width="match_parent">
+<LinearLayout
+    style="@style/StandardXYMarginLinearLayout"
+    xmlns:f="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <RelativeLayout style="@style/FillingView">
 
-    <TextView style="@style/MarginInfo" android:maxWidth="230sp"
-        android:id="@+id/actionTip" android:layout_width="wrap_content"/>
+        <ImageView
+            style="@style/BoundedView"
+            android:id="@+id/backArrow"
+            android:layout_marginEnd="6dp"
+            android:layout_centerVertical="true"
+            android:background="@drawable/baseline_arrow_downward_18"
+            android:visibility="gone"
+            android:rotation="90"/>
+
+        <TextView
+            style="@style/FillingView"
+            android:layout_toEndOf="@id/backArrow"
+            android:textColor="@color/colorAccent"
+            android:id="@+id/tipTitle"/>
+
+    </RelativeLayout>
+
+    <org.apmem.tools.layouts.FlowLayout
+        android:id="@+id/tipExtraTags"
+        style="@style/FillingView"
+        android:visibility="gone"
+        android:paddingTop="15dp"
+        f:layout_newLine="true"/>
 
 </LinearLayout>

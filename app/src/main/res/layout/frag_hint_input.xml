@@ -1,0 +1,15 @@
+<com.google.android.material.textfield.TextInputLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/extraInputLayout"
+    style="@style/FillingView"
+    android:paddingTop="25dp">
+
+    <EditText
+        style="@style/FillingView"
+        android:inputType="textCapSentences"
+        android:layout_marginStart="11dp"
+        android:layout_marginEnd="14dp"
+        android:id="@+id/extraInput"
+        android:maxLines="1"/>
+
+</com.google.android.material.textfield.TextInputLayout>

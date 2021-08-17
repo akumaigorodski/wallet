@@ -1,0 +1,4 @@
+<LinearLayout
+    style="@style/FillingView"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"/>

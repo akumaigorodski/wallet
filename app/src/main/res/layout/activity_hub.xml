@@ -1,0 +1,53 @@
+<RelativeLayout
+    style="@style/StandardLinearLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/contentWindow">
+
+    <!-- Payment list + header -->
+
+    <ListView
+        android:scrollbars="none"
+        android:id="@+id/itemsList"
+        android:clipToPadding="false"
+        android:footerDividersEnabled="false"
+        android:headerDividersEnabled="false"
+        style="@style/StandardLinearLayout"/>
+
+    <!-- Bottom menu -->
+
+    <com.github.mmin18.widget.RealtimeBlurView
+        app:realtimeOverlayColor="@color/bgalpha"
+        android:layout_alignParentBottom="true"
+        android:id="@+id/bottomBlurringArea"
+        android:layout_width="match_parent"
+        app:realtimeBlurRadius="15dp"
+        android:layout_height="0dp"/>
+
+    <LinearLayout
+        android:clickable="true"
+        android:focusable="true"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:layout_alignParentBottom="true"
+        android:id="@+id/bottomActionBar"
+        android:orientation="horizontal"
+        style="@style/FillingView"
+        android:gravity="center">
+
+        <com.ornach.nobobutton.NoboButton
+            app:nb_text="@string/dialog_send"
+            android:layout_margin="@dimen/chip_default_padding_edge"
+            android:onClick="bringScanner"
+            android:layout_width="140dp"
+            style="@style/GrayButton"/>
+
+        <com.ornach.nobobutton.NoboButton
+            app:nb_text="@string/dialog_receive"
+            android:layout_margin="@dimen/chip_default_padding_edge"
+            android:onClick="bringReceiveOptions"
+            android:layout_width="140dp"
+            style="@style/GrayButton"/>
+
+    </LinearLayout>
+</RelativeLayout>

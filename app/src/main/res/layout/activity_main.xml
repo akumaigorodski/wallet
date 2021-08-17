@@ -1,44 +1,30 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_height="fill_parent" android:layout_width="fill_parent"
-    style="@style/StandardLinearLayout">
-
-    <ImageView
-        android:id="@+id/mainProgress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_launcher"/>
+<LinearLayout
+    style="@style/StandardLinearLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mainLayout">
 
     <LinearLayout
-        style="@style/StandardLinearLayout"
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:id="@+id/mainChoice"
+        style="@style/StandardXYMarginLinearLayout"
+        android:id="@+id/mainOrbotIssues"
         android:visibility="gone">
 
         <TextView
-            style="@style/Info"
-            android:id="@+id/mainGreetings"
-            android:text="@string/greetings"
+            style="@style/FillingView"
+            android:textColor="#E68A00"
+            android:id="@+id/mainOrbotMessage"
+            android:layout_marginBottom="45dp"/>
+
+        <com.ornach.nobobutton.NoboButton
+            android:id="@+id/takeOrbotAction"
             android:layout_marginBottom="45dp"
-            android:layout_width="wrap_content"/>
+            app:nb_text="@string/orbot_action_open"
+            style="@style/GrayButton"/>
 
-        <Button
-            style="@style/Info"
-            android:onClick="goCreateWallet"
-            android:layout_width="wrap_content"
-            android:text="@string/wallet_create"/>
-
-        <TextView
-            style="@style/Info"
-            android:text="@string/or"
-            android:layout_margin="10dp"
-            android:layout_width="wrap_content"/>
-
-        <Button
-            style="@style/Info"
-            android:onClick="goRestoreWallet"
-            android:layout_width="wrap_content"
-            android:text="@string/wallet_restore"/>
+        <com.ornach.nobobutton.NoboButton
+            app:nb_text="@string/orbot_action_skip"
+            android:id="@+id/skipOrbotCheck"
+            style="@style/RedButton"/>
 
     </LinearLayout>
 </LinearLayout>
