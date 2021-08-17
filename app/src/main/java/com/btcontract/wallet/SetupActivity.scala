@@ -24,14 +24,11 @@ object SetupActivity {
     val keys = LightningNodeKeys.makeFromSeed(seed = walletSeeed.toArray)
     val secret = WalletSecret(keys, mnemonics, walletSeeed)
 
-    try {
-      // Implant graph into db file from resources
-      val snapshotName = LocalBackup.getGraphResourceName(LNParams.chainHash)
-      val compressedPlainBytes = ByteStreams.toByteArray(host.getAssets open snapshotName)
-      val plainBytes = ExtCodecs.compressedByteVecCodec.decode(BitVector view compressedPlainBytes)
-      LocalBackup.copyPlainDataToDbLocation(host, WalletApp.dbFileNameGraph, plainBytes.require.value)
-    } catch none
-
+    // Implant graph into db file from resources
+    val snapshotName = LocalBackup.getGraphResourceName(LNParams.chainHash)
+    val compressedPlainBytes = ByteStreams.toByteArray(host.getAssets open snapshotName)
+    val plainBytes = ExtCodecs.compressedByteVecCodec.decode(BitVector view compressedPlainBytes)
+    LocalBackup.copyPlainDataToDbLocation(host, WalletApp.dbFileNameGraph, plainBytes.require.value)
     WalletApp.extDataBag.putSecret(secret)
     WalletApp.makeOperational(secret)
   }

@@ -65,11 +65,11 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
 
   private lazy val viewUpdatingListener = new ConnectionListener {
     override def onOperational(worker: CommsTower.Worker, theirInit: Init): Unit = UITask {
-      val isPeerSupports: Feature => Boolean = LNParams.isPeerSupports(theirInit)
-      val criticalSupportAvailable = criticalFeatures.forall(isPeerSupports)
+      val theirInitSupports: Feature => Boolean = LNParams.isPeerSupports(theirInit)
+      val criticalSupportAvailable = criticalFeatures.forall(theirInitSupports)
 
       featureTextViewMap foreach {
-        case (feature, view) if isPeerSupports(feature) =>
+        case (feature, view) if theirInitSupports(feature) =>
           view.setBackgroundResource(R.drawable.border_green)
           view.setText(feature.rfcName)
 
@@ -84,14 +84,14 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
 
       hasInfo match {
         case nc: NormalChannelRequest if criticalSupportAvailable => nc.requestChannel.foreach(none, revertAndInform)
-        case hc: HostedChannelRequest if criticalSupportAvailable && isPeerSupports(HostedChannels) => askHostedChannel(hc.secret)
+        case hc: HostedChannelRequest if criticalSupportAvailable && theirInitSupports(HostedChannels) => askHostedChannel(hc.secret)
         case _: HasRemoteInfoWrap => switchView(showProgress = false)
         case _ => whenBackPressed.run
       }
 
       setVis(!criticalSupportAvailable, viewNoFeatureSupport)
       setVis(criticalSupportAvailable, viewYesFeatureSupport)
-      setVis(isPeerSupports(HostedChannels), optionHostedChannel)
+      setVis(theirInitSupports(HostedChannels), optionHostedChannel)
     }.run
   }
 

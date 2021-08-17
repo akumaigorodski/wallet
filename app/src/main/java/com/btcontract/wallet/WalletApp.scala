@@ -128,6 +128,12 @@ object WalletApp {
       chainWalletBag = new SQLiteChainWallet(miscInterface)
       extDataBag = new SQLiteDataExtended(miscInterface)
     }
+
+    // Initialized here in case these are needed early
+    LNParams.chainHash = Block.LivenetGenesisBlock.hash
+    LNParams.routerConf = RouterConf(initRouteMaxLength = 6)
+    LNParams.ourInit = LNParams.createInit
+    LNParams.syncParams = new SyncParams
   }
 
   def makeOperational(secret: WalletSecret): Unit = {
@@ -135,6 +141,7 @@ object WalletApp {
     val essentialInterface = new DBInterfaceSQLiteAndroidEssential(app, dbFileNameEssential)
     val graphInterface = new DBInterfaceSQLiteAndroidGraph(app, dbFileNameGraph)
     val currentCustomElectrumAddress: Try[NodeAddress] = customElectrumAddress
+    LNParams.secret = secret
 
     val normalBag = new SQLiteNetwork(graphInterface, NormalChannelUpdateTable, NormalChannelAnnouncementTable, NormalExcludedChannelTable)
     val hostedBag = new SQLiteNetwork(graphInterface, HostedChannelUpdateTable, HostedChannelAnnouncementTable, HostedExcludedChannelTable)
@@ -146,12 +153,6 @@ object WalletApp {
         super.put(data)
       }
     }
-
-    LNParams.secret = secret
-    LNParams.syncParams = new TestNetSyncParams
-    LNParams.chainHash = Block.LivenetGenesisBlock.hash
-    LNParams.routerConf = RouterConf(initRouteMaxLength = 6)
-    LNParams.ourInit = LNParams.createInit
 
     extDataBag.db txWrap {
       LNParams.feeRates = new FeeRates(extDataBag)

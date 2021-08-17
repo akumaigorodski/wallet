@@ -90,20 +90,21 @@ case class SyncWorkerPHCData(phcMaster: PHCSyncMaster,
 
 case class SyncWorker(master: CanBeRepliedTo, keyPair: KeyPair, remoteInfo: RemoteNodeInfo, ourInit: Init) extends StateMachine[SyncWorkerData] { me =>
   implicit val context: ExecutionContextExecutor = ExecutionContext fromExecutor Executors.newSingleThreadExecutor
-  def process(changeMessage: Any): Unit = scala.concurrent.Future(me doProcess changeMessage)
+
   val pair: KeyPairAndPubKey = KeyPairAndPubKey(keyPair, remoteInfo.nodeId)
 
+  def supportsExtQueries(init: Init): Boolean = LNParams.isPeerSupports(init)(ChannelRangeQueriesExtended)
+
+  def process(changeMessage: Any): Unit = scala.concurrent.Future(me doProcess changeMessage)
+
   val listener: ConnectionListener = new ConnectionListener {
-    override def onOperational(worker: CommsTower.Worker, theirInit: Init): Unit = me process worker
-    override def onMessage(worker: CommsTower.Worker, msg: LightningMessage): Unit = me process msg
+    override def onOperational(worker: CommsTower.Worker, init: Init): Unit = if (me supportsExtQueries init) process(worker) else worker.disconnect
+
+    override def onMessage(worker: CommsTower.Worker, remoteMessage: LightningMessage): Unit = process(remoteMessage)
 
     override def onDisconnect(worker: CommsTower.Worker): Unit = {
-      val supportsExtQueries = worker.theirInit.forall { theirInit =>
-        LNParams.isPeerSupports(theirInit)(ChannelRangeQueriesExtended)
-      }
-
-      // This disconnect is unexpected, normal shoutdown removes listener
-      master process SyncDisconnected(me, removePeer = !supportsExtQueries)
+      val hasExtQueriesSupport = worker.theirInit.forall(supportsExtQueries)
+      master process SyncDisconnected(me, removePeer = !hasExtQueriesSupport)
       CommsTower.listeners(worker.pair) -= listener
     }
   }
@@ -252,6 +253,7 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
         goodRanges.flatMap(_.allShortIds).foreach(shortId => accum(shortId) += 1)
         provenShortIds = accum.collect { case (shortId, confs) if confs > LNParams.syncParams.acceptThreshold => shortId }.toSet
         val queries: Seq[QueryShortChannelIds] = goodRanges.maxBy(_.allShortIds.size).ranges.par.flatMap(reply2Query).toList
+        // println(s"-- SYNC: re-querying ${queries.flatMap(_.shortChannelIds.array).size} channels")
 
         // Transfer every worker into gossip syncing state
         become(SyncMasterGossipData(baseSyncs, extSyncs, activeSyncs, LNParams.syncParams.chunksToWait), GOSSIP_SYNC)
