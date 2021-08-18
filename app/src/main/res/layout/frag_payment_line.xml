@@ -199,6 +199,7 @@
                 <androidx.cardview.widget.CardView
                     card_view:cardCornerRadius="@dimen/corner_radius"
                     android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
                     android:id="@+id/linkImageWrap"
                     android:layout_height="56dp"
                     android:layout_width="56dp">
