@@ -179,7 +179,7 @@ object PayRequest {
 case class PayRequestMeta(records: TagsAndContents) {
   val texts: List[String] = records.collect { case List("text/plain", txt) => txt }
   val emails: List[String] = records.collect { case List("text/email", txt) => txt }
-  val identities: List[String] = records.collect { case List("text/identity", txt) => txt }
+  val identities: List[String] = records.collect { case List("text/identifier", txt) => txt }
   val textPlain: String = trimmed(texts.head)
 
   val queryText = s"${emails.headOption orElse identities.headOption getOrElse new String} $textPlain"

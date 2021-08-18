@@ -130,9 +130,9 @@
 
     <string name="error_ln_send_small"><![CDATA[Can\'t send this Lightning payment because requested amount of <b>%1$s</b> is too small, a minimal amount is <b>%2$s</b>.]]></string>
     <string name="error_ln_send_reserve"><![CDATA[Can\'t send Lightning payments yet because first you need to receive at least <b>%1$s</b> to make some space for sending.]]></string>
+    <string name="error_ln_send_no_secret"><![CDATA[Can\'t send this Lightning payment because invoice does not contain a secret.]]></string>
     <string name="error_ln_send_network"><![CDATA[Can\'t send this Lightning payment because it belongs to some unknown network.]]></string>
     <string name="error_ln_send_split"><![CDATA[Can\'t proceed with this split invoice because its split parameters are wrong.]]></string>
-    <string name="error_ln_send_features"><![CDATA[Can\'t send this Lightning payment because it has some unknown features.]]></string>
     <string name="error_ln_send_done_already"><![CDATA[Can\'t send this Lightning payment because it has already been sent.]]></string>
     <string name="error_ln_send_expired"><![CDATA[Can\'t send this Lightning payment because invoice has expired by now.]]></string>
     <string name="error_ln_send_in_flight"><![CDATA[Can\'t send this Lightning payment because it is already in-flight.]]></string>
@@ -298,7 +298,7 @@
     <string name="dialog_lnurl_decrypt_fail">Failed to decrypt a message, please contact vendor to sort this out.</string>
     <string name="dialog_lnurl_withdraw"><![CDATA[<b>Lightning</b> withdraw link<br><br><b>%1$s</b>%2$s]]></string>
     <string name="dialog_lnurl_pay"><![CDATA[<b>Lightning</b> payment link<br><br><b>%1$s</b>%2$s]]></string>
-    <string name="lnurl_pay_last_paid"><![CDATA[Last paid <strong>%1$s</strong> | %2$s]]></string>
+    <string name="lnurl_pay_last_paid"><![CDATA[<strong>%1$s</strong> | %2$s]]></string>
 
     <string name="dialog_lnurl_processing"><![CDATA[Processing&#8230;<br><br><b>%1$s</b>]]></string>
     <string name="dialog_lnurl_splitting"><![CDATA[Requesting invoice&#8230;<br><br><b>%1$s</b>]]></string>

@@ -187,7 +187,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val meta: TextView = swipeWrap.findViewById(R.id.meta).asInstanceOf[TextView]
 
     val linkContainer: RelativeLayout = swipeWrap.findViewById(R.id.linkContainer).asInstanceOf[RelativeLayout]
-    val textMetadata: TextView = swipeWrap.findViewById(R.id.textMetadata).asInstanceOf[TextView]
     val lastAttempt: TextView = swipeWrap.findViewById(R.id.lastAttempt).asInstanceOf[TextView]
     val marketLabel: TextView = swipeWrap.findViewById(R.id.marketLabel).asInstanceOf[TextView]
     val lastComment: TextView = swipeWrap.findViewById(R.id.lastComment).asInstanceOf[TextView]
@@ -471,12 +470,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       case info: LNUrlLinkInfo =>
         val lastStamp = WalletApp.app.when(info.date, WalletApp.app.dateFormat)
-        val lastAmount = WalletApp.denom.parsedWithSign(info.lastMsat, cardIn, lnCardZero)
+        val lastAmount = WalletApp.denom.parsedWithSign(info.lastMsat, cardIn, cardZero)
         setVisMany(false -> labelIcon, true -> linkContainer, false -> nonLinkContainer, true -> removeItem)
         setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.lastComment.isDefined -> lastComment, info.label.isDefined -> marketLabel)
         lastAttempt.setText(getString(lnurl_pay_last_paid).format(lastAmount, lastStamp).html)
         info.imageBytes.map(payLinkImageMemo.get).foreach(linkImage.setImageBitmap)
-        for (payMeta <- info.payMetaData) textMetadata.setText(payMeta.textPlain)
         domainName.setText(marketLinkCaption(info).html)
         info.lastComment.foreach(lastComment.setText)
         info.label.foreach(marketLabel.setText)
@@ -1145,13 +1143,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
             val cmd = LNParams.cm.makeSendCmd(pf.prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(manager.resultMsat)
             replaceOutgoingPayment(pf.prExt, PlainMetaDescription(split = None, label = None, invoiceText = new String, meta = data.meta.textPlain), pf.successAction, sentAmount = cmd.split.myPart)
             LNParams.cm.localSend(cmd)
-            alert.dismiss
 
             if (!pf.isThrowAway) {
               val info = LNUrlLinkInfo(lnUrl.uri.getHost, locator = new String, payString = lnUrl.request, nextWithdrawString = new String, payMetaString = data.metadata,
                 lastMsat = manager.resultMsat, lastDate = System.currentTimeMillis, lastHashString = pf.prExt.pr.paymentHash.toHex, lastPayNodeIdString = pf.prExt.pr.nodeId.toString,
                 lastBalanceLong = -1L, lastPayCommentString = manager.resultExtraInput.getOrElse(new String), labelString = new String)
-              WalletApp.lnUrlBag.saveLink(SQLiteLNUrl.toLocator(info), info)
+              WalletApp.lnUrlBag saveLink info.copy(locator = SQLiteLNUrl toLocator info)
             }
           }
         }
@@ -1160,6 +1157,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         val amountHuman = WalletApp.denom.parsedWithSign(manager.resultMsat, cardIn, cardZero).html
         val msg = getString(dialog_lnurl_sending).format(amountHuman, data.callbackUri.getHost).html
         cancellingSnack(contentWindow, obs.subscribe(prf => proceed(prf).run, onFail), msg)
+        alert.dismiss
       }
 
       override val alert: AlertDialog = {

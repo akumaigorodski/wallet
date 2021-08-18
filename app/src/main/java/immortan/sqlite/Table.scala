@@ -359,9 +359,9 @@ object LNUrlTable extends Table {
   def createStatements: Seq[String] = {
     val createTable = s"""CREATE TABLE IF NOT EXISTS $table(
       $IDAUTOINC, $domain STRING NOT NULL, $locator STRING NOT NULL $UNIQUE, $lnurlPay STRING NOT NULL,
-      $nextLnurlWithdraw STRING NOT NULL, $payMeta STRING NOT NULL, $lastMsat INTEGER NOT NULL,
-      $lastDate INTEGER NOT NULL, $lastHash STRING NOT NULL, $lastBalance STRING NOT NULL,
-      $lastPayComment STRING NOT NULL, $lastProof STRING NOT NULL, $label STRING NOT NULL
+      $nextLnurlWithdraw STRING NOT NULL, $payMeta STRING NOT NULL, $lastMsat INTEGER NOT NULL, $lastDate INTEGER NOT NULL,
+      $lastHash STRING NOT NULL, $lastPayNodeId STRING NOT NULL, $lastBalance STRING NOT NULL, $lastPayComment STRING NOT NULL,
+      $lastProof STRING NOT NULL, $label STRING NOT NULL
     )"""
 
     val addSearchTable = s"CREATE VIRTUAL TABLE IF NOT EXISTS $fts$table USING $fts($search, $domain)"

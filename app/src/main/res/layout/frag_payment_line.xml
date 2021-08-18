@@ -200,13 +200,13 @@
                     card_view:cardCornerRadius="@dimen/corner_radius"
                     android:layout_alignParentEnd="true"
                     android:id="@+id/linkImageWrap"
-                    android:layout_height="64dp"
-                    android:layout_width="64dp">
+                    android:layout_height="56dp"
+                    android:layout_width="56dp">
 
                     <ImageView
                         android:id="@+id/linkImage"
-                        android:layout_height="64dp"
-                        android:layout_width="64dp"/>
+                        android:layout_height="56dp"
+                        android:layout_width="56dp"/>
 
                 </androidx.cardview.widget.CardView>
 
@@ -214,7 +214,7 @@
                     style="@style/FillingView"
                     android:layout_toStartOf="@id/linkImageWrap"
                     android:drawableStart="@drawable/baseline_label_24"
-                    android:layout_marginBottom="5dp"
+                    android:layout_marginBottom="10dp"
                     android:drawablePadding="3dp"
                     android:id="@+id/marketLabel"
                     android:textStyle="bold"
@@ -225,25 +225,15 @@
                     style="@style/ChipTextGray"
                     android:id="@+id/domainName"
                     android:textColor="@color/colorAccent"
-                    android:layout_toStartOf="@+id/linkImageWrap"
                     android:layout_below="@+id/marketLabel"
                     android:ellipsize="end"
                     android:maxLines="1"/>
 
                 <TextView
-                    style="@style/FillingView"
-                    android:id="@+id/textMetadata"
-                    android:layout_marginTop="10dp"
-                    android:layout_toStartOf="@+id/linkImageWrap"
-                    android:layout_below="@+id/domainName"
-                    android:ellipsize="end"
-                    android:maxLines="4"/>
-
-                <TextView
                     android:textSize="16sp"
                     android:id="@+id/lastAttempt"
                     android:layout_marginTop="10dp"
-                    android:layout_below="@+id/textMetadata"
+                    android:layout_below="@+id/domainName"
                     style="@style/FillingView"/>
 
                 <TextView

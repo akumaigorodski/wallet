@@ -446,9 +446,9 @@ trait BaseActivity extends AppCompatActivity { me =>
   // Guards and send/receive helpers
 
   def lnSendGuard(prExt: PaymentRequestExt, container: View)(onOK: Option[MilliSatoshi] => Unit): Unit = LNParams.cm.checkIfSendable(prExt.pr.paymentHash) match {
-    case _ if !prExt.pr.features.allowMultiPart || !prExt.pr.features.allowPaymentSecret => snack(container, getString(error_ln_send_features).html, dialog_ok, _.dismiss)
     case _ if !LNParams.cm.all.values.exists(Channel.isOperationalOrWaiting) => snack(container, getString(error_ln_no_chans).html, dialog_ok, _.dismiss)
     case _ if !LNParams.cm.all.values.exists(Channel.isOperational) => snack(container, getString(error_ln_waiting).html, dialog_ok, _.dismiss)
+    case _ if !prExt.pr.features.allowPaymentSecret => snack(container, getString(error_ln_send_no_secret).html, dialog_ok, _.dismiss)
 
     case _ if LNParams.cm.sortedSendable(LNParams.cm.all.values).last.commits.availableForSend < LNParams.minPayment =>
       val reserve = -LNParams.cm.sortedSendable(LNParams.cm.all.values).head.commits.availableForSend

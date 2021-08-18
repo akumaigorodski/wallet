@@ -27,10 +27,10 @@ class SQLiteLNUrl(db: DBInterface) {
     ChannelMaster.next(ChannelMaster.payMarketDbStream)
   }
 
-  def saveLink(locator: String, info: LNUrlLinkInfo, proof: Crypto.PrivateKey = randomKey): Unit = db txWrap {
-    db.change(LNUrlTable.newSql, info.domain, locator, info.payString, info.nextWithdrawString, info.payMetaString,
-      info.lastMsat.toLong: JLong, info.lastDate: JLong, info.lastHashString, info.lastPayNodeIdString,
-      info.lastBalanceLong: JLong, info.lastPayCommentString, proof.value.toHex, info.label)
+  def saveLink(info: LNUrlLinkInfo, proof: Crypto.PrivateKey = randomKey): Unit = db txWrap {
+    db.change(LNUrlTable.newSql, info.domain, info.locator, info.payString, info.nextWithdrawString, info.payMetaString,
+      info.lastMsat.toLong: JLong, info.lastDate: JLong, info.lastHashString, info.lastPayNodeIdString, info.lastBalanceLong: JLong,
+      info.lastPayCommentString, proof.value.toHex, info.labelString)
 
     db.change(LNUrlTable.updPayInfoSql, info.payMetaString, info.lastMsat.toLong: JLong, info.lastDate: JLong,
       info.lastHashString, info.lastPayNodeIdString, info.lastPayCommentString, proof.value.toHex, info.locator)
