@@ -15,7 +15,8 @@ Simple Bitcoin Wallet (aka SBW) is an [IMMORTAN](https://github.com/btcontract/I
 
 - [ ] Finalize and enable private hosted channels.
 - [ ] Achieve complete LNURL spec support (as far as non-custodial wallet can go).
-- [ ] Develop a plugin which would allow full LN nodes to easily utilize SBW routing capabilities.
-- [ ] Develop a decentralized LN backup plugin which would allow channels to be restored without closing.
+- [ ] Incorporate Rene Pickhardt and Stefan Richter [research](https://arxiv.org/abs/2107.05322) to futher improve pathfinding.
+- [ ] Develop an Eclair plugin which would allow full LN nodes to easily utilize SBW routing capabilities.
+- [ ] Develop a decentralized backup Eclair plugin which would allow channels to be restored without closing.
 - [ ] Implement Addon system for integration of 3rd party Lightning-enabled services.
 - [ ] Implement UI for fine controlling of routed Lightning payments.
