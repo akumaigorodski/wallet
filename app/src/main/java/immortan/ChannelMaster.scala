@@ -163,12 +163,13 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     // Outgoing FSMs won't receive anything without channel listeners
     for (channel <- all.values) channel.listeners = Set.empty
     for (fsm <- inProcessors.values) fsm.becomeShutDown
-    pf.subscription.unsubscribe
+    for (sub <- pf.subscription) sub.unsubscribe
     pf.listeners = Set.empty
   }
 
   def implantChannel(cs: Commitments, freshChannel: Channel): Unit = {
     // Note that this removes all listeners this channel previously had
+    pf process PathFinder.CMDStartPeriodicResync
     all += Tuple2(cs.channelId, freshChannel)
     freshChannel.listeners = Set(me)
     next(statusUpdateStream)

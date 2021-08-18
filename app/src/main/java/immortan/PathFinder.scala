@@ -23,6 +23,7 @@ import fr.acinq.bitcoin.Crypto
 object PathFinder {
   val NotifyRejected = "path-finder-notify-rejected"
   val NotifyOperational = "path-finder-notify-operational"
+  val CMDStartPeriodicResync = "cmd-start-periodic-resync"
   val CMDLoadGraph = "cmd-load-graph"
 
   val WAITING = 0
@@ -38,25 +39,19 @@ object PathFinder {
 abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) extends StateMachine[Data] { me =>
   private val extraEdges = CacheBuilder.newBuilder.expireAfterWrite(1, TimeUnit.DAYS).maximumSize(5000).build[ShortChannelId, GraphEdge]
   val extraEdgesMap: mutable.Map[ShortChannelId, GraphEdge] = extraEdges.asMap.asScala
+
   var lastAvgHopParams: Option[AvgHopParams] = None
   var listeners: Set[CanBeRepliedTo] = Set.empty
+  var subscription: Option[Subscription] = None
   var debugMode: Boolean = false
 
   implicit val context: ExecutionContextExecutor = ExecutionContext fromExecutor Executors.newSingleThreadExecutor
   def process(changeMessage: Any): Unit = scala.concurrent.Future(me doProcess changeMessage)
 
   private val CMDResync = "cmd-resync"
-  private val RESYNC_PERIOD: Long = 1000L * 3600 * 24 * 2
+  private val RESYNC_PERIOD: Long = 1000L * 3600 * 48
   // We don't load routing data on every startup but when user (or system) actually needs it
   become(Data(channels = Map.empty, hostedChannels = Map.empty, DirectedGraph.empty), WAITING)
-
-  val subscription: Subscription = {
-    // Init first resync with persistent delay on startup
-    val repeat = Rx.repeat(Rx.ioQueue, Rx.incHour, 49 to Int.MaxValue by 49)
-    // Resync every RESYNC_PERIOD days + 1 hour to trigger a full resync, not just PHC resync
-    val delay = Rx.initDelay(repeat, getLastTotalResyncStamp, RESYNC_PERIOD, preStartMsec = 100)
-    delay.subscribe(_ => me process CMDResync)
-  }
 
   def getLastTotalResyncStamp: Long
   def getLastNormalResyncStamp: Long
@@ -68,8 +63,15 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
   def getExtraNodes: Set[RemoteNodeInfo]
 
   def doProcess(change: Any): Unit = (change, state) match {
-    // Graph is loaded but it is empty: likely this is first launch or synchronizing
-    case (fr: FindRoute, OPERATIONAL) if data.channels.isEmpty => fr.sender process NotifyRejected
+    case (CMDStartPeriodicResync, WAITING | OPERATIONAL) if subscription.isEmpty =>
+      val repeat = Rx.repeat(Rx.ioQueue, Rx.incHour, times = 49 to Int.MaxValue by 49)
+      // Resync every RESYNC_PERIOD hours + 1 hour to trigger a full resync, not just PHC resync
+      val delay = Rx.initDelay(repeat, getLastTotalResyncStamp, RESYNC_PERIOD, preStartMsec = 100)
+      subscription = delay.subscribe(_ => me process CMDResync).asSome
+
+    case (fr: FindRoute, OPERATIONAL) if data.channels.isEmpty =>
+      // Graph is loaded but empty: likely a first launch or synchronizing
+      fr.sender process NotifyRejected
 
     case (fr: FindRoute, OPERATIONAL) =>
       // Search through single pre-selected local channel

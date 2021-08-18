@@ -48,8 +48,7 @@
 
     <string name="action_backup_present_title"><![CDATA[
         Wallet recovery phrase<br><br><small><b>Lightning backup file is present</b>.
-        <br><br>Recovery phrase will be used to decrypt it and restore fully working channels on this device.<br><br>
-        Lightning channels can work correctly on one device at a time, please do not use them on previous device once restored on this one.</small>
+        <br><br>Recovery phrase will be used to decrypt it and restore fully working channels on this device.</small>
     ]]></string>
 
     <string name="action_recovery_phrase_title">Wallet recovery phrase</string>
