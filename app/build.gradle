@@ -12,7 +12,7 @@ android {
         targetSdkVersion 29
         minSdkVersion 21
 
-        versionName '2.0'
+        versionName '2.0.1'
         versionCode 61
 
         ndk {
