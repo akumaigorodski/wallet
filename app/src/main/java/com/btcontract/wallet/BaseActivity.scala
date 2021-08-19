@@ -334,9 +334,11 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   class RateManager(val content: ViewGroup, extraText: Option[String], visHintRes: Int, rates: Fiat2Btc, fiatCode: String) {
     val fiatInputAmount: CurrencyEditText = content.findViewById(R.id.fiatInputAmount).asInstanceOf[CurrencyEditText]
-    val fiatInputAmountHint: TextView = content.findViewById(R.id.fiatInputAmountHint).asInstanceOf[TextView]
     val inputAmount: CurrencyEditText = content.findViewById(R.id.inputAmount).asInstanceOf[CurrencyEditText]
+
+    val fiatInputAmountHint: TextView = content.findViewById(R.id.fiatInputAmountHint).asInstanceOf[TextView]
     val inputAmountHint: TextView = content.findViewById(R.id.inputAmountHint).asInstanceOf[TextView]
+
     val hintFiatDenom: TextView = clickableTextField(content findViewById R.id.hintFiatDenom)
     val hintDenom: TextView = clickableTextField(content findViewById R.id.hintDenom)
 
@@ -406,6 +408,8 @@ trait BaseActivity extends AppCompatActivity { me =>
     inputAmount addTextChangedListener onTextChange { _ => updateFiatInput }
     inputAmountHint setText WalletApp.denom.sign.toUpperCase
     fiatInputAmountHint setText fiatCode.toUpperCase
+    fiatInputAmount setLocale Denomination.locale
+    inputAmount setLocale Denomination.locale
     inputAmount.requestFocus
   }
 

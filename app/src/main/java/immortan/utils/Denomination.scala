@@ -5,7 +5,8 @@ import fr.acinq.eclair._
 
 
 object Denomination {
-  val symbols = new DecimalFormatSymbols
+  val locale = new java.util.Locale("en", "US")
+  val symbols = new DecimalFormatSymbols(locale)
   val formatFiatPrecise = new DecimalFormat("#,###,###.##")
   val formatFiat = new DecimalFormat("#,###,###")
 
