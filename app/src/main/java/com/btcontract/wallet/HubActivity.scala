@@ -488,8 +488,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     def marketLinkCaption(info: LNUrlLinkInfo): String = info.payMetaData match {
-      case Success(payMeta) if payMeta.emails.nonEmpty => s"<small><b>EMAIL</b></small> ${payMeta.emails.head}"
-      case Success(payMeta) if payMeta.identities.nonEmpty => s"<small><b>ID</b></small> ${payMeta.identities.head}"
+      case Success(payMeta) if payMeta.identities.nonEmpty => payMeta.identities.head
+      case Success(payMeta) if payMeta.emails.nonEmpty => payMeta.emails.head
       case _ => info.payLink.get.uri.getHost
     }
 
