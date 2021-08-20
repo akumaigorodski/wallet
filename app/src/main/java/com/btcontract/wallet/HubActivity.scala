@@ -187,10 +187,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val meta: TextView = swipeWrap.findViewById(R.id.meta).asInstanceOf[TextView]
 
     val linkContainer: RelativeLayout = swipeWrap.findViewById(R.id.linkContainer).asInstanceOf[RelativeLayout]
-    val lastAttempt: TextView = swipeWrap.findViewById(R.id.lastAttempt).asInstanceOf[TextView]
+    val marketItems: FlowLayout = swipeWrap.findViewById(R.id.marketItems).asInstanceOf[FlowLayout]
     val marketLabel: TextView = swipeWrap.findViewById(R.id.marketLabel).asInstanceOf[TextView]
-    val lastComment: TextView = swipeWrap.findViewById(R.id.lastComment).asInstanceOf[TextView]
-    val domainName: TextView = swipeWrap.findViewById(R.id.domainName).asInstanceOf[TextView]
     val linkImage: ImageView = swipeWrap.findViewById(R.id.linkImage).asInstanceOf[ImageView]
     val linkImageWrap: View = swipeWrap.findViewById(R.id.linkImageWrap)
     itemView.setTag(this)
@@ -366,7 +364,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isPlus = false)
 
           addFlowChip(extraInfo, getString(popup_explorer), R.drawable.border_green, _ => me browseTxid info.txid)
-          addFlowChip(flow = extraInfo, getString(popup_txid) format info.txidString.short, R.drawable.border_green, info.txidString.asSome)
+          addFlowChip(extraInfo, getString(popup_txid) format info.txidString.short, R.drawable.border_green, info.txidString.asSome)
           for (address <- info.description.toAddress) addFlowChip(extraInfo, getString(popup_to_address) format address.short, R.drawable.border_yellow, address.asSome)
           for (nodeId <- info.description.withNodeId) addFlowChip(extraInfo, getString(popup_ln_node) format nodeId.toString.short, R.drawable.border_blue, nodeId.toString.asSome)
 
@@ -469,14 +467,15 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         swipeWrap.setLockDrag(true)
 
       case info: LNUrlLinkInfo =>
-        val lastStamp = WalletApp.app.when(info.date, WalletApp.app.dateFormat)
         val lastAmount = WalletApp.denom.parsedWithSign(info.lastMsat, cardIn, cardZero)
         setVisMany(false -> labelIcon, true -> linkContainer, false -> nonLinkContainer, true -> removeItem)
-        setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.lastComment.isDefined -> lastComment, info.label.isDefined -> marketLabel)
-        lastAttempt.setText(getString(lnurl_pay_last_paid).format(lastAmount, lastStamp).html)
+        setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.label.isDefined -> marketLabel)
+
+        marketItems.removeAllViewsInLayout
+        addFlowChip(marketItems, marketLinkCaption(info), R.drawable.border_gray)
+        addFlowChip(marketItems, getString(lnurl_pay_last_paid).format(lastAmount), R.drawable.border_gray)
+        for (lastComment <- info.lastComment) addFlowChip(marketItems, lastComment, R.drawable.border_blue)
         info.imageBytes.map(payLinkImageMemo.get).foreach(linkImage.setImageBitmap)
-        domainName.setText(marketLinkCaption(info).html)
-        info.lastComment.foreach(lastComment.setText)
         info.label.foreach(marketLabel.setText)
         swipeWrap.setLockDrag(false)
       }

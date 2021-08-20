@@ -298,7 +298,7 @@
     <string name="dialog_lnurl_decrypt_fail">Failed to decrypt a message, please contact vendor to sort this out.</string>
     <string name="dialog_lnurl_withdraw"><![CDATA[<b>Lightning</b> withdraw link<br><br><b>%1$s</b>%2$s]]></string>
     <string name="dialog_lnurl_pay"><![CDATA[<b>Lightning</b> payment link<br><br><b>%1$s</b>%2$s]]></string>
-    <string name="lnurl_pay_last_paid"><![CDATA[<strong>%1$s</strong> | %2$s]]></string>
+    <string name="lnurl_pay_last_paid"><![CDATA[<strong>%1$s</strong>]]></string>
 
     <string name="dialog_lnurl_processing"><![CDATA[Processing&#8230;<br><br><b>%1$s</b>]]></string>
     <string name="dialog_lnurl_splitting"><![CDATA[Requesting invoice&#8230;<br><br><b>%1$s</b>]]></string>

@@ -222,29 +222,12 @@
                     android:ellipsize="end"
                     android:maxLines="1"/>
 
-                <TextView
-                    style="@style/ChipTextGray"
-                    android:id="@+id/domainName"
-                    android:textColor="@color/colorAccent"
+                <org.apmem.tools.layouts.FlowLayout
+                    android:layout_toStartOf="@id/linkImageWrap"
                     android:layout_below="@+id/marketLabel"
-                    android:ellipsize="end"
-                    android:maxLines="1"/>
-
-                <TextView
-                    android:textSize="16sp"
-                    android:id="@+id/lastAttempt"
-                    android:layout_marginTop="10dp"
-                    android:layout_below="@+id/domainName"
-                    style="@style/FillingView"/>
-
-                <TextView
-                    style="@style/ChipTextGray"
-                    android:id="@+id/lastComment"
-                    android:background="@drawable/border_blue"
-                    android:layout_below="@id/lastAttempt"
-                    android:layout_marginTop="10dp"
-                    android:ellipsize="end"
-                    android:maxLines="2"/>
+                    android:id="@+id/marketItems"
+                    style="@style/FillingView"
+                    f:layout_newLine="true"/>
 
             </RelativeLayout>
         </androidx.cardview.widget.CardView>
