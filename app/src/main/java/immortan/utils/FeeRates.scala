@@ -71,12 +71,12 @@ class FeeRates(bag: DataBag) extends CanBeShutDown {
   val subscription: Subscription = {
     val retry = Rx.retry(Rx.ioQueue.map(_ => reloadData), Rx.incSec, 3 to 18 by 3)
     val repeat = Rx.repeat(retry, Rx.incHour, periodHours to Int.MaxValue by periodHours)
-    Rx.initDelay(repeat, info.stamp, periodHours * 60 * 60 * 1000L).subscribe(updateInfo, none)
+    Rx.initDelay(repeat, info.stamp, periodHours * 3600 * 1000L).subscribe(updateInfo, none)
   }
 }
 
 case class FeeRatesInfo(smoothed: FeeratesPerKw, history: List[FeeratesPerKB], stamp: Long) {
-  private val targets = FeeTargets(fundingBlockTarget = 12, commitmentBlockTarget = 6, mutualCloseBlockTarget = 36, claimMainBlockTarget = 72)
+  private val targets = FeeTargets(fundingBlockTarget = 36, commitmentBlockTarget = 12, mutualCloseBlockTarget = 72, claimMainBlockTarget = 144)
   private val estimator = new FeeEstimator { override def getFeeratePerKw(target: Int): FeeratePerKw = smoothed.feePerBlock(target) max minPerKw }
   val onChainFeeConf: OnChainFeeConf = OnChainFeeConf(targets, estimator)
 }
@@ -114,9 +114,8 @@ class EsploraFeeProvider(val url: String) extends FeeRatesProvider {
   // First we keep only fee ranges with a max block delay below the limit
   // out of all the remaining fee ranges, we select the one with the minimum higher bound
   def extractFeerate(feeRanges: EsploraFeeStructure, maxBlockDelay: Int): FeeratePerKB = {
-    val belowLimit = FeeratePerVByte(feeRanges.filterKeys(_.toInt <= maxBlockDelay).values.min.sat)
-    val convertedToPerKw = FeeratePerKw(belowLimit)
-    FeeratePerKB(convertedToPerKw)
+    val belowLimit = FeeratePerKw(feeRanges.filterKeys(_.toInt <= maxBlockDelay).values.min.sat * 1000L)
+    FeeratePerKB(FeeratePerKw.MinimumFeeratePerKw max belowLimit)
   }
 }
 

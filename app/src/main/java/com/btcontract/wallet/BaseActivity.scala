@@ -22,7 +22,7 @@ import fr.acinq.eclair.wire.{ChannelReestablish, Fail}
 import com.google.zxing.{BarcodeFormat, EncodeHintType}
 import androidx.core.content.{ContextCompat, FileProvider}
 import immortan.utils.{Denomination, InputParser, PaymentRequestExt}
-import fr.acinq.eclair.blockchain.fee.{FeeratePerKw, FeeratePerVByte}
+import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import com.google.android.material.snackbar.{BaseTransientBottomBar, Snackbar}
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
 import com.cottacush.android.currencyedittext.CurrencyEditText
@@ -424,10 +424,11 @@ trait BaseActivity extends AppCompatActivity { me =>
     var rate: FeeratePerKw = _
 
     def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = {
-      feeRate setText getString(dialog_fee_sat_vbyte).format(rate.toLong / 1000).html
-      setVis(feeOpt.isDefined, bitcoinFee)
-      setVis(feeOpt.isDefined, fiatFee)
-      setVis(showIssue, txIssues)
+      feeRate setText getString(dialog_fee_sat_vbyte).format(FeeratePerByte(rate).feerate.toLong).html
+
+      setVis(isVisible = feeOpt.isDefined, bitcoinFee)
+      setVis(isVisible = feeOpt.isDefined, fiatFee)
+      setVis(isVisible = showIssue, txIssues)
 
       feeOpt.foreach { fee =>
         val humanFee = WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html
@@ -437,7 +438,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     }
 
     customFeerateOption setOnClickListener onButtonTap {
-      val currentFeerate = FeeratePerVByte(rate).feerate.toLong
+      val currentFeerate = FeeratePerByte(rate).feerate.toLong
       customFeerate.setValueTo(currentFeerate * 10)
       customFeerate.setValue(currentFeerate)
       customFeerate.setValueFrom(1L)
@@ -572,7 +573,7 @@ trait HasTypicalChainFee {
     val target = LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget
     val feerate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(target)
     // Should not be used by long-lived instances since this info is getting outdated
-    Transactions.weight2fee(feerate, weight = 600).toMilliSatoshi
+    Transactions.weight2fee(feerate, weight = 750).toMilliSatoshi
   }
 
   def replaceOutgoingPayment(ext: PaymentRequestExt, description: PaymentDescription, action: Option[PaymentAction], sentAmount: MilliSatoshi, seenAt: Long = System.currentTimeMillis): Unit =

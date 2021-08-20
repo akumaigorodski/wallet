@@ -36,13 +36,6 @@ object FeeratePerByte {
 /** Fee rate in satoshi-per-bytes. */
 case class FeeratePerByte(feerate: Satoshi)
 
-object FeeratePerVByte {
-  def apply(feeratePerKw: FeeratePerKw): FeeratePerVByte = FeeratePerVByte(feeratePerKw.feerate / 1000)
-}
-
-/** Fee rate in satoshi-per-virtual-bytes. */
-case class FeeratePerVByte(feerate: Satoshi)
-
 /** Fee rate in satoshi-per-kilo-bytes (1 kB = 1000 bytes). */
 case class FeeratePerKB(feerate: Satoshi) extends Ordered[FeeratePerKB] {
   // @formatter:off
@@ -103,7 +96,6 @@ object FeeratePerKw {
 
   // @formatter:off
   def apply(feeratePerKB: FeeratePerKB): FeeratePerKw = MinimumFeeratePerKw.max(FeeratePerKw(feeratePerKB.feerate / 4))
-  def apply(feeratePerVByte: FeeratePerVByte): FeeratePerKw = MinimumFeeratePerKw max FeeratePerKw(feeratePerVByte.feerate * 1000)
   def apply(feeratePerByte: FeeratePerByte): FeeratePerKw = FeeratePerKw(FeeratePerKB(feeratePerByte))
   // @formatter:on
 }

@@ -23,7 +23,7 @@ import rx.lang.scala.{Observable, Subject, Subscription}
 import com.androidstudy.networkmanager.{Monitor, Tovuti}
 import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv}
 import immortan.ChannelMaster.{OutgoingAdds, RevealedLocalFulfills}
-import fr.acinq.eclair.blockchain.fee.{FeeratePerKw, FeeratePerVByte}
+import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import fr.acinq.bitcoin.{ByteVector32, Crypto, SatoshiLong, Transaction}
 import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, Scripts}
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
@@ -1082,7 +1082,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     feeView.customFeerate addOnChangeListener new Slider.OnChangeListener {
       override def onValueChange(slider: Slider, value: Float, fromUser: Boolean): Unit = {
-        feeView.rate = FeeratePerKw apply FeeratePerVByte(value.toLong.sat)
+        feeView.rate = FeeratePerKw apply FeeratePerByte(value.toLong.sat)
         worker addWork "SLIDER-CHANGE"
       }
     }
