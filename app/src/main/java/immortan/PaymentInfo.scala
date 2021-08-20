@@ -40,13 +40,13 @@ sealed trait TransactionDetails {
   val identity: String
 }
 
-case class LNUrlLinkInfo(domain: String, locator: String, payString: String, nextWithdrawString: String, payMetaString: String, lastMsat: MilliSatoshi,
-                         lastDate: Long, lastHashString: String, lastPayNodeIdString: String, lastBalanceLong: Long, lastPayCommentString: String,
-                         labelString: String) extends TransactionDetails {
+case class LNUrlLinkInfo(domain: String, locator: String, payString: String, nextWithdrawString: String, payMetaString: String,
+                         lastMsat: MilliSatoshi, lastDate: Long, lastHashString: String, lastPayNodeIdString: String, lastBalanceLong: Long,
+                         lastPayCommentString: String, labelString: String) extends TransactionDetails {
 
-  override val identity: String = domain + payString // Withdraw part may change, but domain + pay part always stays stable
-  override val seenAt: Long = System.currentTimeMillis + lastDate // To make it always appear on top in timestamp-sorted lists on UI
   override val updatedAt: Long = lastDate // To properly hide it if user chooses an update-filtered view
+  override val seenAt: Long = System.currentTimeMillis + lastDate // To make it always appear on top in lists on UI
+  override val identity: String = domain + payString // Withdraw part may change, but not domain + pay part
   override val date: Date = new Date(lastDate) // To display real date of last usage in lists on UI
 
   lazy val label: Option[String] = Option(labelString).filter(_.nonEmpty)
@@ -65,17 +65,19 @@ case class LNUrlLinkInfo(domain: String, locator: String, payString: String, nex
 }
 
 case class DelayedRefunds(txToParent: Map[Transaction, TxConfirmedAtOpt] = Map.empty) extends TransactionDetails {
-  override val seenAt: Long = Long.MaxValue // To make it always appear on top in timestamp-sorted lists on UI
-  override val updatedAt: Long = Long.MaxValue // To never hide it if user chooses an update-filtered view
-  lazy val totalAmount: MilliSatoshi = txToParent.keys.map(_.txOut.head.amount).sum.toMilliSatoshi
+  lazy val totalAmount: MilliSatoshi = txToParent.keys.flatMap(_.txOut).map(_.amount).sum.toMilliSatoshi
+
+  override val updatedAt: Long = System.currentTimeMillis * 2 // To never hide it if user chooses an update-filtered view
+  override val seenAt: Long = System.currentTimeMillis * 2 // To make it always appear on top in lists on UI
   override val identity: String = "DelayedRefunds"
 }
 
 case class SplitParams(prExt: PaymentRequestExt, action: Option[PaymentAction], description: PaymentDescription, cmd: SendMultiPart, chainFee: MilliSatoshi)
 
-case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, seenAt: Long, updatedAt: Long, descriptionString: String, actionString: String,
-                       paymentHash: ByteVector32, paymentSecret: ByteVector32, received: MilliSatoshi, sent: MilliSatoshi, fee: MilliSatoshi, balanceSnapshot: MilliSatoshi,
-                       fiatRatesString: String, chainFee: MilliSatoshi, incoming: Long) extends TransactionDetails {
+case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, seenAt: Long, updatedAt: Long, descriptionString: String,
+                       actionString: String, paymentHash: ByteVector32, paymentSecret: ByteVector32, received: MilliSatoshi, sent: MilliSatoshi,
+                       fee: MilliSatoshi, balanceSnapshot: MilliSatoshi, fiatRatesString: String, chainFee: MilliSatoshi,
+                       incoming: Long) extends TransactionDetails {
 
   override val identity: String = prString
 
@@ -138,9 +140,9 @@ case class PlainMetaDescription(split: Option[SplitInfo], label: Option[String],
 
 // Relayed preimages
 
-case class RelayedPreimageInfo(paymentHashString: String,
-                               paymentSecretString: String, preimageString: String, relayed: MilliSatoshi,
-                               earned: MilliSatoshi, seenAt: Long, updatedAt: Long) extends TransactionDetails {
+case class RelayedPreimageInfo(paymentHashString: String, paymentSecretString: String,
+                               preimageString: String, relayed: MilliSatoshi, earned: MilliSatoshi,
+                               seenAt: Long, updatedAt: Long) extends TransactionDetails {
 
   override val identity: String = paymentHashString
 
@@ -155,8 +157,9 @@ case class RelayedPreimageInfo(paymentHashString: String,
 
 // Tx descriptions
 
-case class TxInfo(txString: String, txidString: String, pubKeyString: String, depth: Long, receivedSat: Satoshi, sentSat: Satoshi, feeSat: Satoshi,
-                  seenAt: Long, updatedAt: Long, descriptionString: String, balanceSnapshot: MilliSatoshi, fiatRatesString: String, incoming: Long,
+case class TxInfo(txString: String, txidString: String, pubKeyString: String, depth: Long, receivedSat: Satoshi,
+                  sentSat: Satoshi, feeSat: Satoshi, seenAt: Long, updatedAt: Long, descriptionString: String,
+                  balanceSnapshot: MilliSatoshi, fiatRatesString: String, incoming: Long,
                   doubleSpent: Long) extends TransactionDetails {
 
   override val identity: String = txString

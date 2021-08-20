@@ -83,18 +83,18 @@
 
         <activity
             android:launchMode="singleTask"
-            android:name="com.btcontract.wallet.EmergencyActivity"
+            android:name="EmergencyActivity"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
-            android:name="com.btcontract.wallet.SetupActivity"
+            android:name="SetupActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
-            android:name="com.btcontract.wallet.HubActivity"
+            android:name="HubActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"
@@ -102,42 +102,42 @@
 
         <activity
             android:launchMode="singleTask"
-            android:name="com.btcontract.wallet.RemotePeerActivity"
+            android:name="RemotePeerActivity"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
-            android:name="com.btcontract.wallet.QRChainActivity"
+            android:name="QRChainActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
             android:launchMode="singleTask"
-            android:name="com.btcontract.wallet.QRInvoiceActivity"
+            android:name="QRInvoiceActivity"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
-            android:name="com.btcontract.wallet.QRSplitActivity"
+            android:name="QRSplitActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
-            android:name="com.btcontract.wallet.ChanActivity"
+            android:name="ChanActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
-            android:name="com.btcontract.wallet.SettingsActivity"
+            android:name="SettingsActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
-            android:name="com.btcontract.wallet.StatActivity"
+            android:name="StatActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
