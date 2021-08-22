@@ -289,17 +289,17 @@ trait BaseActivity extends AppCompatActivity { me =>
     else sheet.show(getSupportFragmentManager, "scanner-bottom-sheet-fragment")
   }
 
-  def addFlowChip(flow: FlowLayout, chipText: String, backgroundRes: Int, shareText: Option[String] = None): Unit = {
+  def addFlowChip(flow: FlowLayout, chipText: String, backgroundRes: Int, shareText: Option[String] = None): TextView =
     addFlowChip(flow, chipText, backgroundRes, defText => shareText.orElse(defText.asSome) foreach share)
-  }
 
-  def addFlowChip(flow: FlowLayout, chipText: String, backgroundRes: Int, onTap: String => Unit): Unit = {
+  def addFlowChip(flow: FlowLayout, chipText: String, backgroundRes: Int, onTap: String => Unit): TextView = {
     val text = getLayoutInflater.inflate(R.layout.frag_chip_text, flow, false).asInstanceOf[TextView]
     text setOnClickListener onButtonTap(onTap apply text.getText.toString)
     text.setBackgroundResource(backgroundRes)
     flow.setVisibility(View.VISIBLE)
     text.setText(chipText.html)
     flow.addView(text)
+    text
   }
 
   // Rich popup title

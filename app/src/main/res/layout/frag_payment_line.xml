@@ -186,20 +186,21 @@
             <!-- Pay market links -->
 
             <RelativeLayout
+                android:visibility="gone"
                 style="@style/FillingView"
                 android:id="@+id/linkContainer"
                 android:gravity="center_vertical"
                 android:background="@drawable/border_gray"
                 android:paddingBottom="10dp"
                 android:paddingStart="15dp"
-                android:paddingTop="10dp"
-                android:paddingEnd="15dp"
-                android:visibility="gone">
+                android:paddingEnd="0dp">
 
                 <androidx.cardview.widget.CardView
                     card_view:cardCornerRadius="@dimen/corner_radius"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="10dp"
                     android:id="@+id/linkImageWrap"
                     android:layout_height="56dp"
                     android:layout_width="56dp">
@@ -215,7 +216,7 @@
                     style="@style/FillingView"
                     android:layout_toStartOf="@id/linkImageWrap"
                     android:drawableStart="@drawable/baseline_label_24"
-                    android:layout_marginBottom="10dp"
+                    android:layout_marginTop="10dp"
                     android:drawablePadding="3dp"
                     android:id="@+id/marketLabel"
                     android:textStyle="bold"
@@ -225,6 +226,7 @@
                 <org.apmem.tools.layouts.FlowLayout
                     android:layout_toStartOf="@id/linkImageWrap"
                     android:layout_below="@+id/marketLabel"
+                    android:layout_marginTop="10dp"
                     android:id="@+id/marketItems"
                     style="@style/FillingView"
                     f:layout_newLine="true"/>

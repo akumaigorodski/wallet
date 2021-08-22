@@ -85,6 +85,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   private[this] lazy val bottomActionBar = findViewById(R.id.bottomActionBar).asInstanceOf[LinearLayout]
   private[this] lazy val contentWindow = findViewById(R.id.contentWindow).asInstanceOf[RelativeLayout]
   private[this] lazy val itemsList = findViewById(R.id.itemsList).asInstanceOf[ListView]
+  private[this] lazy val upDrawable = getDrawable(R.drawable.baseline_arrow_upward_18)
+
   private[this] lazy val walletCards = new WalletCardsViewHolder
   private[this] val viewBinderHelper = new ViewBinderHelper
   private[this] val CHOICE_RECEIVE_TAG = "choiceReceiveTag"
@@ -473,7 +475,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
         marketItems.removeAllViewsInLayout
         addFlowChip(marketItems, marketLinkCaption(info), R.drawable.border_gray)
-        addFlowChip(marketItems, getString(lnurl_pay_last_paid).format(lastAmount), R.drawable.border_gray)
+        addFlowChip(marketItems, lastAmount, R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(upDrawable, null, null, null)
         for (lastComment <- info.lastComment) addFlowChip(marketItems, lastComment, R.drawable.border_blue)
         info.imageBytes.map(payLinkImageMemo.get).foreach(linkImage.setImageBitmap)
         info.label.foreach(marketLabel.setText)
