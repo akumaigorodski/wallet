@@ -1,6 +1,10 @@
 apply plugin: "com.android.application"
 apply plugin: "jp.leafytree.android-scala"
 
+task wrapper(type: Wrapper) {
+    gradleVersion = '5.4.1'
+}
+
 android {
     compileSdkVersion 29
     buildToolsVersion "30.0.1"
