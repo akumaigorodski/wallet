@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Gradle: org.scodec:scodec-bits_2.11:1.1.9@jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.scodec/scodec-bits_2.11/1.1.9/b02c221ca502467dcd7240c2be7bcd626988362a/scodec-bits_2.11-1.1.9.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.scodec/scodec-bits_2.11/1.1.9/482a5894e9713479f2ec67675e8c4dff3484d48a/scodec-bits_2.11-1.1.9-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.scodec/scodec-bits_2.11/1.1.9/9c83a688be9b84af7f6717222cde38736ec24a93/scodec-bits_2.11-1.1.9-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

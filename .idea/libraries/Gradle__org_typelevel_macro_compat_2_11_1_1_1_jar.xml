@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Gradle: org.typelevel:macro-compat_2.11:1.1.1@jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.typelevel/macro-compat_2.11/1.1.1/cb87cb74fd5fb118fede3f98075c2044616b35d/macro-compat_2.11-1.1.1.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.typelevel/macro-compat_2.11/1.1.1/8f2c78385e3a1c5422da40ff752eb32ad3deae21/macro-compat_2.11-1.1.1-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.typelevel/macro-compat_2.11/1.1.1/363f86f631e1e95fc7989f73a0cea3ee18107cea/macro-compat_2.11-1.1.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

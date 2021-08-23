@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Gradle: org.json4s:json4s-scalap_2.11:3.6.7@jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.json4s/json4s-scalap_2.11/3.6.7/72197363ee82e16adc889f34385c55bff06b40b/json4s-scalap_2.11-3.6.7.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.json4s/json4s-scalap_2.11/3.6.7/118ad7f9c8674ab12f2c6c92282f6d66a0d5e8e/json4s-scalap_2.11-3.6.7-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.json4s/json4s-scalap_2.11/3.6.7/486edc6bf6214a728805caa9506e120216849b9f/json4s-scalap_2.11-3.6.7-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

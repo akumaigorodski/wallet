@@ -539,7 +539,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     def receive(alert: AlertDialog): Unit = {
       val preimage: ByteVector32 = randomBytes32
       val description: PaymentDescription = getDescription
-      val prExt = LNParams.cm.makePrExt(toReceive = manager.resultMsat, allowedChans = cs, description, preimage)
+      val prExt = LNParams.cm.makePrExt(toReceive = manager.resultMsat, description, allowedChans = cs, hash = Crypto sha256 preimage)
       LNParams.cm.payBag.replaceIncomingPayment(prExt, preimage, description, BaseActivity.totalBalance, LNParams.fiatRates.info.rates)
       WalletApp.app.showStickyNotification(incoming_notify_title, incoming_notify_body, manager.resultMsat)
       processInvoice(prExt)

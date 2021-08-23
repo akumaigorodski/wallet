@@ -220,7 +220,7 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
     // Wait part may have no route yet (but we expect a route to arrive) or it could be sent to channel but not processed by channel yet
     def waitPartsNotYetInChannel(cnc: ChanAndCommits): PartIdToAmount = waitParts(cnc.commits.channelId) -- cnc.commits.allOutgoing.map(_.partId)
     data.payments.values.flatMap(_.data.parts.values).collect { case wait: WaitForRouteOrInFlight => waitParts(wait.cnc.commits.channelId) += wait.partId -> wait.amount }
-    chans.flatMap(Channel.chanAndCommitsOpt).foreach(cnc => finals(cnc) = cnc.commits.maxSendInFlight.min(cnc.commits.availableForSend - maxFee) - waitPartsNotYetInChannel(cnc).values.sum)
+    chans.flatMap(Channel.chanAndCommitsOpt).foreach(cnc => finals(cnc) = cnc.commits.maxSendInFlight.min(cnc.commits.availableForSend) - maxFee - waitPartsNotYetInChannel(cnc).values.sum)
     finals.filter { case (cnc, sendable) => sendable >= cnc.commits.minSendable }
   }
 

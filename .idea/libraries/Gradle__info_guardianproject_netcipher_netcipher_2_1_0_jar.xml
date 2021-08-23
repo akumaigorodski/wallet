@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Gradle: info.guardianproject.netcipher:netcipher:2.1.0@jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/info.guardianproject.netcipher/netcipher/2.1.0/539327a4e15613ff944beae75dd85d11e34e1bdc/netcipher-2.1.0.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/info.guardianproject.netcipher/netcipher/2.1.0/db6ab82c3ca964e141a67e29f124307e87e1f1ed/netcipher-2.1.0-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/info.guardianproject.netcipher/netcipher/2.1.0/f344f79bbeb1eef3b3de3f18ddf5d897bc1ea682/netcipher-2.1.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

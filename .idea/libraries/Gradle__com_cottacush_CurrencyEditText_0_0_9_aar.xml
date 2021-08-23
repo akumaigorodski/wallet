@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="Gradle: com.cottacush:CurrencyEditText:0.0.9@aar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/c8378e80af3097e7a9000be310fd34ec/CurrencyEditText-0.0.9/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/c8378e80af3097e7a9000be310fd34ec/CurrencyEditText-0.0.9/res" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.cottacush/CurrencyEditText/0.0.9/39080d427c4ab100242798d24a40166f2b3ddc56/CurrencyEditText-0.0.9-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.cottacush/CurrencyEditText/0.0.9/df13f55e4101cc5693a30409d5d6fda88f3cd2b7/CurrencyEditText-0.0.9-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

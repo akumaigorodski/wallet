@@ -84,60 +84,20 @@ case class NormalCommits(channelFlags: Byte, channelId: ByteVector32, channelFea
 
   lazy val revealedFulfills: Set[LocalFulfill] = getPendingFulfills(Helpers extractRevealedPreimages localChanges.all)
 
-  lazy val availableForSend: MilliSatoshi = {
-    // We need to base the next current commitment on the last sig we sent, even if we didn't yet receive their revocation
-    val balanceNoFees = latestReducedRemoteSpec.toRemote - remoteParams.channelReserve
-
-    if (localParams.isFunder) {
-      val feerate = latestReducedRemoteSpec.copy(feeratePerKw = latestReducedRemoteSpec.feeratePerKw)
-      val feeBuffer = htlcOutputFee(latestReducedRemoteSpec.feeratePerKw, channelFeatures.commitmentFormat)
-      val commitFees = commitTxFeeMsat(remoteParams.dustLimit, latestReducedRemoteSpec, channelFeatures.commitmentFormat)
-      val trimThreshold = offeredHtlcTrimThreshold(remoteParams.dustLimit, latestReducedRemoteSpec, channelFeatures.commitmentFormat)
-      val funderFeeBuffer = commitTxFeeMsat(remoteParams.dustLimit, feerate, channelFeatures.commitmentFormat) + feeBuffer
-      val amountToReserve = commitFees.max(funderFeeBuffer)
-
-      if (balanceNoFees - amountToReserve < trimThreshold) {
-        // Htlc will be trimmed so there will be no chain fees
-        balanceNoFees - amountToReserve
-      } else {
-        // Htlc will have an output in the commitment tx, so there will be additional fees.
-        val commitFees1 = commitFees + htlcOutputFee(latestReducedRemoteSpec.feeratePerKw, channelFeatures.commitmentFormat)
-        balanceNoFees - commitFees1.max(funderFeeBuffer + feeBuffer)
-      }
-    } else {
-      balanceNoFees
-    }
-  }
+  lazy val availableForSend: MilliSatoshi = if (localParams.isFunder) {
+    val commitFees = commitTxFeeMsat(remoteParams.dustLimit, latestReducedRemoteSpec, channelFeatures.commitmentFormat)
+    val oneMoreHtlc = htlcOutputFee(latestReducedRemoteSpec.feeratePerKw, channelFeatures.commitmentFormat)
+    latestReducedRemoteSpec.toRemote - remoteParams.channelReserve - commitFees - oneMoreHtlc
+  } else latestReducedRemoteSpec.toRemote - remoteParams.channelReserve
 
   lazy val availableForReceive: MilliSatoshi = {
     val reduced = CommitmentSpec.reduce(localCommit.spec, localChanges.acked, remoteChanges.proposed)
-    val balanceNoFees = reduced.toRemote - localParams.channelReserve
 
-    if (localParams.isFunder) {
-      // The fundee doesn't pay on-chain fees
-      balanceNoFees
-    } else {
-      val feerate = reduced.copy(feeratePerKw = reduced.feeratePerKw)
-      val feeBuffer = htlcOutputFee(reduced.feeratePerKw, channelFeatures.commitmentFormat)
+    if (!localParams.isFunder) {
       val commitFees = commitTxFeeMsat(localParams.dustLimit, reduced, channelFeatures.commitmentFormat)
-      val trimThreshold = receivedHtlcTrimThreshold(localParams.dustLimit, reduced, channelFeatures.commitmentFormat)
-      val funderFeeBuffer = commitTxFeeMsat(localParams.dustLimit, feerate, channelFeatures.commitmentFormat) + feeBuffer
-      val amountToReserve = commitFees.max(funderFeeBuffer)
-
-      if (balanceNoFees - amountToReserve < trimThreshold) {
-        // Htlc will be trimmed so there will be no chain fees
-        balanceNoFees - amountToReserve
-      } else {
-        // Htlc will have an output in the commitment tx, so there will be additional fees.
-        val commitFees1 = commitFees + htlcOutputFee(reduced.feeratePerKw, channelFeatures.commitmentFormat)
-        balanceNoFees - commitFees1.max(funderFeeBuffer + feeBuffer)
-      }
-    }
-  }
-
-  def isMoreRecent(other: NormalCommits): Boolean = {
-    val ourNextCommitSent = remoteCommit.index == other.remoteCommit.index && remoteNextCommitInfo.isLeft && other.remoteNextCommitInfo.isRight
-    localCommit.index > other.localCommit.index || remoteCommit.index > other.remoteCommit.index || ourNextCommitSent
+      val oneMoreHtlc = htlcOutputFee(reduced.feeratePerKw, channelFeatures.commitmentFormat) * localParams.maxAcceptedHtlcs
+      reduced.toRemote - localParams.channelReserve - commitFees - oneMoreHtlc
+    } else reduced.toRemote - localParams.channelReserve
   }
 
   def hasPendingHtlcsOrFeeUpdate: Boolean = {

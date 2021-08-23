@@ -257,13 +257,9 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     SendMultiPart(fullTag, chainExpiry, split, LNParams.routerConf, targetNodeId = prExt.pr.nodeId, feeReserve, allowedChans, fullTag.paymentSecret, extraEdges)
   }
 
-  def makePrExt(toReceive: MilliSatoshi, allowedChans: Seq[ChanAndCommits], description: PaymentDescription, preimage: ByteVector32): PaymentRequestExt = {
-    // Make a BOLT11 payment request with hints leading to us from provided peer nodes and fake payee nodeId derived from payment hash
-
-    val hash = Crypto.sha256(preimage)
-    val invoiceKey = LNParams.secret.keys.fakeInvoiceKey(hash)
+  def makePrExt(toReceive: MilliSatoshi, description: PaymentDescription, allowedChans: Seq[ChanAndCommits], hash: ByteVector32): PaymentRequestExt = {
     val hops = allowedChans.map(_.commits.updateOpt).zip(allowedChans).collect { case Some(update) ~ cnc => update.extraHop(cnc.commits.remoteInfo.nodeId) :: Nil }
-    val pr = PaymentRequest(LNParams.chainHash, Some(toReceive), hash, invoiceKey, description.invoiceText, LNParams.incomingFinalCltvExpiry, hops.toList)
+    val pr = PaymentRequest(LNParams.chainHash, Some(toReceive), hash, LNParams.secret.keys.fakeInvoiceKey(hash), description.invoiceText, LNParams.incomingFinalCltvExpiry, hops.toList)
     PaymentRequestExt.from(pr)
   }
 
@@ -274,7 +270,7 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
   }
 
   def localSendToSelf(sources: List[Channel], destinations: CommitsAndMax, preimage: ByteVector32, typicalChainTxFee: MilliSatoshi, capLNFeeToChain: Boolean): Unit = {
-    val prExt = makePrExt(toReceive = maxSendable(sources).min(destinations.maxReceivable), destinations.commits, PlainDescription(split = None, label = None, invoiceText = new String), preimage)
+    val prExt = makePrExt(maxSendable(sources).min(destinations.maxReceivable), PlainDescription(split = None, label = None, invoiceText = new String), destinations.commits, Crypto sha256 preimage)
     val keySendCmd = makeSendCmd(prExt, prExt.pr.amount.get, sources, typicalChainTxFee, capLNFeeToChain).copy(userCustomTlvs = GenericTlv(OnionCodecs.keySendNumber, preimage) :: Nil)
     localSend(keySendCmd)
   }

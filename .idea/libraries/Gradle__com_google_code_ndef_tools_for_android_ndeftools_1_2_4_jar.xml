@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Gradle: com.google.code.ndef-tools-for-android:ndeftools:1.2.4@jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.code.ndef-tools-for-android/ndeftools/1.2.4/fb0e5fdf9120a3c45a2093cc83cb0706b824186f/ndeftools-1.2.4.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.code.ndef-tools-for-android/ndeftools/1.2.4/2125a06cf8902cb651e71b3a99638fae0b52cb5d/ndeftools-1.2.4-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.code.ndef-tools-for-android/ndeftools/1.2.4/2080e4c741cceeb2239ade2c3224f926892e01a2/ndeftools-1.2.4-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
