@@ -123,7 +123,7 @@ object LNParams {
   // Note: we set local maxHtlcValueInFlightMsat to channel capacity to simplify calculations
   def makeChannelParams(defFinalScriptPubkey: ByteVector, walletStaticPaymentBasepoint: PublicKey, isFunder: Boolean, keyPath: DeterministicWallet.KeyPath, fundingAmount: Satoshi): LocalParams =
     LocalParams(ChannelKeys.fromPath(secret.keys.master, keyPath), minDustLimit, UInt64(fundingAmount.toMilliSatoshi.toLong), channelReserve = (fundingAmount * 0.001).max(minDustLimit),
-      minPayment, maxToLocalDelay, maxAcceptedHtlcs = 5, isFunder, defFinalScriptPubkey, walletStaticPaymentBasepoint)
+      minPayment, maxToLocalDelay, maxAcceptedHtlcs = 20, isFunder, defFinalScriptPubkey, walletStaticPaymentBasepoint)
 
   def currentBlockDay: Long = blockCount.get / blocksPerDay
 
