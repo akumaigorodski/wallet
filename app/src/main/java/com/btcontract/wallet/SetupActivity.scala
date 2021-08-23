@@ -20,15 +20,18 @@ import android.view.View
 
 object SetupActivity {
   def fromMnemonics(mnemonics: List[String], host: BaseActivity): Unit = {
-    val walletSeeed = MnemonicCode.toSeed(mnemonics, passphrase = new String)
-    val keys = LightningNodeKeys.makeFromSeed(seed = walletSeeed.toArray)
-    val secret = WalletSecret(keys, mnemonics, walletSeeed)
+    val walletSeed = MnemonicCode.toSeed(mnemonics, passphrase = new String)
+    val keys = LightningNodeKeys.makeFromSeed(seed = walletSeed.toArray)
+    val secret = WalletSecret(keys, mnemonics, walletSeed)
 
-    // Implant graph into db file from resources
-    val snapshotName = LocalBackup.getGraphResourceName(LNParams.chainHash)
-    val compressedPlainBytes = ByteStreams.toByteArray(host.getAssets open snapshotName)
-    val plainBytes = ExtCodecs.compressedByteVecCodec.decode(BitVector view compressedPlainBytes)
-    LocalBackup.copyPlainDataToDbLocation(host, WalletApp.dbFileNameGraph, plainBytes.require.value)
+    try {
+      // Implant graph into db file from resources
+      val snapshotName = LocalBackup.getGraphResourceName(LNParams.chainHash)
+      val compressedPlainBytes = ByteStreams.toByteArray(host.getAssets open snapshotName)
+      val plainBytes = ExtCodecs.compressedByteVecCodec.decode(BitVector view compressedPlainBytes)
+      LocalBackup.copyPlainDataToDbLocation(host, WalletApp.dbFileNameGraph, plainBytes.require.value)
+    } catch none
+
     WalletApp.extDataBag.putSecret(secret)
     WalletApp.makeOperational(secret)
   }
