@@ -20,3 +20,9 @@ Simple Bitcoin Wallet (aka SBW) is an [IMMORTAN](https://github.com/btcontract/I
 - [ ] Develop an Eclair plugin which would allow full LN nodes to easily utilize SBW routing capabilities.
 - [ ] Implement Addon system for integration of 3rd party Lightning-enabled services.
 - [ ] Implement UI for fine controlling of routed Lightning payments.
+
+## Building from source
+
+1. `$ git clone https://github.com/btcontract/wallet.git` (or download latest release source files).
+2. Copy `graph.snapshot-mainnet.zlib` file into `./app/src/main/assets/` folder (snapshot file can be found in latest release).
+3. `$ ./gradlew assembleRelease`
