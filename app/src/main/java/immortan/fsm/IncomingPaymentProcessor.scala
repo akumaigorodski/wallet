@@ -41,10 +41,7 @@ case class IncomingRevealed(preimage: ByteVector32, fullTag: FullPaymentTag) ext
 case class IncomingAborted(failure: Option[FailureMessage] = None, fullTag: FullPaymentTag) extends IncomingProcessorData
 
 class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) extends IncomingPaymentProcessor {
-  def gotAllParts(adds: ReasonableLocals): Boolean = adds.headOption.exists(lastAmountIn >= _.packet.payload.totalAmount)
-  def keySendIsCorrect(preimage: ByteVector32): Boolean = Crypto.sha256(preimage) == fullTag.paymentHash
   override def becomeShutDown: Unit = become(null, SHUTDOWN)
-
   require(fullTag.tag == PaymentTagTlv.FINAL_INCOMING)
   delayedCMDWorker.replaceWork(CMDTimeout)
   become(null, RECEIVING)
@@ -57,17 +54,18 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
 
     case (inFlight: InFlightPayments, null, RECEIVING) =>
       val adds = inFlight.in(fullTag).asInstanceOf[ReasonableLocals]
-      val keySendPreimage = adds.headOption.flatMap(_.packet.payload.paymentPreimage)
       // Important: when creating new invoice we SPECIFICALLY DO NOT put a preimage into preimage storage
       // we only do that once we reveal a preimage, thus letting us know that we have already revealed it on restart
       // having PaymentStatus.SUCCEEDED in payment db is not enough because that table does not get included in backup
-      lastAmountIn = adds.map(_.add.amountMsat).sum
+      lastAmountIn = adds.foldLeft(0L.msat) { case (accumulator, incomingLocal) => accumulator + incomingLocal.add.amountMsat }
+      val keySend = adds.flatMap(_.packet.payload.paymentPreimage).find(preimage => Crypto.sha256(preimage) == fullTag.paymentHash)
+      val gotAllParts = adds.headOption.exists(lastAmountIn >= _.packet.payload.totalAmount)
 
       cm.getPaymentInfoMemo.get(fullTag.paymentHash).toOption match {
         case None => cm.getPreimageMemo.get(fullTag.paymentHash).toOption match {
           case Some(paymentPreimage) => becomeRevealed(paymentPreimage, new String, adds) // Did not ask but fulfill since we happen to have a preimage
-          case None if keySendPreimage.exists(keySendIsCorrect) && gotAllParts(adds) => becomeRevealed(keySendPreimage.get, new String, adds) // Keysend and got all parts
-          case None => // Do not fail just yet, this may be keysend but not all parts have reached us yet
+          case None if keySend.nonEmpty => if (gotAllParts) becomeRevealed(keySend.get, new String, adds) // Either reveal preimage or keep waiting
+          case None => becomeAborted(IncomingAborted(None, fullTag), adds)
         }
 
         case Some(info) if info.isIncoming && PaymentStatus.SUCCEEDED == info.status => becomeRevealed(info.preimage, info.description.queryText, adds) // Already revealed, but not finalized
@@ -214,10 +212,10 @@ class TrampolinePaymentRelayer(val fullTag: FullPaymentTag, cm: ChannelMaster) e
       cm.notifyResolvers
 
     case (inFlight: InFlightPayments, null, RECEIVING) =>
-      // We have either just got another notification or restored an app with parts present
+      val outs = inFlight.out.getOrElse(fullTag, default = Nil)
       val ins = inFlight.in.getOrElse(fullTag, Nil).asInstanceOf[ReasonableTrampolines]
-      val outs = inFlight.out.getOrElse(fullTag, Nil)
-      lastAmountIn = ins.map(_.add.amountMsat).sum
+      // We have either just got another incoming notification or restored an app with some parts present
+      lastAmountIn = ins.foldLeft(0L.msat) { case (accumulator, incoming) => accumulator + incoming.add.amountMsat }
 
       cm.getPreimageMemo.get(fullTag.paymentHash) match {
         case Success(preimage) => becomeFinalRevealed(preimage, ins)
