@@ -86,9 +86,9 @@ sealed trait LNUrlData {
 sealed trait CallbackLNUrlData extends LNUrlData {
   override def checkAgainstParent(lnUrl: LNUrl): Boolean = lnUrl.uri.getHost.toLowerCase == callbackUri.getHost.toLowerCase
 
-  lazy val callbackUri: Uri = LNUrl.checkHost(callback)
-
   val callback: String
+
+  val callbackUri: Uri = LNUrl.checkHost(callback)
 }
 
 // LNURL-CHANNEL
