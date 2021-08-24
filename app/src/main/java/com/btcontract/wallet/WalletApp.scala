@@ -49,9 +49,8 @@ object WalletApp {
   var extDataBag: SQLiteDataExtended = _
   var app: WalletApp = _
 
-  // When sending a tx locally we know recipent address and user provided memo
-  // store this info here to use it when chain wallet receives a sent tx
   var txDescriptions: Map[ByteVector32, TxDescription] = Map.empty
+  var currentChainNode: Option[InetSocketAddress] = None
 
   final val dbFileNameMisc = "misc.db"
   final val dbFileNameGraph = "graph.db"
@@ -230,7 +229,12 @@ object WalletApp {
     // Guaranteed to fire (and update chainWallets) first
     LNParams.chainWallets.catcher ! new WalletEventsListener {
       override def onChainTipKnown(event: CurrentBlockCount): Unit = LNParams.cm.initConnect
+
       override def onChainSynchronized(event: WalletReady): Unit = LNParams.updateChainWallet(LNParams.chainWallets withBalanceUpdated event)
+
+      override def onChainMasterSelected(event: InetSocketAddress): Unit = currentChainNode = event.asSome
+
+      override def onChainDisconnected: Unit = currentChainNode = None
 
       override def onTransactionReceived(event: TransactionReceived): Unit = {
         def addChainTx(received: Satoshi, sent: Satoshi, description: TxDescription, isIncoming: Long): Unit = description match {

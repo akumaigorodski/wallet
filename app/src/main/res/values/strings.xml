@@ -328,7 +328,13 @@
     <string name="stats_title_chan_loss"><![CDATA[<b>Channel closing fees</b>]]></string>
     <string name="stats_title_chain"><![CDATA[<b>Bitcoin transactions</b>]]></string>
     <string name="stats_title_relays"><![CDATA[<b>Lightning relays</b>]]></string>
+    <string name="stats_title_network"><![CDATA[<b>Network status</b>]]></string>
     <string name="stats_title_ln"><![CDATA[<b>Lightning payments</b>]]></string>
+
+    <string name="stats_item_chain_node"><![CDATA[<b>chain&#160;node</b>&#160;%1$s]]></string>
+    <string name="stats_item_chain_tip"><![CDATA[<b>chain&#160;tip</b>&#160;%1$s]]></string>
+    <string name="stats_item_graph"><![CDATA[<b>graph&#160;sync</b>&#160;%1$s]]></string>
+    <string name="stats_item_phc"><![CDATA[<b>PHC&#160;sync</b>&#160;%1$s]]></string>
 
     <string name="stats_item_sent"><![CDATA[<b>sent</b>&#160;%1$s]]></string>
     <string name="stats_item_received"><![CDATA[<b>received</b>&#160;%1$s]]></string>

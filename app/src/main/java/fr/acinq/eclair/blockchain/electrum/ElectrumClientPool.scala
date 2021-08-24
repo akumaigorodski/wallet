@@ -77,7 +77,8 @@ class ElectrumClientPool(blockCount: AtomicLong, chainHash: ByteVector32)(implic
 
     case Event(ElectrumClient.AddStatusListener(listener), d: ConnectedData) if addresses.contains(d.master) =>
       statusListeners += listener
-      listener ! ElectrumClient.ElectrumReady(d.tips(d.master), addresses(d.master))
+      val (height, tip) = d.tips(d.master)
+      listener ! ElectrumClient.ElectrumReady(height, tip, addresses(d.master))
       stay
 
     case Event(Terminated(actor), d: ConnectedData) =>

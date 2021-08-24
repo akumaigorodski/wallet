@@ -19,7 +19,7 @@ package fr.acinq.eclair.blockchain.electrum
 import java.net.{InetSocketAddress, SocketAddress}
 import java.util
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Stash, Terminated}
+import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Stash, Terminated}
 import fr.acinq.bitcoin._
 import fr.acinq.eclair.blockchain.bitcoind.rpc.{Error, JsonRPCRequest, JsonRPCResponse}
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.SSL
@@ -214,13 +214,13 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
   var reqId = 0
 
   // we need to regularly send a ping in order not to get disconnected
-  val pingTrigger = context.system.scheduler.schedule(30 seconds, 30 seconds, self, Ping)
+  val pingTrigger: Cancellable = context.system.scheduler.schedule(30.seconds, 30.seconds, self, Ping)
 
   override def unhandled(message: Any): Unit = {
     message match {
       case Terminated(deadActor) =>
-        addressSubscriptions = addressSubscriptions.mapValues(subscribers => subscribers - deadActor).toMap
-        scriptHashSubscriptions = scriptHashSubscriptions.mapValues(subscribers => subscribers - deadActor).toMap
+        addressSubscriptions = addressSubscriptions.mapValues(subscribers => subscribers - deadActor)
+        scriptHashSubscriptions = scriptHashSubscriptions.mapValues(subscribers => subscribers - deadActor)
         statusListeners -= deadActor
         headerSubscriptions -= deadActor
 
@@ -447,9 +447,9 @@ object ElectrumClient {
   object Header {
     def makeHeader(height: Long, header: BlockHeader) = ElectrumClient.Header(height, header.version, header.hashPreviousBlock.reverse, header.hashMerkleRoot.reverse, header.time, header.bits, header.nonce)
 
-    val RegtestGenesisHeader = makeHeader(0, Block.RegtestGenesisBlock.header)
-    val TestnetGenesisHeader = makeHeader(0, Block.TestnetGenesisBlock.header)
-    val LivenetGenesisHeader = makeHeader(0, Block.LivenetGenesisBlock.header)
+    val RegtestGenesisHeader: Header = makeHeader(0, Block.RegtestGenesisBlock.header)
+    val TestnetGenesisHeader: Header = makeHeader(0, Block.TestnetGenesisBlock.header)
+    val LivenetGenesisHeader: Header = makeHeader(0, Block.LivenetGenesisBlock.header)
   }
 
   case class TransactionHistory(history: Seq[TransactionHistoryItem]) extends Response
@@ -459,11 +459,7 @@ object ElectrumClient {
   case class ServerError(request: Request, error: Error) extends Response
 
   sealed trait ElectrumEvent
-
   case class ElectrumReady(height: Int, tip: BlockHeader, serverAddress: InetSocketAddress) extends ElectrumEvent
-  object ElectrumReady {
-    def apply(t: (Int, BlockHeader), serverAddress: InetSocketAddress) = new ElectrumReady(t._1 , t._2, serverAddress)
-  }
   case object ElectrumDisconnected extends ElectrumEvent
 
   sealed trait SSL
