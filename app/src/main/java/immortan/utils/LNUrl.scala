@@ -83,6 +83,14 @@ sealed trait LNUrlData {
   def checkAgainstParent(lnUrl: LNUrl): Boolean = true
 }
 
+sealed trait CallbackLNUrlData extends LNUrlData {
+  override def checkAgainstParent(lnUrl: LNUrl): Boolean = lnUrl.uri.getHost.toLowerCase == callbackUri.getHost.toLowerCase
+
+  lazy val callbackUri: Uri = LNUrl.checkHost(callback)
+
+  val callback: String
+}
+
 // LNURL-CHANNEL
 
 sealed trait HasRemoteInfo {
@@ -92,18 +100,16 @@ sealed trait HasRemoteInfo {
 
 case class HasRemoteInfoWrap(remoteInfo: RemoteNodeInfo) extends HasRemoteInfo
 
-case class NormalChannelRequest(uri: String, callback: String, k1: String) extends LNUrlData with HasRemoteInfo {
-
-  override def checkAgainstParent(lnUrl: LNUrl): Boolean = lnUrl.uri.getHost == callbackUri.getHost
+case class NormalChannelRequest(uri: String, callback: String, k1: String) extends CallbackLNUrlData with HasRemoteInfo {
 
   def requestChannel: Observable[String] = LNUrl.level2DataResponse {
-    val withOurNodeId = callbackUri.buildUpon.appendQueryParameter("remoteid", remoteInfo.nodeSpecificPubKey.toString)
-    withOurNodeId.appendQueryParameter("k1", k1).appendQueryParameter("private", "1")
+    callbackUri.buildUpon.appendQueryParameter("remoteid", remoteInfo.nodeSpecificPubKey.toString)
+      .appendQueryParameter("k1", k1).appendQueryParameter("private", "1")
   }
 
   override def cancel: Unit = LNUrl.level2DataResponse {
-    val withOurNodeId = callbackUri.buildUpon.appendQueryParameter("remoteid", remoteInfo.nodeSpecificPubKey.toString)
-    withOurNodeId.appendQueryParameter("k1", k1).appendQueryParameter("cancel", "1")
+    callbackUri.buildUpon.appendQueryParameter("remoteid", remoteInfo.nodeSpecificPubKey.toString)
+      .appendQueryParameter("k1", k1).appendQueryParameter("cancel", "1")
   }.foreach(none, none)
 
   val InputParser.nodeLink(nodeKey, hostAddress, portNumber) = uri
@@ -113,8 +119,6 @@ case class NormalChannelRequest(uri: String, callback: String, k1: String) exten
   val address: NodeAddress = NodeAddress.fromParts(hostAddress, portNumber.toInt)
 
   val remoteInfo: RemoteNodeInfo = RemoteNodeInfo(pubKey, address, hostAddress)
-
-  val callbackUri: Uri = LNUrl.checkHost(callback)
 }
 
 case class HostedChannelRequest(uri: String, alias: Option[String], k1: String) extends LNUrlData with HasRemoteInfo {
@@ -133,15 +137,11 @@ case class HostedChannelRequest(uri: String, alias: Option[String], k1: String) 
 // LNURL-WITHDRAW
 
 case class WithdrawRequest(callback: String, k1: String, maxWithdrawable: Long, defaultDescription: String, minWithdrawable: Option[Long],
-                           balance: Option[Long] = None, balanceCheck: Option[String] = None, payLink: Option[String] = None) extends LNUrlData { me =>
+                           balance: Option[Long] = None, balanceCheck: Option[String] = None, payLink: Option[String] = None) extends CallbackLNUrlData { me =>
 
   def requestWithdraw(ext: PaymentRequestExt): Observable[String] = LNUrl.level2DataResponse {
     callbackUri.buildUpon.appendQueryParameter("pr", ext.raw).appendQueryParameter("k1", k1)
   }
-
-  override def checkAgainstParent(lnUrl: LNUrl): Boolean = lnUrl.uri.getHost == callbackUri.getHost
-
-  val callbackUri: Uri = LNUrl.checkHost(callback)
 
   val minCanReceive: MilliSatoshi = minWithdrawable.map(_.msat).getOrElse(LNParams.minPayment).max(LNParams.minPayment)
 
@@ -191,20 +191,16 @@ case class PayRequestMeta(records: TagsAndContents) {
 }
 
 case class PayRequest(callback: String, maxSendable: Long, minSendable: Long, metadata: String,
-                      withdrawLink: Option[String], commentAllowed: Option[Int] = None) extends LNUrlData {
+                      withdrawLink: Option[String], commentAllowed: Option[Int] = None) extends CallbackLNUrlData {
 
   def requestFinal(comment: Option[String], amount: MilliSatoshi): Observable[String] = LNUrl.level2DataResponse {
     val base: Uri.Builder = callbackUri.buildUpon.appendQueryParameter("amount", amount.toLong.toString)
     comment match { case Some(text) => base.appendQueryParameter("comment", text) case _ => base }
   }
 
-  override def checkAgainstParent(lnUrl: LNUrl): Boolean = lnUrl.uri.getHost == callbackUri.getHost
-
   def metaDataHash: ByteVector32 = Crypto.sha256(ByteVector view metadata.getBytes)
 
   val relatedWithdrawLinkOpt: Option[LNUrl] = withdrawLink.map(LNUrl.apply)
-
-  val callbackUri: Uri = LNUrl.checkHost(callback)
 
   val meta: PayRequestMeta = {
     val records = to[TagsAndContents](metadata)
