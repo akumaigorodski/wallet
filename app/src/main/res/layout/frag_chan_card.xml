@@ -90,6 +90,7 @@
                     <View
                         android:layout_width="25dp"
                         android:layout_height="8dp"
+                        android:layout_marginStart="10dp"
                         android:layout_centerVertical="true"
                         android:layout_alignParentEnd="true"
                         android:id="@+id/chanState"/>

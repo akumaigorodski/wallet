@@ -51,7 +51,7 @@ abstract class NCFunderOpenHandler(info: RemoteNodeInfo, fakeFunding: MakeFundin
       val stickyChannelFeatures = ChannelFeatures.pickChannelFeatures(LNParams.ourInit.features, theirInit.features)
       val localParams = LNParams.makeChannelParams(freshChannel.chainWallet, isFunder = true, fakeFunding.fundingAmount)
       val initialFeeratePerKw = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.commitmentBlockTarget)
-      val cmd = INPUT_INIT_FUNDER(info.copy(alias = new String), tempChannelId, fakeFunding, 0L.msat, fundingFeeratePerKw, initialFeeratePerKw, localParams, theirInit, 0.toByte, stickyChannelFeatures)
+      val cmd = INPUT_INIT_FUNDER(info.safeAlias, tempChannelId, fakeFunding, 0L.msat, fundingFeeratePerKw, initialFeeratePerKw, localParams, theirInit, 0.toByte, stickyChannelFeatures)
       freshChannel process cmd
     }
 

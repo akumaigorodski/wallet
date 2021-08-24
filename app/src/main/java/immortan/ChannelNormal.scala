@@ -199,7 +199,7 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
 
 
       case (some: HasNormalCommitments, remoteInfo: RemoteNodeInfo, SLEEPING) if some.commitments.remoteInfo.nodeId == remoteInfo.nodeId =>
-        StoreBecomeSend(some.modify(_.commitments.remoteInfo).setTo(remoteInfo), SLEEPING)
+        StoreBecomeSend(some.modify(_.commitments.remoteInfo).setTo(remoteInfo.safeAlias), SLEEPING)
 
 
       case (norm: DATA_NORMAL, update: ChannelUpdate, OPEN | SLEEPING) if update.shortChannelId == norm.shortChannelId && norm.commitments.updateOpt.forall(_.core != update.core) =>

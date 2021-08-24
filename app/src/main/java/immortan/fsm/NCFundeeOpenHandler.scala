@@ -30,7 +30,7 @@ abstract class NCFundeeOpenHandler(info: RemoteNodeInfo, theirOpen: OpenChannel,
     override def onOperational(worker: CommsTower.Worker, theirInit: Init): Unit = {
       val stickyChannelFeatures = ChannelFeatures.pickChannelFeatures(LNParams.ourInit.features, theirInit.features)
       val localParams = LNParams.makeChannelParams(freshChannel.chainWallet, isFunder = false, theirOpen.fundingSatoshis)
-      freshChannel process INPUT_INIT_FUNDEE(info.copy(alias = new String), localParams, theirInit, stickyChannelFeatures, theirOpen)
+      freshChannel process INPUT_INIT_FUNDEE(info.safeAlias, localParams, theirInit, stickyChannelFeatures, theirOpen)
     }
 
     override def onBecome: PartialFunction[Transition, Unit] = {
