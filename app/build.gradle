@@ -49,6 +49,12 @@ android {
         sourceCompatibility 1.8
         targetCompatibility 1.8
     }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "SBW-${defaultConfig.versionName}.apk"
+        }
+    }
 }
 
 dependencies {
