@@ -463,7 +463,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
 
   def feeLeftover: MilliSatoshi = data.cmd.totalFeeReserve - data.usedFee
 
-  def canBeSplit(totalAmount: MilliSatoshi): Boolean = totalAmount / 2 > LNParams.minPayment
+  def canBeSplit(totalAmount: MilliSatoshi): Boolean = totalAmount / 2 > LNParams.minSplit
 
   def shouldStopEarly(wait: WaitForRouteOrInFlight, found: RouteFound): Boolean = {
     val avgHopFee = opm.cm.pf.lastAvgHopParams.map(_ avgHopFee data.cmd.split.myPart).getOrElse(1000L.msat)

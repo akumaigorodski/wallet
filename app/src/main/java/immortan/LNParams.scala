@@ -59,6 +59,7 @@ object LNParams {
   val minInvoiceExpiryDelta: CltvExpiryDelta = CltvExpiryDelta(18) // If payee does not provide an explicit relative CLTV this is what we use by default
   val minForceClosableIncomingHtlcAmountToFeeRatio = 4 // When incoming HTLC gets (nearly) expired, how much higher than trim threshold should it be for us to force-close
   val minForceClosableOutgoingHtlcAmountToFeeRatio = 5 // When peer sends a suspiciously low feerate, how much higher than trim threshold should our outgoing HTLC be for us to force-close
+  val minSplit: MilliSatoshi = MilliSatoshi(1000000L) // Part can not become smaller than this when sending multipart payments
   val minPayment: MilliSatoshi = MilliSatoshi(1000L) // We can neither send nor receive LN payments which are below this value
   val minFundingSatoshis: Satoshi = Satoshi(200000L) // Proposed channels of capacity less than this are not allowed
   val minDustLimit: Satoshi = Satoshi(546L)
