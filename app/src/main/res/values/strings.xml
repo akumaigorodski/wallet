@@ -41,9 +41,9 @@
     </string>
 
     <string name="setup_recovery_phrase_hint">
-        Provide a BIP39 phrase to restore Bitcoin wallet and hosted channels only.
-        If you had any Lightning channels on a previous device, their balances will
-        be refunded on connecting to remote nodes you had them with.
+        Provide a recovery phrase to restore Bitcoin wallet and hosted channels only.
+        Lightning channel balances on previous devices will be refunded on manually
+        connecting to remote nodes you had those channels with.
     </string>
 
     <string name="action_backup_present_title"><![CDATA[

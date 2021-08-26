@@ -161,8 +161,8 @@ object LNParams {
     }
 
     def withNewSigning(core: SigningWallet, label: String): WalletExt = {
-      val eclairWallet = makeSigningWalletParts(core, lastBalance = 0L.sat, label)
-      params.walletDb.addChainWallet(eclairWallet.info, eclairWallet.ewt.xPub.publicKey)
+      val eclairWallet = makeSigningWalletParts(core, lastBalance = Satoshi(0L), label)
+      params.walletDb.addChainWallet(eclairWallet.info, params.emptyPersistentDataBytes, eclairWallet.ewt.xPub.publicKey)
       eclairWallet.walletRef ! params.emptyPersistentDataBytes
       sync ! ElectrumWallet.ChainFor(eclairWallet.walletRef)
       me + eclairWallet
@@ -176,8 +176,8 @@ object LNParams {
     }
 
     def withNewWatching(core: WatchingWallet, label: String): WalletExt = {
-      val eclairWallet = makeWatchingWalletParts(core, lastBalance = 0L.sat, label)
-      params.walletDb.addChainWallet(eclairWallet.info, eclairWallet.ewt.xPub.publicKey)
+      val eclairWallet = makeWatchingWalletParts(core, lastBalance = Satoshi(0L), label)
+      params.walletDb.addChainWallet(eclairWallet.info, params.emptyPersistentDataBytes, eclairWallet.ewt.xPub.publicKey)
       eclairWallet.walletRef ! params.emptyPersistentDataBytes
       sync ! ElectrumWallet.ChainFor(eclairWallet.walletRef)
       me + eclairWallet

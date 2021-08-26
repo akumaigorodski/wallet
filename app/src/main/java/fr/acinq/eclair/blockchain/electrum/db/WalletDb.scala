@@ -28,7 +28,7 @@ case class CompleteChainWalletInfo(core: ChainWalletInfo, data: ByteVector, last
 
 trait WalletDb {
   def remove(pub: PublicKey): Unit
-  def addChainWallet(info: CompleteChainWalletInfo, pub: PublicKey): Unit
+  def addChainWallet(info: CompleteChainWalletInfo, data: ByteVector, pub: PublicKey): Unit
   def persist(data: PersistentData, lastBalance: Satoshi, pub: PublicKey): Unit
   def updateLabel(label: String, pub: PublicKey): Unit
   def listWallets: Iterable[CompleteChainWalletInfo]

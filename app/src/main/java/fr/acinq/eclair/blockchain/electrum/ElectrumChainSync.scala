@@ -46,7 +46,7 @@ class ElectrumChainSync(client: ActorRef, headerDb: HeaderDb, chainHash: ByteVec
   }
 
   when(SYNCING) {
-    case Event(respone: ElectrumClient.GetHeadersResponse, blockchain) if respone.headers.isEmpty =>
+    case Event(response: ElectrumClient.GetHeadersResponse, blockchain) if response.headers.isEmpty =>
       context.system.eventStream.publish(blockchain)
       goto(RUNNING)
 
