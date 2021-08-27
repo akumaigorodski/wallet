@@ -66,7 +66,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
 
     def updateView: Unit = {
       val backupAllowed = LocalBackup.isAllowed(context = WalletApp.app)
-      if (backupAllowed) WalletApp.backupSaveWorker.replaceWork("SETTINGS-INIT-SAVE-BACKUP")
+      if (backupAllowed && LNParams.cm.all.nonEmpty) WalletApp.backupSaveWorker.replaceWork("SETTINGS-INIT-SAVE-BACKUP")
       val title = if (backupAllowed) settings_backup_enabled else settings_backup_disabled
       val info = if (backupAllowed) settings_backup_where else settings_backup_how
       settingsTitle.setText(title)
