@@ -113,6 +113,7 @@
         Remote peer indicates that there exists a Lightning channel which is somehow not present on your device.<br><br>
         Peer can be requested to break that channel which would get the rest of its balance back to your chain wallet.<br><br>
         <b>Missing Channel ID</b><br>%1$s<br><br>
+        <b>Local node ID</b><br>%1$s<br><br>
         <b>Peer node ID</b><br>%2$s
     ]]></string>
 

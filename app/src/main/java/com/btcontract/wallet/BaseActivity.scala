@@ -586,12 +586,14 @@ trait ChanErrorHandlerActivity extends BaseActivity { me =>
   val MAX_ERROR_COUNT_WITHIN_WINDOW = 4
 
   def chanUnknown(worker: CommsTower.Worker, reestablish: ChannelReestablish): Unit = UITask {
-    def break: Unit = worker.handler process Fail(reestablish.channelId, "please publish your local commitment")
-    val msg = getString(error_channel_unknown).format(reestablish.channelId.toHex, worker.info.nodeId.toString)
     val errorCount = Option(channelErrors getIfPresent reestablish.channelId).getOrElse(default = 0: JInt)
+    if (errorCount >= MAX_ERROR_COUNT_WITHIN_WINDOW) return
 
-    val builder = new AlertDialog.Builder(me).setCustomTitle(getString(error_channel).asDefView).setCancelable(true).setMessage(msg.html)
-    if (errorCount < MAX_ERROR_COUNT_WITHIN_WINDOW) mkCheckFormNeutral(_.dismiss, share(msg), alert => runAnd(alert.dismiss)(break), builder, dialog_ok, dialog_share, dialog_break)
+    val fail = Fail(ByteVector32.Zeroes, "please publish your local commitment")
+    def break(alert: AlertDialog): Unit = runAnd(alert.dismiss)(worker.handler process fail)
+    val msg = getString(error_channel_unknown).format(reestablish.channelId.toHex, worker.info.nodeSpecificPubKey.toString, worker.info.nodeId.toString).html
+    val builder = new AlertDialog.Builder(me).setCustomTitle(getString(error_channel).asDefView).setCancelable(true).setMessage(msg)
+    mkCheckFormNeutral(_.dismiss, share(msg), break, builder, dialog_ok, dialog_share, dialog_break)
     channelErrors.put(reestablish.channelId, errorCount + 1)
   }.run
 
