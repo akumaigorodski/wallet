@@ -73,22 +73,15 @@ case class LNUrl(request: String) {
   }
 
   def level1DataResponse: Observable[LNUrlData] = Rx.ioQueue.map { _ =>
-    val lnUrlData = to[LNUrlData](LNUrl noRedirectGuardedGet uri.toString)
-    require(lnUrlData.checkAgainstParent(this), "1st/2nd level callback domain mismatch")
-    lnUrlData
+    to[LNUrlData](LNUrl noRedirectGuardedGet uri.toString)
   }
 }
 
-sealed trait LNUrlData {
-  def checkAgainstParent(lnUrl: LNUrl): Boolean = true
-}
+sealed trait LNUrlData
 
 sealed trait CallbackLNUrlData extends LNUrlData {
-  override def checkAgainstParent(lnUrl: LNUrl): Boolean = lnUrl.uri.getHost.toLowerCase == callbackUri.getHost.toLowerCase
-
-  val callback: String
-
   val callbackUri: Uri = LNUrl.checkHost(callback)
+  def callback: String
 }
 
 // LNURL-CHANNEL
@@ -190,8 +183,9 @@ case class PayRequestMeta(records: TagsAndContents) {
   } yield content
 }
 
-case class PayRequest(callback: String, maxSendable: Long, minSendable: Long, metadata: String,
-                      withdrawLink: Option[String], commentAllowed: Option[Int] = None) extends CallbackLNUrlData {
+case class PayRequest(callback: String, maxSendable: Long,
+                      minSendable: Long, metadata: String, withdrawLink: Option[String],
+                      commentAllowed: Option[Int] = None) extends CallbackLNUrlData {
 
   def requestFinal(comment: Option[String], amount: MilliSatoshi): Observable[String] = LNUrl.level2DataResponse {
     val base = callbackUri.buildUpon.appendQueryParameter("amount", amount.toLong.toString)

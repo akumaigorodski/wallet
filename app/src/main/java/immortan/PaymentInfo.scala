@@ -106,8 +106,8 @@ case class MessageAction(domain: Option[String], message: String) extends Paymen
 }
 
 case class UrlAction(domain: Option[String], description: String, url: String) extends PaymentAction {
+  require(domain.map(_.toLowerCase).forall(url.toLowerCase.contains), "Payment action domain mismatch")
   val finalMessage = s"<br>${description take 144}<br><br><tt>$url</tt><br>"
-  require(domain.forall(url.contains), "Payment action domain mismatch")
 }
 
 case class AESAction(domain: Option[String], description: String, ciphertext: String, iv: String) extends PaymentAction {
