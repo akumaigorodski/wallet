@@ -655,15 +655,17 @@ object QRActivity {
 }
 
 class ItemsWithMemory[T <: TransactionDetails] {
+  private[this] var isFirstCall: Boolean = true
   var lastItems: Iterable[T] = Iterable.empty
   var idPool: Set[String] = Set.empty
   var lastDelta: Int = 0
 
   def setItems(items: Iterable[T] = Nil): Unit = {
-    val newIdentifiers: Set[String] = items.map(_.identity).toSet
-    val newDelta = if (idPool.isEmpty) 0 else newIdentifiers.diff(idPool).size
+    val newIdentifiers = items.map(_.identity).toSet
+    val newDelta = if (isFirstCall) 0 else newIdentifiers.diff(idPool).size
     idPool ++= newIdentifiers
     lastDelta += newDelta
+    isFirstCall = false
     lastItems = items
   }
 }

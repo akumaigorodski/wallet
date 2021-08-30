@@ -309,7 +309,7 @@ object OnionCodecs {
 
   val trampolineOnionPacketCodec: Codec[OnionRoutingPacket] = onionRoutingPacketCodec(Sphinx.TrampolinePacket.PayloadLength)
 
-  val keySendNumber: UInt64 = UInt64(5482373484L)
+  final val keySendNumber: UInt64 = UInt64(5482373484L)
 
   /**
     * The 1.1 BOLT spec changed the onion frame format to use variable-length per-hop payloads.

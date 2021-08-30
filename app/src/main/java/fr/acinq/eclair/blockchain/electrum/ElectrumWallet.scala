@@ -175,8 +175,8 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
           stay using data1.withPendingResponse(response)
 
         case _ =>
-          log.error(s"Electrum server sent an invalid proof for txid: $txid")
-          stay using data.copy(transactions = data.transactions - txid) replying PoisonPill
+          val data1 = data.copy(transactions = data.transactions - txid)
+          stay using data1 replying PoisonPill
       }
 
     case Event(bc: ElectrumClient.BroadcastTransaction, _) =>
