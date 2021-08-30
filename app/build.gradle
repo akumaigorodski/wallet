@@ -1,3 +1,5 @@
+import java.nio.charset.StandardCharsets
+
 apply plugin: "com.android.application"
 apply plugin: "jp.leafytree.android-scala"
 
@@ -46,8 +48,9 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility 1.8
-        targetCompatibility 1.8
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+        compileOptions.encoding = StandardCharsets.UTF_8
     }
 
     applicationVariants.all { variant ->
