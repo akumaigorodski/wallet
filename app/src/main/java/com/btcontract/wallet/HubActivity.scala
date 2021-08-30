@@ -1120,9 +1120,14 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   def bringPayPopup(data: PayRequest, lnUrl: LNUrl): TimerTask = UITask {
     new OffChainSender(maxSendable = LNParams.cm.maxSendable(LNParams.cm.all.values).min(data.maxSendable.msat), minSendable = Denomination.satCeil(data.minSendable.msat) max LNParams.minPayment) {
-      override lazy val manager: RateManager = new RateManager(body, getString(dialog_add_comment).asSome, dialog_visibility_public, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+      override lazy val manager: RateManager = new RateManager(body, data.commentAllowed.map(_ => me getString dialog_add_comment), dialog_visibility_public, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
       override def isNeutralEnabled: Boolean = manager.resultMsat >= LNParams.minPayment && manager.resultMsat <= minSendable - LNParams.minPayment
       override def isPayEnabled: Boolean = manager.resultMsat >= minSendable && manager.resultMsat <= maxSendable
+
+      private def getComment = for {
+        maxLength <- data.commentAllowed
+        comment <- manager.resultExtraInput
+      } yield comment.take(maxLength)
 
       override def neutral(alert: AlertDialog): Unit = {
         def proceed(pf: PayRequestFinal): TimerTask = UITask {
@@ -1146,9 +1151,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
             LNParams.cm.localSend(cmd)
 
             if (!pf.isThrowAway) {
-              val info = LNUrlLinkInfo(lnUrl.uri.getHost, locator = new String, payString = lnUrl.request, nextWithdrawString = new String, payMetaString = data.metadata,
-                lastMsat = manager.resultMsat, lastDate = System.currentTimeMillis, lastHashString = pf.prExt.pr.paymentHash.toHex, lastPayNodeIdString = pf.prExt.pr.nodeId.toString,
-                lastBalanceLong = -1L, lastPayCommentString = manager.resultExtraInput.getOrElse(new String), labelString = new String)
+              val info = LNUrlLinkInfo(lnUrl.uri.getHost, locator = new String, payString = lnUrl.request, nextWithdrawString = new String,
+                payMetaString = data.metadata, lastMsat = manager.resultMsat, lastDate = System.currentTimeMillis, lastHashString = pf.prExt.pr.paymentHash.toHex,
+                lastPayNodeIdString = pf.prExt.pr.nodeId.toString, lastBalanceLong = -1L, lastPayCommentString = getComment.getOrElse(new String), labelString = new String)
               WalletApp.lnUrlBag saveLink info.copy(locator = SQLiteLNUrl toLocator info)
             }
           }
@@ -1168,7 +1173,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       private def getFinal(amount: MilliSatoshi) =
-        data.requestFinal(manager.resultExtraInput, amount).map { rawResponse =>
+        data.requestFinal(getComment, amount).map { rawResponse =>
           val payRequestFinal: PayRequestFinal = to[PayRequestFinal](rawResponse)
           val descriptionHashOpt: Option[ByteVector32] = payRequestFinal.prExt.pr.description.right.toOption
           require(descriptionHashOpt.contains(data.metaDataHash), s"Metadata hash mismatch, original=${data.metaDataHash}, provided=$descriptionHashOpt")

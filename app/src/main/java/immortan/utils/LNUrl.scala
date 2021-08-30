@@ -194,8 +194,8 @@ case class PayRequest(callback: String, maxSendable: Long, minSendable: Long, me
                       withdrawLink: Option[String], commentAllowed: Option[Int] = None) extends CallbackLNUrlData {
 
   def requestFinal(comment: Option[String], amount: MilliSatoshi): Observable[String] = LNUrl.level2DataResponse {
-    val base: Uri.Builder = callbackUri.buildUpon.appendQueryParameter("amount", amount.toLong.toString)
-    comment match { case Some(text) => base.appendQueryParameter("comment", text) case _ => base }
+    val base = callbackUri.buildUpon.appendQueryParameter("amount", amount.toLong.toString)
+    if (comment.isDefined) base.appendQueryParameter("comment", comment.get) else base
   }
 
   def metaDataHash: ByteVector32 = Crypto.sha256(ByteVector view metadata.getBytes)
