@@ -22,6 +22,7 @@
         android:normalScreens="true"/>
 
     <application
+        android:largeHeap="true"
         android:allowBackup="true"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"

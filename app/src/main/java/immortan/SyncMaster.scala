@@ -208,9 +208,9 @@ case class UpdateConifrmState(liteUpdOpt: Option[ChannelUpdate], confirmedBy: Co
 }
 
 abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMachine[SyncMasterData] with CanBeRepliedTo { me =>
-  val confirmedChanUpdates: mutable.Map[UpdateCore, UpdateConifrmState] = mutable.Map.empty withDefaultValue UpdateConifrmState(None, Set.empty)
-  val confirmedChanAnnounces: mutable.Map[ChannelAnnouncement, ConfirmedBySet] = mutable.Map.empty withDefaultValue Set.empty
-  var newExcludedChanUpdates: Set[UpdateCore] = Set.empty
+  private[this] val confirmedChanUpdates: mutable.Map[UpdateCore, UpdateConifrmState] = mutable.Map.empty withDefaultValue UpdateConifrmState(None, Set.empty)
+  private[this] val confirmedChanAnnounces: mutable.Map[ChannelAnnouncement, ConfirmedBySet] = mutable.Map.empty withDefaultValue Set.empty
+  private[this] var newExcludedChanUpdates: Set[UpdateCore] = Set.empty
   var provenShortIds: ShortChanIdSet = Set.empty
 
   def onChunkSyncComplete(pure: PureRoutingData): Unit
@@ -253,7 +253,6 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
         goodRanges.flatMap(_.allShortIds).foreach(shortId => accum(shortId) += 1)
         provenShortIds = accum.collect { case (shortId, confs) if confs > LNParams.syncParams.acceptThreshold => shortId }.toSet
         val queries: Seq[QueryShortChannelIds] = goodRanges.maxBy(_.allShortIds.size).ranges.par.flatMap(reply2Query).toList
-        // println(s"-- SYNC: re-querying ${queries.flatMap(_.shortChannelIds.array).size} channels")
 
         // Transfer every worker into gossip syncing state
         become(SyncMasterGossipData(baseSyncs, extSyncs, activeSyncs, LNParams.syncParams.chunksToWait), GOSSIP_SYNC)
@@ -298,6 +297,8 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
       } else {
         become(null, SHUT_DOWN)
         sendPureNormalNetworkData
+        confirmedChanAnnounces.clear
+        confirmedChanUpdates.clear
         onTotalSyncComplete
       }
 
