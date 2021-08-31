@@ -1,0 +1,3 @@
+* Fixed slow performance on some phone models.
+* Minor LNURL fixes and improvements.
+* Minor UI fixes and improvements.
