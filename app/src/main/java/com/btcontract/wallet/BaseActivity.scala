@@ -10,7 +10,6 @@ import com.softwaremill.quicklens._
 import com.btcontract.wallet.Colors._
 
 import java.lang.{Integer => JInt}
-import java.util.{Timer, TimerTask}
 import scala.util.{Failure, Success}
 import android.view.{View, ViewGroup}
 import java.io.{File, FileOutputStream}
@@ -90,7 +89,8 @@ trait ChoiceReceiver {
 }
 
 trait BaseActivity extends AppCompatActivity { me =>
-  val timer = new Timer
+  val nothingUsefulTask: Runnable = UITask(WalletApp.app quickToast error_nothing_useful)
+  val timer: java.util.Timer = new java.util.Timer
 
   val goTo: Class[_] => Any = target => {
     this startActivity new Intent(me, target)
@@ -139,19 +139,18 @@ trait BaseActivity extends AppCompatActivity { me =>
   
   def viewRecoveryCode: Unit = {
     val content = new TitleView(me getString settings_view_revocery_phrase_ext)
+    new AlertDialog.Builder(me).setView(content.asDefView).show
+
     for (mnemonicWord ~ mnemonicIndex <- LNParams.secret.mnemonic.zipWithIndex) {
       val item = s"<font color=$cardZero>${mnemonicIndex + 1}</font> $mnemonicWord"
       addFlowChip(content.flow, item, R.drawable.border_green)
     }
-
-    new AlertDialog.Builder(me).setView(content.asDefView).show
   }
 
   // Snackbar
 
   var currentSnackbar: Option[Snackbar] = Option.empty
-
-  def removeCurrentSnack: TimerTask = UITask {
+  def removeCurrentSnack: java.util.TimerTask = UITask {
     currentSnackbar.foreach { snackBar =>
       currentSnackbar = None
       snackBar.dismiss
@@ -202,9 +201,9 @@ trait BaseActivity extends AppCompatActivity { me =>
   def setVisMany(items: (Boolean, View)*): Unit =
     for (isVisible ~ view <- items) setVis(isVisible, view)
 
-  def UITask(fun: => Any): TimerTask = {
+  def UITask(fun: => Any): java.util.TimerTask = {
     val runnableExec = new Runnable { override def run: Unit = fun }
-    new TimerTask { def run: Unit = me runOnUiThread runnableExec }
+    new java.util.TimerTask { def run: Unit = me runOnUiThread runnableExec }
   }
 
   def selectorList(listAdapter: ListAdapter): ListView = {

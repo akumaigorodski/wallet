@@ -14,6 +14,7 @@
     <string name="total_balance">Total balance</string>
     <string name="hosted_channel">HOSTED CHANNEL</string>
     <string name="delayed_refunding">Delayed channel refunding</string>
+    <string name="typing_hints">Bitcoin address, invoice, email&#8230;</string>
     <string name="paste_from_clipboard">Paste from clipboard</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="add_address">More fresh addresses</string>
@@ -121,7 +122,7 @@
     <string name="error_btc_broadcast_fail">Could not broadcast a transaction, please make sure that wallet has network connection and then try again.</string>
     <string name="error_could_not_decrypt"><![CDATA[<b>Backup decryption failed</b>.<br><br>Make sure that both backup file and recovery phrase are correct.<br><br>Error details<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>Provided phrase is incorrect</b>.<br><br>Error details<br><b>%1$s</b>]]></string>
-    <string name="error_nothing_useful">Nothing useful is found.</string>
+    <string name="error_nothing_useful">Nothing useful is found</string>
 
     <string name="error_ln_no_chans"><![CDATA[Can neither send nor receive Lightning payments because no open channels are present.]]></string>
     <string name="error_ln_waiting"><![CDATA[Can neither send nor receive Lightning payments because none of your channels is open yet.<br><br>Please wait for more channel funding confirmations.]]></string>
@@ -149,12 +150,8 @@
     ]]></string>
 
     <string name="error_nothing_in_clipboard"><![CDATA[
-        <b>Nothing useful is found in clipboard</b>, please copy something first.
-        <br><br>A complete list of stuff which can be pasted into or <b>shared</b> with this wallet:<br><br>
-        - <b>Bitcoin addresses</b><br>
-        - <b>Lightning invoices</b><br>
-        - <b>Lightning node keys</b><br>
-        - <b>LNURL links</b>
+        <b>Nothing useful is found</b>: please <b>copy</b> something first or directly <b>share</b> it with wallet.
+        <br><br>Alternatively, type or paste something into the field below and see if wallet can recognize it.
     ]]></string>
 
     <!-- /errors -->

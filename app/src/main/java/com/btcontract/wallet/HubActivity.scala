@@ -838,7 +838,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       case withdraw: WithdrawRequest => UITask(me bringWithdrawPopup withdraw).run
       case nc: NormalChannelRequest => runAnd(InputParser.value = nc)(me goTo ClassNames.remotePeerActivityClass)
       case hc: HostedChannelRequest => runAnd(InputParser.value = hc)(me goTo ClassNames.remotePeerActivityClass)
-      case _ => UITask(WalletApp.app quickToast error_nothing_useful).run
+      case _ => nothingUsefulTask.run
     }
 
     val msg = getString(dialog_lnurl_processing).format(lnUrl.uri.getHost).html
@@ -978,21 +978,32 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   def bringScanner(view: View): Unit = {
-    def explainClipboardFailure = UITask {
-      val message = getString(error_nothing_in_clipboard)
-      snack(contentWindow, message.html, dialog_ok, _.dismiss)
+    def retryManualInputWithNotice: Runnable = UITask {
+      // Show an extra motice if user enters something invalid
+      switchToManualInputOnFailure.run
+      nothingUsefulTask.run
     }
 
-    val onScan = UITask(me checkExternalData noneRunnable)
-    val onPaste = UITask(me checkExternalData explainClipboardFailure)
+    def switchToManualInputOnFailure: Runnable = UITask {
+      val container = getLayoutInflater.inflate(R.layout.frag_hint_input, null, false)
+      val extraInputLayout = container.findViewById(R.id.extraInputLayout).asInstanceOf[TextInputLayout]
+      val extraInput = container.findViewById(R.id.extraInput).asInstanceOf[EditText]
+
+      def proceed: Unit = runInFutureProcessOnUI(InputParser recordValue extraInput.getText.toString, onFail)(_ => me checkExternalData retryManualInputWithNotice)
+      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, titleBodyAsViewBuilder(getString(error_nothing_in_clipboard).asDefView, container), dialog_ok, dialog_cancel)
+      extraInputLayout.setHint(typing_hints)
+    }
+
+    val onScan = UITask(me checkExternalData nothingUsefulTask)
+    val onPaste = UITask(me checkExternalData switchToManualInputOnFailure)
     val sheet = new sheets.ScannerBottomSheet(me, None, onScan, onPaste)
     callScanner(sheet)
   }
 
   def bringLegacyAddressScanner(legacy: ElectrumEclairWallet): Unit = {
     def resolveLegacyWalletBtcAddressQr: Unit = InputParser.checkAndMaybeErase {
-      case uri: BitcoinUri if uri.isValid => bringSendBitcoinPopup(uri, legacy)
-      case _ => UITask(WalletApp.app quickToast error_nothing_useful).run
+      case bitcoinUri: BitcoinUri if bitcoinUri.isValid => bringSendBitcoinPopup(bitcoinUri, legacy)
+      case _ => nothingUsefulTask.run
     }
 
     val instruction = getString(scan_btc_address).asSome

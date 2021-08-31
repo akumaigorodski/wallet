@@ -274,7 +274,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     def resolveClosingAddress: Unit = InputParser.checkAndMaybeErase {
       case ext: PaymentRequestExt if ext.pr.fallbackAddress.isDefined => ext.pr.fallbackAddress.map(BitcoinUri.fromRaw).foreach(confirmResolve)
       case closingBitcoinUri: BitcoinUri if closingBitcoinUri.isValid => confirmResolve(closingBitcoinUri)
-      case _ => UITask(WalletApp.app quickToast error_nothing_useful).run
+      case _ => nothingUsefulTask.run
     }
 
     def onData: Runnable = UITask(resolveClosingAddress)
@@ -301,7 +301,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
   def scanNodeQr: Unit = {
     def resolveNodeQr: Unit = InputParser.checkAndMaybeErase {
       case _: RemoteNodeInfo => me exitTo ClassNames.remotePeerActivityClass
-      case _ => UITask(WalletApp.app quickToast error_nothing_useful).run
+      case _ => nothingUsefulTask.run
     }
 
     def onData: Runnable = UITask(resolveNodeQr)
