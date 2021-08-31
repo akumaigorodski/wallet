@@ -60,27 +60,42 @@ object HubActivity {
   var paymentInfos = new ItemsWithMemory[PaymentInfo]
   var payMarketInfos = new ItemsWithMemory[LNUrlLinkInfo]
   var relayedPreimageInfos = new ItemsWithMemory[RelayedPreimageInfo]
-  var allInfos: Seq[TransactionDetails] = Nil
+  val allItems = List(txInfos, paymentInfos, relayedPreimageInfos, payMarketInfos)
 
   final val chainWalletStream: Subject[WalletExt] = Subject[WalletExt]
   // Run clear up method once on app start, do not re-run it every time this activity gets restarted
   lazy val markAsFailedOnce: Unit = LNParams.cm.markAsFailed(paymentInfos.lastItems, LNParams.cm.allInChannelOutgoing)
+
   var lastHashToReveals: Map[ByteVector32, RevealedLocalFulfills] = Map.empty
   var lastInChannelOutgoing: Map[FullPaymentTag, OutgoingAdds] = Map.empty
+  var allInfos: Seq[TransactionDetails] = Nil
+}
 
-  def updateLnCaches: Unit = {
+class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener { me =>
+  private def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(in = amount, out = 0L.msat, cardOut, cardIn, cardZero, isPlus = true)
+  private def dangerousHCRevealed(fullTag: FullPaymentTag): List[LocalFulfill] = ChannelMaster.dangerousHCRevealed(lastHashToReveals, LNParams.blockCount.get, fullTag.paymentHash).toList
+  private def itemsToDisplayMap = Map(R.id.bitcoinPayments -> txInfos, R.id.lightningPayments -> paymentInfos, R.id.relayedPayments -> relayedPreimageInfos, R.id.payMarketLinks -> payMarketInfos)
+  private def itemsToTags = Map(R.id.bitcoinPayments -> "bitcoinPayments", R.id.lightningPayments -> "lightningPayments", R.id.relayedPayments -> "relayedPayments", R.id.payMarketLinks -> "payMarketLinks")
+  private def hasItems: Boolean = allItems.exists(_.lastItems.nonEmpty)
+
+  private def updateLnCaches: Unit = {
     lastHashToReveals = LNParams.cm.allIncomingRevealed(LNParams.cm.allHostedCommits)
     lastInChannelOutgoing = LNParams.cm.allInChannelOutgoing
   }
 
-  private val allItems = List(txInfos, paymentInfos, relayedPreimageInfos, payMarketInfos)
-  def hasItems: Boolean = allItems.exists(_.lastItems.nonEmpty)
-}
+  // Resource references must be lazy
 
-class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener { me =>
-  def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(in = amount, out = 0L.msat, cardOut, cardIn, cardZero, isPlus = true)
-  def dangerousHCRevealed(fullTag: FullPaymentTag): List[LocalFulfill] = ChannelMaster.dangerousHCRevealed(lastHashToReveals, LNParams.blockCount.get, fullTag.paymentHash).toList
-  private[this] lazy val paymentTypeIconIds = List(R.id.btcIncoming, R.id.btcOutgoing, R.id.lnIncoming, R.id.lnOutgoing, R.id.lnRouted, R.id.btcLn, R.id.lnBtc, R.id.lnOutgoing)
+  private[this] lazy val expiresInBlocks = getResources.getStringArray(R.array.expires_in_blocks)
+  private[this] lazy val partsInFlight = getResources.getStringArray(R.array.parts_in_flight)
+  private[this] lazy val pctCollected = getResources.getStringArray(R.array.pct_collected)
+  private[this] lazy val inBlocks = getResources.getStringArray(R.array.in_blocks)
+  private[this] lazy val lnSplitNotice = getString(tx_ln_notice_split)
+  private[this] lazy val lnDefTitle = getString(tx_ln)
+
+  private[this] lazy val paymentTypeIconIds =
+    List(R.id.btcIncoming, R.id.btcOutgoing, R.id.lnIncoming, R.id.lnOutgoing,
+      R.id.lnRouted, R.id.btcLn, R.id.lnBtc, R.id.lnOutgoing)
+
   private[this] lazy val bottomBlurringArea = findViewById(R.id.bottomBlurringArea).asInstanceOf[RealtimeBlurView]
   private[this] lazy val bottomActionBar = findViewById(R.id.bottomActionBar).asInstanceOf[LinearLayout]
   private[this] lazy val contentWindow = findViewById(R.id.contentWindow).asInstanceOf[RelativeLayout]
@@ -90,15 +105,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   private[this] lazy val walletCards = new WalletCardsViewHolder
   private[this] val viewBinderHelper = new ViewBinderHelper
   private[this] val CHOICE_RECEIVE_TAG = "choiceReceiveTag"
-  var metaPrivacyThreshold: Long = System.currentTimeMillis
+  var disaplyThreshold: Long = System.currentTimeMillis
   var openListItems = Set.empty[String]
-
-  private[this] lazy val expiresInBlocks = getResources.getStringArray(R.array.expires_in_blocks)
-  private[this] lazy val partsInFlight = getResources.getStringArray(R.array.parts_in_flight)
-  private[this] lazy val pctCollected = getResources.getStringArray(R.array.pct_collected)
-  private[this] lazy val inBlocks = getResources.getStringArray(R.array.in_blocks)
-  private[this] lazy val lnSplitNotice = getString(tx_ln_notice_split)
-  private[this] lazy val lnDefTitle = getString(tx_ln)
 
   // PAYMENT LIST
 
@@ -108,25 +116,19 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def reloadPayMarketInfos: Unit = payMarketInfos.setItems(WalletApp.lnUrlBag.listRecentLinks(Table.DEFAULT_LIMIT.get) map WalletApp.lnUrlBag.toLinkInfo)
 
   def isImportantItem: PartialFunction[TransactionDetails, Boolean] = {
-    case anyFreshInfo if anyFreshInfo.updatedAt > metaPrivacyThreshold => true
+    case anyFreshInfo if anyFreshInfo.updatedAt > disaplyThreshold => true
     case info: PaymentInfo => info.status == PaymentStatus.PENDING
     case info: TxInfo => !info.isConfirmed
     case _ => false
   }
 
   def updAllInfos: Unit = {
+    val dr = LNParams.cm.delayedRefunds
+    val alwaysVisibleInfos = allItems.flatMap(_.lastItems filter isImportantItem)
     val checkedIds = walletCards.toggleGroup.getCheckedButtonIds.asScala.map(_.toInt)
-    val allItemsExceptRouted = (txInfos.lastItems ++ paymentInfos.lastItems ++ payMarketInfos.lastItems).toList
-    val itemsToDisplayMap = Map(R.id.bitcoinPayments -> txInfos, R.id.lightningPayments -> paymentInfos,
-      R.id.relayedPayments -> relayedPreimageInfos, R.id.payMarketLinks -> payMarketInfos)
-
-    allInfos = (LNParams.cm.delayedRefunds, WalletApp.metaPrivacyMode) match {
-      case _ if isSearchOn => allItemsExceptRouted.sortBy(_.seenAt)(Ordering[Long].reverse)
-      case (dr, false) if dr.totalAmount > 0L.msat => (checkedIds.map(itemsToDisplayMap).flatMap(_.lastItems) :+ dr).sortBy(_.seenAt)(Ordering[Long].reverse)
-      case (dr, true) if dr.totalAmount > 0L.msat => (allItemsExceptRouted :+ dr).filter(isImportantItem).sortBy(_.seenAt)(Ordering[Long].reverse)
-      case (_, false) => checkedIds.map(itemsToDisplayMap).flatMap(_.lastItems).sortBy(_.seenAt)(Ordering[Long].reverse)
-      case (_, true) => allItemsExceptRouted.filter(isImportantItem).sortBy(_.seenAt)(Ordering[Long].reverse)
-    }
+    val allVisibleInfos = checkedIds.map(itemsToDisplayMap).flatMap(_.lastItems) ++ alwaysVisibleInfos
+    val finalVisibleInfos = if (dr.totalAmount > 0L.msat) allVisibleInfos :+ dr else allVisibleInfos
+    finalVisibleInfos.sortBy(_.seenAt)(Ordering[Long].reverse)
   }
 
   def loadRecent: Unit = {
@@ -897,17 +899,19 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         itemsList.setPadding(0, 0, 0, bottomActionBar.getHeight)
       }
 
-      if (!WalletApp.metaPrivacyMode) {
-        // Set selections before list items and listener
-        walletCards.toggleGroup.check(R.id.bitcoinPayments)
-        walletCards.toggleGroup.check(R.id.lightningPayments)
-      }
+      val defaultButtons = Set("bitcoinPayments", "lightningPayments")
+      val checkedButtonTags = WalletApp.getCheckedButtons(defaultButtons)
+
+      for {
+        (itemId, buttonTag) <- itemsToTags
+        if checkedButtonTags.contains(buttonTag)
+      } walletCards.toggleGroup.check(itemId)
 
       walletCards.recoveryPhrase setOnClickListener onButtonTap(viewRecoveryCode)
       walletCards.toggleGroup addOnButtonCheckedListener new OnButtonCheckedListener {
         def onButtonChecked(group: MaterialButtonToggleGroup, checkId: Int, isChecked: Boolean): Unit = {
-          WalletApp.app.prefs.edit.putBoolean(WalletApp.META_PRIVACY_MODE, group.getCheckedButtonIds.isEmpty).commit
-          runAnd(metaPrivacyThreshold = System.currentTimeMillis)(updAllInfos)
+          WalletApp.putCheckedButtons(itemsToTags.filterKeys(group.getCheckedButtonIds.contains).values.toSet)
+          runAnd(disaplyThreshold = System.currentTimeMillis)(updAllInfos)
           paymentAdapterDataChanged.run
         }
       }
@@ -917,7 +921,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       itemsList.setDividerHeight(0)
       itemsList.setDivider(null)
 
-      // Fill a list with wallet card views here
+      // Fill wallet list with wallet card views here
       walletCards.chainCards.init(LNParams.chainWallets)
       walletCards.updateView
 

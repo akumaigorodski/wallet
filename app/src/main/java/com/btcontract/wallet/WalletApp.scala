@@ -8,6 +8,7 @@ import immortan.crypto.Tools._
 import scala.concurrent.duration._
 import com.btcontract.wallet.sqlite._
 import com.btcontract.wallet.R.string._
+import scala.collection.JavaConverters._
 import fr.acinq.eclair.blockchain.electrum._
 
 import android.widget.{EditText, Toast}
@@ -34,6 +35,7 @@ import fr.acinq.eclair.wire.NodeAddress
 import android.text.format.DateFormat
 import androidx.multidex.MultiDex
 import java.text.SimpleDateFormat
+import scala.collection.mutable
 import rx.lang.scala.Observable
 import java.text.DecimalFormat
 import scodec.bits.BitVector
@@ -70,15 +72,17 @@ object WalletApp {
   final val LAST_TOTAL_GOSSIP_SYNC = "lastTotalGossipSync"
   final val LAST_NORMAL_GOSSIP_SYNC = "lastNormalGossipSync"
   final val CUSTOM_ELECTRUM_ADDRESS = "customElectrumAddress"
-  final val META_PRIVACY_MODE = "metaPrivacyMode"
   final val SHOW_RATE_US = "showRateUs"
 
   def useAuth: Boolean = app.prefs.getBoolean(USE_AUTH, false)
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
   def ensureTor: Boolean = app.prefs.getBoolean(ENSURE_TOR, false)
   def capLNFeeToChain: Boolean = app.prefs.getBoolean(CAP_LN_FEE_TO_CHAIN, false)
-  def metaPrivacyMode: Boolean = app.prefs.getBoolean(META_PRIVACY_MODE, false)
   def showRateUs: Boolean = app.prefs.getBoolean(SHOW_RATE_US, true)
+
+  final val CHECKED_BUTTONS = "checkedButtons"
+  def getCheckedButtons(default: Set[String] = Set.empty): mutable.Set[String] = app.prefs.getStringSet(CHECKED_BUTTONS, default.asJava).asScala
+  def putCheckedButtons(buttons: Set[String] = Set.empty): Unit = app.prefs.edit.putStringSet(CHECKED_BUTTONS, buttons.asJava).commit
 
   def denom: Denomination = {
     val denom = app.prefs.getString(BTC_DENOM, SatDenomination.sign)
