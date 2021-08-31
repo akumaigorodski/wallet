@@ -258,6 +258,7 @@
     <string name="settings_custom_electrum_disabled">Set custom Electrum node</string>
     <string name="settings_custom_electrum_enabled">Using custom Electrum node</string>
     <string name="settings_custom_electrum_disabled_tip">Random nodes are used currently</string>
+    <string name="settings_custom_electrum_restart_notice">App must restart to apply changes</string>
 
     <string name="settings_view_revocery_phrase_ext">These words allow to restore wallet balance on any device, please keep it secret at all times!</string>
     <string name="settings_view_revocery_phrase">View BIP39 recovery phrase</string>
