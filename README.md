@@ -7,6 +7,7 @@ Simple Bitcoin Wallet (aka SBW) is an [IMMORTAN](https://github.com/btcontract/I
 - [ ] Implement BIP157/158, let users choose between Electrum and Client Side Filters as a sync mechanism.
 - [ ] Support watch-only Bitcoin wallets and import of xPub from hardware wallets.
 - [ ] Allow Lightning channels to be funded from imported hardware wallets.
+- [ ] Implement sweeping of funds into wallet from private keys.
 - [ ] Add RBF-based boosting and cancelling for outgoing transactions.
 - [ ] Add CPFP-based boosting for incoming transactions.
 - [ ] Implement Taproot wallet type.
