@@ -47,11 +47,7 @@
         connecting to remote nodes you had those channels with.
     </string>
 
-    <string name="action_backup_present_title"><![CDATA[
-        Wallet recovery phrase<br><br><small><b>Lightning backup file is present</b>.
-        <br><br>Recovery phrase will be used to decrypt it and restore fully working channels on this device.</small>
-    ]]></string>
-
+    <string name="action_backup_present_title"><![CDATA[<b>Lightning backup file is present</b><br><br>Recovery phrase will be used to decrypt it and restore fully working channels on this device]]></string>
     <string name="action_recovery_phrase_title">Wallet recovery phrase</string>
     <string name="action_recovery_phrase_hint">Type recovery words</string>
     <string name="title_chans">Lightning channels</string>
