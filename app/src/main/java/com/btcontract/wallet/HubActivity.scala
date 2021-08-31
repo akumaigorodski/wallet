@@ -74,7 +74,6 @@ object HubActivity {
 class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener { me =>
   private def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(in = amount, out = 0L.msat, cardOut, cardIn, cardZero, isPlus = true)
   private def dangerousHCRevealed(fullTag: FullPaymentTag): List[LocalFulfill] = ChannelMaster.dangerousHCRevealed(lastHashToReveals, LNParams.blockCount.get, fullTag.paymentHash).toList
-  private def itemsToDisplayMap = Map(R.id.bitcoinPayments -> txInfos, R.id.lightningPayments -> paymentInfos, R.id.relayedPayments -> relayedPreimageInfos, R.id.payMarketLinks -> payMarketInfos)
   private def itemsToTags = Map(R.id.bitcoinPayments -> "bitcoinPayments", R.id.lightningPayments -> "lightningPayments", R.id.relayedPayments -> "relayedPayments", R.id.payMarketLinks -> "payMarketLinks")
   private def hasItems: Boolean = allItems.exists(_.lastItems.nonEmpty)
 
@@ -125,10 +124,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def updAllInfos: Unit = {
     val dr = LNParams.cm.delayedRefunds
     val alwaysVisibleInfos = allItems.flatMap(_.lastItems filter isImportantItem)
-    val checkedIds = walletCards.toggleGroup.getCheckedButtonIds.asScala.map(_.toInt)
-    val allVisibleInfos = checkedIds.map(itemsToDisplayMap).flatMap(_.lastItems) ++ alwaysVisibleInfos
+    val itemsToDisplayMap = Map(R.id.bitcoinPayments -> txInfos, R.id.lightningPayments -> paymentInfos, R.id.relayedPayments -> relayedPreimageInfos, R.id.payMarketLinks -> payMarketInfos)
+    val allVisibleInfos = walletCards.toggleGroup.getCheckedButtonIds.asScala.map(_.toInt).map(itemsToDisplayMap).flatMap(_.lastItems) ++ alwaysVisibleInfos
     val finalVisibleInfos = if (dr.totalAmount > 0L.msat) allVisibleInfos :+ dr else allVisibleInfos
-    finalVisibleInfos.sortBy(_.seenAt)(Ordering[Long].reverse)
+    allInfos = finalVisibleInfos.distinct.sortBy(_.seenAt)(Ordering[Long].reverse)
   }
 
   def loadRecent: Unit = {
