@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="corner_radius">3dp</dimen>
     <dimen name="large_button_margin">45dp</dimen>
