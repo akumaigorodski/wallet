@@ -730,10 +730,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     inFinalizedSubscription.foreach(_.unsubscribe)
     chainWalletSubscription.foreach(_.unsubscribe)
 
-    LNParams.chainWallets.catcher ! WalletEventsCatcher.Remove(chainListener)
-    for (channel <- LNParams.cm.all.values) channel.listeners -= me
-    LNParams.cm.localPaymentListeners remove extraOutgoingListener
-    LNParams.fiatRates.listeners -= fiatRatesListener
+    try LNParams.chainWallets.catcher ! WalletEventsCatcher.Remove(chainListener) catch none
+    try for (channel <- LNParams.cm.all.values) channel.listeners -= me catch none
+    try LNParams.cm.localPaymentListeners remove extraOutgoingListener catch none
+    try LNParams.fiatRates.listeners -= fiatRatesListener catch none
     Tovuti.from(me).stop
     super.onDestroy
   }
