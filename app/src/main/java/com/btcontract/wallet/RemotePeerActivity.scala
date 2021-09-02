@@ -243,9 +243,9 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
 
   def implant(cs: Commitments, freshChannel: Channel): Unit = {
     // Make an immediate channel backup if anything goes wrong next
+    // At this point channel has saved itself in the database
     WalletApp.backupSaveWorker.replaceWork(false)
 
-    // At this point channel has saved itself in the database
     LNParams.cm.pf process PathFinder.CMDStartPeriodicResync
     LNParams.cm.all += Tuple2(cs.channelId, freshChannel)
     // This removes all previous channel listeners
