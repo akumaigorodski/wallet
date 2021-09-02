@@ -5,10 +5,6 @@ task wrapper(type: Wrapper) {
     gradleVersion = '5.4.1'
 }
 
-tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
-}
-
 android {
     compileSdkVersion 29
     buildToolsVersion "30.0.2"
