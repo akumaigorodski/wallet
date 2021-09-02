@@ -739,6 +739,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   override def onBackPressed: Unit = {
+    val isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]
     if (viewBinderHelper.getOpenCount > 0) viewBinderHelper.closeOthers(new String, null)
     else if (currentSnackbar.isDefined) removeCurrentSnack.run
     else if (isSearchOn) rmSearch(null)
@@ -956,16 +957,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   // VIEW HANDLERS
 
-  def isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]
-  def keyBoardOn: Unit = WalletApp.app.showKeys(walletCards.searchField)
-
   def bringSearch(view: View): Unit = {
     walletCards.searchField.setTag(true)
     TransitionManager.beginDelayedTransition(contentWindow)
     walletCards.searchField.setVisibility(View.VISIBLE)
     walletCards.defaultHeader.setVisibility(View.GONE)
-    walletCards.searchField.requestFocus
-    keyBoardOn
+    showKeys(walletCards.searchField)
   }
 
   def rmSearch(view: View): Unit = {
@@ -1120,6 +1117,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       override def getDescription: PaymentDescription = PlainDescription(split = None, label = None, invoiceText = manager.resultExtraInput getOrElse new String)
       override def processInvoice(prExt: PaymentRequestExt): Unit = runAnd(InputParser.value = prExt)(me goTo ClassNames.qrInvoiceActivityClass)
       override def getTitleText: String = getString(dialog_receive_ln)
+      showKeys(manager.inputAmount)
     }
   }
 

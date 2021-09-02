@@ -301,6 +301,12 @@ trait BaseActivity extends AppCompatActivity { me =>
     text
   }
 
+  def showKeys(input: EditText): Unit = {
+    // Popup forms can't show keyboard immediately due to animation, so delay it a bit
+    def process: Unit = runAnd(input.requestFocus)(WalletApp.app showKeys input)
+    timer.schedule(UITask(process), 100)
+  }
+
   // Rich popup title
 
   implicit class TitleView(titleText: String) {
@@ -388,19 +394,20 @@ trait BaseActivity extends AppCompatActivity { me =>
     extraText match {
       case Some(hintText) =>
         val revealExtraInputListener = onButtonTap {
-          extraInputLayout setVisibility View.VISIBLE
-          extraInputOption setVisibility View.GONE
+          extraInputLayout.setVisibility(View.VISIBLE)
+          extraInputOption.setVisibility(View.GONE)
+          showKeys(extraInput)
         }
 
-        extraInputLayout setHint hintText
-        extraInputOption setText hintText
-        extraInputVisibility setText visHintRes
-        extraInputOption setOnClickListener revealExtraInputListener
-        extraInputVisibility setOnClickListener revealExtraInputListener
+        extraInputLayout.setHint(hintText)
+        extraInputOption.setText(hintText)
+        extraInputVisibility.setText(visHintRes)
+        extraInputOption.setOnClickListener(revealExtraInputListener)
+        extraInputVisibility.setOnClickListener(revealExtraInputListener)
 
       case None =>
-        extraInputOption setVisibility View.GONE
-        extraInputVisibility setVisibility View.GONE
+        extraInputOption.setVisibility(View.GONE)
+        extraInputVisibility.setVisibility(View.GONE)
     }
 
     fiatInputAmount addTextChangedListener onTextChange { _ => updateBtcInput }
