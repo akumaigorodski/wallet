@@ -1,7 +1,7 @@
 package immortan.fsm
 
+import fr.acinq.eclair.channel.{ChannelFeatures, Commitments, DATA_WAIT_FOR_FUNDING_CONFIRMED, INPUT_INIT_FUNDEE, PersistentChannelData}
 import immortan.{ChannelListener, ChannelMaster, ChannelNormal, CommsTower, ConnectionListener, LNParams, RemoteNodeInfo}
-import fr.acinq.eclair.channel.{ChannelFeatures, DATA_WAIT_FOR_FUNDING_CONFIRMED, INPUT_INIT_FUNDEE, PersistentChannelData}
 import fr.acinq.eclair.wire.{HasChannelId, HasTemporaryChannelId, Init, LightningMessage, OpenChannel}
 import immortan.Channel.{WAIT_FOR_ACCEPT, WAIT_FUNDING_DONE}
 import immortan.ChannelListener.{Malfunction, Transition}
@@ -9,7 +9,7 @@ import immortan.ChannelListener.{Malfunction, Transition}
 
 abstract class NCFundeeOpenHandler(info: RemoteNodeInfo, theirOpen: OpenChannel, cm: ChannelMaster) {
   // Important: this must be initiated when chain tip is actually known
-  def onEstablished(channel: ChannelNormal): Unit
+  def onEstablished(cs: Commitments, channel: ChannelNormal): Unit
   def onFailure(err: Throwable): Unit
 
   private val freshChannel = new ChannelNormal(cm.chanBag) {
@@ -36,9 +36,8 @@ abstract class NCFundeeOpenHandler(info: RemoteNodeInfo, theirOpen: OpenChannel,
     override def onBecome: PartialFunction[Transition, Unit] = {
       case (_, _, data: DATA_WAIT_FOR_FUNDING_CONFIRMED, WAIT_FOR_ACCEPT, WAIT_FUNDING_DONE) =>
         // It is up to NC to store itself and communicate successful opening
-        cm.implantChannel(data.commitments, freshChannel)
+        onEstablished(data.commitments, freshChannel)
         CommsTower.rmListenerNative(info, me)
-        onEstablished(freshChannel)
     }
 
     override def onException: PartialFunction[Malfunction, Unit] = {

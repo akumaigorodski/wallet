@@ -26,7 +26,7 @@ object NCFunderOpenHandler {
 
 abstract class NCFunderOpenHandler(info: RemoteNodeInfo, fakeFunding: MakeFundingTxResponse, fundingFeeratePerKw: FeeratePerKw, cw: LNParams.WalletExt, cm: ChannelMaster) {
   // Important: this must be initiated when chain tip is actually known
-  def onEstablished(channel: ChannelNormal): Unit
+  def onEstablished(cs: Commitments, channel: ChannelNormal): Unit
   def onFailure(err: Throwable): Unit
 
   private val tempChannelId: ByteVector32 = randomBytes32
@@ -67,9 +67,8 @@ abstract class NCFunderOpenHandler(info: RemoteNodeInfo, fakeFunding: MakeFundin
       case (_, _, data: DATA_WAIT_FOR_FUNDING_CONFIRMED, WAIT_FOR_ACCEPT, WAIT_FUNDING_DONE) =>
         // On disconnect we remove this listener from CommsTower, but retain it as channel listener
         // this ensures successful implanting if disconnect happens while funding is being published
-        cm.implantChannel(data.commitments, freshChannel)
+        onEstablished(data.commitments, freshChannel)
         CommsTower.rmListenerNative(info, me)
-        onEstablished(freshChannel)
     }
 
     override def onException: PartialFunction[Malfunction, Unit] = {

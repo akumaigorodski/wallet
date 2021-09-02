@@ -58,10 +58,10 @@ object WalletApp {
   final val dbFileNameGraph = "graph.db"
   final val dbFileNameEssential = "essential.db"
 
-  val backupSaveWorker: ThrottledWork[String, Any] = new ThrottledWork[String, Any] {
+  val backupSaveWorker: ThrottledWork[Boolean, Any] = new ThrottledWork[Boolean, Any] {
     private def attemptStore: Unit = LocalBackup.encryptAndWritePlainBackup(app, dbFileNameEssential, LNParams.chainHash, LNParams.secret.seed)
-    def process(cmd: String, unitAfterDelay: Any): Unit = if (LocalBackup isAllowed app) try attemptStore catch none
-    def work(cmd: String): Observable[Any] = Rx.ioQueue.delay(4.seconds)
+    def process(useDelay: Boolean, unitAfterDelay: Any): Unit = if (LocalBackup isAllowed app) try attemptStore catch none
+    def work(useDelay: Boolean): Observable[Any] = if (useDelay) Rx.ioQueue.delay(4.seconds) else Observable.just(null)
   }
 
   final val USE_AUTH = "useAuth"
@@ -152,7 +152,7 @@ object WalletApp {
 
     val chanBag = new SQLiteChannel(essentialInterface, channelTxFeesDb = extDataBag.db) {
       override def put(data: PersistentChannelData): PersistentChannelData = {
-        backupSaveWorker.replaceWork("LN-TRIGGERED-DELAYED-BACKUP-SAVING")
+        backupSaveWorker.replaceWork(true)
         super.put(data)
       }
     }

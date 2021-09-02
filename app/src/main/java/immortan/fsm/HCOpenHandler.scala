@@ -2,7 +2,7 @@ package immortan.fsm
 
 import immortan.{ChannelHosted, ChannelListener, ChannelMaster, CommsTower, ConnectionListener, HostedCommits, RemoteNodeInfo, WaitRemoteHostedReply}
 import fr.acinq.eclair.wire.{ChannelUpdate, HasChannelId, HostedChannelBranding, HostedChannelMessage, Init, LightningMessage, LightningMessageCodecs}
-import fr.acinq.eclair.channel.{CMD_SOCKET_ONLINE, PersistentChannelData}
+import fr.acinq.eclair.channel.{CMD_SOCKET_ONLINE, Commitments, PersistentChannelData}
 import immortan.ChannelListener.{Malfunction, Transition}
 import immortan.Channel.{OPEN, WAIT_FOR_ACCEPT}
 import fr.acinq.bitcoin.ByteVector32
@@ -19,7 +19,7 @@ abstract class HCOpenHandler(info: RemoteNodeInfo, peerSpecificSecret: ByteVecto
     def STORE(hostedData: PersistentChannelData): PersistentChannelData = cm.chanBag.put(hostedData)
   }
 
-  def onEstablished(channel: ChannelHosted): Unit
+  def onEstablished(cs: Commitments, channel: ChannelHosted): Unit
   def onFailure(err: Throwable): Unit
 
   private val makeChanListener = new ConnectionListener with ChannelListener { me =>
@@ -38,10 +38,9 @@ abstract class HCOpenHandler(info: RemoteNodeInfo, peerSpecificSecret: ByteVecto
     }
 
     override def onBecome: PartialFunction[Transition, Unit] = {
-      case (_, _, commits: HostedCommits, WAIT_FOR_ACCEPT, OPEN) =>
-        cm.implantChannel(commits, freshChannel)
+      case (_, _, hostedCommits: HostedCommits, WAIT_FOR_ACCEPT, OPEN) =>
+        onEstablished(hostedCommits, freshChannel)
         CommsTower.rmListenerNative(info, me)
-        onEstablished(freshChannel)
     }
 
     override def onException: PartialFunction[Malfunction, Unit] = {

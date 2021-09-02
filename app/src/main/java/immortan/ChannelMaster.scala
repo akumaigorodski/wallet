@@ -167,15 +167,6 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     pf.listeners = Set.empty
   }
 
-  def implantChannel(cs: Commitments, freshChannel: Channel): Unit = {
-    // Note that this removes all listeners this channel previously had
-    pf process PathFinder.CMDStartPeriodicResync
-    all += Tuple2(cs.channelId, freshChannel)
-    freshChannel.listeners = Set(me)
-    next(statusUpdateStream)
-    initConnect
-  }
-
   def initConnect: Unit =
     all.values.flatMap(Channel.chanAndCommitsOpt).foreach { cnc =>
       // Connect to all peers with channels, including CLOSED ones

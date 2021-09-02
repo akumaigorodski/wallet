@@ -15,6 +15,7 @@ import immortan.fsm.{HCOpenHandler, NCFundeeOpenHandler, NCFunderOpenHandler}
 import fr.acinq.eclair.blockchain.MakeFundingTxResponse
 import com.btcontract.wallet.BaseActivity.StringOps
 import concurrent.ExecutionContext.Implicits.global
+import fr.acinq.eclair.channel.Commitments
 import androidx.appcompat.app.AlertDialog
 import com.ornach.nobobutton.NoboButton
 import fr.acinq.bitcoin.ByteVector32
@@ -137,7 +138,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
 
   def acceptIncomingChannel(theirOpen: OpenChannel): Unit = {
     new NCFundeeOpenHandler(hasInfo.remoteInfo, theirOpen, LNParams.cm) {
-      override def onEstablished(chan: ChannelNormal): Unit = disconnectListenersAndFinish
+      override def onEstablished(cs: Commitments, chan: ChannelNormal): Unit = implant(cs, chan)
       override def onFailure(reason: Throwable): Unit = revertAndInform(reason)
     }
 
@@ -154,7 +155,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
     def attempt(alert: AlertDialog): Unit = {
       NCFunderOpenHandler.makeFunding(LNParams.chainWallets, manager.resultMsat.truncateToSatoshi, feeView.rate) foreach { fakeFunding =>
         new NCFunderOpenHandler(hasInfo.remoteInfo, fakeFunding, feeView.rate, LNParams.chainWallets, LNParams.cm) {
-          override def onEstablished(chan: ChannelNormal): Unit = disconnectListenersAndFinish
+          override def onEstablished(cs: Commitments, chan: ChannelNormal): Unit = implant(cs, chan)
           override def onFailure(reason: Throwable): Unit = revertAndInform(reason)
         }
       }
@@ -217,7 +218,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       // We only need local params to extract defaultFinalScriptPubKey
       val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minFundingSatoshis)
       new HCOpenHandler(hasInfo.remoteInfo, secret, localParams.defaultFinalScriptPubKey, LNParams.cm) {
-        def onEstablished(channel: ChannelHosted): Unit = disconnectListenersAndFinish
+        def onEstablished(cs: Commitments, channel: ChannelHosted): Unit = implant(cs, channel)
         def onFailure(reason: Throwable): Unit = revertAndInform(reason)
       }
     }
@@ -238,6 +239,22 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
   def stopAcceptingIncomingOffers: Unit = {
     CommsTower.listenNative(Set(incomingIgnoringListener), hasInfo.remoteInfo)
     CommsTower.rmListenerNative(hasInfo.remoteInfo, incomingAcceptingListener)
+  }
+
+  def implant(cs: Commitments, freshChannel: Channel): Unit = {
+    // Make an immediate channel backup if anything goes wrong next
+    WalletApp.backupSaveWorker.replaceWork(false)
+
+    // At this point channel has saved itself in the database
+    LNParams.cm.pf process PathFinder.CMDStartPeriodicResync
+    LNParams.cm.all += Tuple2(cs.channelId, freshChannel)
+    // This removes all previous channel listeners
+    freshChannel.listeners = Set(LNParams.cm)
+    LNParams.cm.initConnect
+
+    // Update view on hub activity and finalize local stuff
+    ChannelMaster.next(ChannelMaster.statusUpdateStream)
+    disconnectListenersAndFinish
   }
 
   def disconnectListenersAndFinish: Unit = {
