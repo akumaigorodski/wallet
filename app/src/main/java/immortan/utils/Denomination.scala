@@ -14,18 +14,26 @@ object Denomination {
   formatFiat setDecimalFormatSymbols symbols
 
   def satCeil(msat: MilliSatoshi): MilliSatoshi = (1000L * (msat.toLong / 1000D).ceil).toLong.msat
+
   def btcBigDecimal2MSat(btc: BigDecimal): MilliSatoshi = (btc * BtcDenomination.factor).toLong.msat
 }
 
 trait Denomination { me =>
   def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String
+
   def fromMsat(amount: MilliSatoshi): BigDecimal = BigDecimal(amount.toLong) / factor
-  def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
-  def directedWithSign(in: MilliSatoshi, out: MilliSatoshi, inColor: String, outColor: String, zeroColor: String, isPlus: Boolean): String = {
-    if (isPlus && in == 0L.msat) parsedWithSign(in, inColor, zeroColor)
-    else if (isPlus) "+&#160;" + parsedWithSign(in, inColor, zeroColor)
-    else if (out == 0L.msat) parsedWithSign(out, outColor, zeroColor)
-    else "-&#160;" + parsedWithSign(out, outColor, zeroColor)
+
+  def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
+    parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
+
+  def directedWithSign(incoming: MilliSatoshi, outgoing: MilliSatoshi,
+                       inColor: String, outColor: String, zeroColor: String,
+                       isPlus: Boolean): String = {
+
+    if (isPlus && incoming == 0L.msat) parsedWithSign(incoming, inColor, zeroColor)
+    else if (outgoing == 0L.msat) parsedWithSign(outgoing, outColor, zeroColor)
+    else if (isPlus) "+&#160;" + parsedWithSign(incoming, inColor, zeroColor)
+    else "-&#160;" + parsedWithSign(outgoing, outColor, zeroColor)
   }
 
   val fmt: DecimalFormat

@@ -71,7 +71,7 @@ object HubActivity {
 }
 
 class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener { me =>
-  private def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(in = amount, out = 0L.msat, cardOut, cardIn, cardZero, isPlus = true)
+  private def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(incoming = amount, outgoing = 0L.msat, cardOut, cardIn, cardZero, isPlus = true)
   private def dangerousHCRevealed(fullTag: FullPaymentTag): List[LocalFulfill] = ChannelMaster.dangerousHCRevealed(lastHashToReveals, LNParams.blockCount.get, fullTag.paymentHash).toList
   private def itemsToTags = Map(R.id.bitcoinPayments -> "bitcoinPayments", R.id.lightningPayments -> "lightningPayments", R.id.relayedPayments -> "relayedPayments", R.id.payMarketLinks -> "payMarketLinks")
   private def hasItems: Boolean = allItems.exists(_.lastItems.nonEmpty)

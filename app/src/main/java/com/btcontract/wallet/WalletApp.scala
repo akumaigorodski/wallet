@@ -283,8 +283,8 @@ object WalletApp {
     currentRate(rates, code).map(perBtc => msat.toLong * perBtc / BtcDenomination.factor)
 
   def msatInFiatHuman(rates: Fiat2Btc, code: String, msat: MilliSatoshi, decimalFormat: DecimalFormat): String = {
-    val fiatAmount = msatInFiat(rates, code)(msat).map(decimalFormat.format).getOrElse(default = "?")
-    val formatted = LNParams.fiatRates.customFiatSymbols.get(code).map(sign => s"$sign$fiatAmount")
+    val fiatAmount = msatInFiat(rates, code)(msat).map(f = decimalFormat.format).getOrElse(default = "?")
+    val formatted = LNParams.fiatRates.customFiatSymbols.get(code).map(symbol => s"$symbol$fiatAmount")
     formatted.getOrElse(s"$fiatAmount $code")
   }
 
