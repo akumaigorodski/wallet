@@ -28,11 +28,11 @@ trait Denomination { me =>
 
   def directedWithSign(incoming: MilliSatoshi, outgoing: MilliSatoshi,
                        inColor: String, outColor: String, zeroColor: String,
-                       isPlus: Boolean): String = {
+                       isIncoming: Boolean): String = {
 
-    if (isPlus && incoming == 0L.msat) parsedWithSign(incoming, inColor, zeroColor)
+    if (isIncoming && incoming == 0L.msat) parsedWithSign(incoming, inColor, zeroColor)
+    else if (isIncoming) "+&#160;" + parsedWithSign(incoming, inColor, zeroColor)
     else if (outgoing == 0L.msat) parsedWithSign(outgoing, outColor, zeroColor)
-    else if (isPlus) "+&#160;" + parsedWithSign(incoming, inColor, zeroColor)
     else "-&#160;" + parsedWithSign(outgoing, outColor, zeroColor)
   }
 

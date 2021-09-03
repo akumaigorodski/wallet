@@ -72,7 +72,7 @@ object HubActivity {
 }
 
 class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener { me =>
-  private def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(incoming = amount, outgoing = 0L.msat, cardOut, cardIn, cardZero, isPlus = true)
+  private def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(incoming = amount, outgoing = 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
   private def dangerousHCRevealed(fullTag: FullPaymentTag): List[LocalFulfill] = ChannelMaster.dangerousHCRevealed(lastHashToReveals, LNParams.blockCount.get, fullTag.paymentHash).toList
   private def itemsToTags = Map(R.id.bitcoinPayments -> "bitcoinPayments", R.id.lightningPayments -> "lightningPayments", R.id.relayedPayments -> "relayedPayments", R.id.payMarketLinks -> "payMarketLinks")
   private def hasItems: Boolean = allItems.exists(_.lastItems.nonEmpty)
@@ -287,7 +287,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       def onCan(txAndFee: TxAndFee): Unit = {
-        val formattedFee = WalletApp.denom.directedWithSign(0L.msat, txAndFee.fee.toMilliSatoshi, cardOut, cardIn, cardZero, isPlus = false)
+        val formattedFee = WalletApp.denom.directedWithSign(0L.msat, txAndFee.fee.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
         val msg = getString(error_hc_revealed_preimage).format(getString(error_hc_option_can_stamp).format(paymentAmount, formattedFee), paymentAmount, closestExpiry).html
         mkCheckFormNeutral(stampProof(txAndFee.tx), none, shareDetails, new AlertDialog.Builder(me).setCustomTitle(title).setMessage(msg), dialog_stamp, dialog_cancel, dialog_share)
       }
@@ -323,7 +323,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           val outgoingFSMSpec = LNParams.cm.opm.data.payments.get(info.fullTag).map(_.data)
 
           val liveFeePaid = outgoingFSMSpec.map(_.usedFee).getOrElse(info.fee)
-          val offChainFeePaid = WalletApp.denom.directedWithSign(0L.msat, liveFeePaid, cardOut, cardIn, cardZero, isPlus = false)
+          val offChainFeePaid = WalletApp.denom.directedWithSign(0L.msat, liveFeePaid, cardOut, cardIn, cardZero, isIncoming = false)
           val onChainFeeSaved = WalletApp.denom.directedWithSign(info.chainFee - liveFeePaid, 0L.msat, cardOut, cardIn, cardZero, info.chainFee > liveFeePaid)
           val shouldDisplayFee = liveFeePaid > 0L.msat && (info.status == PaymentStatus.SUCCEEDED || info.status != PaymentStatus.ABORTED && outgoingFSMSpec.isDefined)
           val shouldRetry = info.status == PaymentStatus.ABORTED && info.description.split.isEmpty && !info.prExt.pr.isExpired
@@ -353,7 +353,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
         case info: TxInfo =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
-          val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isPlus = false)
+          val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
 
           addFlowChip(extraInfo, getString(popup_explorer), R.drawable.border_green, _ => me browseTxid info.txid)
           addFlowChip(extraInfo, getString(popup_txid) format info.txidString.short, R.drawable.border_green, info.txidString.asSome)

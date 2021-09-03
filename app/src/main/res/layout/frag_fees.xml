@@ -46,7 +46,6 @@
             android:id="@+id/customFeerateOption"
             android:text="@string/dialog_change_feerate"
             android:layout_marginBottom="25dp"
-            android:layout_marginStart="2dp"
             android:textStyle="bold"/>
 
         <com.google.android.material.slider.Slider
@@ -62,6 +61,13 @@
             app:trackHeight="2dp"
             app:haloRadius="20dp"
             android:stepSize="1"/>
+
+        <TextView
+            style="@style/BoundedView"
+            android:layout_marginBottom="25dp"
+            android:id="@+id/customFeerateNotice"
+            android:text="@string/dialog_change_feerate"
+            android:visibility="gone"/>
 
     </FrameLayout>
 </LinearLayout>

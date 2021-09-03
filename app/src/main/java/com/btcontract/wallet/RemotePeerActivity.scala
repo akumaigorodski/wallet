@@ -171,7 +171,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       mkCheckFormNeutral(attempt, none, setMax, builder, dialog_pay, dialog_cancel, dialog_max)
     }
 
-    lazy val feeView = new FeeView(body) {
+    lazy val feeView: FeeView = new FeeView(body) {
       override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
         manager.updateButton(getPositiveButton(alert), feeOpt.isDefined)
         super.update(feeOpt, showIssue)
@@ -182,8 +182,9 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
         LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(target)
       }
 
-      // Rate for funding tx can not be adjusted
-      customFeerateOption setVisibility View.GONE
+      setVisMany(false -> customFeerateOption, true -> customFeerateNotice)
+      private val minHuman = WalletApp.denom.parsedWithSign(LNParams.minFundingSatoshis.toMilliSatoshi, cardIn, cardZero)
+      customFeerateNotice setText getString(rpa_channel_restrictions).format(minHuman).html
     }
 
     lazy val worker = new ThrottledWork[String, MakeFundingTxResponse] {

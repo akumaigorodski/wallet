@@ -438,6 +438,7 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     val customFeerate: Slider = content.findViewById(R.id.customFeerate).asInstanceOf[Slider]
     val customFeerateOption: TextView = content.findViewById(R.id.customFeerateOption).asInstanceOf[TextView]
+    val customFeerateNotice: TextView = content.findViewById(R.id.customFeerateNotice).asInstanceOf[TextView]
     var rate: FeeratePerKw = _
 
     def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = {

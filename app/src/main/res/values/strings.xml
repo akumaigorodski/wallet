@@ -213,6 +213,7 @@
     <string name="rpa_disconnected">Remote peer disconnected</string>
     <string name="rpa_no_feature_support">Can not open channels with this node since some important features are not supported by remote peer.</string>
     <string name="rpa_hc_warn"><![CDATA[<br><b>Attention!</b><br><br>Your hosted channel funds will be stored on a host side, make sure you trust this peer to not exit scam.]]></string>
+    <string name="rpa_channel_restrictions"><![CDATA[&#9888; Channel funding rate is fixed<br>&#9888; Minimum funding is %1$s]]></string>
     <string name="rpa_request_channel">Share your node ID with remote peer and keep this page open to get an incoming channel.</string>
     <string name="rpa_request_hc">Request hosted channel</string>
     <string name="rpa_share_node_id">Share node ID</string>
