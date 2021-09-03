@@ -12,13 +12,11 @@ import fr.acinq.eclair.wire.{Domain, NodeAddress}
 import immortan.utils.{BtcDenomination, SatDenomination}
 import com.btcontract.wallet.BuildConfig.{VERSION_CODE, VERSION_NAME}
 import com.btcontract.wallet.utils.{LocalBackup, OnListItemClickListener}
-import com.btcontract.wallet.sheets.BaseChoiceBottomSheet
-import com.google.android.material.textfield.TextInputLayout
 import fr.acinq.eclair.blockchain.electrum.db.SigningWallet
-import com.btcontract.wallet.BaseActivity.StringOps
+import com.btcontract.wallet.sheets.BaseChoiceBottomSheet
 import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
 import com.google.android.material.snackbar.Snackbar
-import androidx.appcompat.app.AlertDialog
+import com.btcontract.wallet.BaseActivity.StringOps
 import fr.acinq.eclair.MilliSatoshi
 import android.content.Intent
 import scala.util.Success
@@ -143,33 +141,23 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     setVis(isVisible = false, settingsCheck)
 
     view setOnClickListener onButtonTap {
-      val title = getString(settings_custom_electrum_disabled).asDefView
-      val container = getLayoutInflater.inflate(R.layout.frag_hint_input, null, false)
-      val extraInputLayout = container.findViewById(R.id.extraInputLayout).asInstanceOf[TextInputLayout]
-      val extraInput = container.findViewById(R.id.extraInput).asInstanceOf[EditText]
+      singleInputPopup(settings_custom_electrum_host_port, title = getString(settings_custom_electrum_disabled).asDefView) { input =>
+        if (input.trim.isEmpty) runAnd(WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM_ADDRESS, new String).commit)(warnAndUpdateView)
+        else runInFutureProcessOnUI(saveUnsafe, onFail)(_ => warnAndUpdateView)
 
-      def warnAndUpdateView: Unit = {
-        def onOk(snack: Snackbar): Unit = runAnd(snack.dismiss)(WalletApp.restartApplication)
-        snack(settingsContainer, getString(settings_custom_electrum_restart_notice).html, R.string.dialog_ok, onOk)
-        updateView
+        def saveUnsafe: Unit = {
+          val hostOrIP ~ port = input.trim.splitAt(input lastIndexOf ':')
+          val nodeAddress = NodeAddress.fromParts(host = hostOrIP, port = port.tail.toInt, orElse = Domain)
+          WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM_ADDRESS, nodeaddress.encode(nodeAddress).require.toHex).commit
+        }
+
+        def warnAndUpdateView: Unit = {
+          def onOk(snack: Snackbar): Unit = runAnd(snack.dismiss)(WalletApp.restartApplication)
+          val msg = getString(settings_custom_electrum_restart_notice).html
+          snack(settingsContainer, msg, R.string.dialog_ok, onOk)
+          updateView
+        }
       }
-
-      def saveUnsafe: Unit = {
-        val rawText = extraInput.getText.toString.trim
-        val hostOrIP ~ port = rawText.splitAt(rawText lastIndexOf ':')
-        val nodeAddress = NodeAddress.fromParts(host = hostOrIP, port = port.tail.toInt, orElse = Domain)
-        WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM_ADDRESS, nodeaddress.encode(nodeAddress).require.toHex).commit
-      }
-
-      def proceed(alert: AlertDialog): Unit = {
-        if (extraInput.getText.toString.trim.nonEmpty) runInFutureProcessOnUI(saveUnsafe, onFail)(_ => warnAndUpdateView)
-        else runAnd(WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM_ADDRESS, new String).commit)(warnAndUpdateView)
-        alert.dismiss
-      }
-
-      val builder = titleBodyAsViewBuilder(title, container)
-      extraInputLayout.setHint(settings_custom_electrum_host_port)
-      mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
     }
 
     def setTexts(titleRes: Int, info: String): Unit = {

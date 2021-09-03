@@ -7,16 +7,14 @@ import fr.acinq.eclair.blockchain.EclairWallet._
 
 import java.io.{File, FileInputStream}
 import scala.util.{Failure, Success, Try}
-import android.widget.{EditText, TextView}
 import immortan.crypto.Tools.{none, runAnd}
-import com.google.android.material.textfield.TextInputLayout
 import fr.acinq.eclair.blockchain.electrum.db.SigningWallet
 import info.guardianproject.netcipher.proxy.OrbotHelper
 import org.ndeftools.util.activity.NfcReaderActivity
 import com.btcontract.wallet.BaseActivity.StringOps
-import androidx.appcompat.app.AlertDialog
 import com.ornach.nobobutton.NoboButton
 import immortan.utils.InputParser
+import android.widget.TextView
 import android.content.Intent
 import org.ndeftools.Message
 import android.os.Bundle
@@ -116,13 +114,9 @@ class MainActivity extends NfcReaderActivity with BaseActivity { me =>
     }
 
     def makeAttempt: Unit = {
-      val container = getLayoutInflater.inflate(R.layout.frag_hint_input, null, false)
-      val extraInputLayout = container.findViewById(R.id.extraInputLayout).asInstanceOf[TextInputLayout]
-      val extraInput = container.findViewById(R.id.extraInput).asInstanceOf[EditText]
-      val core = SigningWallet(walletType = BIP32, isRemovable = true)
-
-      def attemptDecrypt(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-        decrypt(restoreLegacyWallet, extraInput.getText.toString.trim) map { seed =>
+      singleInputPopup(password, title = null) { input =>
+        decrypt(restoreLegacyWallet, input.trim) map { seed =>
+          val core = SigningWallet(walletType = BIP32, isRemovable = true)
           SetupActivity.fromMnemonics(seed.getMnemonicCode.asScala.toList, host = me)
           val walletExt1 = LNParams.chainWallets.withNewSigning(core, core.walletType)
           LNParams.updateChainWallet(walletExt = walletExt1)
@@ -130,10 +124,6 @@ class MainActivity extends NfcReaderActivity with BaseActivity { me =>
           legacyWalletFile.delete
         } getOrElse makeAttempt
       }
-
-      val builder = titleBodyAsViewBuilder(title = null, container)
-      mkCheckForm(attemptDecrypt, finish, builder, dialog_ok, dialog_cancel)
-      extraInputLayout.setHint(password)
     }
   }
 

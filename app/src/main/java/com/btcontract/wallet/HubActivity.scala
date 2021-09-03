@@ -31,7 +31,6 @@ import com.google.android.material.button.{MaterialButton, MaterialButtonToggleG
 import com.google.android.material.button.MaterialButtonToggleGroup.OnButtonCheckedListener
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.WalletReady
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
-import com.google.android.material.textfield.TextInputLayout
 import org.ndeftools.util.activity.NfcReaderActivity
 import concurrent.ExecutionContext.Implicits.global
 import com.btcontract.wallet.BaseActivity.StringOps
@@ -207,26 +206,16 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     shareItem setOnClickListener onButtonTap(doShareItem)
 
     def doSetItemLabel: Unit = {
-      val container = getLayoutInflater.inflate(R.layout.frag_hint_input, null, false)
-      val extraInputLayout = container.findViewById(R.id.extraInputLayout).asInstanceOf[TextInputLayout]
-      val extraInput = container.findViewById(R.id.extraInput).asInstanceOf[EditText]
-
-      def doSetItemLabel(alert: AlertDialog): Unit = {
-        val rawLabel = Option(extraInput.getText.toString)
-        val trimmedLabel = rawLabel.map(trimmed).filter(_.nonEmpty)
-        alert.dismiss
+      singleInputPopup(dialog_set_record_label, title = null) { input =>
+        val trimmedLabelInput = Option(input).map(trimmed).filter(_.nonEmpty)
 
         currentDetails match {
-          case info: LNUrlLinkInfo => WalletApp.lnUrlBag.updateLabel(info.locator, trimmedLabel.getOrElse(new String), info.domain)
-          case info: PaymentInfo => LNParams.cm.payBag.updDescription(info.description.modify(_.label).setTo(trimmedLabel), info.paymentHash)
-          case info: TxInfo => WalletApp.txDataBag.updDescription(info.description.modify(_.label).setTo(trimmedLabel), info.txid)
+          case info: LNUrlLinkInfo => WalletApp.lnUrlBag.updateLabel(info.locator, trimmedLabelInput.getOrElse(new String), info.domain)
+          case info: PaymentInfo => LNParams.cm.payBag.updDescription(info.description.modify(_.label).setTo(trimmedLabelInput), info.paymentHash)
+          case info: TxInfo => WalletApp.txDataBag.updDescription(info.description.modify(_.label).setTo(trimmedLabelInput), info.txid)
           case _ =>
         }
       }
-
-      extraInputLayout.setHint(dialog_set_record_label)
-      val builder = new AlertDialog.Builder(me).setView(container)
-      mkCheckForm(doSetItemLabel, none, builder, dialog_ok, dialog_cancel)
     }
 
     def doRemoveItem: Unit = {
@@ -975,25 +964,21 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   def bringScanner(view: View): Unit = {
-    def retryManualInputWithNotice: Runnable = UITask {
-      // Show an extra motice if user enters something invalid
-      switchToManualInputOnFailure.run
-      nothingUsefulTask.run
+    def parseTypedInput(input: String): Unit = runInFutureProcessOnUI(InputParser recordValue input, onFail) { _ =>
+      // Try to parse user input, show terminal failure details, fallback to manual input if nothing useful was found
+      def proceed: Unit = runAnd(switchToTypeInputOnFailure.run)(nothingUsefulTask.run)
+      me checkExternalData UITask(proceed)
     }
 
-    def switchToManualInputOnFailure: Runnable = UITask {
-      val container = getLayoutInflater.inflate(R.layout.frag_hint_input, null, false)
-      val extraInputLayout = container.findViewById(R.id.extraInputLayout).asInstanceOf[TextInputLayout]
-      val extraInput = container.findViewById(R.id.extraInput).asInstanceOf[EditText]
-
-      def proceed: Unit = runInFutureProcessOnUI(InputParser recordValue extraInput.getText.toString, onFail)(_ => me checkExternalData retryManualInputWithNotice)
-      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, titleBodyAsViewBuilder(getString(error_nothing_in_clipboard).asDefView, container), dialog_ok, dialog_cancel)
-      extraInputLayout.setHint(typing_hints)
+    def switchToTypeInputOnFailure: Runnable = UITask {
+      val title = getString(error_nothing_in_clipboard).asDefView
+      singleInputPopup(typing_hints, title)(parseTypedInput)
     }
 
-    val onScan = UITask(me checkExternalData nothingUsefulTask)
-    val onPaste = UITask(me checkExternalData switchToManualInputOnFailure)
-    val sheet = new sheets.ScannerBottomSheet(me, None, onScan, onPaste)
+    val onType = UITask { singleInputPopup(typing_hints, null)(parseTypedInput) /* Has no title */ }
+    val onScan = UITask { checkExternalData(nothingUsefulTask) /* Check data and tell nothing useful is found as fallback */ }
+    val onPaste = UITask { checkExternalData(switchToTypeInputOnFailure) /* Check data and propose to type it as fallback */ }
+    val sheet = new sheets.ScannerBottomSheet(me, None, Some(onType), onScan, onPaste)
     callScanner(sheet)
   }
 
@@ -1005,7 +990,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     val instruction = getString(scan_btc_address).asSome
     def onData: Runnable = UITask(resolveLegacyWalletBtcAddressQr)
-    val sheet = new sheets.ScannerBottomSheet(me, instruction, onData, onData)
+    val sheet = new sheets.ScannerBottomSheet(me, instruction, None, onData, onData)
     callScanner(sheet)
   }
 

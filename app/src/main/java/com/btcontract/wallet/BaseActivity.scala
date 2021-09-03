@@ -307,6 +307,17 @@ trait BaseActivity extends AppCompatActivity { me =>
     timer.schedule(UITask(process), 100)
   }
 
+  def singleInputPopup(hintRes: Int, title: View)(onOk: String => Unit): Unit = {
+    val container: View = getLayoutInflater.inflate(R.layout.frag_hint_input, null, false)
+    val extraInputLayout = container.findViewById(R.id.extraInputLayout).asInstanceOf[TextInputLayout]
+    val extraInput = container.findViewById(R.id.extraInput).asInstanceOf[EditText]
+
+    def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss)(onOk apply extraInput.getText.toString)
+    mkCheckForm(proceed, none, titleBodyAsViewBuilder(title, container), dialog_ok, dialog_cancel)
+    extraInputLayout.setHint(hintRes)
+    showKeys(extraInput)
+  }
+
   // Rich popup title
 
   implicit class TitleView(titleText: String) {

@@ -32,6 +32,7 @@
         <ImageButton
             android:padding="10dp"
             android:id="@+id/flashlight"
+            android:layout_marginBottom="10dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center|bottom"
@@ -46,8 +47,15 @@
         style="@style/XMarginFillingView">
 
         <com.ornach.nobobutton.NoboButton
-            app:nb_text="@string/paste_from_clipboard"
+            app:nb_drawableResource="@drawable/baseline_create_24"
+            android:id="@+id/typeSomethingIn"
+            style="@style/GrayButton"/>
+
+        <com.ornach.nobobutton.NoboButton
+            app:nb_drawableResource="@drawable/baseline_content_paste_24"
+            android:layout_toEndOf="@id/typeSomethingIn"
             android:id="@+id/pasteFromClipbard"
+            android:layout_marginStart="15dp"
             style="@style/GrayButton"/>
 
         <TextView
