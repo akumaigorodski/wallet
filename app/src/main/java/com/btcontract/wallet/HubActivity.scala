@@ -45,6 +45,7 @@ import fr.acinq.eclair.blockchain.TxAndFee
 import com.indicator.ChannelIndicatorLine
 import androidx.appcompat.app.AlertDialog
 import org.apmem.tools.layouts.FlowLayout
+import android.graphics.drawable.Drawable
 import android.content.pm.PackageManager
 import com.ornach.nobobutton.NoboButton
 import immortan.LNParams.WalletExt
@@ -98,7 +99,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   private[this] lazy val bottomActionBar = findViewById(R.id.bottomActionBar).asInstanceOf[LinearLayout]
   private[this] lazy val contentWindow = findViewById(R.id.contentWindow).asInstanceOf[RelativeLayout]
   private[this] lazy val itemsList = findViewById(R.id.itemsList).asInstanceOf[ListView]
-  private[this] lazy val upDrawable = getDrawable(R.drawable.baseline_arrow_upward_18)
 
   private[this] lazy val walletCards = new WalletCardsViewHolder
   private[this] val viewBinderHelper = new ViewBinderHelper
@@ -340,8 +340,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           if (!info.isIncoming && shouldDisplayFee) addFlowChip(extraInfo, getString(popup_ln_fee).format(offChainFeePaid, onChainFeeSaved), R.drawable.border_gray)
           if (shouldRetry) addFlowChip(extraInfo, getString(popup_retry), R.drawable.border_yellow, _ => self retry info)
 
-          for (paymentAction <- info.action) {
-            def run: Unit = resolveAction(theirPreimage = info.preimage, paymentAction)
+          for (action <- info.action if info.status == PaymentStatus.SUCCEEDED) {
+            def run: Unit = resolveAction(theirPreimage = info.preimage, paymentAction = action)
             addFlowChip(extraInfo, getString(popup_run_action), R.drawable.border_green, _ => run)
           }
 
@@ -464,8 +464,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.label.isDefined -> marketLabel)
 
         marketItems.removeAllViewsInLayout
-        addFlowChip(marketItems, marketLinkCaption(info), R.drawable.border_gray)
-        addFlowChip(marketItems, lastAmount, R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(upDrawable, null, null, null)
+        addFlowChip(marketItems, marketLinkCaption(info), R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(marketLinkIcon(info), null, null, null)
+        addFlowChip(marketItems, lastAmount, R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(getDrawable(R.drawable.baseline_arrow_upward_18), null, null, null)
         for (lastComment <- info.lastComment) addFlowChip(marketItems, lastComment, R.drawable.border_blue)
         info.imageBytes.map(payLinkImageMemo.get).foreach(linkImage.setImageBitmap)
         info.label.foreach(marketLabel.setText)
@@ -482,6 +482,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       case Success(payMeta) if payMeta.identities.nonEmpty => payMeta.identities.head
       case Success(payMeta) if payMeta.emails.nonEmpty => payMeta.emails.head
       case _ => info.payLink.get.uri.getHost
+    }
+
+    def marketLinkIcon(info: LNUrlLinkInfo): Drawable = info.payMetaData match {
+      case Success(payMeta) if payMeta.identities.nonEmpty => getDrawable(R.drawable.baseline_perm_identity_18)
+      case Success(payMeta) if payMeta.emails.nonEmpty => getDrawable(R.drawable.baseline_alternate_email_18)
+      case _ => getDrawable(R.drawable.baseline_language_18)
     }
 
     // TX helpers
