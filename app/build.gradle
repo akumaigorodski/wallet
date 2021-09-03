@@ -56,6 +56,10 @@ android {
             outputFileName = "SBW-${defaultConfig.versionName}.apk"
         }
     }
+
+    packagingOptions {
+        exclude 'META-INF/**'
+    }
 }
 
 dependencies {
