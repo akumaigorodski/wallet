@@ -49,7 +49,9 @@ class QRChainActivity extends QRActivity { me =>
         val layoutManager = new CarouselLayoutManager(CarouselLayoutManager.HORIZONTAL, false)
         layoutManager.setPostLayoutListener(new CarouselZoomPostLayoutListener)
         layoutManager.setMaxVisibleItems(MAX_RECEIVE_ADDRESSES)
-        allAddresses = response.address2PubKey.keys.toList
+
+        // Allow MAX_RECEIVE_ADDRESSES - 6 to be seen to not make it crowded
+        allAddresses = response.address2PubKey.keys.toList.dropRight(6)
         addresses = allAddresses.take(1)
 
         chainQrMore setOnClickListener onButtonTap {
