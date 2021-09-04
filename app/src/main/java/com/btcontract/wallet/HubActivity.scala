@@ -938,7 +938,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       stateSubscription = txEvents.merge(paymentEvents).merge(relayEvents).merge(marketEvents).merge(stateEvents).doOnNext(_ => updAllInfos).subscribe(_ => paymentAdapterDataChanged.run).asSome
       statusSubscription = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.statusUpdateStream, window).merge(stateEvents).subscribe(_ => UITask(walletCards.updateView).run).asSome
       chainWalletSubscription = chainWalletStream.subscribe(updatedChainWallets => UITask(walletCards.chainCards.reset init updatedChainWallets).run).asSome
-      inFinalizedSubscription = ChannelMaster.inFinalized.subscribe(_ => Vibrator.vibrate).asSome
+
+      inFinalizedSubscription = ChannelMaster.inFinalized
+        .collect { case _: IncomingRevealed => true }
+        .subscribe(_ => Vibrator.vibrate).asSome
 
       timer.scheduleAtFixedRate(paymentAdapterDataChanged, 30000, 30000)
       val backupAllowed = LocalBackup.isAllowed(context = WalletApp.app)

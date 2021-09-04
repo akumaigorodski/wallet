@@ -7,20 +7,29 @@ import android.widget.{ImageView, RelativeLayout, TextView}
 import com.btcontract.wallet.BaseActivity.StringOps
 import androidx.transition.TransitionManager
 import fr.acinq.bitcoin.ByteVector32
+import immortan.fsm.IncomingRevealed
 import immortan.crypto.Tools.none
 import android.os.Bundle
 import android.view.View
 
 
 class QRInvoiceActivity extends QRActivity with ExternalDataChecker { me =>
+  lazy private[this] val activityQRInvoiceMain = findViewById(R.id.activityQRInvoiceMain).asInstanceOf[RelativeLayout]
   lazy private[this] val invoiceQrCaption = findViewById(R.id.invoiceQrCaption).asInstanceOf[TextView]
+  lazy private[this] val invoiceSuccess = findViewById(R.id.invoiceSuccess).asInstanceOf[ImageView]
   lazy private[this] val qrViewHolder = new QRViewHolder(me findViewById R.id.invoiceQr)
 
   private var hashOfInterest: ByteVector32 = ByteVector32.Zeroes
-  private val subscription = ChannelMaster.inFinalized.subscribe(data => UITask {
-    TransitionManager beginDelayedTransition findViewById(R.id.activityQRInvoiceMain).asInstanceOf[RelativeLayout]
-    if (data.fullTag.paymentHash == hashOfInterest) findViewById(R.id.invoiceSuccess).asInstanceOf[ImageView] setVisibility View.VISIBLE
-  }.run)
+
+  private val subscription = ChannelMaster.inFinalized
+    .collect { case revealed: IncomingRevealed => revealed }
+    .filter(_.fullTag.paymentHash == hashOfInterest)
+    .subscribe(_ => markFulfilled)
+
+  def markFulfilled: Unit = UITask {
+    TransitionManager.beginDelayedTransition(activityQRInvoiceMain)
+    invoiceSuccess.setVisibility(View.VISIBLE)
+  }.run
 
   def INIT(state: Bundle): Unit =
     if (WalletApp.isAlive && LNParams.isOperational) {
