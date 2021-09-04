@@ -929,8 +929,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       val window = 600.millis
-      val txEvents = ChannelMaster.txDbStream.doOnNext(_ => reloadTxInfos)
-      // Throttle all types of burst updates, but make sure the last one is always called
+      val txEvents = ChannelMaster.txDbStream.onBackpressureLatest.doOnNext(_ => reloadTxInfos)
       val relayEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.relayDbStream, window).doOnNext(_ => reloadRelayedPreimageInfos)
       val marketEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.payMarketDbStream, window).doOnNext(_ => reloadPayMarketInfos)
       val paymentEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.paymentDbStream, window).doOnNext(_ => reloadPaymentInfos)

@@ -254,7 +254,8 @@ case class SwapInStateExt(state: SwapInState, nodeId: PublicKey)
 trait NetworkBag {
   def addChannelAnnouncement(ca: ChannelAnnouncement, newSqlPQ: PreparedQuery)
   def addChannelUpdateByPosition(cu: ChannelUpdate, newSqlPQ: PreparedQuery, updSqlPQ: PreparedQuery)
-  def addExcludedChannel(shortId: ShortChannelId, untilStamp: Long, newSqlPQ: PreparedQuery) // Disregard position
+  // When adding an excluded channel we disregard an update position: channel as a whole is always excluded
+  def addExcludedChannel(shortId: ShortChannelId, untilStamp: Long, newSqlPQ: PreparedQuery)
   def removeChannelUpdate(shortId: ShortChannelId, killSqlPQ: PreparedQuery)
 
   def addChannelUpdateByPosition(cu: ChannelUpdate)
