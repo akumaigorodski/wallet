@@ -234,6 +234,8 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
       case (norm: DATA_NORMAL, cmd: CMD_CLOSE, OPEN | SLEEPING) =>
         val localScriptPubKey = cmd.scriptPubKey.getOrElse(norm.commitments.localParams.defaultFinalScriptPubKey)
         val isValidFinalScriptPubkey = Closing.isValidFinalScriptPubkey(localScriptPubKey)
+        // It's important that local Shutdown MUST be persisted if sent to remote peer
+        // it will be resent on restart and won't be resent on entering negotiations
         val shutdown = Shutdown(norm.channelId, localScriptPubKey)
         val norm1 = norm.copy(localShutdown = shutdown.asSome)
 
@@ -667,17 +669,15 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
     closing1.mutualClosePublished.foreach(doPublish)
   }
 
-  private def startNegotiationsAsFunder(data1: DATA_NORMAL, local: Shutdown, remote: Shutdown): Unit = {
-    val (closingTx, closingSigned) = Closing.makeFirstClosingTx(data1.commitments, local.scriptPubKey, remote.scriptPubKey, LNParams.feeRates.info.onChainFeeConf)
-    val data2 = DATA_NEGOTIATING(data1.commitments, local, remote, List(ClosingTxProposed(closingTx.tx, closingSigned) :: Nil), bestUnpublishedClosingTxOpt = None)
-    StoreBecomeSend(data2, OPEN, local, closingSigned)
-  }
-
   private def maybeStartNegotiations(data1: DATA_NORMAL, remote: Shutdown): Unit = {
     val local = data1.localShutdown getOrElse Shutdown(data1.channelId, data1.commitments.localParams.defaultFinalScriptPubKey)
     if (data1.commitments.hasPendingHtlcsOrFeeUpdate) StoreBecomeSend(data1.copy(localShutdown = local.asSome, remoteShutdown = remote.asSome), OPEN, local)
     else if (!data1.commitments.localParams.isFunder) StoreBecomeSend(DATA_NEGOTIATING(data1.commitments, local, remote), OPEN, local)
-    else startNegotiationsAsFunder(data1, local, remote)
+    else {
+      val (closingTx, closingSigned) = Closing.makeFirstClosingTx(data1.commitments, local.scriptPubKey, remote.scriptPubKey, LNParams.feeRates.info.onChainFeeConf)
+      val data2 = DATA_NEGOTIATING(data1.commitments, local, remote, List(ClosingTxProposed(closingTx.tx, closingSigned) :: Nil), bestUnpublishedClosingTxOpt = None)
+      if (data1.localShutdown.isDefined) StoreBecomeSend(data2, OPEN, closingSigned) else StoreBecomeSend(data2, OPEN, local, closingSigned)
+    }
   }
 
   private def handleMutualClose(closingTx: Transaction, data1: DATA_NEGOTIATING): Unit = {
