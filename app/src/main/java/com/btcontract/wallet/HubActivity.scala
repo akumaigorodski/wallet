@@ -124,9 +124,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val dr = LNParams.cm.delayedRefunds
     val alwaysVisibleInfos = allItems.flatMap(_.lastItems filter isImportantItem)
     val itemsToDisplayMap = Map(R.id.bitcoinPayments -> txInfos, R.id.lightningPayments -> paymentInfos, R.id.relayedPayments -> relayedPreimageInfos, R.id.payMarketLinks -> payMarketInfos)
-    val allVisibleInfos = walletCards.toggleGroup.getCheckedButtonIds.asScala.map(_.toInt).map(itemsToDisplayMap).flatMap(_.lastItems) ++ alwaysVisibleInfos
-    val finalVisibleInfos = if (dr.totalAmount > 0L.msat) allVisibleInfos :+ dr else allVisibleInfos
-    allInfos = finalVisibleInfos.distinct.sortBy(_.seenAt)(Ordering[Long].reverse)
+    val allVisibleInfos = if (isSearchOn) List(txInfos, paymentInfos, payMarketInfos) else walletCards.toggleGroup.getCheckedButtonIds.asScala.map(_.toInt).map(itemsToDisplayMap)
+    val selectedVisibleInfos = if (dr.totalAmount > 0L.msat) allVisibleInfos.flatMap(_.lastItems) :+ dr else allVisibleInfos.flatMap(_.lastItems)
+    allInfos = (selectedVisibleInfos ++ alwaysVisibleInfos).distinct.sortBy(_.seenAt)(Ordering[Long].reverse)
   }
 
   def loadRecent: Unit = {
@@ -734,7 +734,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   override def onBackPressed: Unit = {
-    val isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]
     if (viewBinderHelper.getOpenCount > 0) viewBinderHelper.closeOthers(new String, null)
     else if (currentSnackbar.isDefined) removeCurrentSnack.run
     else if (isSearchOn) rmSearch(null)
@@ -871,6 +870,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       alert.dismiss
     }
   }
+
+  def isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]
 
   override def onChoiceMade(tag: AnyRef, pos: Int): Unit = (tag, pos) match {
     case (legacy: ElectrumEclairWallet, 0) => transferFromLegacyToModern(legacy)

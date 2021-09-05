@@ -49,13 +49,14 @@
         <com.ornach.nobobutton.NoboButton
             app:nb_drawableResource="@drawable/baseline_create_24"
             android:id="@+id/typeSomethingIn"
+            android:layout_marginEnd="15dp"
             style="@style/GrayButton"/>
 
         <com.ornach.nobobutton.NoboButton
             app:nb_drawableResource="@drawable/baseline_content_paste_24"
             android:layout_toEndOf="@id/typeSomethingIn"
             android:id="@+id/pasteFromClipbard"
-            android:layout_marginStart="15dp"
+            android:layout_marginEnd="5dp"
             style="@style/GrayButton"/>
 
         <TextView
@@ -63,7 +64,6 @@
             android:layout_toEndOf="@id/pasteFromClipbard"
             android:layout_centerVertical="true"
             android:id="@+id/clipboardContent"
-            android:layout_marginStart="15dp"
             android:textSize="16sp"
             android:ellipsize="end"
             android:maxLines="1"/>
