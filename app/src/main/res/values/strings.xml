@@ -78,7 +78,7 @@
     <string name="dialog_receive_ln"><![CDATA[Receive to <b>Lightning</b> invoice]]></string>
 
     <string name="dialog_legacy_transfer_btc">Transfer funds to modern wallet</string>
-    <string name="dialog_legacy_send_btc">Send legacy transaction to address</string>
+    <string name="dialog_legacy_send_btc">Send transaction to address</string>
     <string name="scan_btc_address">Scan Bitcoin address</string>
 
     <string name="dialog_up_to"><![CDATA[<b>up to</b> %1$s]]></string>

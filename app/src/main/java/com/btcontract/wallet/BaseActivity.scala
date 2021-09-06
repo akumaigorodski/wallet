@@ -689,7 +689,6 @@ class ItemsWithMemory[T <: TransactionDetails] {
 }
 
 abstract class ChainWalletCards(host: BaseActivity) { self =>
-  def reset: ChainWalletCards = runAnd(this)(holder.removeAllViewsInLayout)
   private var cardViews: List[ChainCard] = Nil
 
   def init(walletExt: WalletExt): Unit = {
@@ -705,19 +704,26 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
   class ChainCard {
     val view: View = host.getLayoutInflater.inflate(R.layout.frag_chain_card, null)
     val chainLabel: TextView = view.findViewById(R.id.chainLabel).asInstanceOf[TextView]
-    val chainBalance: TextView = view.findViewById(R.id.chainBalance).asInstanceOf[TextView]
-    val receiveBitcoinTip: ImageView = view.findViewById(R.id.receiveBitcoinTip).asInstanceOf[ImageView]
-    val showMenuTip: ImageView = view.findViewById(R.id.showMenuTip).asInstanceOf[ImageView]
     val chainContainer: View = view.findViewById(R.id.chainContainer).asInstanceOf[View]
     val chainWrap: View = view.findViewById(R.id.chainWrap).asInstanceOf[View]
+
+    val chainBalanceWrap: LinearLayout = view.findViewById(R.id.chainBalanceWrap).asInstanceOf[LinearLayout]
+    val chainBalanceFiat: TextView = view.findViewById(R.id.chainBalanceFiat).asInstanceOf[TextView]
+    val chainBalance: TextView = view.findViewById(R.id.chainBalance).asInstanceOf[TextView]
+
+    val receiveBitcoinTip: ImageView = view.findViewById(R.id.receiveBitcoinTip).asInstanceOf[ImageView]
+    val showMenuTip: ImageView = view.findViewById(R.id.showMenuTip).asInstanceOf[ImageView]
 
     def updateView(wallet: ElectrumEclairWallet): Unit = {
       def onTap: Unit = if (wallet.info.core.isRemovable) onLegacyWalletTap(wallet) else onModernWalletTap(wallet)
       val backgroundRes = if (wallet.info.core.isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
       chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, btcCardZero).html)
+      chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
+
       host.setVis(isVisible = !wallet.info.core.isRemovable && wallet.info.lastBalance == 0L.sat, receiveBitcoinTip)
       host.setVis(isVisible = wallet.info.core.isRemovable && wallet.info.lastBalance == 0L.sat, showMenuTip)
-      host.setVis(isVisible = wallet.info.lastBalance != 0L.sat, chainBalance)
+      host.setVis(isVisible = wallet.info.lastBalance != 0L.sat, chainBalanceWrap)
+
       chainWrap.setOnClickListener(host onButtonTap onTap)
       chainContainer.setBackgroundResource(backgroundRes)
       chainLabel.setText(wallet.info.label)

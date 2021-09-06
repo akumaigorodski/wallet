@@ -585,8 +585,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val offlineIndicator: TextView = view.findViewById(R.id.offlineIndicator).asInstanceOf[TextView]
 
     val totalLightningBalance: TextView = view.findViewById(R.id.totalLightningBalance).asInstanceOf[TextView]
-    val channelStateIndicators: LinearLayout = view.findViewById(R.id.channelStateIndicators).asInstanceOf[LinearLayout]
+    val channelStateIndicators: RelativeLayout = view.findViewById(R.id.channelStateIndicators).asInstanceOf[RelativeLayout]
     val channelIndicator: ChannelIndicatorLine = view.findViewById(R.id.channelIndicator).asInstanceOf[ChannelIndicatorLine]
+    val lnBalanceFiat: TextView = view.findViewById(R.id.lnBalanceFiat).asInstanceOf[TextView]
 
     val inFlightIncoming: TextView = view.findViewById(R.id.inFlightIncoming).asInstanceOf[TextView]
     val inFlightOutgoing: TextView = view.findViewById(R.id.inFlightOutgoing).asInstanceOf[TextView]
@@ -609,28 +610,38 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       def onLegacyWalletTap(wallet: ElectrumEclairWallet): Unit = bringLegacyChainOptions(wallet)
     }
 
+    def resetChainCards(ext1: WalletExt): Unit = UITask {
+      // Remove all existing cards and place new ones
+      chainCards.holder.removeAllViewsInLayout
+      chainCards.init(ext1)
+    }.run
+
     def updateView: Unit = {
       val allChannels = LNParams.cm.all.values.take(8)
       val localInCount = LNParams.cm.inProcessors.count { case (fullTag, _) => fullTag.tag == PaymentTagTlv.FINAL_INCOMING }
       val trampolineCount = LNParams.cm.inProcessors.count { case (fullTag, _) => fullTag.tag == PaymentTagTlv.TRAMPLOINE_ROUTED }
       val localOutCount = LNParams.cm.opm.data.payments.count { case (fullTag, _) => fullTag.tag == PaymentTagTlv.LOCALLY_SENT }
-      val hideAll = localInCount + trampolineCount + localOutCount == 0
-
       val change = LNParams.fiatRates.info.pctDifference(WalletApp.fiatCode).map(_ + "<br>").getOrElse(new String)
       val unitPriceAndChange = s"<small>$change</small>${WalletApp currentMsatInFiatHuman 100000000000L.msat}"
       fiatUnitPriceAndChange.setText(unitPriceAndChange.html)
 
-      channelIndicator.createIndicators(allChannels.toArray)
       totalFiatBalance.setText(WalletApp.currentMsatInFiatHuman(BaseActivity.totalBalance).html)
       totalBalance.setText(WalletApp.denom.parsedWithSign(BaseActivity.totalBalance, cardIn, totalZero).html)
-      totalLightningBalance.setText(WalletApp.denom.parsedWithSign(Channel.totalBalance(LNParams.cm.all.values), cardIn, lnCardZero).html)
+
+      val lnBalance = Channel.totalBalance(LNParams.cm.all.values)
+      lnBalanceFiat.setText(WalletApp currentMsatInFiatHuman lnBalance)
+      totalLightningBalance.setText(WalletApp.denom.parsedWithSign(lnBalance, cardIn, lnCardZero).html)
+      channelIndicator.createIndicators(allChannels.toArray)
+
       setVisMany(allChannels.nonEmpty -> channelStateIndicators, allChannels.nonEmpty -> totalLightningBalance, allChannels.isEmpty -> addChannelTip)
-      // We have updated chain wallets at this point because listener in WalletApp gets called first
+      // We have updated chain wallet balances at this point because listener in WalletApp gets called first
       chainCards.update(LNParams.chainWallets)
 
+      val hideAll = localInCount + trampolineCount + localOutCount == 0
       inFlightIncoming setAlpha { if (hideAll) 0F else if (localInCount > 0) 1F else 0.3F }
       inFlightOutgoing setAlpha { if (hideAll) 0F else if (localOutCount > 0) 1F else 0.3F }
       inFlightRelayed setAlpha { if (hideAll) 0F else if (trampolineCount > 0) 1F else 0.3F }
+      setVis(isVisible = hideAll, lnBalanceFiat)
 
       inFlightIncoming.setText(localInCount.toString)
       inFlightOutgoing.setText(localOutCount.toString)
@@ -938,7 +949,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       stateSubscription = txEvents.merge(paymentEvents).merge(relayEvents).merge(marketEvents).merge(stateEvents).doOnNext(_ => updAllInfos).subscribe(_ => paymentAdapterDataChanged.run).asSome
       statusSubscription = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.statusUpdateStream, window).merge(stateEvents).subscribe(_ => UITask(walletCards.updateView).run).asSome
-      chainWalletSubscription = chainWalletStream.subscribe(updatedChainWallets => UITask(walletCards.chainCards.reset init updatedChainWallets).run).asSome
+      chainWalletSubscription = chainWalletStream.subscribe(ext1 => walletCards resetChainCards ext1).asSome
 
       inFinalizedSubscription = ChannelMaster.inFinalized
         .collect { case _: IncomingRevealed => true }

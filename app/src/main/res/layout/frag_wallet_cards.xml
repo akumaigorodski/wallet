@@ -71,7 +71,6 @@
                 style="@style/Emphasized"/>
 
             <TextView
-                android:textStyle="bold"
                 android:layout_marginTop="6dp"
                 android:layout_below="@id/totalBalance"
                 android:id="@+id/totalFiatBalance"
@@ -141,22 +140,19 @@
 
                 <!-- Indicators and payment state -->
 
-                <LinearLayout
-                    android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:id="@+id/channelStateIndicators"
-                    android:orientation="horizontal"
-                    style="@style/FillingView">
+                <RelativeLayout
+                    style="@style/FillingView"
+                    android:id="@+id/channelStateIndicators">
 
                     <com.indicator.ChannelIndicatorLine
                         android:id="@+id/channelIndicator"
-                        android:layout_height="wrap_content"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"/>
-
-                    <!-- Payment state line -->
+                        android:layout_centerVertical="true"
+                        style="@style/BoundedView"/>
 
                     <LinearLayout
+                        android:layout_marginTop="6dp"
+                        android:layout_centerVertical="true"
+                        android:layout_alignParentEnd="true"
                         android:orientation="horizontal"
                         style="@style/BoundedView">
 
@@ -176,7 +172,15 @@
                             android:drawableStart="@drawable/baseline_swap_horiz_18"/>
 
                     </LinearLayout>
-                </LinearLayout>
+
+                    <TextView
+                        android:layout_marginTop="6dp"
+                        android:layout_centerVertical="true"
+                        android:layout_alignParentEnd="true"
+                        android:id="@+id/lnBalanceFiat"
+                        style="@style/BoundedView"/>
+
+                </RelativeLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

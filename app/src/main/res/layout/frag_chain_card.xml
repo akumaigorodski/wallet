@@ -17,16 +17,28 @@
 
             <TextView
                 android:id="@+id/chainLabel"
-                android:layout_marginEnd="3dp"
                 android:textColor="@color/colorAccent"
                 android:layout_centerVertical="true"
                 style="@style/BoundedView"/>
 
-            <TextView
-                android:id="@+id/chainBalance"
+            <LinearLayout
+                style="@style/BoundedView"
+                android:orientation="vertical"
+                android:id="@+id/chainBalanceWrap"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-                style="@style/Emphasized"/>
+                android:gravity="end">
+
+                <TextView
+                    android:id="@+id/chainBalance"
+                    style="@style/Emphasized"/>
+
+                <TextView
+                    android:layout_marginTop="6dp"
+                    android:id="@+id/chainBalanceFiat"
+                    style="@style/BoundedView"/>
+
+            </LinearLayout>
 
             <!-- No coins present -->
 
