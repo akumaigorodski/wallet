@@ -22,9 +22,8 @@ import immortan.sqlite.{SQLiteData, SQLiteLNUrl, Table}
 import rx.lang.scala.{Observable, Subject, Subscription}
 import com.androidstudy.networkmanager.{Monitor, Tovuti}
 import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv}
+import fr.acinq.bitcoin.{ByteVector32, Crypto, Transaction}
 import immortan.ChannelMaster.{OutgoingAdds, RevealedLocalFulfills}
-import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
-import fr.acinq.bitcoin.{ByteVector32, Crypto, SatoshiLong, Transaction}
 import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, Scripts}
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
 import com.google.android.material.button.{MaterialButton, MaterialButtonToggleGroup}
@@ -36,7 +35,6 @@ import concurrent.ExecutionContext.Implicits.global
 import com.btcontract.wallet.BaseActivity.StringOps
 import com.github.mmin18.widget.RealtimeBlurView
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.slider.Slider
 import com.btcontract.wallet.utils.LocalBackup
 import androidx.transition.TransitionManager
 import immortan.ChannelListener.Malfunction
@@ -1079,7 +1077,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       else mkCheckFormNeutral(attempt, none, switchToLn, builder, dialog_pay, dialog_cancel, lightning_wallet)
     }
 
-    lazy val feeView = new FeeView(body) {
+    lazy val feeView: FeeView[TxAndFee] = new FeeView[TxAndFee](body) {
       override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
         manager.updateButton(getPositiveButton(alert), feeOpt.isDefined)
         super.update(feeOpt, showIssue)
@@ -1089,24 +1087,17 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         val target = LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget
         LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(target)
       }
-    }
 
-    lazy val worker = new ThrottledWork[String, TxAndFee] {
-      def work(reason: String): Observable[TxAndFee] = Rx fromFutureOnIo fromWallet.sendPayment(manager.resultMsat.truncateToSatoshi, uri.address, feeView.rate)
-      def process(reason: String, txAndFee: TxAndFee): Unit = feeView.update(feeOpt = txAndFee.fee.toMilliSatoshi.asSome, showIssue = false)
-      override def error(exc: Throwable): Unit = feeView.update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.minDustLimit)
-    }
-
-    feeView.customFeerate addOnChangeListener new Slider.OnChangeListener {
-      override def onValueChange(slider: Slider, value: Float, fromUser: Boolean): Unit = {
-        feeView.rate = FeeratePerKw apply FeeratePerByte(value.toLong.sat)
-        worker addWork "SLIDER-CHANGE"
+      worker = new ThrottledWork[String, TxAndFee] {
+        def work(reason: String): Observable[TxAndFee] = Rx fromFutureOnIo fromWallet.sendPayment(manager.resultMsat.truncateToSatoshi, uri.address, rate)
+        def process(reason: String, txAndFee: TxAndFee): Unit = update(feeOpt = txAndFee.fee.toMilliSatoshi.asSome, showIssue = false)
+        override def error(exc: Throwable): Unit = update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.minDustLimit)
       }
     }
 
-    manager.inputAmount addTextChangedListener onTextChange(worker.addWork)
     manager.hintDenom.setText(getString(dialog_up_to).format(canSend).html)
     manager.hintFiatDenom.setText(getString(dialog_up_to).format(canSendFiat).html)
+    manager.inputAmount addTextChangedListener onTextChange(feeView.worker.addWork)
     feeView.update(feeOpt = None, showIssue = false)
 
     uri.amount.foreach { asked =>

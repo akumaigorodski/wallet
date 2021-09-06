@@ -3,6 +3,7 @@ package com.btcontract.wallet
 import immortan._
 import immortan.utils._
 import fr.acinq.eclair._
+import fr.acinq.bitcoin._
 import fr.acinq.eclair.wire._
 import immortan.crypto.Tools._
 import fr.acinq.eclair.Features._
@@ -11,14 +12,15 @@ import com.btcontract.wallet.R.string._
 
 import android.view.{View, ViewGroup}
 import android.widget.{LinearLayout, ProgressBar, TextView}
+import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import immortan.fsm.{HCOpenHandler, NCFundeeOpenHandler, NCFunderOpenHandler}
 import fr.acinq.eclair.blockchain.MakeFundingTxResponse
 import com.btcontract.wallet.BaseActivity.StringOps
 import concurrent.ExecutionContext.Implicits.global
+import com.google.android.material.slider.Slider
 import fr.acinq.eclair.channel.Commitments
 import androidx.appcompat.app.AlertDialog
 import com.ornach.nobobutton.NoboButton
-import fr.acinq.bitcoin.ByteVector32
 import rx.lang.scala.Observable
 import android.os.Bundle
 
@@ -171,7 +173,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       mkCheckFormNeutral(attempt, none, setMax, builder, dialog_pay, dialog_cancel, dialog_max)
     }
 
-    lazy val feeView: FeeView = new FeeView(body) {
+    lazy val feeView: FeeView[MakeFundingTxResponse] = new FeeView[MakeFundingTxResponse](body) {
       override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
         manager.updateButton(getPositiveButton(alert), feeOpt.isDefined)
         super.update(feeOpt, showIssue)
@@ -182,24 +184,16 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
         LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(target)
       }
 
-      setVisMany(false -> customFeerateOption, true -> customFeerateNotice)
-      private val minHuman = WalletApp.denom.parsedWithSign(LNParams.minFundingSatoshis.toMilliSatoshi, cardIn, cardZero)
-      customFeerateNotice setText getString(rpa_channel_restrictions).format(minHuman).html
-    }
-
-    lazy val worker = new ThrottledWork[String, MakeFundingTxResponse] {
-      def work(reason: String): Observable[MakeFundingTxResponse] = Rx fromFutureOnIo {
-        NCFunderOpenHandler.makeFunding(LNParams.chainWallets, manager.resultMsat.truncateToSatoshi, feeView.rate)
-          .filter(_.fundingAmount >= LNParams.minFundingSatoshis)
+      worker = new ThrottledWork[String, MakeFundingTxResponse] {
+        def work(reason: String): Observable[MakeFundingTxResponse] = Rx fromFutureOnIo NCFunderOpenHandler.makeFunding(LNParams.chainWallets, manager.resultMsat.truncateToSatoshi, rate)
+        def process(reason: String, result: MakeFundingTxResponse): Unit = update(feeOpt = result.fee.toMilliSatoshi.asSome, showIssue = false)
+        override def error(exc: Throwable): Unit = update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.minDustLimit)
       }
-
-      def process(reason: String, result: MakeFundingTxResponse): Unit = feeView.update(feeOpt = result.fee.toMilliSatoshi.asSome, showIssue = false)
-      override def error(exc: Throwable): Unit = feeView.update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.minFundingSatoshis)
     }
 
-    manager.inputAmount addTextChangedListener onTextChange(worker.addWork)
     manager.hintDenom.setText(getString(dialog_up_to).format(canSend).html)
     manager.hintFiatDenom.setText(getString(dialog_up_to).format(canSendFiat).html)
+    manager.inputAmount addTextChangedListener onTextChange(feeView.worker.addWork)
     feeView.update(feeOpt = None, showIssue = false)
   }
 
@@ -217,7 +211,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       alert.dismiss
 
       // We only need local params to extract defaultFinalScriptPubKey
-      val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minFundingSatoshis)
+      val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minDustLimit)
       new HCOpenHandler(hasInfo.remoteInfo, secret, localParams.defaultFinalScriptPubKey, LNParams.cm) {
         def onEstablished(cs: Commitments, channel: ChannelHosted): Unit = implant(cs, channel)
         def onFailure(reason: Throwable): Unit = revertAndInform(reason)

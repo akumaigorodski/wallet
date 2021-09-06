@@ -32,8 +32,10 @@ object Helpers {
     if (LNParams.chainHash != open.chainHash) throw InvalidChainHash(open.temporaryChannelId, local = LNParams.chainHash, remote = open.chainHash)
     if (open.feeratePerKw < FeeratePerKw.MinimumFeeratePerKw) throw FeerateTooSmall(open.temporaryChannelId, open.feeratePerKw)
 
-    if (open.fundingSatoshis < LNParams.minFundingSatoshis || open.fundingSatoshis > LNParams.maxFundingSatoshis)
-      throw InvalidFundingAmount(open.temporaryChannelId, open.fundingSatoshis, LNParams.minFundingSatoshis, LNParams.maxFundingSatoshis)
+    val minFunding = LNParams.minDustLimit * 100
+    if (open.fundingSatoshis < minFunding || open.fundingSatoshis > LNParams.maxFundingSatoshis) {
+      throw InvalidFundingAmount(open.temporaryChannelId, open.fundingSatoshis, minFunding, LNParams.maxFundingSatoshis)
+    }
 
     newFeerate(LNParams.feeRates.info, commits.localCommit.spec, LNParams.shouldForceClosePaymentFeerateDiff).foreach { localFeeratePerKw =>
       throw FeerateTooDifferent(open.temporaryChannelId, localFeeratePerKw, open.feeratePerKw)

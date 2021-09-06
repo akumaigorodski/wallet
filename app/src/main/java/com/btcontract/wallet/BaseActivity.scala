@@ -20,9 +20,9 @@ import com.google.common.cache.{Cache, CacheBuilder}
 import fr.acinq.eclair.wire.{ChannelReestablish, Fail}
 import com.google.zxing.{BarcodeFormat, EncodeHintType}
 import androidx.core.content.{ContextCompat, FileProvider}
-import immortan.utils.{Denomination, InputParser, PaymentRequestExt}
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import com.google.android.material.snackbar.{BaseTransientBottomBar, Snackbar}
+import immortan.utils.{Denomination, InputParser, PaymentRequestExt, ThrottledWork}
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
 import com.cottacush.android.currencyedittext.CurrencyEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -430,7 +430,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     inputAmount.requestFocus
   }
 
-  class FeeView(val content: View) {
+  class FeeView[T](val content: View) {
     val feeRate: TextView = content.findViewById(R.id.feeRate).asInstanceOf[TextView]
     val txIssues: TextView = content.findViewById(R.id.txIssues).asInstanceOf[TextView]
     val bitcoinFee: TextView = content.findViewById(R.id.bitcoinFee).asInstanceOf[TextView]
@@ -438,15 +438,12 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     val customFeerate: Slider = content.findViewById(R.id.customFeerate).asInstanceOf[Slider]
     val customFeerateOption: TextView = content.findViewById(R.id.customFeerateOption).asInstanceOf[TextView]
-    val customFeerateNotice: TextView = content.findViewById(R.id.customFeerateNotice).asInstanceOf[TextView]
+    var worker: ThrottledWork[String, T] = _
     var rate: FeeratePerKw = _
 
     def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = {
       feeRate setText getString(dialog_fee_sat_vbyte).format(FeeratePerByte(rate).feerate.toLong).html
-
-      setVis(isVisible = feeOpt.isDefined, bitcoinFee)
-      setVis(isVisible = feeOpt.isDefined, fiatFee)
-      setVis(isVisible = showIssue, txIssues)
+      setVisMany(feeOpt.isDefined -> bitcoinFee, feeOpt.isDefined -> fiatFee, showIssue -> txIssues)
 
       feeOpt.foreach { fee =>
         val humanFee = WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html
@@ -463,6 +460,14 @@ trait BaseActivity extends AppCompatActivity { me =>
 
       customFeerateOption setVisibility View.GONE
       customFeerate setVisibility View.VISIBLE
+    }
+
+    customFeerate addOnChangeListener new Slider.OnChangeListener {
+      override def onValueChange(slider: Slider, value: Float, fromUser: Boolean): Unit = {
+        val feeratePerByte = FeeratePerByte(value.toLong.sat)
+        rate = FeeratePerKw(feeratePerByte)
+        worker addWork "SLIDER-CHANGE"
+      }
     }
   }
 
