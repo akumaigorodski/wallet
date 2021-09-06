@@ -310,9 +310,11 @@ class WalletApp extends Application { me =>
   // Special handling for cases when user has chosen large font and screen size is constrained
   lazy val tooFewSpace: Boolean = getFloat(getContentResolver, FONT_SCALE, 1) > 1 && scrWidth < 2.4
 
-  lazy val dateFormat: SimpleDateFormat = (DateFormat.is24HourFormat(me), tooFewSpace) match {
-    case (is24Hour, false) => if (is24Hour) new SimpleDateFormat("d MMM yyyy") else new SimpleDateFormat("MMM dd, yyyy")
-    case (is24Hour, true) => if (is24Hour) new SimpleDateFormat("dd/MM/yy") else new SimpleDateFormat("MM/dd/yy")
+  lazy val dateFormat: SimpleDateFormat = DateFormat.is24HourFormat(me) match {
+    case false if tooFewSpace => new SimpleDateFormat("MM/dd/yy")
+    case true if tooFewSpace => new SimpleDateFormat("dd/MM/yy")
+    case false => new SimpleDateFormat("MMM dd, yyyy")
+    case true => new SimpleDateFormat("d MMM yyyy")
   }
 
   lazy val plur: (Array[String], Long) => String = getString(R.string.lang) match {
@@ -354,9 +356,9 @@ class WalletApp extends Application { me =>
     }
   }
 
-  def when(thenDate: Date, format: SimpleDateFormat, now: Long = System.currentTimeMillis): String = thenDate.getTime match {
-    case ago if now - ago < 129600000 && !tooFewSpace => android.text.format.DateUtils.getRelativeTimeSpanString(ago, now, 0).toString
-    case _ => dateFormat.format(thenDate)
+  def when(thenDate: Date, simpleFormat: SimpleDateFormat, now: Long = System.currentTimeMillis): String = thenDate.getTime match {
+    case ago if now - ago > 12960000 || tooFewSpace || WalletApp.denom == BtcDenomination => simpleFormat.format(thenDate)
+    case ago => android.text.format.DateUtils.getRelativeTimeSpanString(ago, now, 0).toString
   }
 
   def showStickyNotification(titleRes: Int, bodyRes: Int, amount: MilliSatoshi): Unit = {
