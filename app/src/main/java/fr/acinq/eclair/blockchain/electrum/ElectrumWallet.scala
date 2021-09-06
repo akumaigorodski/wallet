@@ -68,12 +68,16 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
       stay using persistAndNotify(data1)
 
     case Event(ElectrumClient.ScriptHashSubscriptionResponse(scriptHash, status), data) if data.status.get(scriptHash).contains(status) =>
-      val missing = data.history.getOrElse(scriptHash, Nil).map(_.txHash).filterNot(data.transactions.contains).toSet -- data.pendingTransactionRequests
+      val missing = data.history.getOrElse(scriptHash, Nil).map(item => item.txHash -> item.height).toMap -- data.transactions.keySet -- data.pendingTransactionRequests
+
+      missing.foreach { case (txid, height) =>
+        client ! GetTransaction(txid, contextOpt = None)
+        client ! GetMerkle(txid, height)
+      }
 
       if (missing.nonEmpty) {
         // An optimization to not recalculate internal data values on each scriptHashResponse event
-        val data1 = data.copy(pendingHistoryRequests = data.pendingTransactionRequests ++ missing)
-        for (txid <- missing) client ! GetTransaction(txid)
+        val data1 = data.copy(pendingHistoryRequests = data.pendingTransactionRequests ++ missing.keySet)
         stay using persistAndNotify(data1)
       } else stay
 
@@ -162,13 +166,12 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
         case Some(foundHeader) if foundHeader.hashMerkleRoot == response.root => stay
 
         case None if data.pendingHeadersRequests.contains(request) =>
-          stay using data.withPendingResponse(response)
+          stay using data.copy(pendingMerkleResponses = data.pendingMerkleResponses + response)
 
         case None =>
           chainSync ! request
-          val pendingHeadersRequests1 = data.pendingHeadersRequests + request
-          val data1 = data.copy(pendingHeadersRequests = pendingHeadersRequests1)
-          stay using data1.withPendingResponse(response)
+          val data1 = data.copy(pendingHeadersRequests = data.pendingHeadersRequests + request)
+          stay using data1.copy(pendingMerkleResponses = data1.pendingMerkleResponses + response)
 
         case _ =>
           val data1 = data.copy(transactions = data.transactions - txid)
@@ -317,8 +320,6 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
     case keys if keys.isEmpty => accountKeys.map(ewt.textAddress).zip(accountKeys).toMap
     case keys => keys.map(ewt.textAddress).zip(keys).toMap
   }
-
-  def withPendingResponse(response: GetMerkleResponse): ElectrumData = copy(pendingMerkleResponses = pendingMerkleResponses + response)
 
   // Remove status for each script hash for which we have pending requests, this will make us query script hash history for these script hashes again when we reconnect
   def reset: ElectrumData = copy(status = status -- pendingHistoryRequests, pendingHistoryRequests = Set.empty, pendingTransactionRequests = Set.empty, pendingHeadersRequests = Set.empty, lastReadyMessage = None)
