@@ -132,6 +132,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       val barCanReceive = (cs.availableForReceive.toLong / capacity.toLong).toInt
       val barCanSend = (cs.latestReducedRemoteSpec.toRemote.toLong / capacity.toLong).toInt
       val barLocalReserve = (cs.latestReducedRemoteSpec.toRemote - cs.availableForSend).toLong / capacity.toLong
+      val tempFeeMismatch = chan.data match { case norm: DATA_NORMAL => norm.feeUpdateRequired case _ => false }
       val inFlight: MilliSatoshi = cs.latestReducedRemoteSpec.htlcs.foldLeft(0L.msat)(_ + _.add.amountMsat)
       val refundable: MilliSatoshi = cs.latestReducedRemoteSpec.toRemote + inFlight
 
@@ -142,8 +143,9 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
         visibleExcept(R.id.progressBars, R.id.paymentsInFlight, R.id.canReceive, R.id.canSend)
       } else if (Channel isOperational chan) {
         channelCard setOnClickListener bringChanOptions(normalChanActions, cs)
-        setVis(isVisible = cs.updateOpt.isEmpty, extraInfoText)
-        extraInfoText.setText(ln_info_no_update)
+        setVis(isVisible = cs.updateOpt.isEmpty || tempFeeMismatch, extraInfoText)
+        if (cs.updateOpt.isEmpty) extraInfoText.setText(ln_info_no_update)
+        if (tempFeeMismatch) extraInfoText.setText(ln_info_fee_mismatch)
         visibleExcept(goneRes = -1)
       } else {
         val closeInfoRes = chan.data match { case c: DATA_CLOSING => closedBy(c) case _ => ln_info_shutdown }

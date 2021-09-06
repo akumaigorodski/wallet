@@ -359,6 +359,8 @@
     <string name="chan_open_scan">Scan Node QR</string>
 
     <string name="ln_info_no_update">Can not receive yet</string>
+    <string name="ln_info_fee_mismatch">Temporary feerate mismatch</string>
+
     <string name="ln_info_close_coop">Cooperative closing</string>
     <string name="ln_info_close_local">Force-closed locally</string>
     <string name="ln_info_close_remote">Force-closed remotely</string>
