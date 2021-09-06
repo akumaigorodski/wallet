@@ -304,7 +304,7 @@ trait BaseActivity extends AppCompatActivity { me =>
   def showKeys(input: EditText): Unit = {
     // Popup forms can't show keyboard immediately due to animation, so delay it a bit
     def process: Unit = runAnd(input.requestFocus)(WalletApp.app showKeys input)
-    timer.schedule(UITask(process), 100)
+    timer.schedule(UITask(process), 225)
   }
 
   def singleInputPopup(hintRes: Int, title: View)(onOk: String => Unit): Unit = {
@@ -370,8 +370,9 @@ trait BaseActivity extends AppCompatActivity { me =>
     }
 
     def updateText(value: MilliSatoshi): Unit = {
-      val formattedString = WalletApp.denom.fromMsat(value).toString
-      runAnd(inputAmount.requestFocus)(inputAmount setText formattedString)
+      val amount = WalletApp.denom.fromMsat(value)
+      inputAmount.setText(amount.toString)
+      updateFiatInput
     }
 
     def bigDecimalFrom(input: CurrencyEditText, times: Long = 1L): BigDecimal = BigDecimal(input.getNumericValueBigDecimal) * times
@@ -390,17 +391,15 @@ trait BaseActivity extends AppCompatActivity { me =>
         .map(WalletApp.denom.fromMsat).map(_.toString)
         .getOrElse(null)
 
-    def updateFiatInput: Unit =
-      if (inputAmount.hasFocus) {
-        fiatInputAmount setText updatedFiatFromBtc
-        fiatInputAmount setMaxNumberOfDecimalDigits 2
-      }
+    def updateFiatInput: Unit = {
+      fiatInputAmount setText updatedFiatFromBtc
+      fiatInputAmount setMaxNumberOfDecimalDigits 2
+    }
 
-    def updateBtcInput: Unit =
-      if (fiatInputAmount.hasFocus) {
-        inputAmount setText updatedBtcFromFiat
-        inputAmount setMaxNumberOfDecimalDigits 8
-      }
+    def updateBtcInput: Unit = {
+      inputAmount setText updatedBtcFromFiat
+      inputAmount setMaxNumberOfDecimalDigits 8
+    }
 
     extraText match {
       case Some(hintText) =>
@@ -421,13 +420,12 @@ trait BaseActivity extends AppCompatActivity { me =>
         extraInputVisibility.setVisibility(View.GONE)
     }
 
-    fiatInputAmount addTextChangedListener onTextChange { _ => updateBtcInput }
-    inputAmount addTextChangedListener onTextChange { _ => updateFiatInput }
+    fiatInputAmount addTextChangedListener onTextChange { _ => if (fiatInputAmount.hasFocus) updateBtcInput }
+    inputAmount addTextChangedListener onTextChange { _ => if (inputAmount.hasFocus) updateFiatInput }
     inputAmountHint setText WalletApp.denom.sign.toUpperCase
     fiatInputAmountHint setText fiatCode.toUpperCase
     fiatInputAmount setLocale Denomination.locale
     inputAmount setLocale Denomination.locale
-    inputAmount.requestFocus
   }
 
   class FeeView[T](val content: View) {
@@ -575,14 +573,14 @@ trait BaseActivity extends AppCompatActivity { me =>
       mkCheckFormNeutral(receive, none, setMax, builder, dialog_ok, dialog_cancel, dialog_max)
     }
 
-    manager.hintFiatDenom.setText(getString(dialog_up_to).format(canReceiveFiatHuman).html)
-    manager.hintDenom.setText(getString(dialog_up_to).format(canReceiveHuman).html)
-    manager.updateButton(getPositiveButton(alert), isEnabled = false)
-
     manager.inputAmount addTextChangedListener onTextChange { _ =>
       val withinBounds = finalMinReceivable <= manager.resultMsat && finalMaxReceivable >= manager.resultMsat
       manager.updateButton(button = getPositiveButton(alert), isEnabled = withinBounds)
     }
+
+    manager.hintFiatDenom.setText(getString(dialog_up_to).format(canReceiveFiatHuman).html)
+    manager.hintDenom.setText(getString(dialog_up_to).format(canReceiveHuman).html)
+    manager.updateButton(getPositiveButton(alert), isEnabled = false)
 
     def getTitleText: String
     def getManager: RateManager

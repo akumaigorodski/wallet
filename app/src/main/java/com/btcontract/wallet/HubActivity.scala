@@ -462,7 +462,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.label.isDefined -> marketLabel)
 
         marketItems.removeAllViewsInLayout
-        addFlowChip(marketItems, marketLinkCaption(info), R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(marketLinkIcon(info), null, null, null)
+        addFlowChip(marketItems, marketLinkCaption(info).take(28), R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(marketLinkIcon(info), null, null, null)
         addFlowChip(marketItems, lastAmount, R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(getDrawable(R.drawable.baseline_arrow_upward_18), null, null, null)
         for (lastComment <- info.lastComment) addFlowChip(marketItems, lastComment, R.drawable.border_blue)
         info.imageBytes.map(payLinkImageMemo.get).foreach(linkImage.setImageBitmap)
@@ -704,9 +704,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def onNfcStateDisabled: Unit = none
   def onNfcStateEnabled: Unit = none
 
-  def readNdefMessage(nfcMessage: Message): Unit =
-    runInFutureProcessOnUI(InputParser recordValue ndefMessageString(nfcMessage),
-      _ => readEmptyNdefMessage)(_ => me checkExternalData noneRunnable)
+  def readNdefMessage(nfcMessage: Message): Unit = runInFutureProcessOnUI(InputParser recordValue ndefMessageString(nfcMessage), _ => readEmptyNdefMessage)(_ => me checkExternalData noneRunnable)
 
   // Chan exceptions
 
@@ -1113,7 +1111,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       override def getDescription: PaymentDescription = PlainDescription(split = None, label = None, invoiceText = manager.resultExtraInput getOrElse new String)
       override def processInvoice(prExt: PaymentRequestExt): Unit = runAnd(InputParser.value = prExt)(me goTo ClassNames.qrInvoiceActivityClass)
       override def getTitleText: String = getString(dialog_receive_ln)
-      showKeys(manager.inputAmount)
     }
   }
 

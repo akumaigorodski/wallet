@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
-    style="@style/StandardLinearLayout"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:scrollbars="none">
+<ScrollView style="@style/StandardLinearLayout" xmlns:android="http://schemas.android.com/apk/res/android" android:scrollbars="none">
 
     <LinearLayout style="@style/StandardLinearLayout">
         <include layout="@layout/frag_input_fiat_converter"/>
