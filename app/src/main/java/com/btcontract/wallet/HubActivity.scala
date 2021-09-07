@@ -386,13 +386,13 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
             case tx ~ Some(at) =>
               val blocksDone = LNParams.blockCount.get - at.blockHeight
-              val csv = math.max(Scripts.csvTimeouts(tx).values.head - blocksDone, 0L)
+              val csv = math.max(Scripts.csvTimeouts(tx).values.headOption.getOrElse(0L) - blocksDone, 0L)
               val cltv = math.max(Scripts.cltvTimeout(tx) - LNParams.blockCount.get, 0L)
               text2.setText(WalletApp.app.plurOrZero(inBlocks)(cltv + csv).html)
               text1.setText(incoming(tx.txOut.head.amount.toMilliSatoshi).html)
 
             case tx ~ None =>
-              val csvEstimate = math.max(Scripts.csvTimeouts(tx).values.head, 0L)
+              val csvEstimate = math.max(Scripts.csvTimeouts(tx).values.headOption.getOrElse(0L), 0L)
               val cltv = math.max(Scripts.cltvTimeout(tx) - LNParams.blockCount.get, 0L)
               text1.setText(incoming(tx.txOut.head.amount.toMilliSatoshi).html)
               text2.setText(inBlocks.last format cltv + csvEstimate)

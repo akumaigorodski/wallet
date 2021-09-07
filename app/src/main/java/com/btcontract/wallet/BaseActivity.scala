@@ -610,7 +610,7 @@ trait ChanErrorHandlerActivity extends BaseActivity { me =>
     val errorCount = Option(channelErrors getIfPresent reestablish.channelId).getOrElse(default = 0: JInt)
     if (errorCount >= MAX_ERROR_COUNT_WITHIN_WINDOW) return
 
-    val fail = Fail(ByteVector32.Zeroes, "please publish your local commitment")
+    val fail = Fail(reestablish.channelId, "please publish your local commitment")
     def break(alert: AlertDialog): Unit = runAnd(alert.dismiss)(worker.handler process fail)
     val msg = getString(error_channel_unknown).format(reestablish.channelId.toHex, worker.info.nodeSpecificPubKey.toString, worker.info.nodeId.toString).html
     val builder = new AlertDialog.Builder(me).setCustomTitle(getString(error_channel).asDefView).setCancelable(true).setMessage(msg)
