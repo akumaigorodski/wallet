@@ -60,13 +60,10 @@ Install `gpg` and obtain a release signing key 15780F46E10485AB.
 It can be downloaded at https://api.github.com/users/btcontract/gpg_keys.  
 Or at https://lightning-wallet.com/akumaigorodski.asc.
 
-Import a signing key:
-
-`$ gpg --import akumaigorodski.asc`
-
-Verify release file checksums and signatures:
+Verify release APK checksums and signatures:
 
 ```
+$ gpg --import akumaigorodski.asc
 $ gpg -d SHA256SUMS.asc > SHA256SUMS.stripped
 $ sha256sum -c SHA256SUMS.stripped
 ```
