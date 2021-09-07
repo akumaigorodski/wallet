@@ -29,5 +29,44 @@ Everyone is welcome to provide a translation on [Transifex project site](https:/
 ## Building from source
 
 1. `$ git clone https://github.com/btcontract/wallet.git` (or download latest release source files).
-2. Copy `graph.snapshot-mainnet.zlib` file into `./app/src/main/assets/` folder (snapshot file can be found in latest release).
-3. `$ ./gradlew assembleRelease`
+2. Copy `graph.snapshot-mainnet.zlib` file into `./app/src/main/assets/` folder (snapshot file can be found in latest release, it is a zlib-compressed SQLite database file).
+3. `$ JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8 ./gradlew assembleRelease`
+
+## Verification with `apksigner`
+
+```$ apksigner verify --print-certs --verbose aegis.apk```
+
+Output should contain the following info:
+
+```
+Verifies
+Verified using v1 scheme (JAR signing): true
+Verified using v2 scheme (APK Signature Scheme v2): true
+Number of signers: 1
+Signer #1 certificate DN: CN=Bitcoins wallet developer
+Signer #1 certificate SHA-256 digest: dca2c3527ec7f7c0e38c0353278e7a5674cfa6e4b7556510ff05f60073ca338a
+Signer #1 certificate SHA-1 digest: 14659e7de5a71f2608bf4a889c0f8d043147e203
+Signer #1 certificate MD5 digest: e3102232a4754705c8917710765b9635
+Signer #1 key algorithm: RSA
+Signer #1 key size (bits): 2048
+Signer #1 public key SHA-256 digest: dc97f0f2e34167015914600d8fa748f908d578bcedb79664d010de3c9bdebf13
+Signer #1 public key SHA-1 digest: c4400469d5ad807dd9394785f1fa95003588a091
+Signer #1 public key MD5 digest: e4e1f847e0cb0a9703dc4f9323fd6d87
+```
+
+## Verification with `gpg`
+
+Install `gpg` and obtain a release signing key 15780F46E10485AB.  
+It can be downloaded at https://api.github.com/users/btcontract/gpg_keys.  
+Or at https://lightning-wallet.com/akumaigorodski.asc.
+
+Import a signing key:
+
+`$ gpg --import akumaigorodski.asc`
+
+Verify release file checksums and signatures:
+
+```
+$ gpg -d SHA256SUMS.asc > SHA256SUMS.stripped
+$ sha256sum -c SHA256SUMS.stripped
+```
