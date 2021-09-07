@@ -34,7 +34,7 @@ Everyone is welcome to provide a translation on [Transifex project site](https:/
 
 ## Verification with `apksigner`
 
-```$ apksigner verify --print-certs --verbose aegis.apk```
+```$ apksigner verify --print-certs --verbose SBW-<version>.apk```
 
 Output should contain the following info:
 
