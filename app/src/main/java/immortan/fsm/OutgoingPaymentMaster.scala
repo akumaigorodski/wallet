@@ -463,7 +463,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
 
   def feeLeftover: MilliSatoshi = data.cmd.totalFeeReserve - data.usedFee
 
-  def canBeSplit(totalAmount: MilliSatoshi): Boolean = totalAmount / 2 > LNParams.minSplit
+  def canBeSplit(totalAmount: MilliSatoshi): Boolean = data.parts.size < data.cmd.allowedChans.size * LNParams.maxInChannelHtlcs
 
   def shouldStopEarly(wait: WaitForRouteOrInFlight, found: RouteFound): Boolean = {
     val avgHopFee = opm.cm.pf.lastAvgHopParams.map(_ avgHopFee data.cmd.split.myPart).getOrElse(1000L.msat)
@@ -519,10 +519,10 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
     become(data.withoutPartId(wait.partId).copy(failures = failure +: data.failures), PENDING)
     val singleCapableCncCandidates = shuffle(opm.rightNowSendable(data.cmd.allowedChans, feeLeftover).toSeq)
     val otherOpt = singleCapableCncCandidates.collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc }
-    val keepSendingAsOnePart = wait.remoteAttempts < data.cmd.routerConf.maxRemoteAttempts
 
     otherOpt match {
-      case Some(otherCapableCnc) if keepSendingAsOnePart => become(data.copy(parts = data.parts + wait.oneMoreRemoteAttempt(otherCapableCnc).tuple), PENDING)
+      case Some(otherCapableCnc) if wait.remoteAttempts < data.cmd.routerConf.maxRemoteAttempts =>
+        become(data.copy(parts = data.parts + wait.oneMoreRemoteAttempt(otherCapableCnc).tuple), PENDING)
       case _ if canBeSplit(wait.amount) => become(data, PENDING) doProcess CutIntoHalves(wait.amount)
       case _ => me abortMaybeNotify data.withLocalFailure(RUN_OUT_OF_RETRY_ATTEMPTS, wait.amount)
     }

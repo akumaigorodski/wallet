@@ -45,6 +45,7 @@ object LNParams {
   val maxNegotiationIterations: Int = 20
   val maxChainConnectionsCount: Int = 3
   val maxAcceptedHtlcs: Int = 483
+  val maxInChannelHtlcs: Int = 10
 
   val maxOffChainFeeRatio: Double = 0.01 // We are OK with paying up to this % of LN fee relative to payment amount
   val maxOffChainFeeAboveRatio: MilliSatoshi = MilliSatoshi(100000L) // For small amounts we always accept fee up to this
@@ -77,16 +78,13 @@ object LNParams {
   var fiatRates: FiatRates = _
   var feeRates: FeeRates = _
 
-  // Part can not become smaller than this when sending MPP
-  var minSplit: MilliSatoshi = MilliSatoshi(1000000L)
-
   // Last known chain tip (zero is unknown)
   val blockCount: AtomicLong = new AtomicLong(0L)
 
   def isOperational: Boolean =
     null != chainHash && null != secret && null != chainWallets && null != syncParams && null != trampoline &&
       null != fiatRates && null != feeRates && null != cm && null != cm.inProcessors && null != cm.sendTo &&
-      null != routerConf && null != ourInit && null != minSplit
+      null != routerConf && null != ourInit
 
   implicit val timeout: Timeout = Timeout(30.seconds)
   implicit val system: ActorSystem = ActorSystem("immortan-actor-system")
@@ -125,7 +123,7 @@ object LNParams {
   // Note: we set local maxHtlcValueInFlightMsat to channel capacity to simplify calculations
   def makeChannelParams(defFinalScriptPubkey: ByteVector, walletStaticPaymentBasepoint: PublicKey, isFunder: Boolean, keyPath: DeterministicWallet.KeyPath, fundingAmount: Satoshi): LocalParams =
     LocalParams(ChannelKeys.fromPath(secret.keys.master, keyPath), minDustLimit, UInt64(fundingAmount.toMilliSatoshi.toLong), channelReserve = (fundingAmount * 0.001).max(minDustLimit),
-      minPayment, maxToLocalDelay, maxAcceptedHtlcs = 10, isFunder, defFinalScriptPubkey, walletStaticPaymentBasepoint)
+      minPayment, maxToLocalDelay, maxInChannelHtlcs, isFunder, defFinalScriptPubkey, walletStaticPaymentBasepoint)
 
   def currentBlockDay: Long = blockCount.get / blocksPerDay
 
