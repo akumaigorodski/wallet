@@ -17,7 +17,6 @@ import android.graphics.{Bitmap, Color}
 import android.content.{DialogInterface, Intent}
 import android.text.{Editable, Spanned, TextWatcher}
 import com.google.common.cache.{Cache, CacheBuilder}
-import fr.acinq.eclair.wire.{ChannelReestablish, Fail}
 import com.google.zxing.{BarcodeFormat, EncodeHintType}
 import androidx.core.content.{ContextCompat, FileProvider}
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
@@ -35,6 +34,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.slider.Slider
 import android.graphics.Bitmap.Config.ARGB_8888
 import androidx.appcompat.app.AppCompatActivity
+import fr.acinq.eclair.wire.ChannelReestablish
 import android.text.method.LinkMovementMethod
 import fr.acinq.eclair.payment.PaymentRequest
 import com.google.zxing.qrcode.QRCodeWriter
@@ -607,11 +607,10 @@ trait ChanErrorHandlerActivity extends BaseActivity { me =>
   val MAX_ERROR_COUNT_WITHIN_WINDOW = 4
 
   def chanUnknown(worker: CommsTower.Worker, reestablish: ChannelReestablish): Unit = UITask {
-    val errorCount = Option(channelErrors getIfPresent reestablish.channelId).getOrElse(default = 0: JInt)
+    val errorCount = Option(channelErrors getIfPresent reestablish.channelId).getOrElse(0: JInt)
     if (errorCount >= MAX_ERROR_COUNT_WITHIN_WINDOW) return
 
-    val fail = Fail(reestablish.channelId, "please publish your local commitment")
-    def break(alert: AlertDialog): Unit = runAnd(alert.dismiss)(worker.handler process fail)
+    def break(alert: AlertDialog): Unit = runAnd(alert.dismiss)(worker requestRemoteForceClose reestablish.channelId)
     val msg = getString(error_channel_unknown).format(reestablish.channelId.toHex, worker.info.nodeSpecificPubKey.toString, worker.info.nodeId.toString).html
     val builder = new AlertDialog.Builder(me).setCustomTitle(getString(error_channel).asDefView).setCancelable(true).setMessage(msg)
     mkCheckFormNeutral(_.dismiss, share(msg), break, builder, dialog_ok, dialog_share, dialog_break)

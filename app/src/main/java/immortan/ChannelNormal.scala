@@ -431,10 +431,9 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
       // REESTABLISHMENT IN PERSISTENT STATES
 
       case (wait: DATA_WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT, CMD_SOCKET_ONLINE, SLEEPING) =>
-        // There isn't much to do except asking them again to publish their current commitment
-        val error = Fail(wait.channelId, "please publish your local commitment")
+        // There isn't much to do except asking them once again to publish their current commitment on chain
+        CommsTower.workers.get(wait.commitments.remoteInfo.nodeSpecificPair).foreach(_ requestRemoteForceClose wait.channelId)
         BECOME(wait, CLOSING)
-        SEND(error)
 
 
       case (data1: HasNormalCommitments, CMD_SOCKET_ONLINE, SLEEPING) =>
@@ -459,24 +458,25 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
 
 
       case (norm: DATA_NORMAL, reestablish: ChannelReestablish, SLEEPING) =>
-        val pleasePublishError = Fail(norm.channelId, "please publish your local commitment")
+        var sendQueue = Queue.empty[LightningMessage]
 
         reestablish match {
           case rs if !Helpers.checkLocalCommit(norm, rs.nextRemoteRevocationNumber) =>
-            // if NextRemoteRevocationNumber is greater than our local commitment index, it means that either we are using an outdated commitment, or they are lying
-            // we need to make sure that the last PerCommitmentSecret that they claim to have received from us is correct for that NextRemoteRevocationNumber minus 1
-            val peerIsAhead = norm.commitments.localParams.keys.commitmentSecret(rs.nextRemoteRevocationNumber - 1) == rs.yourLastPerCommitmentSecret
-            if (peerIsAhead) StoreBecomeSend(DATA_WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT(norm.commitments, rs), CLOSING, pleasePublishError)
-            else throw ChannelTransitionFail(norm.commitments.channelId)
+            // If NextRemoteRevocationNumber is greater than our local commitment index, it means that either we are using an outdated commitment, or they are lying
+            // we need to make sure that the last PerCommitmentSecret that they claim to have received from us is correct for that NextRemoteRevocationNumber - 1
+            if (norm.commitments.localParams.keys.commitmentSecret(rs.nextRemoteRevocationNumber - 1) == rs.yourLastPerCommitmentSecret) {
+              CommsTower.workers.get(norm.commitments.remoteInfo.nodeSpecificPair).foreach(_ requestRemoteForceClose norm.channelId)
+              StoreBecomeSend(DATA_WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT(norm.commitments, rs), CLOSING)
+            } else throw ChannelTransitionFail(norm.commitments.channelId)
 
           case rs if !Helpers.checkRemoteCommit(norm, rs.nextLocalCommitmentNumber) =>
-            // if NextRemoteRevocationNumber is more than one more our remote commitment index, it means that either we are using an outdated commitment, or they are lying
+            // If NextRemoteRevocationNumber is more than one more our remote commitment index, it means that either we are using an outdated commitment, or they are lying
             // there is no way to make sure if they are saying the truth or not, the best thing to do is ask them to publish their commitment right now
             // note that if they don't comply, we could publish our own commitment (it is not stale, otherwise we would be in the case above)
-            StoreBecomeSend(DATA_WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT(norm.commitments, rs), CLOSING, pleasePublishError)
+            CommsTower.workers.get(norm.commitments.remoteInfo.nodeSpecificPair).foreach(_ requestRemoteForceClose norm.channelId)
+            StoreBecomeSend(DATA_WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT(norm.commitments, rs), CLOSING)
 
           case rs =>
-            var sendQueue = Queue.empty[LightningMessage]
             if (rs.nextLocalCommitmentNumber == 1 && norm.commitments.localCommit.index == 0) {
               val nextPerCommitmentPoint = norm.commitments.localParams.keys.commitmentPoint(index = 1L)
               sendQueue :+= FundingLocked(norm.commitments.channelId, nextPerCommitmentPoint)

@@ -395,7 +395,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
               val csvEstimate = math.max(Scripts.csvTimeouts(tx).values.headOption.getOrElse(0L), 0L)
               val cltv = math.max(Scripts.cltvTimeout(tx) - LNParams.blockCount.get, 0L)
               text1.setText(incoming(tx.txOut.head.amount.toMilliSatoshi).html)
-              text2.setText(inBlocks.last format cltv + csvEstimate)
+              text2.setText(inBlocks.last.format(cltv + csvEstimate).html)
           }
 
           view

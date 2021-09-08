@@ -6,10 +6,11 @@ import fr.acinq.eclair.wire._
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
 import immortan.crypto.Tools.{Bytes, none}
-import rx.lang.scala.{Subscription, Observable}
+import rx.lang.scala.{Observable, Subscription}
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import fr.acinq.eclair.wire.LightningMessageCodecs.lightningMessageCodecWithFallback
 import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.bitcoin.ByteVector32
 import immortan.crypto.Noise.KeyPair
 import fr.acinq.eclair.Features
 import scala.collection.mutable
@@ -35,7 +36,7 @@ object CommsTower {
     }
   }
 
-  def sendMany(messages: Traversable[LightningMessage], pair: KeyPairAndPubKey): Unit = CommsTower.workers.get(pair).foreach(messages foreach _.handler.process)
+  def sendMany(messages: Traversable[LightningMessage], pair: KeyPairAndPubKey): Unit = CommsTower.workers.get(pair).foreach(worker => messages foreach worker.handler.process)
   // Add or remove listeners to a connection where our nodeId is stable, not a randomly generated one (one which makes us seen as a constant peer by remote)
   def listenNative(listeners1: Set[ConnectionListener], remoteInfo: RemoteNodeInfo): Unit = listen(listeners1, remoteInfo.nodeSpecificPair, remoteInfo)
   def rmListenerNative(info: RemoteNodeInfo, listener: ConnectionListener): Unit = listeners(info.nodeSpecificPair) -= listener
@@ -117,6 +118,7 @@ object CommsTower {
     }
 
     def disconnect: Unit = try sock.close catch none
+
     def handleTheirRemoteInitMessage(listeners1: Set[ConnectionListener] = Set.empty)(remoteInit: Init): Unit = {
       // Use a separate variable for listeners here because a set of listeners provided to this method may be different
       // Account for a case where they disconnect while we are deciding on their features (do nothing in this case)
@@ -134,6 +136,11 @@ object CommsTower {
       val payloadLength = secureRandom.nextInt(5) + 1
       val data = randomBytes(length = payloadLength)
       handler process Ping(payloadLength, data)
+    }
+
+    def requestRemoteForceClose(channelId: ByteVector32): Unit = {
+      handler process ChannelReestablish(channelId, 0L, 0L, randomKey, randomKey.publicKey)
+      handler process Fail(channelId, "please publish your local commitment")
     }
   }
 }
