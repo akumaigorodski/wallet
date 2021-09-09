@@ -183,8 +183,8 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     def fill(chan: ChannelHosted, hc: HostedCommits): HostedViewHolder = {
       val capacity = hc.lastCrossSignedState.initHostedChannel.channelCapacityMsat
       val inFlight = hc.nextLocalSpec.htlcs.foldLeft(0L.msat)(_ + _.add.amountMsat)
-      val barCanReceive = (hc.availableForReceive.toLong / capacity.toLong).toInt
-      val barCanSend = (hc.availableForSend.toLong / capacity.toLong).toInt
+      val barCanReceive = (hc.availableForReceive.toLong / capacity.truncateToSatoshi.toLong).toInt
+      val barCanSend = (hc.availableForSend.toLong / capacity.truncateToSatoshi.toLong).toInt
 
       val errorText = (hc.localError, hc.remoteError) match {
         case Some(error) ~ _ => s"LOCAL: ${ErrorExt extractDescription error}"
