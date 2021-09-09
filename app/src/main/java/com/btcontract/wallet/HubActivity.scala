@@ -219,7 +219,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     def doRemoveItem: Unit = {
       def proceed: Unit = currentDetails match {
         case info: LNUrlLinkInfo => WalletApp.lnUrlBag.remove(info.locator)
-        case info: PaymentInfo => LNParams.cm.payBag.removePaymentInfo(info.paymentHash)
+        case info: PaymentInfo =>
+          // Once removed a pending incoming payment becomes unfulfillable so it makes no sense to keep app alive
+          if (PaymentStatus.PENDING == info.status) stopService(WalletApp.app.foregroundServiceIntent)
+          LNParams.cm.payBag.removePaymentInfo(info.paymentHash)
         case _ =>
       }
 
