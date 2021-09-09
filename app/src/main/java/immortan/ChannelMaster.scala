@@ -141,7 +141,6 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     allFromNode(worker.info.nodeId).foreach(_.chan process CMD_SOCKET_ONLINE)
 
   override def onMessage(worker: CommsTower.Worker, message: LightningMessage): Unit = message match {
-    case msg: Fail if msg.channelId == ByteVector32.Zeroes => allFromNode(worker.info.nodeId).foreach(_.chan process msg)
     case msg: ChannelUpdate => allFromNode(worker.info.nodeId).foreach(_.chan process msg)
     case msg: HasChannelId => sendTo(msg, msg.channelId)
     case _ => // Do nothing
