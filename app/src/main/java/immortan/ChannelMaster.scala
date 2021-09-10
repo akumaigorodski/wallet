@@ -215,11 +215,11 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
   def sortedSendable(chans: Iterable[Channel] = Nil): Seq[ChanAndCommits] = operationalCncs(chans).sortBy(_.commits.availableForSend)
 
   def maxReceivable(sorted: Seq[ChanAndCommits] = Nil): Option[CommitsAndMax] = {
-    // Example: we have (5, 50, 60, 100) chans -> (50, 60, 100), receivable = 50*3 = 150
-    // The idea is for smallest remaining operational channel to be able to handle an evenly split amount
+    // Example: we have (5, 50, 60, 100) chans -> (50, 60, 100), receivable = 50*3 = 150, #channels = 3
+    // Example: we have (25, 50, 60, 100) chans -> (25, 50, 60, 100), receivable = 50*3 = 150 (because 50*3 > 25*4), but #channels = 4
     val withoutSmall = sorted.dropWhile(_.commits.availableForReceive * sorted.size < sorted.last.commits.availableForReceive).takeRight(4)
-    val candidates = for (cs <- withoutSmall.indices map withoutSmall.drop) yield CommitsAndMax(cs, cs.head.commits.availableForReceive * cs.size)
-    if (candidates.isEmpty) None else candidates.maxBy(_.maxReceivable).asSome
+    val candidates = for (cs <- withoutSmall.indices map withoutSmall.drop) yield cs.head.commits.availableForReceive * cs.size
+    if (candidates.isEmpty) None else CommitsAndMax(withoutSmall, candidates.max).asSome
   }
 
   def maxSendable(chans: Iterable[Channel] = Nil): MilliSatoshi = {
