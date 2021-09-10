@@ -1,0 +1,2 @@
+* Channel closing and MPP bugfixes.
+* Minor UI improvements.

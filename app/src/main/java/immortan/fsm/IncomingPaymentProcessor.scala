@@ -65,7 +65,7 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
         case None => cm.getPreimageMemo.get(fullTag.paymentHash).toOption match {
           case Some(paymentPreimage) => becomeRevealed(paymentPreimage, new String, adds) // Did not ask but fulfill since we happen to have a preimage
           case None if keySend.nonEmpty => if (gotAllParts) becomeRevealed(keySend.get, new String, adds) // Either reveal preimage or keep waiting
-          case None => becomeAborted(IncomingAborted(None, fullTag), adds)
+          case None => becomeAborted(IncomingAborted(None, fullTag), adds) // This is not a keysend and we don't have a preimage
         }
 
         case Some(info) if info.isIncoming && PaymentStatus.SUCCEEDED == info.status => becomeRevealed(info.preimage, info.description.queryText, adds) // Already revealed, but not finalized
