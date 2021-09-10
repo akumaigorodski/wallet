@@ -13,7 +13,7 @@ import fr.acinq.bitcoin.Block
 import java.io.File
 
 
-@Ignore
+//@Ignore
 @RunWith(classOf[AndroidJUnit4])
 class SyncSpec {
 

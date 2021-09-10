@@ -1,10 +1,13 @@
 package com.btcontract.wallet;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.rule.GrantPermissionRule;
+
 import com.btcontract.wallet.utils.LocalBackup;
 import com.google.common.io.Files;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -19,6 +22,9 @@ import scodec.bits.ByteVector;
 
 @RunWith(AndroidJUnit4.class)
 public class LocalBackupSpec {
+
+    @Rule
+    public GrantPermissionRule mRuntimePermissionRule = GrantPermissionRule.grant(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
     @Test
     public void readAndWriteLocalBackup() {
