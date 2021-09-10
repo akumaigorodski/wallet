@@ -71,7 +71,8 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
         case Some(info) if info.isIncoming && PaymentStatus.SUCCEEDED == info.status => becomeRevealed(info.preimage, info.description.queryText, adds) // Already revealed, but not finalized
         case _ if adds.exists(_.add.cltvExpiry.toLong < LNParams.blockCount.get + LNParams.cltvRejectThreshold) => becomeAborted(IncomingAborted(None, fullTag), adds) // Not enough time to react if stalls
         case Some(info) if info.isIncoming && info.prExt.pr.amount.exists(lastAmountIn.>=) => becomeRevealed(info.preimage, info.description.queryText, adds) // Got enough parts to cover an amount
-        case _ => // Do nothing, wait for more parts or a timeout
+        case Some(info) if !info.isIncoming => becomeAborted(IncomingAborted(None, fullTag), adds) // Abort self-payment immediately
+        case _ => // Do nothing and wait for more parts or timout
       }
 
     case (_: ReasonableLocal, null, RECEIVING) =>
