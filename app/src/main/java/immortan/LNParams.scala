@@ -50,9 +50,9 @@ object LNParams {
   val maxOffChainFeeRatio: Double = 0.01 // We are OK with paying up to this % of LN fee relative to payment amount
   val maxOffChainFeeAboveRatio: MilliSatoshi = MilliSatoshi(100000L) // For small amounts we always accept fee up to this
 
-  val shouldSendUpdateFeerateDiff = 5.0
-  val shouldRejectPaymentFeerateDiff = 20.0
-  val shouldForceClosePaymentFeerateDiff = 40.0
+  val shouldSendUpdateFeerateDiff = 50.0
+  val shouldRejectPaymentFeerateDiff = 200.0
+  val shouldForceClosePaymentFeerateDiff = 400.0
 
   val ourRoutingOurCltvExpiryDelta: CltvExpiryDelta = CltvExpiryDelta(144 * 2) // We will reserve this many blocks for our incoming routed HTLC
   val minRoutingCltvExpiryDelta: CltvExpiryDelta = CltvExpiryDelta(144 * 3) // Ask relayer to set CLTV expiry delta to at least this many blocks
