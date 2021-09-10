@@ -368,8 +368,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
         case info: RelayedPreimageInfo =>
           val relayedHuman = WalletApp.denom.parsedWithSign(info.relayed, cardIn, cardZero)
-          addFlowChip(extraInfo, getString(popup_hash).format(info.paymentHashString.short), R.drawable.border_green)
-          addFlowChip(extraInfo, getString(stats_item_relayed).format(relayedHuman), R.drawable.border_gray)
+          addFlowChip(extraInfo, getString(popup_hash) format info.paymentHashString.short, R.drawable.border_green)
+          addFlowChip(extraInfo, getString(stats_item_relayed) format relayedHuman, R.drawable.border_gray)
 
         case _ =>
           // Do nothing
