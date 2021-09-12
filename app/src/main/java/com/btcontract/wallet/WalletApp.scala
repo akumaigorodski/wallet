@@ -12,7 +12,6 @@ import scala.collection.JavaConverters._
 import fr.acinq.eclair.blockchain.electrum._
 
 import android.widget.{EditText, Toast}
-import android.os.{Build, VibrationEffect}
 import java.net.{InetSocketAddress, Socket}
 import fr.acinq.bitcoin.{Block, ByteVector32, Satoshi, SatoshiLong}
 import fr.acinq.eclair.blockchain.{CurrentBlockCount, EclairWallet}
@@ -40,6 +39,7 @@ import rx.lang.scala.Observable
 import java.text.DecimalFormat
 import scodec.bits.BitVector
 import akka.actor.Props
+import android.os.Build
 import java.util.Date
 import scala.util.Try
 
@@ -293,9 +293,8 @@ object WalletApp {
 }
 
 object Vibrator {
-  private val waveForm = VibrationEffect.createWaveform(Array(0L, 85, 200), -1)
   private val vibrator = WalletApp.app.getSystemService(Context.VIBRATOR_SERVICE).asInstanceOf[android.os.Vibrator]
-  def vibrate: Unit = if (null != vibrator && vibrator.hasVibrator) vibrator.vibrate(waveForm)
+  def vibrate: Unit = if (null != vibrator && vibrator.hasVibrator) vibrator.vibrate(Array(0L, 85, 200), -1)
 }
 
 class WalletApp extends Application { me =>

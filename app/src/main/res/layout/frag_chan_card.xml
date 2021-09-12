@@ -9,7 +9,7 @@
     <LinearLayout
         style="@style/BoundedView"
         android:orientation="horizontal"
-        android:paddingTop="25dp">
+        android:paddingTop="20dp">
 
         <com.ornach.nobobutton.NoboButton
             android:layout_marginStart="15dp"
