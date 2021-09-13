@@ -369,16 +369,16 @@
     <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
 
     <array name="ln_normal_chan_actions">
-        <item><![CDATA[Share <b>Lightning Channel</b> details]]></item>
-        <item><![CDATA[View funding transaction]]></item>
-        <item><![CDATA[Close channel to wallet]]></item>
-        <item><![CDATA[Close channel to address]]></item>
+        <item><![CDATA[Compartir <b>Canal Lightning</b> detalles]]></item>
+        <item><![CDATA[Ver transaccion de apertura]]></item>
+        <item><![CDATA[Cerrar canal a la billetera]]></item>
+        <item><![CDATA[Cerrar canal a la direccion]]></item>
     </array>
 
     <array name="ln_hosted_chan_actions">
-        <item><![CDATA[Share <b>Hosted Channel</b> details]]></item>
-        <item><![CDATA[Export channel state]]></item>
-        <item><![CDATA[Drain channel balance]]></item>
+        <item><![CDATA[Compartir <b>Canal Hospedado</b> detalles]]></item>
+        <item><![CDATA[Exportar detalles de canal]]></item>
+        <item><![CDATA[Vaciar saldo del canal]]></item>
     </array>
 
     <string name="ln_hc_override">Propuesta de anulación</string>
