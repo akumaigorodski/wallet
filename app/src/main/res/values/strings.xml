@@ -9,7 +9,6 @@
     <string name="password">Wallet password</string>
     <string name="manual">Read manual</string>
 
-    <string name="offline">OFFLINE</string>
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Total balance</string>

@@ -584,6 +584,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val totalBalance: TextView = view.findViewById(R.id.totalBalance).asInstanceOf[TextView]
     val totalFiatBalance: TextView = view.findViewById(R.id.totalFiatBalance).asInstanceOf[TextView]
     val fiatUnitPriceAndChange: TextView = view.findViewById(R.id.fiatUnitPriceAndChange).asInstanceOf[TextView]
+    val chainSyncIndicator: TextView = view.findViewById(R.id.chainSyncIndicator).asInstanceOf[TextView]
     val offlineIndicator: TextView = view.findViewById(R.id.offlineIndicator).asInstanceOf[TextView]
 
     val totalLightningBalance: TextView = view.findViewById(R.id.totalLightningBalance).asInstanceOf[TextView]
@@ -667,7 +668,15 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   private val chainListener = new WalletEventsListener {
-    override def onChainSynchronized(event: WalletReady): Unit = {
+    override def onChainSyncStarted(localTip: Long, remoteTip: Long): Unit = UITask {
+      setVis(isVisible = remoteTip - localTip > 2016 * 4, walletCards.chainSyncIndicator)
+    }.run
+
+    override def onChainSyncEnded(localTip: Long): Unit = UITask {
+      setVis(isVisible = false, walletCards.chainSyncIndicator)
+    }.run
+
+    override def onWalletReady(event: WalletReady): Unit = {
       // First, update payments to highlight nearly expired revealed incoming now that chain tip it known
       // Second, check if any of unconfirmed chain transactions became confirmed or double-spent
       ChannelMaster.next(ChannelMaster.statusUpdateStream)
@@ -682,8 +691,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   private val fiatRatesListener = new FiatRatesListener {
-    def onFiatRates(rates: FiatRatesInfo): Unit =
-      UITask(walletCards.updateView).run
+    def onFiatRates(rates: FiatRatesInfo): Unit = UITask(walletCards.updateView).run
   }
 
   private val extraOutgoingListener = new OutgoingPaymentListener {

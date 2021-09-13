@@ -53,8 +53,8 @@ class StatActivity extends BaseActivity { me =>
       val channelTxFeesSummary = LNParams.cm.chanBag.channelTxFeesSummary.filter(_.count > 0)
 
       val netTitle = new TitleView(me getString stats_title_network)
+      val chainNode = WalletApp.currentChainNode.map(_.toString).getOrElse("n/a")
       val blockCount = if (LNParams.blockCount.get == 0L) "n/a" else LNParams.blockCount.get.toString
-      val chainNode = WalletApp.currentChainNode.map(_.toString).getOrElse(me getString offline)
       statContainer.addView(netTitle.view)
 
       addFlowChip(netTitle.flow, getString(stats_item_chain_node).format(chainNode), R.drawable.border_gray)

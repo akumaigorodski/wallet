@@ -234,7 +234,7 @@ object WalletApp {
     LNParams.chainWallets.catcher ! new WalletEventsListener {
       override def onChainTipKnown(event: CurrentBlockCount): Unit = LNParams.cm.initConnect
 
-      override def onChainSynchronized(event: WalletReady): Unit = LNParams.updateChainWallet(LNParams.chainWallets withBalanceUpdated event)
+      override def onWalletReady(event: WalletReady): Unit = LNParams.updateChainWallet(LNParams.chainWallets withBalanceUpdated event)
 
       override def onChainMasterSelected(event: InetSocketAddress): Unit = currentChainNode = event.asSome
 

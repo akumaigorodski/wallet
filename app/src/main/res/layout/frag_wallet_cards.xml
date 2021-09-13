@@ -24,29 +24,29 @@
                 style="@style/FillingView"/>
 
             <TextView
-                style="@style/ChipTextGrayMargin"
+                style="@style/Notification"
+                android:background="@drawable/border_yellow"
+                android:layout_toStartOf="@id/offlineIndicator"
+                android:layout_centerVertical="true"
+                android:id="@+id/chainSyncIndicator"
+                android:text="SYNC"/>
+
+            <TextView
+                style="@style/Notification"
                 android:background="@drawable/border_yellow"
                 android:layout_toStartOf="@id/rateTeaser"
                 android:layout_centerVertical="true"
                 android:id="@+id/offlineIndicator"
-                android:text="@string/offline"
-                android:layout_marginEnd="6dp"
-                android:visibility="gone"
-                android:textSize="12sp"/>
+                android:text="OFFLINE"/>
 
             <TextView
-                android:clickable="true"
-                android:focusable="true"
-                android:id="@+id/rateTeaser"
+                style="@style/Notification"
                 android:text="@string/rate"
-                android:layout_marginEnd="6dp"
                 android:onClick="bringRateDialog"
                 android:background="@drawable/border_green"
                 android:layout_toStartOf="@id/settingsButton"
                 android:layout_centerVertical="true"
-                style="@style/ChipTextGray"
-                android:visibility="gone"
-                android:textSize="12sp"/>
+                android:id="@+id/rateTeaser"/>
 
             <ImageButton
                 android:padding="6dp"

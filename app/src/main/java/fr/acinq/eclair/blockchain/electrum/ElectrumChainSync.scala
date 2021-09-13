@@ -9,6 +9,11 @@ import fr.acinq.eclair.blockchain.electrum.ElectrumClient.GetHeaders
 import fr.acinq.eclair.blockchain.electrum.db.HeaderDb
 
 
+object ElectrumChainSync {
+  case class ChainSyncStarted(localTip: Long, remoteTip: Long)
+  case class ChainSyncEnded(localTip: Long)
+}
+
 class ElectrumChainSync(client: ActorRef, headerDb: HeaderDb, chainHash: ByteVector32) extends FSM[ElectrumWallet.State, Blockchain] {
 
   def loadChain: Blockchain = if (chainHash != Block.RegtestGenesisBlock.hash) {
@@ -32,22 +37,26 @@ class ElectrumChainSync(client: ActorRef, headerDb: HeaderDb, chainHash: ByteVec
     case Event(response: ElectrumClient.HeaderSubscriptionResponse, blockchain) if response.height < blockchain.height =>
       goto(DISCONNECTED) replying PoisonPill
 
-    case Event(_: ElectrumClient.HeaderSubscriptionResponse, blockchain) if blockchain.bestchain.isEmpty =>
+    case Event(response: ElectrumClient.HeaderSubscriptionResponse, blockchain) if blockchain.bestchain.isEmpty =>
+      context.system.eventStream publish ElectrumChainSync.ChainSyncStarted(blockchain.height, response.height)
       client ! ElectrumClient.GetHeaders(blockchain.checkpoints.size * RETARGETING_PERIOD, RETARGETING_PERIOD)
       goto(SYNCING)
 
     case Event(response: ElectrumClient.HeaderSubscriptionResponse, blockchain) if response.header == blockchain.tip.header =>
-      context.system.eventStream.publish(blockchain)
+      context.system.eventStream publish ElectrumChainSync.ChainSyncEnded(blockchain.height)
+      context.system.eventStream publish blockchain
       goto(RUNNING)
 
-    case Event(_: ElectrumClient.HeaderSubscriptionResponse, blockchain) =>
+    case Event(response: ElectrumClient.HeaderSubscriptionResponse, blockchain) =>
+      context.system.eventStream publish ElectrumChainSync.ChainSyncStarted(blockchain.height, response.height)
       client ! ElectrumClient.GetHeaders(blockchain.tip.height + 1, RETARGETING_PERIOD)
       goto(SYNCING)
   }
 
   when(SYNCING) {
     case Event(response: ElectrumClient.GetHeadersResponse, blockchain) if response.headers.isEmpty =>
-      context.system.eventStream.publish(blockchain)
+      context.system.eventStream publish ElectrumChainSync.ChainSyncEnded(blockchain.height)
+      context.system.eventStream publish blockchain
       goto(RUNNING)
 
     case Event(ElectrumClient.GetHeadersResponse(start, headers, _), blockchain) =>
@@ -81,7 +90,7 @@ class ElectrumChainSync(client: ActorRef, headerDb: HeaderDb, chainHash: ByteVec
           val (blockchain2, chunks) = Blockchain.optimize(blockchain1)
           headerDb.addHeaders(chunks.map(_.header), chunks.head.height)
           log.info(s"Got new chain tip ${header.blockId} at $height")
-          context.system.eventStream.publish(blockchain2)
+          context.system.eventStream publish blockchain2
           stay using blockchain2
 
         case _ =>
@@ -95,7 +104,7 @@ class ElectrumChainSync(client: ActorRef, headerDb: HeaderDb, chainHash: ByteVec
       blockchain1Try match {
         case Success(blockchain1) =>
           headerDb.addHeaders(headers, start)
-          context.system.eventStream.publish(blockchain1)
+          context.system.eventStream publish blockchain1
           stay using blockchain1
 
         case _ =>
