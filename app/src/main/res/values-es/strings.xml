@@ -267,7 +267,7 @@
     </array>
 
     <array name="pct_collected">
-        <item>waiting</item>
+        <item>esperando</item>
         <item>%1$d\%% recogido</item>
         <item>%1$d\%% recogido</item>
         <item>finalizando</item>
