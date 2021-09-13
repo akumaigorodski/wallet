@@ -2,12 +2,11 @@ package immortan.utils
 
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet._
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient._
+import fr.acinq.eclair.blockchain.electrum.ElectrumChainSync
 import fr.acinq.eclair.blockchain.CurrentBlockCount
 import java.net.InetSocketAddress
-
 import immortan.crypto.Tools.none
 import akka.actor.Actor
-import fr.acinq.eclair.blockchain.electrum.ElectrumChainSync
 
 
 object WalletEventsCatcher {

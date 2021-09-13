@@ -32,7 +32,6 @@
     <string name="setup_create_new_hint">A completely fresh Bitcoin wallet with a new recovery phrase will be generated from scratch.</string>
     <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
     <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
-    <string name="share_lnurl_pay">lnurlp:%1$s</string>
 
     <string name="setup_backup_file_hint">
         Provide a file containing Lightning backup, then provide a recovery
@@ -90,7 +89,7 @@
     <string name="dialog_split_ln"><![CDATA[Split <b>Lightning</b> payment%1$s]]></string>
     <string name="dialog_send_btc_from"><![CDATA[from&#160;<b>%1$s</b>&#160;wallet]]></string>
     <string name="dialog_send_btc"><![CDATA[Send <b>Bitcoin</b> transaction<br><b>to address</b> %1$s%2$s]]></string>
-    <string name="dialog_split_ln_tip">First let someone scan a split invoice.\nThen tap PAY at about the same time.</string>
+    <string name="dialog_split_ln_tip">First let someone scan a split invoice,\nThen tap PAY at about the same time</string>
     <string name="dialog_ln_requested"><![CDATA[<b>requested</b>&#160;%1$s]]></string>
     <string name="dialog_ln_left"><![CDATA[<b>left to pay</b>&#160;%1$s]]></string>
 
@@ -347,7 +346,6 @@
     <string name="chan_can_receive">Can receive</string>
     <string name="chan_in_flight">Value in-flight</string>
     <string name="chan_refundable">Refundable</string>
-    <string name="chan_depth">Funding depth</string>
 
     <string name="chan_nothing"><![CDATA[<i>nothing</i>]]></string>
 

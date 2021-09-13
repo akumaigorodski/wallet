@@ -233,7 +233,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     def doShareItem: Unit = currentDetails match {
       case info: TxInfo => me share getString(share_chain_tx).format(info.txString)
-      case info: LNUrlLinkInfo => me share getString(share_lnurl_pay).format(info.payString)
+      case info: LNUrlLinkInfo => me share info.payString
       case info: PaymentInfo =>
         val externalInfo = info.description.externalInfo.getOrElse("n/a")
         val report = LNParams.cm.dataBag.tryGetReport(info.paymentHash).getOrElse("n/a")

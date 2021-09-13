@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lang">esp</string>
+    <string name="app_name">Simple Bitcoin Wallet</string>
+
+    <string name="rate">&#9825; Califícanos</string>
+    <string name="sources">Ver código fuente</string>
+    <string name="twitter">Síguenos en Twitter</string>
+    <string name="password">Contraseña de la billetera</string>
+    <string name="manual">Leer manual</string>
+
+    <string name="bitcoin_wallet">Bitcoin</string>
+    <string name="lightning_wallet">Lightning</string>
+    <string name="total_balance">Saldo total</string>
+    <string name="hosted_channel">CANAL HOSPEDADO</string>
+    <string name="delayed_refunding">Reembolso de canal demorado</string>
+    <string name="typing_hints">Dirección de Bitcoin, factura, correo&#8230;</string>
+    <string name="copied_to_clipboard">Copiado al portapapeles</string>
+    <string name="add_address">Más direcciones no usadas</string>
+    <string name="delayed_pending">pendiente</string>
+
+    <string name="search_recent">Buscar actividad reciente</string>
+    <string name="emergency_mode">Algo salió mal</string>
+    <string name="emergency_share">Compartir reporte de error</string>
+
+    <string name="setup_title">Configuración de billetera</string>
+    <string name="setup_create_new">Crear billetera nueva</string>
+    <string name="setup_restore_existing">Restaurar billetera existente</string>
+    <string name="setup_recovery_phrase">Solo frase de recuperación</string>
+    <string name="setup_backup_file">Respaldo + frase de recuperación</string>
+
+    <string name="setup_create_new_hint">Una billetera completamente nueva con una nueva frase de recuperación será generada desde cero.</string>
+    <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
+    <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
+
+    <string name="setup_backup_file_hint">
+        Proporcione un archivo que contenga un respaldo de Lightning, luego proporcione
+        una frase de recuperación para restaurar completamente la billetera Bitcoin con los canales Lightning.
+        Cierre otras copias de su billetera antes de proceder.
+    </string>
+
+    <string name="setup_recovery_phrase_hint">
+        Proporcione una frase de recuperación únicamente para restaurar la billetera de Bitcoin y los canales hospedados.
+        El saldo de canales Lightning en dispositivos anteriores será reintegrado manualmente
+        al conectarse a los nodos remotos con los que tenía esos canales.
+    </string>
+
+    <string name="action_backup_present_title"><![CDATA[<b>Archivo de respaldo de Lightning presente</b><br><br>Frase de recuperación será usada para descifrarlo y restaurar completamente los canales en este dispositivo]]></string>
+    <string name="action_recovery_phrase_title">Frase de recuperación de la billetera</string>
+    <string name="action_recovery_phrase_hint">Escriba las palabras de recuperación</string>
+    <string name="title_chans">Canales Lightning</string>
+
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_send">Enviar</string>
+    <string name="dialog_stamp">Sello</string>
+    <string name="dialog_receive">Recibir</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_split">Dividir</string>
+    <string name="dialog_share">Share</string>
+    <string name="dialog_break">Romper</string>
+    <string name="dialog_open">Abrir</string>
+    <string name="dialog_copy">Copiar</string>
+    <string name="dialog_info">Info</string>
+    <string name="dialog_max">Max</string>
+    <string name="dialog_pay">Pagar</string>
+
+    <string name="dialog_visibility_public">visible para el remitente</string>
+    <string name="dialog_visibility_private">visible solo para ti</string>
+    <string name="dialog_add_description">Adjuntar descripción&#8230;</string>
+    <string name="dialog_set_record_label">Agregar etiqueta&#8230;</string>
+    <string name="dialog_add_btc_label">Etiquetar transacción&#8230;</string>
+    <string name="dialog_add_ln_label">Etiquetar pago&#8230;</string>
+    <string name="dialog_add_comment">Agregar comentario&#8230;</string>
+
+    <string name="dialog_receive_btc"><![CDATA[Recibir a la dirección de <b>Bitcoin</b> ]]></string>
+    <string name="dialog_receive_ln"><![CDATA[Recibir a la factura de <b>Lightning</b> ]]></string>
+
+    <string name="dialog_legacy_transfer_btc">Mover fondos a una billetera moderna</string>
+    <string name="dialog_legacy_send_btc">Enviar transacción a la dirección</string>
+    <string name="scan_btc_address">Escanear dirección de Bitcoin</string>
+
+    <string name="dialog_up_to"><![CDATA[<b>hasta</b> %1$s]]></string>
+    <string name="dialog_fee_sat_vbyte"><![CDATA[<b>tarifa</b> %1$s sat/vB]]></string>
+    <string name="dialog_change_feerate">Cambiar tarifa&#8230;</string>
+    <string name="dialog_insufficient_funds">fondos faltantes</string>
+    <string name="dialog_sat_vbyte">sat/vB</string>
+
+    <string name="dialog_send_ln"><![CDATA[Enviar pago <b>Lightning</b> %1$s]]></string>
+    <string name="dialog_split_ln"><![CDATA[Dividir pago <b>Lightning</b> %1$s]]></string>
+    <string name="dialog_send_btc_from"><![CDATA[desde&#160;<b>%1$s</b>&#160;billetera]]></string>
+    <string name="dialog_send_btc"><![CDATA[Enviar transacción <b>Bitcoin</b> <br><b>a la dirección</b> %1$s%2$s]]></string>
+    <string name="dialog_split_ln_tip">Primero deja que alguien escanee una factura a dividir,\nLuego pulsen en PAGAR al mismo tiempo</string>
+    <string name="dialog_ln_requested"><![CDATA[<b>solicitado</b>&#160;%1$s]]></string>
+    <string name="dialog_ln_left"><![CDATA[<b>queda por pagar</b>&#160;%1$s]]></string>
+
+    <string name="btc_transfer_label"><![CDATA[Desde billetera antigua a billetera moderna]]></string>
+    <string name="btc_transfer_message"><![CDATA[Transferencia local de Bitcoin desde billetera antigua a billetera moderna]]></string>
+    <string name="recovery_phrase_warning">Pulse para guardar la frase de recuperación de la billetera en caso de que pierdas o reemplaces tu teléfono.</string>
+
+    <!-- errors -->
+
+    <string name="error_channel">Ocurrió un error con el canal</string>
+    <string name="error_channel_remote"><![CDATA[<b>Error desde el par remoto</b>:<br><br>%1$s]]></string>
+    <string name="error_channel_closed"><![CDATA[<b>El canal ha sido cerrado de manera forzosa por la billetera, detalles de errores fatales</b>:<br><br>%1$s]]></string>
+    <string name="error_channel_suspended"><![CDATA[<b>El canal hospedado ha sido suspendido por la billetera, detalles de errores fatales</b>:<br><br>%1$s]]></string>
+
+    <string name="error_channel_unknown"><![CDATA[
+        El par remoto indica que existe un canal Lightning que de alguna manera no está presente en tu dispositivo.<br><br>
+        Puedes solicitar a tu par que rompa ese canal lo cual haría que el resto del saldo vuelva a la billetera chain.<br><br>
+        <b>ID del canal ausente</b><br>%1$s<br><br>
+        <b>ID del nodo local</b><br>%1$s<br><br>
+        <b>ID del nodo del par</b><br>%2$s
+    ]]></string>
+
+    <string name="error_rejected_incoming_public">Ofrecimiento de canal publico rechazado, solo son permitidos canales privados.</string>
+    <string name="error_btc_broadcast_fail">No se pudo transmitir la transacción, por favor asegúrese de que la billetera tenga conexión de red e intente de nuevo.</string>
+    <string name="error_could_not_decrypt"><![CDATA[<b>Falló el descifrado del respaldo</b>.<br><br>Asegúrese que tanto el archivo de respaldo como la frase de recuperación sean las correctas.<br><br>Detalles del error<br><b>%1$s</b>]]></string>
+    <string name="error_wrong_phrase"><![CDATA[<b>La frase introducida es incorrecta</b>.<br><br>Detalles del error<br><b>%1$s</b>]]></string>
+    <string name="error_nothing_useful">No se encontró nada útil</string>
+
+    <string name="error_ln_no_chans"><![CDATA[No se puede enviar ni recibir pagos Lightning porque no hay canales abiertos.]]></string>
+    <string name="error_ln_waiting"><![CDATA[No se puede enviar ni recibir pagos Lightning porque ninguno de tus canales está abierto aún.<br><br>Por favor espere más confirmaciones del financiamiento del canal.]]></string>
+
+    <string name="error_ln_receive_no_update"><![CDATA[No se pueden solicitar pagos Lightning porque los parámetros para recibir no están disponibles aún, por favor espere más confirmaciones del financiamineto del canal.]]></string>
+    <string name="error_ln_receive_reserve"><![CDATA[No se pueden solicitar pagos Lightning aún porque primero debes gastar al menos <b>%1$s</b> para crear algo de liquidez para recibir.]]></string>
+
+    <string name="error_ln_send_small"><![CDATA[No se puede enviar este pago Lightning porque el monto solicitado de <b>%1$s</b> es muy pequeño, el monto mínimo es <b>%2$s</b>.]]></string>
+    <string name="error_ln_send_reserve"><![CDATA[No se pueden enviar pagos Lightning aún porque primero necesitas recibir al menos <b>%1$s</b> para crear algo de liquidez para enviar.]]></string>
+    <string name="error_ln_send_no_secret"><![CDATA[No se puede enviar este pago Lightning porque la factura no contiene un secreto.]]></string>
+    <string name="error_ln_send_network"><![CDATA[No se puede enviar este pago Lightning porque pertenece a una red desconocida.]]></string>
+    <string name="error_ln_send_split"><![CDATA[No se puede proceder con esta factura dividida porque los parámetros de división son incorrectos.]]></string>
+    <string name="error_ln_send_done_already"><![CDATA[No se puede enviar este pago Lightning porque ya fue enviado.]]></string>
+    <string name="error_ln_send_expired"><![CDATA[No se puede enviar este pago Lightning porque la factura ha expirado.]]></string>
+    <string name="error_ln_send_in_flight"><![CDATA[No se puede enviar este pago Lightning porque ya esta en camino.]]></string>
+
+    <string name="error_hc_dangerous_state">Estado del pago peligroso</string>
+    <string name="error_hc_option_can_stamp"><![CDATA[Puedes poner un <b>sello de prueba</b> en la cadena de bloques de Bitcoin para poder mostrar siempre que eres el poseedor <b>%1$s</b>, esto costará <b>%2$s</b>.]]></string>
+    <string name="error_hc_option_can_not_stamp"><![CDATA[La obligación del anfitrión se puede fijar por siempre poniendo un <b>sello de prueba</b> en la cadena de bloques de Bitcoin pero necesitas fondos chain para ello.]]></string>
+
+    <string name="error_hc_revealed_preimage"><![CDATA[
+        El host remoto no está reconociendo una prueba revelada de su <b>%2$s</b> pago entrante.<br><br>
+        Tal como están las cosas <b>%3$s</b> será imposible demostrar que su prueba se reveló a tiempo .<br><br>
+        %1$s
+    ]]></string>
+
+    <string name="error_nothing_in_clipboard"><![CDATA[
+        <b>No se encontró nada útil</b>: por favor <b>copie</b> algo primero o directamente <b>compártalo</b> con su billetera.
+        <br><br>Alternativamente, escriba o copie algo en el espacio debajo y vea si la billetera lo reconoce.
+    ]]></string>
+
+    <!-- /errors -->
+
+    <!-- Notifications -->
+
+    <string name="incoming_notify_title">Esperando por el pago</string>
+    <string name="delayed_notify_wt_title">Notificación de torre de vigilancia</string>
+    <string name="delayed_notify_wt_body">Abrir la billetera para verificar canales</string>
+    <string name="incoming_notify_body">Ejecutando la aplicación para recibir %1$s</string>
+
+    <!-- /Notifications -->
+
+    <!-- special tx/payment descriptions -->
+
+    <string name="tx_ln_notice_split">%1$d\%% dividir&#160;|&#160;</string>
+
+    <string name="tx_description_op_return">Sello de prueba de pago</string>
+    <string name="tx_description_funding">Financiamiento de canal</string>
+    <string name="tx_description_refunding">Reembolsar saldo de canal</string>
+    <string name="tx_description_htlc_claiming">Reclamando pago Lightning</string>
+    <string name="tx_description_penalty">Penalización por incumplimiento</string>
+
+    <string name="tx_btc">Transacción Bitcoin</string>
+    <string name="tx_ln">Pago Lightning</string>
+
+    <string name="tx_state_confs">profundidad %1$s de %2$s</string>
+    <string name="tx_state_double_spent">fallido</string>
+
+    <string name="popup_retry">Reintentar pago</string>
+    <string name="popup_explorer"><![CDATA[mempool.space]]></string>
+    <string name="popup_run_action"><![CDATA[run&#160;pago&#160;action]]></string>
+    <string name="popup_proof_stamp"><![CDATA[compartir&#160;pago&#160;prueba&#160;sello]]></string>
+    <string name="popup_to_address"><![CDATA[<b>dirección</b>&#160;%1$s]]></string>
+    <string name="popup_ln_payee"><![CDATA[<b>beneficiario</b>&#160;%1$s]]></string>
+    <string name="popup_ln_node"><![CDATA[<b>nodo</b>&#160;%1$s]]></string>
+    <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
+
+    <string name="popup_prior_chain_balance"><![CDATA[<b>anterior&#160;saldo</b>&#160;%1$s]]></string>
+    <string name="popup_ln_fee"><![CDATA[<b>tarifa</b>&#160;%1$s,&#160;<b>guardado</b>&#160;%2$s]]></string>
+    <string name="popup_chain_fee"><![CDATA[<b>cadena&#160;tarifa</b>&#160;%1$s]]></string>
+    <string name="popup_hash"><![CDATA[<b>hash</b>&#160;%1$s]]></string>
+    <string name="popup_then"><![CDATA[<b>antes</b>&#160;%1$s]]></string>
+    <string name="popup_now"><![CDATA[<b>ahora</b>&#160;%1$s]]></string>
+
+    <!-- /special tx/payment descriptions -->
+
+    <!-- orbot -->
+
+    <string name="orbot_err_unclear"><![CDATA[
+        La billetera no se puede conectar al proxy Tor localhost:9050. Se ha detenido el progreso porque tu configuración requiere de conexión a Tor.<br><br>
+        Por favor asegúrese de que Orbot esté instalado, el modo VPN esté activado y la billetera esté en la lista de aplicaciones habilitadas para Tor.
+    ]]></string>
+
+    <string name="orbot_action_open">Cerrar billetera y abrir Orbot</string>
+    <string name="orbot_action_skip">Continuar sin Tor</string>
+
+    <!-- /orbot -->
+
+    <!-- Remote peer activity -->
+
+    <string name="rpa_title">Conexión de par remoto</string>
+    <string name="rpa_disconnected">Par remoto desconectado</string>
+    <string name="rpa_no_feature_support">No es posible abrir canales con este nodo ya que algunas características importantes no están soportadas por el par remoto.</string>
+    <string name="rpa_hc_warn"><![CDATA[<br><b>Atención!</b><br><br>El saldo de tu canal hospedado será guardado del lado del anfitrión, asegúrate de que confías en este par.]]></string>
+    <string name="rpa_request_channel">Comparte el ID de tu nodo con el par remoto y mantén esta página abierta para obtener un canal entrante.</string>
+    <string name="rpa_request_hc">Solicitar canal hospedado</string>
+    <string name="rpa_share_node_id">Compartir ID del nodo</string>
+    <string name="rpa_open_nc">Financiar nuevo canal</string>
+
+    <!-- /Remote peer activity -->
+
+    <!-- Settings activity -->
+
+    <string name="settings_backup_disabled">Habilitar respaldo de canal local</string>
+    <string name="settings_backup_enabled">Respaldo de canal local ha sido habilitado</string>
+    <string name="settings_backup_where">El archivo se guarda en la carpeta Descargas</string>
+    <string name="settings_backup_how">Permisos de aplicaciones -> Archivos y medios</string>
+
+    <string name="settings_chain_wallets">Manejar billeteras chain</string>
+    <string name="settings_chain_legacy">Billetera antigua</string>
+    <string name="settings_chain_modern">Billetera moderna</string>
+
+    <string name="settings_use_auth">Usar autenticación de huellas dactilares</string>
+    <string name="settings_auth_no_support">No existe soporte de autenticación en este teléfono</string>
+    <string name="settings_auth_add_method">Registre por lo menos una huella dactilar en la configuración del sistema</string>
+    <string name="settings_auth_not_available">El soporte de autenticación esta bloqueado en este momento, intente de nuevo más tarde</string>
+    <string name="settings_auth_error"><![CDATA[<b>Error de autenticación</b><br><br><b>Detalles</b>: %1$s<br><br><b>Código</b>: %2$s]]></string>
+    <string name="settings_auth_title">Autenticación de billetera</string>
+
+    <string name="settings_ensure_tor">Obligar conexion a Tor</string>
+    <string name="settings_ensure_tor_enabled">La aplicación no empezará a menos que el VPN Orbot esté ejecutándose y se detendrá si Orbot se detiene</string>
+    <string name="settings_ensure_tor_disabled">Requiere Orbot instalado</string>
+
+    <string name="settings_ln_fee_cap">Limitar las tarifas de LN a la chain</string>
+    <string name="settings_ln_fee_cap_disabled"><![CDATA[La tarifa máxima de LN es como máximo<strong>%1$s</strong> del pago y <b>puede ser más alta</b> que la actual tarifa promedio chain de <b>%2$s</b>]]></string>
+    <string name="settings_ln_fee_cap_enabled"><![CDATA[La tarifa máxima de LN es como máximo <strong>%1$s</strong> del pago pero <b>nunca más alta</b> que la tarifa promedio chain de <b>%2$s</b>]]></string>
+    <string name="settings_ln_fee_expensive_omitted">Las rutas costosas fueron omitidas, elimina el límite de tarifa de LN si quieres que se permitan rutas mas costosas</string>
+    
+    <string name="settings_fiat_currency">Moneda fiduciaria</string>
+    <string name="settings_btc_unit">Unidad de Bitcoin</string>
+
+    <string name="settings_custom_electrum_host_port">host:port</string>
+    <string name="settings_custom_electrum_disabled">Configura nodo Electrum personalizado</string>
+    <string name="settings_custom_electrum_enabled">Usando nodo Electrum personalizado</string>
+    <string name="settings_custom_electrum_disabled_tip">Usando nodos aleatorios actualmente</string>
+    <string name="settings_custom_electrum_restart_notice">La aplicación debe reiniciarse para aplicar los cambios</string>
+
+    <string name="settings_view_revocery_phrase_ext">Estas palabras permiten restaurar el saldo de la billetera en cualquier dispositivo, por favor mantenlas en secreto en todo momento!</string>
+    <string name="settings_view_revocery_phrase">Ver la frase de recuperación BIP39</string>
+    <string name="settings_stats">Estadísticas de uso</string>
+
+    <!-- /Settings activity -->
+
+    <array name="parts_in_flight">
+        <item>preparando</item>
+        <item>%1$d parte en vuelo</item>
+        <item>%1$d partes en vuelo</item>
+    </array>
+
+    <array name="pct_collected">
+        <item>waiting</item>
+        <item>%1$d\%% recogido</item>
+        <item>%1$d\%% recogido</item>
+        <item>finalizando</item>
+    </array>
+
+    <array name="in_blocks">
+        <item>esperando</item>
+        <item>%1$d block</item>
+        <item>%1$d blocks</item>
+        <item>%1$d+ blocks</item>
+    </array>
+
+    <array name="expires_in_blocks">
+        <item><![CDATA[<b>caducado</b>]]></item>
+        <item><![CDATA[<b>caduca&#160;en</b>&#160;%1$d&#160;block]]></item>
+        <item><![CDATA[<b>caduca&#160;en</b>&#160;%1$d&#160;blocks]]></item>
+    </array>
+
+    <!-- lnurl -->
+
+    <string name="dialog_lnurl_decrypt_fail">Falló al descifrar un mensaje, por favor contacte al vendedor para resolver esto</string>
+    <string name="dialog_lnurl_withdraw"><![CDATA[<b>Lightning</b> enlace de retiro<br><br><b>%1$s</b>%2$s]]></string>
+    <string name="dialog_lnurl_pay"><![CDATA[<b>Lightning</b> enlace de pago<br><br><b>%1$s</b>%2$s]]></string>
+
+    <string name="dialog_lnurl_processing"><![CDATA[Procesando&#8230;<br><br><b>%1$s</b>]]></string>
+    <string name="dialog_lnurl_splitting"><![CDATA[Solicitando factura&#8230;<br><br><b>%1$s</b>]]></string>
+    <string name="dialog_lnurl_sending"><![CDATA[Enviando %1$s<br><br><b>%2$s</b>]]></string>
+    <string name="dialog_lnurl_from_vendor"><![CDATA[Respuesta del vendedor%1$s]]></string>
+
+    <!-- lnurl-auth -->
+
+    <string name="lnurl_auth_register">Registrarse</string>
+    <string name="lnurl_auth_login">Acceso</string>
+    <string name="lnurl_auth_auth">Auth</string>
+    <string name="lnurl_auth_link">Enlace</string>
+
+    <string name="lnurl_auth_register_ok">Registrado exitosamente</string>
+    <string name="lnurl_auth_login_ok">Acceso exitoso</string>
+    <string name="lnurl_auth_auth_ok">Autorizado exitosamente</string>
+    <string name="lnurl_auth_link_ok">Enlazado exitosamente</string>
+
+    <string name="lnurl_auth_info"><![CDATA[
+        Clave de autenticación generada por tu billetera para <i>%1$s</i>:<br><br><strong>%2$s</strong>.
+        <br><br>Será usada para autorización anónima en <i>%1$s</i>, ningún dato personal será divulgado.
+    ]]></string>
+
+    <!-- /lnurl -->
+
+    <!-- Channel page -->
+
+    <string name="stats_title_chan_loss"><![CDATA[<b>Tarifa de clausura de canal</b>]]></string>
+    <string name="stats_title_chain"><![CDATA[<b>Transacciones Bitcoin</b>]]></string>
+    <string name="stats_title_relays"><![CDATA[<b>Retransmisiones Lightning</b>]]></string>
+    <string name="stats_title_network"><![CDATA[<b>Estado de la red</b>]]></string>
+    <string name="stats_title_ln"><![CDATA[<b>Pagos Lightning</b>]]></string>
+
+    <string name="stats_item_chain_node"><![CDATA[<b>cadena&#160;nodo</b>&#160;%1$s]]></string>
+    <string name="stats_item_chain_tip"><![CDATA[<b>cadena&#160;tope</b>&#160;%1$s]]></string>
+    <string name="stats_item_graph"><![CDATA[<b>gráfico&#160;sync</b>&#160;%1$s]]></string>
+    <string name="stats_item_phc"><![CDATA[<b>PHC&#160;sync&#160;%1$s]]></string>
+
+    <string name="stats_item_sent"><![CDATA[<b>enviado</b>&#160;%1$s]]></string>
+    <string name="stats_item_received"><![CDATA[<b>recibido</b>&#160;%1$s]]></string>
+    <string name="stats_item_payments"><![CDATA[<b>pagos</b>&#160;%1$s]]></string>
+    <string name="stats_item_transactions"><![CDATA[<b>transacciones</b>&#160;%1$s]]></string>
+
+    <string name="stats_item_fees"><![CDATA[<b>tarifas</b>&#160;%1$s]]></string>
+    <string name="stats_item_fees_saved"><![CDATA[<b>cadena&#160;tarifas&#160;guardado</b>&#160;%1$s]]></string>
+
+    <string name="stats_item_relays"><![CDATA[<b>retransmisiones</b>&#160;%1$s]]></string>
+    <string name="stats_item_relayed"><![CDATA[<b>enrutado</b>&#160;%1$s]]></string>
+    <string name="stats_item_earned"><![CDATA[<b>ganado</b>&#160;%1$s]]></string>
+
+    <string name="chan_capacity">Capacidad</string>
+    <string name="chan_can_send">Puede enviar</string>
+    <string name="chan_can_receive">Puede recibir</string>
+    <string name="chan_in_flight">Monto en camino</string>
+    <string name="chan_refundable">Reembolsable</string>
+
+    <string name="chan_nothing"><![CDATA[<i>nada</i>]]></string>
+
+    <string name="chan_open">Obtener nuevo canal</string>
+    <string name="chan_open_lnbig">Comprar en LNBIG.COM</string>
+    <string name="chan_open_bitrefill">Comprar en BITREFILL.COM</string>
+    <string name="chan_open_scan">Escanear QR del nodo</string>
+
+    <string name="ln_info_no_update">No se puede recibir aún</string>
+     <string name="ln_info_fee_mismatch">Temporary feerate mismatch</string>
+
+    <string name="ln_info_close_coop">Cierre cooperativo</string>
+    <string name="ln_info_close_local">Cierre forzoso local</string>
+    <string name="ln_info_close_remote">Cierre forzoso remoto</string>
+    <string name="ln_info_shutdown">Cerrando&#8230;</string>
+    <string name="ln_info_opening">Abriendo&#8230;</string>
+
+    <string name="ln_hosted_chan_remove_impossible">Este canal hospedado no se puede remover ahora porque tiene pagos en camino, por favor espere hasta que hayan sido completados.</string>
+    <string name="ln_hosted_chan_drain_impossible">Los fondos no se pueden mover de este canal hospedado porque no existe un canal Lightning capaz de recibirlos actualmente.</string>
+    <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string>
+    <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
+
+    <array name="ln_normal_chan_actions">
+        <item><![CDATA[Share <b>Lightning Channel</b> details]]></item>
+        <item><![CDATA[View funding transaction]]></item>
+        <item><![CDATA[Close channel to wallet]]></item>
+        <item><![CDATA[Close channel to address]]></item>
+    </array>
+
+    <array name="ln_hosted_chan_actions">
+        <item><![CDATA[Share <b>Hosted Channel</b> details]]></item>
+        <item><![CDATA[Export channel state]]></item>
+        <item><![CDATA[Drain channel balance]]></item>
+    </array>
+
+    <string name="ln_hc_override">Propuesta de anulación</string>
+
+    <string name="ln_hc_override_warn"><![CDATA[
+        <br>El host remoto quiere anular el saldo de tu canal hospedado desde  <b>%1$s</b> hasta <b>%2$s</b>,
+        esto solo puede ocurrir si proporcionas tu firma.<br><br><strong>Asegúrate que el saldo actual este correcto antes de 
+        proceder con esto!</strong> ¿Le gustaría firmar la propuesta de anulación de canal hospedado?
+    ]]></string>
+
+    <!-- /Channel page -->
+
+    <!-- action confirmations -->
+
+    <string name="confirm_remove_item">&#9888; Quieres eliminar este elemento?</string>
+    <string name="confirm_ln_normal_chan_close_wallet">&#9888; Quieres cerrar este canal y enviar una transaccion de reembolso a la billetera onchain? ?</string>
+    <string name="confirm_ln_normal_chan_close_address"><![CDATA[&#9888; Quieres cerrar este canal a la siguiente direccion?<br><br><b>%1$s</b>]]></string>
+    <string name="confirm_ln_normal_chan_force_close">&#9888; Quieres cerrar este canal de manera forzada?\n\nTenga en cuenta que habra una demora para el reembolso y tarifas de cierre mas altos .</string>
+    <string name="confirm_ln_hosted_chan_remove">&#9888; Quieres eliminar este canal hospedado?\n\nTenga en cuenta que siempre podra traerlo de vuelta conectandose al nodo anfitrion.</string>
+    <string name="confirm_ln_hosted_chan_drain">&#9888; Quieres mover los fondos de este canal hacia otros canales de esta billetera??</string>
+
+    <!-- /action confirmations -->
+
+</resources>
