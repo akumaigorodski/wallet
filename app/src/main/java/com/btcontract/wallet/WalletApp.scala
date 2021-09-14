@@ -298,6 +298,8 @@ object Vibrator {
 }
 
 class WalletApp extends Application { me =>
+  WalletApp.app = me
+
   lazy val foregroundServiceIntent = new Intent(me, AwaitService.awaitServiceClass)
   lazy val prefs: SharedPreferences = getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
@@ -332,7 +334,6 @@ class WalletApp extends Application { me =>
   override def attachBaseContext(base: Context): Unit = {
     super.attachBaseContext(base)
     MultiDex.install(me)
-    WalletApp.app = me
   }
 
   override def onCreate: Unit = runAnd(super.onCreate) {
