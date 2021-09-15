@@ -341,9 +341,6 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
 
     case (found: RouteFound, PENDING) =>
       data.parts.values.collectFirst {
-        case wait: WaitForRouteOrInFlight if wait.flight.isEmpty && wait.partId == found.partId && shouldStopEarly(wait, found) =>
-          me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(NO_ROUTES_FOUND, wait.amount)
-
         case wait: WaitForRouteOrInFlight if wait.flight.isEmpty && wait.partId == found.partId =>
           val chainExpiry = data.cmd.chainExpiry match { case Right(delta) => delta.toCltvExpiry(LNParams.blockCount.get + 1) case Left(absolute) => absolute }
           val finalPayload = Onion.createMultiPartPayload(wait.amount, data.cmd.split.totalSum, chainExpiry, data.cmd.outerPaymentSecret, data.cmd.onionTlvs, data.cmd.userCustomTlvs)
@@ -464,12 +461,6 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
   def feeLeftover: MilliSatoshi = data.cmd.totalFeeReserve - data.usedFee
 
   def canBeSplit(totalAmount: MilliSatoshi): Boolean = data.parts.size < data.cmd.allowedChans.size * LNParams.maxInChannelHtlcs
-
-  def shouldStopEarly(wait: WaitForRouteOrInFlight, found: RouteFound): Boolean = {
-    val avgHopFee = opm.cm.pf.lastAvgHopParams.map(_ avgHopFee data.cmd.split.myPart).getOrElse(1000L.msat)
-    // Stop trying if we know we would have to add more parts and this one is already taking too much from fee reserve
-    data.inFlightParts.isEmpty && wait.amount < data.cmd.split.myPart && feeLeftover - found.route.fee < avgHopFee
-  }
 
   def assignToChans(sendable: mutable.Map[ChanAndCommits, MilliSatoshi], data1: OutgoingPaymentSenderData, amount: MilliSatoshi): Unit = {
     // This is a terminal method in a sense that it either successfully assigns a given amount to channels or turns a payment into failed state

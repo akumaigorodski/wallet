@@ -40,7 +40,6 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
   private val extraEdges = CacheBuilder.newBuilder.expireAfterWrite(1, TimeUnit.DAYS).maximumSize(5000).build[ShortChannelId, GraphEdge]
   val extraEdgesMap: mutable.Map[ShortChannelId, GraphEdge] = extraEdges.asMap.asScala
 
-  var lastAvgHopParams: Option[AvgHopParams] = None
   var listeners: Set[CanBeRepliedTo] = Set.empty
   var subscription: Option[Subscription] = None
   var debugMode: Boolean = false
@@ -99,11 +98,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       val hostedShortIdToPubChan = hostedBag.getRoutingData
       val searchGraph1 = DirectedGraph.makeGraph(normalShortIdToPubChan ++ hostedShortIdToPubChan).addEdges(extraEdgesMap.values)
       become(Data(normalShortIdToPubChan, hostedShortIdToPubChan, searchGraph1), OPERATIONAL)
-
-      if (data.channels.nonEmpty) {
-        lastAvgHopParams = getAvgHopParams.asSome
-        listeners.foreach(_ process NotifyOperational)
-      }
+      if (data.channels.nonEmpty) listeners.foreach(_ process NotifyOperational)
 
     case (CMDResync, OPERATIONAL) if System.currentTimeMillis - getLastNormalResyncStamp > RESYNC_PERIOD =>
       // Last normal sync has happened too long ago, start with normal sync, then proceed with PHC sync
@@ -148,7 +143,6 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       Rx.ioQueue.foreach(_ => normalBag.removeGhostChannels(ghostIds, oneSideShortIds), none)
 
       // Notify ASAP, then start PHC sync
-      lastAvgHopParams = getAvgHopParams.asSome
       listeners.foreach(_ process NotifyOperational)
       attemptPHCSync
 
