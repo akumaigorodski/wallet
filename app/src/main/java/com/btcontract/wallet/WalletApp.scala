@@ -73,12 +73,14 @@ object WalletApp {
   final val LAST_NORMAL_GOSSIP_SYNC = "lastNormalGossipSync"
   final val CUSTOM_ELECTRUM_ADDRESS = "customElectrumAddress"
   final val SHOW_RATE_US = "showRateUs"
+  final val OPEN_HC = "openHc"
 
   def useAuth: Boolean = app.prefs.getBoolean(USE_AUTH, false)
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
   def ensureTor: Boolean = app.prefs.getBoolean(ENSURE_TOR, false)
   def capLNFeeToChain: Boolean = app.prefs.getBoolean(CAP_LN_FEE_TO_CHAIN, false)
   def showRateUs: Boolean = app.prefs.getBoolean(SHOW_RATE_US, true)
+  def openHc: Boolean = app.prefs.getBoolean(OPEN_HC, true)
 
   final val CHECKED_BUTTONS = "checkedButtons"
   def getCheckedButtons(default: Set[String] = Set.empty): mutable.Set[String] = app.prefs.getStringSet(CHECKED_BUTTONS, default.asJava).asScala

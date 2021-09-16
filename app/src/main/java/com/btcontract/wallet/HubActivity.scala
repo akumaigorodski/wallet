@@ -963,6 +963,21 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         .collect { case _: IncomingRevealed => true }
         .subscribe(_ => Vibrator.vibrate).asSome
 
+      if (WalletApp.openHc) {
+        def implant(cs: Commitments, channel: ChannelHosted): Unit = {
+          WalletApp.app.prefs.edit.putBoolean(WalletApp.OPEN_HC, false).commit
+          RemotePeerActivity.implantNewChannel(cs, channel)
+        }
+
+        // We only need local params to extract defaultFinalScriptPubKey
+        val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minDustLimit)
+        new HCOpenHandler(LNParams.syncParams.motherbase, randomBytes32, localParams.defaultFinalScriptPubKey, LNParams.cm) {
+          // Stop automatic HC opening attempts on getting any kind of local/remote error, this won't be triggered on disconnect
+          def onFailure(reason: Throwable): Unit = WalletApp.app.prefs.edit.putBoolean(WalletApp.OPEN_HC, false).commit
+          def onEstablished(cs: Commitments, channel: ChannelHosted): Unit = implant(cs, channel)
+        }
+      }
+
       timer.scheduleAtFixedRate(paymentAdapterDataChanged, 30000, 30000)
       val backupAllowed = LocalBackup.isAllowed(context = WalletApp.app)
       if (!backupAllowed) LocalBackup.askPermission(activity = me)

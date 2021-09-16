@@ -12,18 +12,33 @@ import com.btcontract.wallet.R.string._
 
 import android.view.{View, ViewGroup}
 import android.widget.{LinearLayout, ProgressBar, TextView}
-import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import immortan.fsm.{HCOpenHandler, NCFundeeOpenHandler, NCFunderOpenHandler}
 import fr.acinq.eclair.blockchain.MakeFundingTxResponse
 import com.btcontract.wallet.BaseActivity.StringOps
 import concurrent.ExecutionContext.Implicits.global
-import com.google.android.material.slider.Slider
 import fr.acinq.eclair.channel.Commitments
 import androidx.appcompat.app.AlertDialog
 import com.ornach.nobobutton.NoboButton
 import rx.lang.scala.Observable
 import android.os.Bundle
 
+
+object RemotePeerActivity {
+  def implantNewChannel(cs: Commitments, freshChannel: Channel): Unit = {
+    // Make an immediate channel backup if anything goes wrong next
+    // At this point channel has saved itself in the database
+    WalletApp.backupSaveWorker.replaceWork(false)
+
+    LNParams.cm.pf process PathFinder.CMDStartPeriodicResync
+    LNParams.cm.all += Tuple2(cs.channelId, freshChannel)
+    // This removes all previous channel listeners
+    freshChannel.listeners = Set(LNParams.cm)
+    LNParams.cm.initConnect
+
+    // Update view on hub activity and finalize local stuff
+    ChannelMaster.next(ChannelMaster.statusUpdateStream)
+  }
+}
 
 class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataChecker { me =>
   private[this] lazy val peerNodeKey = findViewById(R.id.peerNodeKey).asInstanceOf[TextView]
@@ -92,9 +107,9 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
         case _ => whenBackPressed.run
       }
 
-      setVis(!criticalSupportAvailable, viewNoFeatureSupport)
-      setVis(criticalSupportAvailable, viewYesFeatureSupport)
-      setVis(theirInitSupports(HostedChannels), optionHostedChannel)
+      setVis(isVisible = !criticalSupportAvailable, viewNoFeatureSupport)
+      setVis(isVisible = criticalSupportAvailable, viewYesFeatureSupport)
+      setVis(isVisible = theirInitSupports(HostedChannels), optionHostedChannel)
     }.run
   }
 
@@ -220,12 +235,12 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
   }
 
   def switchView(showProgress: Boolean): Unit = UITask {
-    setVis(!showProgress, peerDetails)
-    setVis(showProgress, progressBar)
+    setVis(isVisible = !showProgress, peerDetails)
+    setVis(isVisible = showProgress, progressBar)
   }.run
 
   def revertAndInform(reason: Throwable): Unit = {
-    // Whatever the reason for this to happen we may accept new incoming offers
+    // Whatever the reason for this to happen we still may accept new offers
     CommsTower.listenNative(Set(incomingAcceptingListener), hasInfo.remoteInfo)
     switchView(showProgress = false)
     onFail(reason)
@@ -237,18 +252,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
   }
 
   def implant(cs: Commitments, freshChannel: Channel): Unit = {
-    // Make an immediate channel backup if anything goes wrong next
-    // At this point channel has saved itself in the database
-    WalletApp.backupSaveWorker.replaceWork(false)
-
-    LNParams.cm.pf process PathFinder.CMDStartPeriodicResync
-    LNParams.cm.all += Tuple2(cs.channelId, freshChannel)
-    // This removes all previous channel listeners
-    freshChannel.listeners = Set(LNParams.cm)
-    LNParams.cm.initConnect
-
-    // Update view on hub activity and finalize local stuff
-    ChannelMaster.next(ChannelMaster.statusUpdateStream)
+    RemotePeerActivity.implantNewChannel(cs, freshChannel)
     disconnectListenersAndFinish
   }
 
