@@ -201,14 +201,15 @@ object LNParams {
 
 class SyncParams {
   val lightning: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"03baa70886d9200af0ffbd3f9e18d96008331c858456b16e3a9b41e735c6208fef"), NodeAddress.unresolved(9735, host = 45, 20, 67, 1), "LIGHTNING")
+  val motherbase: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"021e7ea08e31a576b4fd242761d701452a8ac98113eac3074c153db85d2dcc7d27"), NodeAddress.unresolved(9001, host = 5, 9, 83, 143), "Motherbase")
   val generalBytes: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"03e35a27fa8bfad8675aeb9e96530e7b00e6fa03b571d235f6b4e68cfb4ef9097c"), NodeAddress.unresolved(9736, host = 67, 207, 92, 63), "General Bytes")
   val conductor: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"03c436af41160a355fc1ed230a64f6a64bcbd2ae50f12171d1318f9782602be601"), NodeAddress.unresolved(9735, host = 18, 191, 89, 219), "Conductor")
   val lntxbot1: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"03ee58475055820fbfa52e356a8920f62f8316129c39369dbdde3e5d0198a9e315"), NodeAddress.unresolved(9734, host = 198, 251, 89, 159), "LNTXBOT-E")
   val lntxbot2: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"02c16cca44562b590dd279c942200bdccfd4f990c3a69fad620c10ef2f8228eaff"), NodeAddress.unresolved(9735, host = 198, 251, 89, 159), "LNTXBOT-C")
   val silentBob: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"02e9046555a9665145b0dbd7f135744598418df7d61d3660659641886ef1274844"), NodeAddress.unresolved(9735, host = 31, 16, 52, 37), "SilentBob")
   val acinq: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f"), NodeAddress.unresolved(9735, host = 34, 239, 230, 56), "ACINQ")
-  val syncNodes: Set[RemoteNodeInfo] = Set(lightning, generalBytes, conductor, silentBob, lntxbot1, lntxbot2, acinq) // Nodes with extended queries support used as seeds for normal sync
-  val phcSyncNodes: Set[RemoteNodeInfo] = Set.empty // Semi-trusted PHC-enabled nodes which can be used as seeds for PHC sync
+  val syncNodes: Set[RemoteNodeInfo] = Set(lightning, motherbase, generalBytes, conductor, silentBob, lntxbot1, lntxbot2, acinq)
+  val phcSyncNodes: Set[RemoteNodeInfo] = Set(motherbase)
 
   val maxPHCCapacity: MilliSatoshi = MilliSatoshi(1000000000000000L) // PHC can not be larger than 10 000 BTC
   val minPHCCapacity: MilliSatoshi = MilliSatoshi(5000000000L) // PHC can not be smaller than 0.05 BTC
