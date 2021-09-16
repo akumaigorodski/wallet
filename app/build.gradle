@@ -7,7 +7,7 @@ task wrapper(type: Wrapper) {
 
 android {
     compileSdkVersion 29
-    buildToolsVersion "30.0.2"
+    buildToolsVersion "30.0.3"
     ndkVersion "21.4.7075529"
 
     defaultConfig {
