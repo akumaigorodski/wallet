@@ -16,14 +16,14 @@
 
 package fr.acinq.eclair.router
 
+
+import fr.acinq.eclair.wire._
+import scala.concurrent.duration._
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey, sha256, verifySignature}
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, LexicographicalOrdering}
-import fr.acinq.eclair.wire._
 import fr.acinq.eclair.{CltvExpiryDelta, Features, MilliSatoshi, ShortChannelId, serializationResult}
 import scodec.bits.{BitVector, ByteVector}
 import shapeless.HNil
-
-import scala.concurrent.duration._
 
 /**
  * Created by PM on 03/02/2017.
@@ -85,44 +85,17 @@ object Announcements {
     )
   }
 
-  /**
-   * BOLT 7:
-   * The creating node MUST set node-id-1 and node-id-2 to the public keys of the
-   * two nodes who are operating the channel, such that node-id-1 is the numerically-lesser
-   * of the two DER encoded keys sorted in ascending numerical order,
-   *
-   * @return true if localNodeId is node1
-   */
   def isNode1(localNodeId: PublicKey, remoteNodeId: PublicKey): Boolean = LexicographicalOrdering.isLessThan(localNodeId.value, remoteNodeId.value)
 
-  /**
-   * BOLT 7:
-   * The creating node [...] MUST set the direction bit of flags to 0 if
-   * the creating node is node-id-1 in that message, otherwise 1.
-   *
-   * @return true if the node who sent these flags is node1
-   */
   def isNode1(channelFlags: Byte): Boolean = (channelFlags & 1) == 0
 
-  /**
-   * A node MAY create and send a channel_update with the disable bit set to
-   * signal the temporary unavailability of a channel
-   *
-   * @return
-   */
   def isEnabled(channelFlags: Byte): Boolean = (channelFlags & 2) == 0
 
-  /**
-   * This method compares channel updates, ignoring fields that don't matter, like signature or timestamp
-   *
-   * @return true if channel updates are "equal"
-   */
-  def areSame(u1: ChannelUpdate, u2: ChannelUpdate): Boolean =
-    u1.copy(signature = ByteVector64.Zeroes, timestamp = 0) == u2.copy(signature = ByteVector64.Zeroes, timestamp = 0)
+  def areSame(u1: ChannelUpdate, u2: ChannelUpdate): Boolean = u1.copy(signature = ByteVector64.Zeroes, timestamp = 0) == u2.copy(signature = ByteVector64.Zeroes, timestamp = 0)
 
-  def makeMessageFlags(hasOptionChannelHtlcMax: Boolean): Byte = BitVector.bits(hasOptionChannelHtlcMax :: Nil).padLeft(8).toByte()
+  def makeMessageFlags(hasOptionChannelHtlcMax: Boolean): Byte = BitVector.bits(hasOptionChannelHtlcMax :: Nil).padLeft(8).toByte(signed = true)
 
-  def makeChannelFlags(isNode1: Boolean, enable: Boolean): Byte = BitVector.bits(!enable :: !isNode1 :: Nil).padLeft(8).toByte()
+  def makeChannelFlags(isNode1: Boolean, enable: Boolean): Byte = BitVector.bits(!enable :: !isNode1 :: Nil).padLeft(8).toByte(signed = true)
 
   def makeChannelUpdate(chainHash: ByteVector32, nodeSecret: PrivateKey, remoteNodeId: PublicKey, shortChannelId: ShortChannelId, cltvExpiryDelta: CltvExpiryDelta, htlcMinimumMsat: MilliSatoshi, feeBaseMsat: MilliSatoshi, feeProportionalMillionths: Long, htlcMaximumMsat: MilliSatoshi, enable: Boolean = true, timestamp: Long = System.currentTimeMillis.milliseconds.toSeconds): ChannelUpdate = {
     val messageFlags = makeMessageFlags(hasOptionChannelHtlcMax = true) // NB: we always support option_channel_htlc_max
@@ -146,21 +119,9 @@ object Announcements {
     )
   }
 
-  def checkSigs(ann: ChannelAnnouncement): Boolean = {
-    val witness = channelAnnouncementWitnessEncode(ann.chainHash, ann.shortChannelId, ann.nodeId1, ann.nodeId2, ann.bitcoinKey1, ann.bitcoinKey2, ann.features, ann.unknownFields)
-    verifySignature(witness, ann.nodeSignature1, ann.nodeId1) &&
-      verifySignature(witness, ann.nodeSignature2, ann.nodeId2) &&
-      verifySignature(witness, ann.bitcoinSignature1, ann.bitcoinKey1) &&
-      verifySignature(witness, ann.bitcoinSignature2, ann.bitcoinKey2)
-  }
-
-  def checkSig(ann: NodeAnnouncement): Boolean = {
-    val witness = nodeAnnouncementWitnessEncode(ann.timestamp, ann.nodeId, ann.rgbColor, ann.alias, ann.features, ann.addresses, ann.unknownFields)
-    verifySignature(witness, ann.signature, ann.nodeId)
-  }
-
   def checkSig(upd: ChannelUpdate)(nodeId: PublicKey): Boolean = {
-    val witness = channelUpdateWitnessEncode(upd.chainHash, upd.shortChannelId, upd.timestamp, upd.messageFlags, upd.channelFlags, upd.cltvExpiryDelta, upd.htlcMinimumMsat, upd.feeBaseMsat, upd.feeProportionalMillionths, upd.htlcMaximumMsat, upd.unknownFields)
+    val witness = channelUpdateWitnessEncode(upd.chainHash, upd.shortChannelId, upd.timestamp, upd.messageFlags, upd.channelFlags,
+      upd.cltvExpiryDelta, upd.htlcMinimumMsat, upd.feeBaseMsat, upd.feeProportionalMillionths, upd.htlcMaximumMsat, upd.unknownFields)
     verifySignature(witness, upd.signature, nodeId)
   }
 }
