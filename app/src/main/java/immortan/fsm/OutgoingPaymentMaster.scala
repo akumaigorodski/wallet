@@ -333,9 +333,9 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
           val otherOpt = singleCapableCncCandidates.collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc }
 
           otherOpt match {
-            case None if canBeSplit(wait.amount) => become(data.withoutPartId(wait.partId), PENDING) doProcess CutIntoHalves(wait.amount)
             case Some(otherCapableCnc) => become(data.copy(parts = data.parts + wait.oneMoreLocalAttempt(otherCapableCnc).tuple), PENDING)
-            case None => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(NO_ROUTES_FOUND, wait.amount)
+            case None if canBeSplit => become(data.withoutPartId(wait.partId), PENDING) doProcess CutIntoHalves(wait.amount)
+            case _ => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(NO_ROUTES_FOUND, wait.amount)
           }
       }
 
@@ -460,7 +460,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
 
   def feeLeftover: MilliSatoshi = data.cmd.totalFeeReserve - data.usedFee
 
-  def canBeSplit(totalAmount: MilliSatoshi): Boolean = data.parts.size < data.cmd.allowedChans.size * LNParams.maxInChannelHtlcs
+  def canBeSplit: Boolean = data.parts.size < data.cmd.allowedChans.size * LNParams.maxInChannelHtlcs
 
   def assignToChans(sendable: mutable.Map[ChanAndCommits, MilliSatoshi], data1: OutgoingPaymentSenderData, amount: MilliSatoshi): Unit = {
     // This is a terminal method in a sense that it either successfully assigns a given amount to channels or turns a payment into failed state
@@ -508,14 +508,10 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
   def resolveRemoteFail(failure: PaymentFailure, wait: WaitForRouteOrInFlight): Unit = {
     // Remove pending part from data right away to not interfere with sendable calculations
     become(data.withoutPartId(wait.partId).copy(failures = failure +: data.failures), PENDING)
-    val singleCapableCncCandidates = shuffle(opm.rightNowSendable(data.cmd.allowedChans, feeLeftover).toSeq)
-    val otherOpt = singleCapableCncCandidates.collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc }
 
-    otherOpt match {
-      case Some(otherCapableCnc) if wait.remoteAttempts < data.cmd.routerConf.maxRemoteAttempts =>
-        become(data.copy(parts = data.parts + wait.oneMoreRemoteAttempt(otherCapableCnc).tuple), PENDING)
-      case _ if canBeSplit(wait.amount) => become(data, PENDING) doProcess CutIntoHalves(wait.amount)
-      case _ => me abortMaybeNotify data.withLocalFailure(RUN_OUT_OF_RETRY_ATTEMPTS, wait.amount)
+    shuffle(opm.rightNowSendable(data.cmd.allowedChans, feeLeftover).toSeq).collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc } match {
+      case Some(otherCapableCnc) if wait.remoteAttempts < data.cmd.routerConf.maxRemoteAttempts => become(data.copy(parts = data.parts + wait.oneMoreRemoteAttempt(otherCapableCnc).tuple), PENDING)
+      case _  => if (canBeSplit) become(data, PENDING) doProcess CutIntoHalves(wait.amount) else me abortMaybeNotify data.withLocalFailure(RUN_OUT_OF_RETRY_ATTEMPTS, wait.amount)
     }
   }
 

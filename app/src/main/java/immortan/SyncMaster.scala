@@ -120,7 +120,7 @@ case class SyncWorker(master: CanBeRepliedTo, keyPair: KeyPair, remoteInfo: Remo
 
     case (worker: CommsTower.Worker, data: SyncWorkerShortIdsData, SHORT_ID_SYNC) =>
       val tlv = QueryChannelRangeTlv.QueryFlags(QueryChannelRangeTlv.QueryFlags.WANT_ALL)
-      val query = QueryChannelRange(LNParams.chainHash, data.from, Int.MaxValue, TlvStream apply tlv)
+      val query = QueryChannelRange(LNParams.chainHash, data.from, Int.MaxValue, TlvStream(tlv))
       worker.handler process query
 
     case (reply: ReplyChannelRange, data1: SyncWorkerShortIdsData, SHORT_ID_SYNC) =>
@@ -208,9 +208,9 @@ case class UpdateConifrmState(liteUpdOpt: Option[ChannelUpdate], confirmedBy: Co
 }
 
 abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMachine[SyncMasterData] with CanBeRepliedTo { me =>
-  private[this] val confirmedChanUpdates: mutable.Map[UpdateCore, UpdateConifrmState] = mutable.Map.empty withDefaultValue UpdateConifrmState(None, Set.empty)
-  private[this] val confirmedChanAnnounces: mutable.Map[ChannelAnnouncement, ConfirmedBySet] = mutable.Map.empty withDefaultValue Set.empty
-  private[this] var newExcludedChanUpdates: Set[UpdateCore] = Set.empty
+  private[this] val confirmedChanUpdates = mutable.Map.empty[UpdateCore, UpdateConifrmState] withDefaultValue UpdateConifrmState(None, Set.empty)
+  private[this] val confirmedChanAnnounces = mutable.Map.empty[ChannelAnnouncement, ConfirmedBySet] withDefaultValue Set.empty
+  private[this] var newExcludedChanUpdates = Set.empty[UpdateCore]
   var provenShortIds: ShortChanIdSet = Set.empty
 
   def onChunkSyncComplete(pure: PureRoutingData): Unit
@@ -329,7 +329,7 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
       (chunkShortIds, chunkRequestFlags) = requestChunk.unzip
       shortChannelIds = EncodedShortChannelIds(reply.shortChannelIds.encoding, chunkShortIds)
       tlv = QueryShortChannelIdsTlv.EncodedQueryFlags(reply.shortChannelIds.encoding, chunkRequestFlags)
-    } yield QueryShortChannelIds(LNParams.chainHash, shortChannelIds, TlvStream apply tlv)
+    } yield QueryShortChannelIds(LNParams.chainHash, shortChannelIds, TlvStream(tlv))
   }
 
   private def computeFlag(shortlId: ShortChannelId, theirTimestamps: ReplyChannelRangeTlv.Timestamps, theirChecksums: ReplyChannelRangeTlv.Checksums) =
