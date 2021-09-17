@@ -165,7 +165,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       setVis(isVisible = false, hcBranding)
 
       ChannelIndicatorLine.setView(chanState, chan)
-      peerAddress.setText(cs.remoteInfo.address.toString)
+      peerAddress.setText(peerInfo(cs.remoteInfo).html)
       overBar.setProgress(barCanSend min barLocalReserve.toInt)
       baseBar.setSecondaryProgress(barCanSend + barCanReceive)
       baseBar.setProgress(barCanSend)
@@ -221,7 +221,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
 
       visibleExcept(R.id.refundableAmount)
       ChannelIndicatorLine.setView(chanState, chan)
-      peerAddress.setText(hc.remoteInfo.address.toString)
+      peerAddress.setText(peerInfo(hc.remoteInfo).html)
       baseBar.setSecondaryProgress(barCanSend + barCanReceive)
       baseBar.setProgress(barCanSend)
 
@@ -360,6 +360,8 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     else if (cd.mutualClosePublished.nonEmpty) ln_info_close_coop
     else ln_info_close_local
   }
+
+  private def peerInfo(info: RemoteNodeInfo): String = s"<strong>${info.nodeId.toString.take(16).humanFour}</strong><br>${info.address.toString}"
 
   private def confirmationBuilder(commits: Commitments, msg: CharSequence) = new AlertDialog.Builder(me).setTitle(commits.remoteInfo.address.toString).setMessage(msg)
 
