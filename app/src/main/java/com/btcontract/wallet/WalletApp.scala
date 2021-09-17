@@ -59,8 +59,8 @@ object WalletApp {
   final val dbFileNameEssential = "essential.db"
 
   val backupSaveWorker: ThrottledWork[Boolean, Any] = new ThrottledWork[Boolean, Any] {
-    private def attemptStore: Unit = LocalBackup.encryptAndWritePlainBackup(app, dbFileNameEssential, LNParams.chainHash, LNParams.secret.seed)
-    def process(useDelay: Boolean, unitAfterDelay: Any): Unit = if (LocalBackup isAllowed app) try attemptStore catch none
+    private def doAttemptStore: Unit = LocalBackup.encryptAndWritePlainBackup(app, dbFileNameEssential, LNParams.chainHash, LNParams.secret.seed)
+    def process(useDelay: Boolean, unitAfterDelay: Any): Unit = if (LocalBackup isAllowed app) try doAttemptStore catch none
     def work(useDelay: Boolean): Observable[Any] = if (useDelay) Rx.ioQueue.delay(4.seconds) else Observable.just(null)
   }
 
@@ -162,7 +162,7 @@ object WalletApp {
     extDataBag.db txWrap {
       LNParams.feeRates = new FeeRates(extDataBag)
       LNParams.fiatRates = new FiatRates(extDataBag)
-      LNParams.trampoline = extDataBag.tryGetTrampolineOn getOrElse LNParams.defaultTrampolineOn
+      LNParams.trampoline = LNParams.defaultTrampolineOn
     }
 
     val pf = new PathFinder(normalBag, hostedBag) {
@@ -270,12 +270,35 @@ object WalletApp {
     // This inital notification will create all in/routed/out FSMs
     LNParams.cm.notifyResolvers
 
-    Rx.repeat(Rx.ioQueue.delay(4.seconds), Rx.incHour, 1 to Int.MaxValue by 1).foreach { _ =>
-      // Schedule delayed WT notice on each app restart and periodically prolong it if app has been running for some time
-      val shouldRun = LNParams.cm.allNormal.flatMap(Channel.chanAndCommitsOpt) exists { case ChanAndCommits(_, normalCommits: NormalCommits) => normalCommits.remoteNextHtlcId > 0 case _ => false }
-      if (shouldRun) DelayedNotification.schedule(app, DelayedNotification.WATCH_TOWER_TAG, app getString delayed_notify_wt_title, app getString delayed_notify_wt_body, DelayedNotification.WATCH_TOWER_PERIOD_MSEC)
+    Rx.repeat(Rx.ioQueue.delay(1.second), Rx.incMinute, 2 to Int.MaxValue by 2).foreach { _ =>
+      DelayedNotification.cancel(app, DelayedNotification.IN_FLIGHT_HTLC_TAG)
+      if (LNParams.cm.inProcessors.nonEmpty) reScheduleInFlight
+    }
+
+    Rx.repeat(Rx.ioQueue.delay(2.seconds), Rx.incHour, 1 to Int.MaxValue by 1).foreach { _ =>
+      DelayedNotification.cancel(app, DelayedNotification.WATCH_TOWER_TAG)
+      if (receivingChannelsExist) reScheduleWatchtower
     }
   }
+
+  def receivingChannelsExist: Boolean = LNParams.cm.allNormal.flatMap(Channel.chanAndCommitsOpt).exists {
+    case ChanAndCommits(_, normalCommits: NormalCommits) => normalCommits.remoteNextHtlcId > 0
+    case _ => false
+  }
+
+  def reScheduleWatchtower: Unit =
+    DelayedNotification.schedule(app,
+      DelayedNotification.WATCH_TOWER_TAG,
+      title = app.getString(delayed_notify_wt_title),
+      body = app.getString(delayed_notify_wt_body),
+      DelayedNotification.WATCH_TOWER_PERIOD_MSEC)
+
+  def reScheduleInFlight: Unit =
+    DelayedNotification.schedule(app,
+      DelayedNotification.IN_FLIGHT_HTLC_TAG,
+      title = app.getString(delayed_notify_pending_payment_title),
+      body = app.getString(delayed_notify_pending_payment_body),
+      DelayedNotification.IN_FLIGHT_HTLC_PERIOD_MSEC)
 
   // Fiat conversion
 
@@ -351,10 +374,25 @@ class WalletApp extends Application { me =>
     }
 
     ChannelMaster.inFinalized.foreach {
-      case _: IncomingRevealed if LNParams.cm.inProcessors.isEmpty => stopService(foregroundServiceIntent)
-      case _: TrampolineRevealed if LNParams.cm.inProcessors.isEmpty => stopService(foregroundServiceIntent)
-      case _: TrampolineAborted if LNParams.cm.inProcessors.isEmpty => stopService(foregroundServiceIntent)
-      case _ => // Do nothing
+      case _: IncomingRevealed if LNParams.cm.inProcessors.isEmpty =>
+        DelayedNotification.cancel(me, DelayedNotification.WATCH_TOWER_TAG)
+        stopService(foregroundServiceIntent)
+
+      case _: TrampolineRevealed if LNParams.cm.inProcessors.isEmpty =>
+        DelayedNotification.cancel(me, DelayedNotification.WATCH_TOWER_TAG)
+        stopService(foregroundServiceIntent)
+
+      case _: TrampolineAborted if LNParams.cm.inProcessors.isEmpty =>
+        DelayedNotification.cancel(me, DelayedNotification.WATCH_TOWER_TAG)
+        stopService(foregroundServiceIntent)
+
+      case _ =>
+      // Do nothing
+    }
+
+    ChannelMaster.stateUpdateStream.foreach { _ =>
+      DelayedNotification.cancel(me, DelayedNotification.IN_FLIGHT_HTLC_TAG)
+      if (LNParams.cm.inProcessors.nonEmpty) WalletApp.reScheduleInFlight
     }
   }
 
