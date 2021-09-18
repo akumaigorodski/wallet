@@ -367,32 +367,20 @@ class WalletApp extends Application { me =>
 
     if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
       val manager = this getSystemService classOf[NotificationManager]
-      val chan1 = new NotificationChannel(AwaitService.CHANNEL_ID, "NC1", NotificationManager.IMPORTANCE_DEFAULT)
-      val chan2 = new NotificationChannel(DelayedNotification.CHANNEL_ID, "NC2", NotificationManager.IMPORTANCE_DEFAULT)
+      val chan1 = new NotificationChannel(AwaitService.CHANNEL_ID, "Foreground notifications", NotificationManager.IMPORTANCE_DEFAULT)
+      val chan2 = new NotificationChannel(DelayedNotification.CHANNEL_ID, "Scheduled notifications", NotificationManager.IMPORTANCE_DEFAULT)
       manager.createNotificationChannel(chan1)
       manager.createNotificationChannel(chan2)
     }
 
-    ChannelMaster.inFinalized.foreach {
-      case _: IncomingRevealed if LNParams.cm.inProcessors.isEmpty =>
-        DelayedNotification.cancel(me, DelayedNotification.WATCH_TOWER_TAG)
-        stopService(foregroundServiceIntent)
-
-      case _: TrampolineRevealed if LNParams.cm.inProcessors.isEmpty =>
-        DelayedNotification.cancel(me, DelayedNotification.WATCH_TOWER_TAG)
-        stopService(foregroundServiceIntent)
-
-      case _: TrampolineAborted if LNParams.cm.inProcessors.isEmpty =>
-        DelayedNotification.cancel(me, DelayedNotification.WATCH_TOWER_TAG)
-        stopService(foregroundServiceIntent)
-
-      case _ =>
-      // Do nothing
+    ChannelMaster.inFinalized.filter(_ => LNParams.cm.inProcessors.isEmpty).foreach { _ =>
+      DelayedNotification.cancel(me, DelayedNotification.IN_FLIGHT_HTLC_TAG)
+      stopService(foregroundServiceIntent)
     }
 
-    ChannelMaster.stateUpdateStream.foreach { _ =>
+    ChannelMaster.stateUpdateStream.filter(_ => LNParams.cm.inProcessors.nonEmpty).foreach { _ =>
       DelayedNotification.cancel(me, DelayedNotification.IN_FLIGHT_HTLC_TAG)
-      if (LNParams.cm.inProcessors.nonEmpty) WalletApp.reScheduleInFlight
+      WalletApp.reScheduleInFlight
     }
   }
 
