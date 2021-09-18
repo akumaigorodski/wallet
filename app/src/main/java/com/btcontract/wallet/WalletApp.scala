@@ -16,7 +16,6 @@ import java.net.{InetSocketAddress, Socket}
 import fr.acinq.bitcoin.{Block, ByteVector32, Satoshi, SatoshiLong}
 import fr.acinq.eclair.blockchain.{CurrentBlockCount, EclairWallet}
 import android.app.{Application, NotificationChannel, NotificationManager}
-import immortan.fsm.{IncomingRevealed, TrampolineAborted, TrampolineRevealed}
 import android.content.{ClipData, ClipboardManager, Context, Intent, SharedPreferences}
 import fr.acinq.eclair.channel.{CMD_CHECK_FEERATE, NormalCommits, PersistentChannelData}
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{TransactionReceived, WalletReady}

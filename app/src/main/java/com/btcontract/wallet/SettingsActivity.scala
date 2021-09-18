@@ -186,8 +186,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     setVis(isVisible = false, settingsCheck)
 
     view setOnClickListener onButtonTap {
-      val amounts = for (unit <- units) yield unit.parsedWithSign(MilliSatoshi(526800020L), cardIn, cardZero)
-      val options = units.zip(amounts).map { case denom ~ amount => s"${denom.sign.toUpperCase} $amount".html }
+      val options = for (unit <- units) yield unit.parsedWithSign(MilliSatoshi(526800020L), cardIn, cardZero).html
       val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options.toArray)
       new sheets.ChoiceBottomSheet(list, CHOICE_BTC_DENOMINATON_TAG, me).show(getSupportFragmentManager, "unused-tag")
     }
