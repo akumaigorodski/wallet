@@ -70,9 +70,13 @@ dependencies {
     implementation 'androidx.biometric:biometric:1.1.0'
     implementation 'com.cottacush:CurrencyEditText:0.0.9'
     implementation 'com.google.android.material:material:1.4.0'
-    implementation 'com.journeyapps:zxing-android-embedded:4.2.0'
     implementation 'info.guardianproject.netcipher:netcipher:2.1.0'
     implementation 'com.google.code.ndef-tools-for-android:ndeftools:1.2.4'
+
+    implementation('com.journeyapps:zxing-android-embedded:4.2.0') {
+        // We use zxing sources with fixed List.sort which is not in API21
+        exclude group: 'com.google.zxing', module: 'core'
+    }
 
     // Immortan
     implementation 'org.scala-lang:scala-library:2.11.12'
