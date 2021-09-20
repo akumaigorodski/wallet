@@ -188,7 +188,7 @@
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 
     <string name="popup_prior_chain_balance"><![CDATA[<b>прежний&#160;баланс</b>&#160;%1$s]]></string>
-    <string name="popup_ln_fee"><![CDATA[<b>комиссия</b>&#160;%1$s,&#160;<b>эко</b>&#160;%2$s]]></string>
+    <string name="popup_ln_fee"><![CDATA[<b>сбор</b>&#160;%1$s,&#160;<b>эконом</b>&#160;%2$s]]></string>
     <string name="popup_chain_fee"><![CDATA[<b>комиссия</b>&#160;%1$s]]></string>
     <string name="popup_hash"><![CDATA[<b>хэш</b>&#160;%1$s]]></string>
     <string name="popup_then"><![CDATA[<b>тогда</b>&#160;%1$s]]></string>
@@ -240,7 +240,7 @@
     <string name="settings_auth_title">Аутентификация кошелька</string>
 
     <string name="settings_ensure_tor">Обязательное Tor-соединение</string>
-    <string name="settings_ensure_tor_enabled">Приложение не запустится если Orbot VPN отключен и останавится если Orbot перестанет работать</string>
+    <string name="settings_ensure_tor_enabled">Приложение не запустится если Orbot VPN отключен и остановится если Orbot перестанет работать</string>
     <string name="settings_ensure_tor_disabled">Необходима установка Orbot</string>
 
     <string name="settings_ln_fee_cap">Лимит по LN-комиссиям</string>
