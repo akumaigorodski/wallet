@@ -330,7 +330,7 @@
     <string name="stats_item_chain_node"><![CDATA[<b>cadena&#160;nodo</b>&#160;%1$s]]></string>
     <string name="stats_item_chain_tip"><![CDATA[<b>cadena&#160;tope</b>&#160;%1$s]]></string>
     <string name="stats_item_graph"><![CDATA[<b>gráfico&#160;sync</b>&#160;%1$s]]></string>
-    <string name="stats_item_phc"><![CDATA[<b>PHC&#160;sync&#160;%1$s]]></string>
+    <string name="stats_item_phc"><![CDATA[<b>PHC&#160;sync</b>&#160;%1$s]]></string>
 
     <string name="stats_item_sent"><![CDATA[<b>enviado</b>&#160;%1$s]]></string>
     <string name="stats_item_received"><![CDATA[<b>recibido</b>&#160;%1$s]]></string>
