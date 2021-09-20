@@ -180,8 +180,6 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
   }
 
   lazy private[this] val setBtc = new SettingsHolder {
-    override def updateView: Unit = settingsInfo.setText(WalletApp.denom.sign.toUpperCase)
-
     settingsTitle.setText(settings_btc_unit)
     setVis(isVisible = false, settingsCheck)
 
@@ -189,6 +187,13 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
       val options = for (unit <- units) yield unit.parsedWithSign(MilliSatoshi(526800020L), cardIn, cardZero).html
       val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options.toArray)
       new sheets.ChoiceBottomSheet(list, CHOICE_BTC_DENOMINATON_TAG, me).show(getSupportFragmentManager, "unused-tag")
+    }
+
+    override def updateView: Unit = {
+      val short = WalletApp.denom.sign.toUpperCase
+      val isSatDenom = WalletApp.denom == SatDenomination
+      val text = if (isSatDenom) s"Satoshi ($short)" else s"Bitcoin (BTC, $short)"
+      settingsInfo.setText(text)
     }
   }
 
