@@ -792,7 +792,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
               val builder = titleBodyAsViewBuilder(title.asColoredView(R.color.cardLightning), manager.content)
               addFlowChip(title.flow, getString(dialog_ln_requested) format WalletApp.denom.parsedWithSign(origAmount, cardIn, cardZero), R.drawable.border_blue)
               addFlowChip(title.flow, getString(dialog_ln_left) format WalletApp.denom.parsedWithSign(prExt.splitLeftover, cardIn, cardZero), R.drawable.border_blue)
-              mkCheckFormNeutral(send, none, neutral, builder, dialog_pay, dialog_cancel, dialog_split)
+              mkCheckFormNeutral(send, none, neutral, builder, dialog_ok, dialog_cancel, dialog_split)
             }
 
             // Prefill with what's left to pay
@@ -811,7 +811,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
               val title = new TitleView(getString(dialog_send_ln) format prExt.brDescription)
               val builder = titleBodyAsViewBuilder(title.asColoredView(R.color.cardLightning), manager.content)
               addFlowChip(title.flow, getString(dialog_ln_requested).format(totalHuman), R.drawable.border_blue)
-              mkCheckFormNeutral(send, none, neutral, builder, dialog_pay, dialog_cancel, dialog_split)
+              mkCheckFormNeutral(send, none, neutral, builder, dialog_ok, dialog_cancel, dialog_split)
             }
 
             // Prefill with asked amount
@@ -827,7 +827,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
             override val alert: AlertDialog = {
               val title = getString(dialog_send_ln).format(prExt.brDescription).asColoredView(R.color.cardLightning)
-              mkCheckFormNeutral(send, none, neutral, titleBodyAsViewBuilder(title, manager.content), dialog_pay, dialog_cancel, dialog_max)
+              mkCheckFormNeutral(send, none, neutral, titleBodyAsViewBuilder(title, manager.content), dialog_ok, dialog_cancel, dialog_max)
             }
 
             // Do not prefill since amount is unknown, disable pay button
@@ -1098,8 +1098,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       val builder = titleBodyAsViewBuilder(title.asColoredView(backgroundRes), manager.content)
       def useMax(alert: AlertDialog): Unit = manager.updateText(fromWallet.info.lastBalance.toMilliSatoshi)
-      if (uri.prExt.isEmpty) mkCheckFormNeutral(attempt, none, useMax, builder, dialog_pay, dialog_cancel, neutralRes)
-      else mkCheckFormNeutral(attempt, none, switchToLn, builder, dialog_pay, dialog_cancel, lightning_wallet)
+      if (uri.prExt.isEmpty) mkCheckFormNeutral(attempt, none, useMax, builder, dialog_ok, dialog_cancel, neutralRes)
+      else mkCheckFormNeutral(attempt, none, switchToLn, builder, dialog_ok, dialog_cancel, lightning_wallet)
     }
 
     lazy val feeView: FeeView[TxAndFee] = new FeeView[TxAndFee](body) {
@@ -1201,7 +1201,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       override val alert: AlertDialog = {
         val text = getString(dialog_lnurl_pay).format(data.callbackUri.getHost, s"<br><br>${data.meta.textPlain}")
         val title = titleBodyAsViewBuilder(text.asColoredView(R.color.cardLightning), manager.content)
-        mkCheckFormNeutral(send, none, neutral, title, dialog_pay, dialog_cancel, dialog_split)
+        mkCheckFormNeutral(send, none, neutral, title, dialog_ok, dialog_cancel, dialog_split)
       }
 
       private def getFinal(amount: MilliSatoshi) =
@@ -1232,7 +1232,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   // Payment actions
 
   def resolveAction(theirPreimage: ByteVector32, paymentAction: PaymentAction): Unit = paymentAction match {
-    case data: MessageAction => mkCheckFormNeutral(_.dismiss, none, _ => share(data.message), actionPopup(data.finalMessage.html, data), dialog_ok, dialog_cancel, dialog_share)
+    case data: MessageAction => mkCheckFormNeutral(_.dismiss, none, _ => share(data.message), actionPopup(data.finalMessage.html, data), dialog_ok, noRes = -1, dialog_share)
     case data: UrlAction => mkCheckFormNeutral(_ => browse(data.url), none, _ => share(data.url), actionPopup(data.finalMessage.html, data), dialog_open, dialog_cancel, dialog_share)
     case data: AESAction => showAesAction(theirPreimage, data) getOrElse mkCheckForm(_.dismiss, none, actionPopup(getString(dialog_lnurl_decrypt_fail), data), dialog_ok, noRes = -1)
   }

@@ -62,7 +62,6 @@
     <string name="dialog_copy">Copiar</string>
     <string name="dialog_info">Info</string>
     <string name="dialog_max">Max</string>
-    <string name="dialog_pay">Pagar</string>
 
     <string name="dialog_visibility_public">visible para el remitente</string>
     <string name="dialog_visibility_private">visible solo para ti</string>
@@ -89,11 +88,11 @@
     <string name="dialog_split_ln"><![CDATA[Dividir pago <b>Lightning</b> %1$s]]></string>
     <string name="dialog_send_btc_from"><![CDATA[desde&#160;<b>%1$s</b>&#160;billetera]]></string>
     <string name="dialog_send_btc"><![CDATA[Enviar transacción <b>Bitcoin</b> <br><b>a la dirección</b> %1$s%2$s]]></string>
-    <string name="dialog_split_ln_tip">Primero deja que alguien escanee una factura a dividir,\nLuego pulsen en PAGAR al mismo tiempo</string>
+    <string name="dialog_split_ln_tip">Deja que alguien escanee una dividir,\nLuego pulsen en OK al mismo tiempo</string>
     <string name="dialog_ln_requested"><![CDATA[<b>solicitado</b>&#160;%1$s]]></string>
     <string name="dialog_ln_left"><![CDATA[<b>queda por pagar</b>&#160;%1$s]]></string>
 
-    <string name="btc_transfer_label"><![CDATA[Desde billetera antigua a billetera moderna]]></string>
+    <string name="btc_transfer_label"><![CDATA[Antigua -> moderna billetera]]></string>
     <string name="btc_transfer_message"><![CDATA[Transferencia local de Bitcoin desde billetera antigua a billetera moderna]]></string>
     <string name="recovery_phrase_warning">Pulse para guardar la frase de recuperación de la billetera en caso de que pierdas o reemplaces tu teléfono.</string>
 
@@ -227,7 +226,7 @@
     <string name="settings_backup_disabled">Habilitar respaldo de canal local</string>
     <string name="settings_backup_enabled">Respaldo de canal local ha sido habilitado</string>
     <string name="settings_backup_where">El archivo se guarda en la carpeta Descargas</string>
-    <string name="settings_backup_how">Permisos de aplicaciones -> Archivos y medios</string>
+    <string name="settings_backup_how">Permisos -> Almacenamiento</string>
 
     <string name="settings_chain_wallets">Manejar billeteras chain</string>
     <string name="settings_chain_legacy">Billetera antigua</string>
@@ -341,8 +340,8 @@
     <string name="stats_item_fees"><![CDATA[<b>tarifas</b>&#160;%1$s]]></string>
     <string name="stats_item_fees_saved"><![CDATA[<b>cadena&#160;tarifas&#160;guardado</b>&#160;%1$s]]></string>
 
-    <string name="stats_item_relays"><![CDATA[<b>retransmisiones</b>&#160;%1$s]]></string>
-    <string name="stats_item_relayed"><![CDATA[<b>enrutado</b>&#160;%1$s]]></string>
+    <string name="stats_item_relays"><![CDATA[<b>cantidad</b>&#160;%1$s]]></string>
+    <string name="stats_item_relayed"><![CDATA[<b>volumen</b>&#160;%1$s]]></string>
     <string name="stats_item_earned"><![CDATA[<b>ganado</b>&#160;%1$s]]></string>
 
     <string name="chan_capacity">Capacidad</string>

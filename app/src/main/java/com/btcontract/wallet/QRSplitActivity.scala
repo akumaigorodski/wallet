@@ -15,7 +15,7 @@ class QRSplitActivity extends QRActivity with ExternalDataChecker with HasTypica
   lazy private[this] val splitQrCaption = findViewById(R.id.splitQrCaption).asInstanceOf[TextView]
   lazy private[this] val splitQrPay = findViewById(R.id.splitQrPay).asInstanceOf[NoboButton]
   lazy private[this] val qrViewHolder = new QRViewHolder(me findViewById R.id.splitQr)
-  lazy private[this] val dialogPay = getString(R.string.dialog_pay)
+  lazy private[this] val dialogPay = getString(R.string.dialog_ok)
 
   def INIT(state: Bundle): Unit =
     if (WalletApp.isAlive && LNParams.isOperational) {

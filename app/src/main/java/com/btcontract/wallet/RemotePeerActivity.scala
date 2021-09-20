@@ -185,7 +185,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
     lazy val alert = {
       def setMax(alert1: AlertDialog): Unit = manager.updateText(LNParams.chainWallets.lnWallet.info.lastBalance.toMilliSatoshi)
       val builder = titleBodyAsViewBuilder(getString(rpa_open_nc).asColoredView(R.color.cardBitcoinModern), manager.content)
-      mkCheckFormNeutral(attempt, none, setMax, builder, dialog_pay, dialog_cancel, dialog_max)
+      mkCheckFormNeutral(attempt, none, setMax, builder, dialog_ok, dialog_cancel, dialog_max)
     }
 
     lazy val feeView: FeeView[MakeFundingTxResponse] = new FeeView[MakeFundingTxResponse](body) {

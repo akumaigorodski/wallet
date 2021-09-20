@@ -62,7 +62,6 @@
     <string name="dialog_copy">Copy</string>
     <string name="dialog_info">Info</string>
     <string name="dialog_max">Max</string>
-    <string name="dialog_pay">Pay</string>
 
     <string name="dialog_visibility_public">visible to sender</string>
     <string name="dialog_visibility_private">visible to you only</string>
@@ -89,11 +88,11 @@
     <string name="dialog_split_ln"><![CDATA[Split <b>Lightning</b> payment%1$s]]></string>
     <string name="dialog_send_btc_from"><![CDATA[from&#160;<b>%1$s</b>&#160;wallet]]></string>
     <string name="dialog_send_btc"><![CDATA[Send <b>Bitcoin</b> transaction<br><b>to address</b> %1$s%2$s]]></string>
-    <string name="dialog_split_ln_tip">First let someone scan a split invoice,\nThen tap PAY at about the same time</string>
+    <string name="dialog_split_ln_tip">Let someone scan a split invoice,\nThen tap OK at about the same time</string>
     <string name="dialog_ln_requested"><![CDATA[<b>requested</b>&#160;%1$s]]></string>
     <string name="dialog_ln_left"><![CDATA[<b>left to pay</b>&#160;%1$s]]></string>
 
-    <string name="btc_transfer_label"><![CDATA[From legacy to modern wallet]]></string>
+    <string name="btc_transfer_label"><![CDATA[legacy -> modern wallet]]></string>
     <string name="btc_transfer_message"><![CDATA[Local transfer of Bitcoin from legacy to modern chain wallet]]></string>
     <string name="recovery_phrase_warning">Tap to save wallet recovery phrase in case you ever lose or replace your phone.</string>
 
@@ -114,7 +113,7 @@
 
     <string name="error_rejected_incoming_public">Rejected public channel offer, only private channels are allowed.</string>
     <string name="error_btc_broadcast_fail">Could not broadcast a transaction, please make sure that wallet has network connection and then try again.</string>
-    <string name="error_could_not_decrypt"><![CDATA[<b>Backup decryption failed</b>.<br><br>Make sure that both backup file and recovery phrase are correct.<br><br>Error details<br><b>%1$s</b>]]></string>
+    <string name="error_could_not_decrypt"><![CDATA[<b>Backup decryption failed</b>.<br><br>Make sure that both backup file and recovery phrase are correct and belong to the same wallet.<br><br>Error details<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>Provided phrase is incorrect</b>.<br><br>Error details<br><b>%1$s</b>]]></string>
     <string name="error_nothing_useful">Nothing useful is found</string>
 
@@ -227,7 +226,7 @@
     <string name="settings_backup_disabled">Enable local channel backup</string>
     <string name="settings_backup_enabled">Local channel backup is enabled</string>
     <string name="settings_backup_where">File gets stored in Download folder</string>
-    <string name="settings_backup_how">App permissions -> Files and media</string>
+    <string name="settings_backup_how">App permissions -> Storage</string>
 
     <string name="settings_chain_wallets">Manage chain wallets</string>
     <string name="settings_chain_legacy">Legacy wallet</string>
@@ -341,8 +340,8 @@
     <string name="stats_item_fees"><![CDATA[<b>fees</b>&#160;%1$s]]></string>
     <string name="stats_item_fees_saved"><![CDATA[<b>chain&#160;fees&#160;saved</b>&#160;%1$s]]></string>
 
-    <string name="stats_item_relays"><![CDATA[<b>relays</b>&#160;%1$s]]></string>
-    <string name="stats_item_relayed"><![CDATA[<b>routed</b>&#160;%1$s]]></string>
+    <string name="stats_item_relays"><![CDATA[<b>quantity</b>&#160;%1$s]]></string>
+    <string name="stats_item_relayed"><![CDATA[<b>volume</b>&#160;%1$s]]></string>
     <string name="stats_item_earned"><![CDATA[<b>earned</b>&#160;%1$s]]></string>
 
     <string name="chan_capacity">Capacity</string>
