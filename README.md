@@ -30,7 +30,8 @@ Everyone is welcome to provide a translation on [Transifex project site](https:/
 
 1. `$ git clone https://github.com/btcontract/wallet.git` (or download latest release source files).
 2. Copy `graph.snapshot-mainnet.zlib` file into `./app/src/main/assets/` folder (snapshot file can be found in latest release, it is a zlib-compressed SQLite database file).
-3. `$ JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8 ./gradlew assembleRelease`
+3. Download [NDK 21.4.7075529](https://dl.google.com/android/repository/android-ndk-r21e-linux-x86_64.zip) and add extracted files to your local Android SDK folder.
+4. `$ JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8 ./gradlew assembleRelease`
 
 ## Verification with `apksigner`
 

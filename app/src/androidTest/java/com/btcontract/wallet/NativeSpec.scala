@@ -69,7 +69,10 @@ class NativeSpec {
       System.currentTimeMillis() - a
     }
 
-    assertTrue(fallback / 50 > native)
+    println(s"fallback: $fallback")
+    println(s"native: $native")
+
+    assertTrue(fallback / 10 > native)
   }
 
   @Test

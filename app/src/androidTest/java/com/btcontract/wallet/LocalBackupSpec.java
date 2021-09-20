@@ -23,9 +23,6 @@ import scodec.bits.ByteVector;
 @RunWith(AndroidJUnit4.class)
 public class LocalBackupSpec {
 
-    @Rule
-    public GrantPermissionRule mRuntimePermissionRule = GrantPermissionRule.grant(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
-
     @Test
     public void readAndWriteLocalBackup() {
         ByteVector fileContents = package$.MODULE$.randomBytes(1024 * 128 * 100);
