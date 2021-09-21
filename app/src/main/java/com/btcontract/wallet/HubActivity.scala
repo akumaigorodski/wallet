@@ -162,7 +162,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       if (openListItems contains item.identity) holder.expand(item) else holder.collapse(item)
       viewBinderHelper.bind(holder.swipeWrap, item.identity)
       holder.currentDetails = item
-      holder.updDetails
+      holder.updateDetails
       view
     }
   }
@@ -171,7 +171,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val extraInfo: FlowLayout = itemView.findViewById(R.id.extraInfo).asInstanceOf[FlowLayout]
     val swipeWrap: SwipeRevealLayout = itemView.asInstanceOf[SwipeRevealLayout]
 
+    val spacer: View = swipeWrap.findViewById(R.id.spacer)
     val paymentCardContainer: View = swipeWrap.findViewById(R.id.paymentCardContainer)
+
     val setItemLabel: NoboButton = swipeWrap.findViewById(R.id.setItemLabel).asInstanceOf[NoboButton]
     val removeItem: NoboButton = swipeWrap.findViewById(R.id.removeItem).asInstanceOf[NoboButton]
     val shareItem: NoboButton = swipeWrap.findViewById(R.id.shareItem).asInstanceOf[NoboButton]
@@ -416,9 +418,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       checkExternalData(noneRunnable)
     }
 
-    def updDetails: Unit = currentDetails match {
+    def updateDetails: Unit = currentDetails match {
       // Reusing the same view to speed the list up
-      // switching the parts according to data type
 
       case info: RelayedPreimageInfo =>
         setVisMany(false -> labelIcon, false -> detailsAndStatus, true -> nonLinkContainer, false -> linkContainer)
