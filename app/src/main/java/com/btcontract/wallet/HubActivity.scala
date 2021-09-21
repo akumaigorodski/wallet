@@ -89,9 +89,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   private[this] lazy val lnSplitNotice = getString(tx_ln_notice_split)
   private[this] lazy val lnDefTitle = getString(tx_ln)
 
-  private[this] lazy val paymentTypeIconIds =
-    List(R.id.btcIncoming, R.id.btcOutgoing, R.id.lnIncoming, R.id.lnOutgoing,
-      R.id.lnRouted, R.id.btcLn, R.id.lnBtc, R.id.lnOutgoing)
+  private[this] lazy val paymentTypeIconIds = List(R.id.btcIncoming, R.id.btcOutgoing, R.id.lnIncoming, R.id.lnOutgoing, R.id.lnRouted, R.id.btcLn, R.id.lnBtc, R.id.lnOutgoing)
 
   private[this] lazy val bottomBlurringArea = findViewById(R.id.bottomBlurringArea).asInstanceOf[RealtimeBlurView]
   private[this] lazy val bottomActionBar = findViewById(R.id.bottomActionBar).asInstanceOf[LinearLayout]
@@ -243,8 +241,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     def ractOnTap: Unit = currentDetails match {
-      case info: LNUrlLinkInfo => doCallPayLink(info)
       case info: DelayedRefunds => showPending(info)
+      case info: LNUrlLinkInfo => doCallPayLink(info)
       case info: PaymentInfo if info.isIncoming && info.status == PaymentStatus.PENDING && !lastHashToReveals.contains(info.paymentHash) =>
         // Intercept normal flow and show invoice if: this is an incoming, not yet fulfilled payment with no parts received
         runAnd(InputParser.value = info.prExt)(me goTo ClassNames.qrInvoiceActivityClass)

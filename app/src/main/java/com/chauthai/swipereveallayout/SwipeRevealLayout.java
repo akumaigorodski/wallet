@@ -64,11 +64,6 @@ public class SwipeRevealLayout extends ViewGroup {
     public static final int MODE_NORMAL = 0;
 
     /**
-     * The secondary view will stick the edge of the main view.
-     */
-    public static final int MODE_SAME_LEVEL = 1;
-
-    /**
      * Main view is the view which is shown when the layout is closed.
      */
     private View mMainView;
@@ -104,7 +99,6 @@ public class SwipeRevealLayout extends ViewGroup {
      */
     private int mMinDistRequestDisallowParent = 0;
 
-    private boolean mIsOpenBeforeInit = false;
     private volatile boolean mAborted = false;
     private volatile boolean mIsScrolling = false;
     private volatile boolean mLockDrag = false;
@@ -126,48 +120,11 @@ public class SwipeRevealLayout extends ViewGroup {
     private GestureDetectorCompat mGestureDetector;
 
     private DragStateChangeListener mDragStateChangeListener; // only used for ViewBindHelper
-    private SwipeListener mSwipeListener;
 
     private int mOnLayoutCount = 0;
 
     interface DragStateChangeListener {
         void onDragStateChanged(int state);
-    }
-
-    /**
-     * Listener for monitoring events about swipe layout.
-     */
-    public interface SwipeListener {
-        /**
-         * Called when the main view becomes completely closed.
-         */
-        void onClosed(SwipeRevealLayout view);
-
-        /**
-         * Called when the main view becomes completely opened.
-         */
-        void onOpened(SwipeRevealLayout view);
-
-        /**
-         * Called when the main view's position changes.
-         * @param slideOffset The new offset of the main view within its range, from 0-1
-         */
-        void onSlide(SwipeRevealLayout view, float slideOffset);
-    }
-
-    /**
-     * No-op stub for {@link SwipeListener}. If you only want ot implement a subset
-     * of the listener methods, you can extend this instead of implement the full interface.
-     */
-    public static class SimpleSwipeListener implements SwipeListener {
-        @Override
-        public void onClosed(SwipeRevealLayout view) {}
-
-        @Override
-        public void onOpened(SwipeRevealLayout view) {}
-
-        @Override
-        public void onSlide(SwipeRevealLayout view, float slideOffset) {}
     }
 
     public SwipeRevealLayout(Context context) {
@@ -219,19 +176,10 @@ public class SwipeRevealLayout extends ViewGroup {
         super.onFinishInflate();
 
         // get views
-        if (getChildCount() >= 2) {
-            mSecondaryView = getChildAt(0);
-            mMainView = getChildAt(1);
-        }
-        else if (getChildCount() == 1) {
-            mMainView = getChildAt(0);
-        }
+        mSecondaryView = getChildAt(0);
+        mMainView = getChildAt(1);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @SuppressWarnings("ConstantConditions")
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         mAborted = false;
@@ -250,28 +198,6 @@ public class SwipeRevealLayout extends ViewGroup {
             int measuredChildHeight = child.getMeasuredHeight();
             int measuredChildWidth = child.getMeasuredWidth();
 
-            // need to take account if child size is match_parent
-            final LayoutParams childParams = child.getLayoutParams();
-            boolean matchParentHeight = false;
-            boolean matchParentWidth = false;
-
-            if (childParams != null) {
-                matchParentHeight = (childParams.height == LayoutParams.MATCH_PARENT) ||
-                        (childParams.height == LayoutParams.FILL_PARENT);
-                matchParentWidth = (childParams.width == LayoutParams.MATCH_PARENT) ||
-                        (childParams.width == LayoutParams.FILL_PARENT);
-            }
-
-            if (matchParentHeight) {
-                measuredChildHeight = maxBottom - minTop;
-                childParams.height = measuredChildHeight;
-            }
-
-            if (matchParentWidth) {
-                measuredChildWidth = maxRight - minLeft;
-                childParams.width = measuredChildWidth;
-            }
-
             switch (mDragEdge) {
                 case DRAG_EDGE_RIGHT:
                     left    = Math.max(r - measuredChildWidth - getPaddingRight() - l, minLeft);
@@ -281,12 +207,6 @@ public class SwipeRevealLayout extends ViewGroup {
                     break;
 
                 case DRAG_EDGE_LEFT:
-                    left    = Math.min(getPaddingLeft(), maxRight);
-                    top     = Math.min(getPaddingTop(), maxBottom);
-                    right   = Math.min(measuredChildWidth + getPaddingLeft(), maxRight);
-                    bottom  = Math.min(measuredChildHeight + getPaddingTop(), maxBottom);
-                    break;
-
                 case DRAG_EDGE_TOP:
                     left    = Math.min(getPaddingLeft(), maxRight);
                     top     = Math.min(getPaddingTop(), maxBottom);
@@ -305,49 +225,17 @@ public class SwipeRevealLayout extends ViewGroup {
             child.layout(left, top, right, bottom);
         }
 
-        // taking account offset when mode is SAME_LEVEL
-        if (mMode == MODE_SAME_LEVEL) {
-            switch (mDragEdge) {
-                case DRAG_EDGE_LEFT:
-                    mSecondaryView.offsetLeftAndRight(-mSecondaryView.getWidth());
-                    break;
-
-                case DRAG_EDGE_RIGHT:
-                    mSecondaryView.offsetLeftAndRight(mSecondaryView.getWidth());
-                    break;
-
-                case DRAG_EDGE_TOP:
-                    mSecondaryView.offsetTopAndBottom(-mSecondaryView.getHeight());
-                    break;
-
-                case DRAG_EDGE_BOTTOM:
-                    mSecondaryView.offsetTopAndBottom(mSecondaryView.getHeight());
-            }
-        }
-
         initRects();
 
-        if (mIsOpenBeforeInit) {
-            open(false);
-        } else {
-            close(false);
-        }
-
+        mSecondaryView.setTranslationY(mMainView.getMeasuredHeight() / 2 - mSecondaryView.getMeasuredHeight() / 2);
+        mSecondaryView.setVisibility(mLockDrag ? View.GONE : View.VISIBLE);
         mLastMainLeft = mMainView.getLeft();
         mLastMainTop = mMainView.getTop();
-
         mOnLayoutCount++;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (getChildCount() < 2) {
-            throw new RuntimeException("Layout must have two children");
-        }
-
         final LayoutParams params = getLayoutParams();
 
         final int widthMode = MeasureSpec.getMode(widthMeasureSpec);
@@ -431,11 +319,8 @@ public class SwipeRevealLayout extends ViewGroup {
 
     /**
      * Open the panel to show the secondary view
-     * @param animation true to animate the open motion. {@link SwipeListener} won't be
-     *                  called if is animation is false.
      */
     public void open(boolean animation) {
-        mIsOpenBeforeInit = true;
         mAborted = false;
 
         if (animation) {
@@ -469,11 +354,8 @@ public class SwipeRevealLayout extends ViewGroup {
 
     /**
      * Close the panel to hide the secondary view
-     * @param animation true to animate the close motion. {@link SwipeListener} won't be
-     *                  called if is animation is false.
      */
     public void close(boolean animation) {
-        mIsOpenBeforeInit = false;
         mAborted = false;
 
         if (animation) {
@@ -507,36 +389,6 @@ public class SwipeRevealLayout extends ViewGroup {
     }
 
     /**
-     * Set the minimum fling velocity to cause the layout to open/close.
-     * @param velocity dp per second
-     */
-    public void setMinFlingVelocity(int velocity) {
-        mMinFlingVelocity = velocity;
-    }
-
-    /**
-     * Get the minimum fling velocity to cause the layout to open/close.
-     * @return dp per second
-     */
-    public int getMinFlingVelocity() {
-        return mMinFlingVelocity;
-    }
-
-    /**
-     * Set the edge where the layout can be dragged from.
-     * @param dragEdge Can be one of these
-     *                 <ul>
-     *                      <li>{@link #DRAG_EDGE_LEFT}</li>
-     *                      <li>{@link #DRAG_EDGE_TOP}</li>
-     *                      <li>{@link #DRAG_EDGE_RIGHT}</li>
-     *                      <li>{@link #DRAG_EDGE_BOTTOM}</li>
-     *                 </ul>
-     */
-    public void setDragEdge(int dragEdge) {
-        mDragEdge = dragEdge;
-    }
-
-    /**
      * Get the edge where the layout can be dragged from.
      * @return Can be one of these
      *                 <ul>
@@ -548,10 +400,6 @@ public class SwipeRevealLayout extends ViewGroup {
      */
     public int getDragEdge() {
         return mDragEdge;
-    }
-
-    public void setSwipeListener(SwipeListener listener) {
-        mSwipeListener = listener;
     }
 
     /**
@@ -566,13 +414,6 @@ public class SwipeRevealLayout extends ViewGroup {
      */
     public boolean isDragLocked() {
         return mLockDrag;
-    }
-
-    /**
-     * @return true if layout is fully opened, false otherwise.
-     */
-    public boolean isOpened() {
-        return (mState == STATE_OPEN);
     }
 
     /**
@@ -1006,49 +847,9 @@ public class SwipeRevealLayout extends ViewGroup {
         @Override
         public void onViewPositionChanged(View changedView, int left, int top, int dx, int dy) {
             super.onViewPositionChanged(changedView, left, top, dx, dy);
-            if (mMode == MODE_SAME_LEVEL) {
-                if (mDragEdge == DRAG_EDGE_LEFT || mDragEdge == DRAG_EDGE_RIGHT) {
-                    mSecondaryView.offsetLeftAndRight(dx);
-                } else {
-                    mSecondaryView.offsetTopAndBottom(dy);
-                }
-            }
-
-            boolean isMoved = (mMainView.getLeft() != mLastMainLeft) || (mMainView.getTop() != mLastMainTop);
-            if (mSwipeListener != null && isMoved) {
-                if (mMainView.getLeft() == mRectMainClose.left && mMainView.getTop() == mRectMainClose.top) {
-                    mSwipeListener.onClosed(SwipeRevealLayout.this);
-                }
-                else if (mMainView.getLeft() == mRectMainOpen.left && mMainView.getTop() == mRectMainOpen.top) {
-                    mSwipeListener.onOpened(SwipeRevealLayout.this);
-                }
-                else {
-                    mSwipeListener.onSlide(SwipeRevealLayout.this, getSlideOffset());
-                }
-            }
-
             mLastMainLeft = mMainView.getLeft();
             mLastMainTop = mMainView.getTop();
             ViewCompat.postInvalidateOnAnimation(SwipeRevealLayout.this);
-        }
-
-        private float getSlideOffset() {
-            switch (mDragEdge) {
-                case DRAG_EDGE_LEFT:
-                    return (float) (mMainView.getLeft() - mRectMainClose.left) / mSecondaryView.getWidth();
-
-                case DRAG_EDGE_RIGHT:
-                    return (float) (mRectMainClose.left - mMainView.getLeft()) / mSecondaryView.getWidth();
-
-                case DRAG_EDGE_TOP:
-                    return (float) (mMainView.getTop() - mRectMainClose.top) / mSecondaryView.getHeight();
-
-                case DRAG_EDGE_BOTTOM:
-                    return (float) (mRectMainClose.top - mMainView.getTop()) / mSecondaryView.getHeight();
-
-                default:
-                    return 0;
-            }
         }
 
         @Override
@@ -1088,28 +889,6 @@ public class SwipeRevealLayout extends ViewGroup {
             }
         }
     };
-
-    public static String getStateString(int state) {
-        switch (state) {
-            case STATE_CLOSE:
-                return "state_close";
-
-            case STATE_CLOSING:
-                return "state_closing";
-
-            case STATE_OPEN:
-                return "state_open";
-
-            case STATE_OPENING:
-                return "state_opening";
-
-            case STATE_DRAGGING:
-                return "state_dragging";
-
-            default:
-                return "undefined";
-        }
-    }
 
     private int pxToDp(int px) {
         Resources resources = getContext().getResources();
