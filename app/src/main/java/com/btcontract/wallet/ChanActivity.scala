@@ -249,7 +249,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
 
     case (cs: NormalCommits, 2) =>
       val builder = confirmationBuilder(cs, getString(confirm_ln_normal_chan_close_wallet).html)
-      def proceed: Unit = for (chan <- me getChan cs) chan process CMD_CLOSE(None, force = false)
+      def proceed: Unit = for (chan <- me getChanByCommits cs) chan process CMD_CLOSE(None, force = false)
       mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
 
     case (hc: HostedCommits, 2) =>
@@ -268,7 +268,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
 
   def closeNcToAddress(cs: NormalCommits): Unit = {
     def confirmResolve(bitcoinUri: BitcoinUri): Unit = {
-      def proceed: Unit = for (chan <- me getChan cs) chan process CMD_CLOSE(Script.write(bitcoinUri.pubKeyScript).asSome, force = false)
+      def proceed: Unit = for (chan <- me getChanByCommits cs) chan process CMD_CLOSE(Script.write(bitcoinUri.pubKeyScript).asSome, force = false)
       val builder = confirmationBuilder(cs, getString(confirm_ln_normal_chan_close_address).format(bitcoinUri.address.humanFour).html)
       mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
     }
@@ -286,9 +286,9 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
   }
 
   def drainHc(hc: HostedCommits): Unit = maxNormalReceivable match {
-    case None => snack(chanContainer, getString(ln_hosted_chan_drain_impossible).html, R.string.dialog_ok, _.dismiss)
-    case Some(csAndMax) if csAndMax.maxReceivable < LNParams.minPayment => snack(chanContainer, getString(ln_hosted_chan_drain_impossible).html, R.string.dialog_ok, _.dismiss)
-    case Some(csAndMax) => LNParams.cm.localSendToSelf(getChan(hc).toList, csAndMax, randomBytes32, typicalChainTxFee, capLNFeeToChain = false)
+    case _ if hc.availableForSend < LNParams.minPayment => snack(chanContainer, getString(ln_hosted_chan_drain_impossible).html, R.string.dialog_ok, _.dismiss)
+    case ncOpt if ncOpt.forall(_.maxReceivable < LNParams.minPayment) => snack(chanContainer, getString(ln_hosted_chan_drain_impossible).html, R.string.dialog_ok, _.dismiss)
+    case Some(csAndMax) => LNParams.cm.localSendToSelf(getChanByCommits(hc).toList, csAndMax, randomBytes32, typicalChainTxFee, capLNFeeToChain = false)
   }
 
   def removeHc(hc: HostedCommits): Unit = {
@@ -365,7 +365,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
 
   private def confirmationBuilder(commits: Commitments, msg: CharSequence) = new AlertDialog.Builder(me).setTitle(commits.remoteInfo.address.toString).setMessage(msg)
 
-  private def getChan(commits: Commitments) = csToDisplay.collectFirst { case cnc if cnc.commits.channelId == commits.channelId => cnc.chan }
+  private def getChanByCommits(commits: Commitments) = csToDisplay.collectFirst { case cnc if cnc.commits.channelId == commits.channelId => cnc.chan }
 
   private def maxNormalReceivable = LNParams.cm.maxReceivable(LNParams.cm sortedReceivable LNParams.cm.allNormal)
 

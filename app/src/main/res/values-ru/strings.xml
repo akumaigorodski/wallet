@@ -370,8 +370,8 @@
     <string name="ln_info_shutdown">Канал закрывается&#8230;</string>
     <string name="ln_info_opening">Открытие&#8230;</string>
 
+    <string name="ln_hosted_chan_drain_impossible">На данный момент средства из этого hosted-канала не могут быть перемещены.</string>
     <string name="ln_hosted_chan_remove_impossible">Этот hosted-канал нельзя удалить прямо сейчас потому что в нём есть платежи в полете. Пожалуйста, подождите завершения платежей.</string>
-    <string name="ln_hosted_chan_drain_impossible">Средства не могут быть перемещены внутри кошелька, так как у вас пока нет каналов Молнии, которые были бы способны их принять.</string>
     <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string>
     <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
 

@@ -366,8 +366,8 @@
     <string name="ln_info_shutdown">Cerrando&#8230;</string>
     <string name="ln_info_opening">Abriendo&#8230;</string>
 
+    <string name="ln_hosted_chan_drain_impossible">Los fondos no se pueden mover de este canal hospedado en este momento.</string>
     <string name="ln_hosted_chan_remove_impossible">Este canal hospedado no se puede remover ahora porque tiene pagos en camino, por favor espere hasta que hayan sido completados.</string>
-    <string name="ln_hosted_chan_drain_impossible">Los fondos no se pueden mover de este canal hospedado porque no existe un canal Lightning capaz de recibirlos actualmente.</string>
     <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string>
     <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
 
