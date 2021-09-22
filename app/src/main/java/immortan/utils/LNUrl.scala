@@ -4,15 +4,12 @@ import spray.json._
 import fr.acinq.eclair._
 import immortan.crypto.Tools._
 import immortan.utils.ImplicitJsonFormats._
-import immortan.utils.PayRequest.{AdditionalRoutes, TagsAndContents}
-import fr.acinq.eclair.router.{Announcements, RouteCalculation}
 import immortan.{LNParams, PaymentAction, RemoteNodeInfo}
-import fr.acinq.eclair.wire.{ChannelUpdate, NodeAddress}
 import fr.acinq.bitcoin.{Bech32, ByteVector32, Crypto}
-import fr.acinq.eclair.router.Graph.GraphStructure
+import immortan.utils.PayRequest.TagsAndContents
 import com.github.kevinsawicki.http.HttpRequest
-import fr.acinq.eclair.payment.PaymentRequest
 import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.eclair.wire.NodeAddress
 import rx.lang.scala.Observable
 import scodec.bits.ByteVector
 import immortan.utils.uri.Uri
@@ -161,17 +158,6 @@ case class WithdrawRequest(callback: String, k1: String, maxWithdrawable: Long, 
 object PayRequest {
   type TagAndContent = List[String]
   type TagsAndContents = List[TagAndContent]
-
-  type KeyAndUpdate = (PublicKey, ChannelUpdate)
-
-  type AdditionalRoute = List[KeyAndUpdate]
-  type AdditionalRoutes = List[AdditionalRoute]
-
-  def routeToHops(additionalRoute: AdditionalRoute): List[PaymentRequest.ExtraHop] = for {
-    (startNodeId: PublicKey, channelUpdate: ChannelUpdate) <- additionalRoute
-    signatureOk = Announcements.checkSig(channelUpdate)(startNodeId)
-    _ = require(signatureOk, "Route contains an invalid update")
-  } yield channelUpdate extraHop startNodeId
 }
 
 case class PayRequestMeta(records: TagsAndContents) {
@@ -214,9 +200,7 @@ case class PayRequest(callback: String, maxSendable: Long, minSendable: Long, me
   require(minSendable <= maxSendable, s"max=$maxSendable while min=$minSendable")
 }
 
-case class PayRequestFinal(successAction: Option[PaymentAction], disposable: Option[Boolean], routes: Option[AdditionalRoutes], pr: String) extends LNUrlData {
-
-  val additionalRoutes: Set[GraphStructure.GraphEdge] = RouteCalculation.makeExtraEdges(routes.getOrElse(Nil).map(PayRequest.routeToHops), prExt.pr.nodeId)
+case class PayRequestFinal(successAction: Option[PaymentAction], disposable: Option[Boolean], pr: String) extends LNUrlData {
 
   lazy val prExt: PaymentRequestExt = PaymentRequestExt.fromRaw(pr)
 

@@ -17,8 +17,8 @@ import immortan.utils.ImplicitJsonFormats._
 
 import scala.util.{Success, Try}
 import android.view.{View, ViewGroup}
+import immortan.sqlite.{SQLiteData, Table}
 import android.graphics.{Bitmap, BitmapFactory}
-import immortan.sqlite.{SQLiteData, SQLiteLNUrl, Table}
 import rx.lang.scala.{Observable, Subject, Subscription}
 import com.androidstudy.networkmanager.{Monitor, Tovuti}
 import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv}
@@ -56,7 +56,7 @@ import android.os.Bundle
 object HubActivity {
   var txInfos = new ItemsWithMemory[TxInfo]
   var paymentInfos = new ItemsWithMemory[PaymentInfo]
-  var payMarketInfos = new ItemsWithMemory[LNUrlLinkInfo]
+  var payMarketInfos = new ItemsWithMemory[LNUrlPayLink]
   var relayedPreimageInfos = new ItemsWithMemory[RelayedPreimageInfo]
   val allItems = List(txInfos, paymentInfos, relayedPreimageInfos, payMarketInfos)
 
@@ -107,7 +107,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def reloadTxInfos: Unit = txInfos.setItems(WalletApp.txDataBag.listRecentTxs(Table.DEFAULT_LIMIT.get) map WalletApp.txDataBag.toTxInfo)
   def reloadPaymentInfos: Unit = paymentInfos.setItems(LNParams.cm.payBag.listRecentPayments(Table.DEFAULT_LIMIT.get) map LNParams.cm.payBag.toPaymentInfo)
   def reloadRelayedPreimageInfos: Unit = relayedPreimageInfos.setItems(LNParams.cm.payBag.listRecentRelays(Table.DEFAULT_LIMIT.get) map LNParams.cm.payBag.toRelayedPreimageInfo)
-  def reloadPayMarketInfos: Unit = payMarketInfos.setItems(WalletApp.lnUrlBag.listRecentLinks(Table.DEFAULT_LIMIT.get) map WalletApp.lnUrlBag.toLinkInfo)
+  def reloadPayMarketInfos: Unit = payMarketInfos.setItems(WalletApp.lnUrlPayBag.listRecentLinks(Table.DEFAULT_LIMIT.get) map WalletApp.lnUrlPayBag.toLinkInfo)
 
   def isImportantItem: PartialFunction[TransactionDetails, Boolean] = {
     case anyFreshInfo if anyFreshInfo.updatedAt > disaplyThreshold => true
@@ -138,7 +138,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def loadSearch(query: String): Unit = WalletApp.txDataBag.db.txWrap {
     txInfos.lastItems = WalletApp.txDataBag.searchTransactions(query).map(WalletApp.txDataBag.toTxInfo)
     paymentInfos.lastItems = LNParams.cm.payBag.searchPayments(query).map(LNParams.cm.payBag.toPaymentInfo)
-    payMarketInfos.lastItems = WalletApp.lnUrlBag.searchLinks(query).map(WalletApp.lnUrlBag.toLinkInfo)
+    payMarketInfos.lastItems = WalletApp.lnUrlPayBag.searchLinks(query).map(WalletApp.lnUrlPayBag.toLinkInfo)
     updAllInfos
   }
 
@@ -208,7 +208,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         val trimmedLabelInput = Option(input).map(trimmed).filter(_.nonEmpty)
 
         currentDetails match {
-          case info: LNUrlLinkInfo => WalletApp.lnUrlBag.updateLabel(info.locator, trimmedLabelInput.getOrElse(new String), info.domain)
+          case info: LNUrlPayLink => WalletApp.lnUrlPayBag.updDescription(info.description.modify(_.label).setTo(trimmedLabelInput), info.domain, info.payString)
           case info: PaymentInfo => LNParams.cm.payBag.updDescription(info.description.modify(_.label).setTo(trimmedLabelInput), info.paymentHash)
           case info: TxInfo => WalletApp.txDataBag.updDescription(info.description.modify(_.label).setTo(trimmedLabelInput), info.txid)
           case _ =>
@@ -218,22 +218,19 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     def doRemoveItem: Unit = {
       def proceed: Unit = currentDetails match {
-        case info: LNUrlLinkInfo => WalletApp.lnUrlBag.remove(info.locator)
-        case info: PaymentInfo =>
-          // Once removed a pending incoming payment becomes unfulfillable so it makes no sense to keep app alive
-          if (PaymentStatus.PENDING == info.status) stopService(WalletApp.app.foregroundServiceIntent)
-          LNParams.cm.payBag.removePaymentInfo(info.paymentHash)
+        case info: LNUrlPayLink => WalletApp.lnUrlPayBag.remove(info.payString)
+        case info: PaymentInfo => LNParams.cm.payBag.removePaymentInfo(info.paymentHash)
         case _ =>
       }
 
-      val builder = new AlertDialog.Builder(me).setMessage(confirm_remove_item)
-      def doProceed(alert: AlertDialog): Unit = runAnd(alert.dismiss)(proceed)
-      mkCheckForm(doProceed, none, builder, dialog_ok, dialog_cancel)
+      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none,
+        new AlertDialog.Builder(me).setMessage(confirm_remove_item),
+        dialog_ok, dialog_cancel)
     }
 
     def doShareItem: Unit = currentDetails match {
       case info: TxInfo => me share getString(share_chain_tx).format(info.txString)
-      case info: LNUrlLinkInfo => me share info.payString
+      case info: LNUrlPayLink => me share info.payString
       case info: PaymentInfo =>
         val externalInfo = info.description.externalInfo.getOrElse("n/a")
         val report = LNParams.cm.dataBag.tryGetReport(info.paymentHash).getOrElse("n/a")
@@ -244,7 +241,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     def ractOnTap: Unit = currentDetails match {
       case info: DelayedRefunds => showPending(info)
-      case info: LNUrlLinkInfo => doCallPayLink(info)
+      case info: LNUrlPayLink => doCallPayLink(info)
       case info: PaymentInfo if info.isIncoming && info.status == PaymentStatus.PENDING && !lastHashToReveals.contains(info.paymentHash) =>
         // Intercept normal flow and show invoice if: this is an incoming, not yet fulfilled payment with no parts received
         runAnd(InputParser.value = info.prExt)(me goTo ClassNames.qrInvoiceActivityClass)
@@ -413,7 +410,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       list.setDivider(null)
     }
 
-    def doCallPayLink(info: LNUrlLinkInfo): Unit = {
+    def doCallPayLink(info: LNUrlPayLink): Unit = {
       InputParser.value = info.payLink.get
       checkExternalData(noneRunnable)
     }
@@ -459,17 +456,17 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         setVisibleIcon(id = R.id.lnBtc)
         swipeWrap.setLockDrag(true)
 
-      case info: LNUrlLinkInfo =>
-        val lastAmount = WalletApp.denom.parsedWithSign(info.lastMsat, cardIn, cardZero)
+      case info: LNUrlPayLink =>
+        val lastAmount = WalletApp.denom.parsedWithSign(info.description.lastMsat, cardIn, cardZero)
         setVisMany(false -> labelIcon, true -> linkContainer, false -> nonLinkContainer, true -> removeItem)
-        setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.label.isDefined -> marketLabel)
+        setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.description.label.isDefined -> marketLabel)
 
         marketItems.removeAllViewsInLayout
         addFlowChip(marketItems, marketLinkCaption(info).take(28), R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(marketLinkIcon(info), null, null, null)
         addFlowChip(marketItems, lastAmount, R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(getDrawable(R.drawable.baseline_arrow_upward_18), null, null, null)
         for (lastComment <- info.lastComment) addFlowChip(marketItems, lastComment, R.drawable.border_blue)
         info.imageBytes.map(payLinkImageMemo.get).foreach(linkImage.setImageBitmap)
-        info.label.foreach(marketLabel.setText)
+        info.description.label.foreach(marketLabel.setText)
         swipeWrap.setLockDrag(false)
       }
 
@@ -479,13 +476,13 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       lastVisibleIconId = id
     }
 
-    def marketLinkCaption(info: LNUrlLinkInfo): String = info.payMetaData match {
+    def marketLinkCaption(info: LNUrlPayLink): String = info.payMetaData match {
       case Success(payMeta) if payMeta.identities.nonEmpty => payMeta.identities.head
       case Success(payMeta) if payMeta.emails.nonEmpty => payMeta.emails.head
       case _ => info.payLink.get.uri.getHost
     }
 
-    def marketLinkIcon(info: LNUrlLinkInfo): Drawable = info.payMetaData match {
+    def marketLinkIcon(info: LNUrlPayLink): Drawable = info.payMetaData match {
       case Success(payMeta) if payMeta.identities.nonEmpty => getDrawable(R.drawable.baseline_perm_identity_18)
       case Success(payMeta) if payMeta.emails.nonEmpty => getDrawable(R.drawable.baseline_alternate_email_18)
       case _ => getDrawable(R.drawable.baseline_language_18)
@@ -781,7 +778,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
             override def send(alert: AlertDialog): Unit = {
               val cmd = LNParams.cm.makeSendCmd(prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(origAmount)
-              replaceOutgoingPayment(prExt, PlainDescription(split = cmd.split.asSome, label = manager.resultExtraInput, invoiceText = prExt.descriptionOrEmpty), action = None, sentAmount = cmd.split.myPart)
+              val pd = PlainDescription(split = cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, proofTxid = None, invoiceText = prExt.descriptionOrEmpty)
+              replaceOutgoingPayment(prExt, pd, action = None, sentAmount = cmd.split.myPart)
               LNParams.cm.localSend(cmd)
               alert.dismiss
             }
@@ -1134,7 +1132,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def bringReceivePopup: Unit = lnReceiveGuard(contentWindow) {
     new OffChainReceiver(initMaxReceivable = Long.MaxValue.msat, initMinReceivable = 0L.msat) {
       override def getManager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_public, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-      override def getDescription: PaymentDescription = PlainDescription(split = None, label = None, invoiceText = manager.resultExtraInput getOrElse new String)
+      override def getDescription: PaymentDescription = PlainDescription(split = None, label = None, semanticOrder = None, proofTxid = None, invoiceText = manager.resultExtraInput getOrElse new String)
       override def processInvoice(prExt: PaymentRequestExt): Unit = runAnd(InputParser.value = prExt)(me goTo ClassNames.qrInvoiceActivityClass)
       override def getTitleText: String = getString(dialog_receive_ln)
     }
@@ -1143,7 +1141,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def bringWithdrawPopup(data: WithdrawRequest): Unit = lnReceiveGuard(contentWindow) {
     new OffChainReceiver(initMaxReceivable = data.maxWithdrawable.msat, initMinReceivable = data.minCanReceive) {
       override def getManager: RateManager = new RateManager(body, getString(dialog_add_ln_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-      override def getDescription: PaymentDescription = PlainMetaDescription(split = None, label = manager.resultExtraInput, invoiceText = new String, meta = data.descriptionOrEmpty)
+      override def getDescription: PaymentDescription = PlainMetaDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, proofTxid = None, invoiceText = new String, meta = data.descriptionOrEmpty)
       override def getTitleText: String = getString(dialog_lnurl_withdraw).format(data.callbackUri.getHost, data.brDescription)
       override def processInvoice(prExt: PaymentRequestExt): Unit = data.requestWithdraw(prExt).foreach(none, onFail)
     }
@@ -1163,8 +1161,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       override def neutral(alert: AlertDialog): Unit = {
         def proceed(pf: PayRequestFinal): TimerTask = UITask {
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
+            // This LN payment is related to LNURL-PAY link, more recent payments are displayed higher under link
+            val semanticOrder = SemanticOrder(id = lnUrl.request, isParent = false, order = -System.currentTimeMillis)
             val cmd = LNParams.cm.makeSendCmd(pf.prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(minSendable)
-            InputParser.value = SplitParams(pf.prExt, pf.successAction, PlainMetaDescription(cmd.split.asSome, label = None, invoiceText = new String, meta = data.meta.textPlain), cmd, typicalChainTxFee)
+            val pd = PlainMetaDescription(cmd.split.asSome, label = None, semanticOrder = semanticOrder.asSome, proofTxid = None, invoiceText = new String, meta = data.meta.textPlain)
+            InputParser.value = SplitParams(pf.prExt, pf.successAction, pd, cmd, typicalChainTxFee)
             runAnd(alert.dismiss)(me goTo ClassNames.qrSplitActivityClass)
           }
         }
@@ -1177,15 +1178,18 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       override def send(alert: AlertDialog): Unit = {
         def proceed(pf: PayRequestFinal): TimerTask = UITask {
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
+            // This LN payment is related to LNURL-PAY link, more recent payments are displayed higher under link
+            val semanticOrder = SemanticOrder(id = lnUrl.request, isParent = false, order = -System.currentTimeMillis)
             val cmd = LNParams.cm.makeSendCmd(pf.prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(manager.resultMsat)
-            replaceOutgoingPayment(pf.prExt, PlainMetaDescription(split = None, label = None, invoiceText = new String, meta = data.meta.textPlain), pf.successAction, sentAmount = cmd.split.myPart)
+            val pd = PlainMetaDescription(cmd.split.asSome, label = None, semanticOrder = semanticOrder.asSome, proofTxid = None, invoiceText = new String, meta = data.meta.textPlain)
+            replaceOutgoingPayment(pf.prExt, pd, pf.successAction, sentAmount = cmd.split.myPart)
             LNParams.cm.localSend(cmd)
 
             if (!pf.isThrowAway) {
-              val info = LNUrlLinkInfo(lnUrl.uri.getHost, locator = new String, payString = lnUrl.request, nextWithdrawString = new String,
-                payMetaString = data.metadata, lastMsat = manager.resultMsat, lastDate = System.currentTimeMillis, lastHashString = pf.prExt.pr.paymentHash.toHex,
-                lastPayNodeIdString = pf.prExt.pr.nodeId.toString, lastBalanceLong = -1L, lastPayCommentString = getComment.getOrElse(new String), labelString = new String)
-              WalletApp.lnUrlBag saveLink info.copy(locator = SQLiteLNUrl toLocator info)
+              val info = LNUrlPayLink(domain = lnUrl.uri.getHost, payString = lnUrl.request, payMetaString = data.metadata, updatedAt = System.currentTimeMillis,
+                description = LNUrlDescription(label = None, semanticOrder = semanticOrder.copy(isParent = true, order = 0L).asSome, lastMsat = manager.resultMsat),
+                lastHashString = pf.prExt.pr.paymentHash.toHex, lastNodeIdString = pf.prExt.pr.nodeId.toString, lastCommentString = getComment getOrElse new String)
+              WalletApp.lnUrlPayBag.saveLink(info)
             }
           }
         }
@@ -1209,7 +1213,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           val descriptionHashOpt: Option[ByteVector32] = payRequestFinal.prExt.pr.description.right.toOption
           require(descriptionHashOpt.contains(data.metaDataHash), s"Metadata hash mismatch, original=${data.metaDataHash}, provided=$descriptionHashOpt")
           require(payRequestFinal.prExt.pr.amount.contains(amount), s"Payment amount mismatch, requested=$amount, provided=${payRequestFinal.prExt.pr.amount}")
-          for (additionalEdge <- payRequestFinal.additionalRoutes) LNParams.cm.pf process additionalEdge
           payRequestFinal.modify(_.successAction.each.domain).setTo(data.callbackUri.getHost.asSome)
         }
 

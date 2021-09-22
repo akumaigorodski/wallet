@@ -7,11 +7,11 @@ import fr.acinq.eclair.wire.CommonCodecs._
 import fr.acinq.eclair.wire.LightningMessageCodecs._
 
 import fr.acinq.bitcoin.{ByteVector32, Satoshi}
-import immortan.utils.PayRequest.{AdditionalRoutes, TagAndContent}
 import immortan.utils.FiatRates.{BitpayItemList, CoinGeckoItemMap}
 import fr.acinq.eclair.blockchain.electrum.db.{ChainWalletInfo, SigningWallet, WatchingWallet}
 import fr.acinq.eclair.wire.ChannelCodecs.extendedPublicKeyCodec
 import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
+import immortan.utils.PayRequest.TagAndContent
 import fr.acinq.eclair.wire.ChannelUpdate
 import fr.acinq.bitcoin.Crypto.PublicKey
 import immortan.crypto.Tools.Fiat2Btc
@@ -69,13 +69,15 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
     }
   }
 
-  implicit val signingWalletFmt: JsonFormat[SigningWallet] = taggedJsonFmt(jsonFormat[String, Boolean,
-    SigningWallet](SigningWallet.apply, "walletType", "isRemovable"), tag = "SigningWallet")
+  implicit val signingWalletFmt: JsonFormat[SigningWallet] = taggedJsonFmt(jsonFormat[String, Boolean, SigningWallet](SigningWallet.apply, "walletType", "isRemovable"), tag = "SigningWallet")
 
-  implicit val watchingWalletFmt: JsonFormat[WatchingWallet] = taggedJsonFmt(jsonFormat[String, ExtendedPublicKey, Boolean,
-    WatchingWallet](WatchingWallet.apply, "walletType", "xPub", "isRemovable"), tag = "WatchingWallet")
+  implicit val watchingWalletFmt: JsonFormat[WatchingWallet] = taggedJsonFmt(jsonFormat[String, ExtendedPublicKey, Boolean, WatchingWallet](WatchingWallet.apply, "walletType", "xPub", "isRemovable"), tag = "WatchingWallet")
 
-  // Tx description
+  // PaymentInfo stuff
+
+  implicit val semanticOrderFmt: JsonFormat[SemanticOrder] = jsonFormat[String, Boolean, Long, SemanticOrder](SemanticOrder.apply, "id", "isParent", "order")
+
+  implicit val lNUrlDescription: JsonFormat[LNUrlDescription] = jsonFormat[Option[String], Option[SemanticOrder], MilliSatoshi, LNUrlDescription](LNUrlDescription.apply, "label", "semanticOrder", "lastMsat")
 
   implicit object TxDescriptionFmt extends JsonFormat[TxDescription] {
     def read(raw: JsValue): TxDescription = raw.asJsObject.fields(TAG) match {
@@ -89,35 +91,33 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
     }
 
     def write(internal: TxDescription): JsValue = internal match {
-      case paymentDescription: PlainTxDescription => paymentDescription.toJson
-      case paymentDescription: OpReturnTxDescription => paymentDescription.toJson
-      case paymentDescription: ChanFundingTxDescription => paymentDescription.toJson
-      case paymentDescription: ChanRefundingTxDescription => paymentDescription.toJson
-      case paymentDescription: HtlcClaimTxDescription => paymentDescription.toJson
-      case paymentDescription: PenaltyTxDescription => paymentDescription.toJson
+      case txDescription: PlainTxDescription => txDescription.toJson
+      case txDescription: OpReturnTxDescription => txDescription.toJson
+      case txDescription: ChanFundingTxDescription => txDescription.toJson
+      case txDescription: ChanRefundingTxDescription => txDescription.toJson
+      case txDescription: HtlcClaimTxDescription => txDescription.toJson
+      case txDescription: PenaltyTxDescription => txDescription.toJson
       case _ => throw new Exception
     }
   }
 
-  implicit val plainTxDescriptionFmt: JsonFormat[PlainTxDescription] = taggedJsonFmt(jsonFormat[List[String], Option[String],
-    PlainTxDescription](PlainTxDescription.apply, "addresses", "label"), tag = "PlainTxDescription")
+  implicit val plainTxDescriptionFmt: JsonFormat[PlainTxDescription] = taggedJsonFmt(jsonFormat[List[String], Option[String], Option[SemanticOrder],
+    PlainTxDescription](PlainTxDescription.apply, "addresses", "label", "semanticOrder"), tag = "PlainTxDescription")
 
-  implicit val opReturnTxDescriptionFmt: JsonFormat[OpReturnTxDescription] = taggedJsonFmt(jsonFormat[List[ByteVector32], Option[String],
-    OpReturnTxDescription](OpReturnTxDescription.apply, "preimages", "label"), tag = "OpReturnTxDescription")
+  implicit val opReturnTxDescriptionFmt: JsonFormat[OpReturnTxDescription] = taggedJsonFmt(jsonFormat[List[ByteVector32], Option[String], Option[SemanticOrder],
+    OpReturnTxDescription](OpReturnTxDescription.apply, "preimages", "label", "semanticOrder"), tag = "OpReturnTxDescription")
 
-  implicit val chanFundingTxDescriptionFmt: JsonFormat[ChanFundingTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String],
-    ChanFundingTxDescription](ChanFundingTxDescription.apply, "nodeId", "label"), tag = "ChanFundingTxDescription")
+  implicit val chanFundingTxDescriptionFmt: JsonFormat[ChanFundingTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder],
+    ChanFundingTxDescription](ChanFundingTxDescription.apply, "nodeId", "label", "semanticOrder"), tag = "ChanFundingTxDescription")
 
-  implicit val chanRefundingTxDescriptionFmt: JsonFormat[ChanRefundingTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String],
-    ChanRefundingTxDescription](ChanRefundingTxDescription.apply, "nodeId", "label"), tag = "ChanRefundingTxDescription")
+  implicit val chanRefundingTxDescriptionFmt: JsonFormat[ChanRefundingTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder],
+    ChanRefundingTxDescription](ChanRefundingTxDescription.apply, "nodeId", "label", "semanticOrder"), tag = "ChanRefundingTxDescription")
 
-  implicit val htlcClaimTxDescriptionFmt: JsonFormat[HtlcClaimTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String],
-    HtlcClaimTxDescription](HtlcClaimTxDescription.apply, "nodeId", "label"), tag = "HtlcClaimTxDescription")
+  implicit val htlcClaimTxDescriptionFmt: JsonFormat[HtlcClaimTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder],
+    HtlcClaimTxDescription](HtlcClaimTxDescription.apply, "nodeId", "label", "semanticOrder"), tag = "HtlcClaimTxDescription")
 
-  implicit val penaltyTxDescriptionFmt: JsonFormat[PenaltyTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String],
-    PenaltyTxDescription](PenaltyTxDescription.apply, "nodeId", "label"), tag = "PenaltyTxDescription")
-
-  // Payment description
+  implicit val penaltyTxDescriptionFmt: JsonFormat[PenaltyTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder],
+    PenaltyTxDescription](PenaltyTxDescription.apply, "nodeId", "label", "semanticOrder"), tag = "PenaltyTxDescription")
 
   implicit object PaymentDescriptionFmt extends JsonFormat[PaymentDescription] {
     def read(raw: JsValue): PaymentDescription = raw.asJsObject.fields(TAG) match {
@@ -135,11 +135,11 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
 
   implicit val splitInfoFmt: JsonFormat[SplitInfo] = jsonFormat[MilliSatoshi, MilliSatoshi, SplitInfo](SplitInfo.apply, "totalSum", "myPart")
 
-  implicit val plainDescriptionFmt: JsonFormat[PlainDescription] = taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], String, Option[String],
-    PlainDescription](PlainDescription.apply, "split", "label", "invoiceText", "proofTxid"), tag = "PlainDescription")
+  implicit val plainDescriptionFmt: JsonFormat[PlainDescription] = taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String,
+    PlainDescription](PlainDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText"), tag = "PlainDescription")
 
-  implicit val plainMetaDescriptionFmt: JsonFormat[PlainMetaDescription] = taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], String, String, Option[String],
-    PlainMetaDescription](PlainMetaDescription.apply, "split", "label", "invoiceText", "meta", "proofTxid"), tag = "PlainMetaDescription")
+  implicit val plainMetaDescriptionFmt: JsonFormat[PlainMetaDescription] = taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String, String,
+    PlainMetaDescription](PlainMetaDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText", "meta"), tag = "PlainMetaDescription")
 
   // Payment action
 
@@ -192,12 +192,9 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
   implicit val payRequestFmt: JsonFormat[PayRequest] = taggedJsonFmt(jsonFormat[String, Long, Long, String, Option[Int],
     PayRequest](PayRequest.apply, "callback", "maxSendable", "minSendable", "metadata", "commentAllowed"), tag = "payRequest")
 
-  implicit val payRequestFinalFmt: JsonFormat[PayRequestFinal] =
-    jsonFormat[Option[PaymentAction], Option[Boolean], Option[AdditionalRoutes], String,
-      PayRequestFinal](PayRequestFinal.apply, "successAction", "disposable", "routes", "pr")
+  implicit val payRequestFinalFmt: JsonFormat[PayRequestFinal] = jsonFormat[Option[PaymentAction], Option[Boolean], String, PayRequestFinal](PayRequestFinal.apply, "successAction", "disposable", "pr")
 
-  implicit val payRequestMetaFmt: JsonFormat[PayRequestMeta] =
-    jsonFormat[List[TagAndContent], PayRequestMeta](PayRequestMeta.apply, "records")
+  implicit val payRequestMetaFmt: JsonFormat[PayRequestMeta] = jsonFormat[List[TagAndContent], PayRequestMeta](PayRequestMeta.apply, "records")
 
   // Fiat feerates
 

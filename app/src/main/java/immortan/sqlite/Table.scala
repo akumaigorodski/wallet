@@ -162,13 +162,13 @@ object ChainWalletTable extends Table {
 
   val newSql = s"INSERT OR IGNORE INTO $table ($info, $xPub, $data, $lastBalance, $label) VALUES (?, ?, ?, ?, ?)"
 
-  val killSql = s"DELETE FROM $table WHERE $xPub = ?"
-
   val updSql = s"UPDATE $table SET $data = ?, $lastBalance = ? WHERE $xPub = ?"
 
   val updLabelSql = s"UPDATE $table SET $label = ? WHERE $xPub = ?"
 
   val selectSql = s"SELECT * FROM $table ORDER BY $id ASC"
+
+  val killSql = s"DELETE FROM $table WHERE $xPub = ?"
 
   def createStatements: Seq[String] =
     s"""CREATE TABLE IF NOT EXISTS $table(
@@ -333,41 +333,34 @@ object ElectrumHeadersTable extends Table {
   def createStatements: Seq[String] = s"CREATE TABLE IF NOT EXISTS $table($IDAUTOINC, $height INTEGER NOT NULL $UNIQUE, $blockHash TEXT NOT NULL, $header BLOB NOT NULL)" :: Nil
 }
 
-object LNUrlTable extends Table {
-  val (table, search, domain, locator, lnurlPay, nextLnurlWithdraw, payMeta, lastMsat, lastDate, lastHash, lastPayNodeId, lastBalance, lastPayComment, lastProof, label) =
-    ("lnurl", "search", "domain", "locator", "lnurlpay", "nextlnurlwithdraw", "paymeta", "lastmsat", "lastdate", "lasthash", "lastpaynodeid", "lastbalance", "lastcomment", "lastproof", "label")
+object LNUrlPayTable extends Table {
+  val (table, search, domain, pay, payMeta, updatedAt, description, lastHash, lastNodeId, lastComment) =
+    ("lnurlpay", "search", "domain", "pay", "meta", "updated", "description", "lasthash", "lastnodeid", "lastcomment")
 
-  private val inserts = s"$domain, $locator, $lnurlPay, $nextLnurlWithdraw, $payMeta, $lastMsat, $lastDate, $lastHash, $lastPayNodeId, $lastBalance, $lastPayComment, $lastProof, $label"
-  val newSql = s"INSERT OR IGNORE INTO $table ($inserts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  val newSql = s"INSERT OR IGNORE INTO $table ($domain, $pay, $payMeta, $updatedAt, $description, $lastHash, $lastNodeId, $lastComment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
   val newVirtualSql = s"INSERT INTO $fts$table ($search, $domain) VALUES (?, ?)"
 
-  val selectRecentSql = s"SELECT * FROM $table ORDER BY $lastDate DESC LIMIT ?"
+  val selectRecentSql = s"SELECT * FROM $table ORDER BY $updatedAt DESC LIMIT ?"
 
   val searchSql = s"SELECT * FROM $table WHERE $domain IN (SELECT $domain FROM $fts$table WHERE $search MATCH ?) LIMIT 50"
 
-  val updPayInfoSql = s"UPDATE $table SET $payMeta = ?, $lastMsat = ?, $lastDate = ?, $lastHash = ?, $lastPayNodeId = ?, $lastPayComment = ?, $lastProof = ? WHERE $locator = ?"
+  val updInfoSql = s"UPDATE $table SET $payMeta = ?, $updatedAt = ?, $description = ?, $lastHash = ?, $lastNodeId = ?, $lastComment = ? WHERE $pay = ?"
 
-  val updWithdrawInfoSql = s"UPDATE $table SET $locator = ?, $nextLnurlWithdraw = ?, $lastMsat = ?, $lastDate = ?, $lastHash = ? WHERE $locator = ?"
+  val updateDescriptionSql = s"UPDATE $table SET $description = ? WHERE $pay = ?"
 
-  val updBalanceSql = s"UPDATE $table SET $nextLnurlWithdraw = ?, $lastBalance = ? WHERE $locator = ?"
-
-  val updLabelSql = s"UPDATE $table SET $label = ? WHERE $locator = ?"
-
-  val killSql = s"DELETE FROM $table WHERE $locator = ?"
+  val killSql = s"DELETE FROM $table WHERE $pay = ?"
 
   def createStatements: Seq[String] = {
     val createTable = s"""CREATE TABLE IF NOT EXISTS $table(
-      $IDAUTOINC, $domain STRING NOT NULL, $locator STRING NOT NULL $UNIQUE, $lnurlPay STRING NOT NULL,
-      $nextLnurlWithdraw STRING NOT NULL, $payMeta STRING NOT NULL, $lastMsat INTEGER NOT NULL, $lastDate INTEGER NOT NULL,
-      $lastHash STRING NOT NULL, $lastPayNodeId STRING NOT NULL, $lastBalance STRING NOT NULL, $lastPayComment STRING NOT NULL,
-      $lastProof STRING NOT NULL, $label STRING NOT NULL
+      $IDAUTOINC, $domain STRING NOT NULL, $pay STRING NOT NULL $UNIQUE, $payMeta STRING NOT NULL,$updatedAt INTEGER NOT NULL,
+      $description STRING NOT NULL, $lastHash STRING NOT NULL, $lastNodeId STRING NOT NULL, $lastComment STRING NOT NULL
     )"""
 
     val addSearchTable = s"CREATE VIRTUAL TABLE IF NOT EXISTS $fts$table USING $fts($search, $domain)"
-    val addIndex2 = s"CREATE INDEX IF NOT EXISTS idx2$table ON $table ($lastDate)"
-    val addIndex3 = s"CREATE INDEX IF NOT EXISTS idx3$table ON $table ($domain)"
-    createTable :: addSearchTable :: addIndex2 :: addIndex3 :: Nil
+    val addIndex1 = s"CREATE INDEX IF NOT EXISTS idx1$table ON $table ($domain)"
+    val addIndex2 = s"CREATE INDEX IF NOT EXISTS idx2$table ON $table ($pay)"
+    createTable :: addSearchTable :: addIndex1 :: addIndex2 :: Nil
   }
 }
 

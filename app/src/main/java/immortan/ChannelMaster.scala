@@ -260,9 +260,11 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
   }
 
   def localSendToSelf(sources: List[Channel], destinations: CommitsAndMax, preimage: ByteVector32, typicalChainTxFee: MilliSatoshi, capLNFeeToChain: Boolean): Unit = {
-    val prExt = makePrExt(maxSendable(sources).min(destinations.maxReceivable), PlainDescription(split = None, label = None, invoiceText = new String), destinations.commits, Crypto sha256 preimage)
-    val keySendCmd = makeSendCmd(prExt, prExt.pr.amount.get, sources, typicalChainTxFee, capLNFeeToChain).copy(userCustomTlvs = GenericTlv(OnionCodecs.keySendNumber, preimage) :: Nil)
-    localSend(keySendCmd)
+    val pd = PlainMetaDescription(split = None, label = None, semanticOrder = None, proofTxid = None, invoiceText = new String, meta = "Keysend to self")
+    val prExt = makePrExt(maxSendable(sources).min(destinations.maxReceivable), pd, destinations.commits, Crypto sha256 preimage)
+    val keySendCmd = makeSendCmd(prExt, prExt.pr.amount.get, allowedChans = sources, typicalChainTxFee, capLNFeeToChain)
+    val keySendCmd1 = keySendCmd.copy(userCustomTlvs = GenericTlv(OnionCodecs.keySendNumber, preimage) :: Nil)
+    localSend(keySendCmd1)
   }
 
   def checkIfSendable(paymentHash: ByteVector32): Option[Int] = {

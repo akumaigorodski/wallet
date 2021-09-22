@@ -79,15 +79,15 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
 
   def paymentSummary: Try[PaymentSummary] =
     db.select(PaymentTable.selectSummarySql).headTry { rc =>
-      PaymentSummary(fees = MilliSatoshi(rc long 0), chainFees = MilliSatoshi(rc long 1),
-        received = MilliSatoshi(rc long 2), sent = MilliSatoshi(rc long 3), count = rc long 4)
+      PaymentSummary(fees = MilliSatoshi(rc long 0), chainFees = MilliSatoshi(rc long 1), received = MilliSatoshi(rc long 2), sent = MilliSatoshi(rc long 3), count = rc long 4)
     }
 
   def toPaymentInfo(rc: RichCursor): PaymentInfo =
-    PaymentInfo(rc string PaymentTable.pr, ByteVector32.fromValidHex(rc string PaymentTable.preimage), rc int PaymentTable.status,
-      rc long PaymentTable.seenAt, rc long PaymentTable.updatedAt, rc string PaymentTable.description, rc string PaymentTable.action, ByteVector32.fromValidHex(rc string PaymentTable.hash),
-      ByteVector32.fromValidHex(rc string PaymentTable.secret), MilliSatoshi(rc long PaymentTable.receivedMsat), MilliSatoshi(rc long PaymentTable.sentMsat), MilliSatoshi(rc long PaymentTable.feeMsat),
-      MilliSatoshi(rc long PaymentTable.balanceMsat), rc string PaymentTable.fiatRates, MilliSatoshi(rc long PaymentTable.chainFeeMsat), rc long PaymentTable.incoming)
+    PaymentInfo(prString = rc string PaymentTable.pr, preimage = ByteVector32.fromValidHex(rc string PaymentTable.preimage), status = rc int PaymentTable.status,
+      seenAt = rc long PaymentTable.seenAt, updatedAt = rc long PaymentTable.updatedAt, description = to[PaymentDescription](rc string PaymentTable.description), actionString = rc string PaymentTable.action,
+      paymentHash = ByteVector32.fromValidHex(rc string PaymentTable.hash), paymentSecret = ByteVector32.fromValidHex(rc string PaymentTable.secret), received = MilliSatoshi(rc long PaymentTable.receivedMsat),
+      sent = MilliSatoshi(rc long PaymentTable.sentMsat), fee = MilliSatoshi(rc long PaymentTable.feeMsat), balanceSnapshot = MilliSatoshi(rc long PaymentTable.balanceMsat), fiatRatesString = rc string PaymentTable.fiatRates,
+      chainFee = MilliSatoshi(rc long PaymentTable.chainFeeMsat), incoming = rc long PaymentTable.incoming)
 
   // Preimage storage
 

@@ -533,14 +533,16 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     def baseSendNow(prExt: PaymentRequestExt, alert: AlertDialog): Unit = {
       val cmd = LNParams.cm.makeSendCmd(prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(manager.resultMsat)
-      replaceOutgoingPayment(prExt, PlainDescription(split = None, label = manager.resultExtraInput, invoiceText = prExt.descriptionOrEmpty), action = None, sentAmount = cmd.split.myPart)
+      val pd = PlainDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, proofTxid = None, invoiceText = prExt.descriptionOrEmpty)
+      replaceOutgoingPayment(prExt, pd, action = None, sentAmount = cmd.split.myPart)
       LNParams.cm.localSend(cmd)
       alert.dismiss
     }
 
     def proceedSplit(prExt: PaymentRequestExt, origAmount: MilliSatoshi, alert: AlertDialog): Unit = {
       val cmd = LNParams.cm.makeSendCmd(prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(origAmount)
-      InputParser.value = SplitParams(prExt, action = None, PlainDescription(split = cmd.split.asSome, label = manager.resultExtraInput, invoiceText = prExt.descriptionOrEmpty), cmd, typicalChainTxFee)
+      val pd = PlainDescription(split = cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, proofTxid = None, invoiceText = prExt.descriptionOrEmpty)
+      InputParser.value = SplitParams(prExt, action = None, pd, cmd, typicalChainTxFee)
       me goTo ClassNames.qrSplitActivityClass
       alert.dismiss
     }

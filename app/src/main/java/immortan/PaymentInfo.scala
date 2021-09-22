@@ -29,55 +29,89 @@ object PaymentStatus {
   final val INIT = 0
 }
 
+case class SplitParams(prExt: PaymentRequestExt, action: Option[PaymentAction], description: PaymentDescription, cmd: SendMultiPart, chainFee: MilliSatoshi)
+
+case class SemanticOrder(id: String, isParent: Boolean, order: Long)
+
+sealed trait TransactionDescription {
+  val semanticOrder: Option[SemanticOrder]
+  val label: Option[String]
+}
+
 sealed trait TransactionDetails {
   // We order items on UI by when they were first seen
   // We hide items depending on when they were updated
   def updatedAt: Long
   def seenAt: Long
 
-  // What user will see as item date
   val date: Date = new Date(seenAt)
+  val description: TransactionDescription
   val identity: String
 }
 
-case class LNUrlLinkInfo(domain: String, locator: String, payString: String, nextWithdrawString: String, payMetaString: String,
-                         lastMsat: MilliSatoshi, lastDate: Long, lastHashString: String, lastPayNodeIdString: String, lastBalanceLong: Long,
-                         lastPayCommentString: String, labelString: String) extends TransactionDetails {
+case class LNUrlDescription(label: Option[String], semanticOrder: Option[SemanticOrder], lastMsat: MilliSatoshi) extends TransactionDescription
 
-  override val updatedAt: Long = lastDate // To properly hide it if user chooses an update-filtered view
-  override val seenAt: Long = System.currentTimeMillis + lastDate // To make it always appear on top in lists on UI
-  override val identity: String = domain + payString // Withdraw part may change, but not domain + pay part
-  override val date: Date = new Date(lastDate) // To display real date of last usage in lists on UI
+case class LNUrlPayLink(domain: String, payString: String, payMetaString: String, updatedAt: Long,
+                        description: LNUrlDescription, lastHashString: String, lastNodeIdString: String,
+                        lastCommentString: String) extends TransactionDetails {
 
-  lazy val label: Option[String] = Option(labelString).filter(_.nonEmpty)
+  override val seenAt: Long = updatedAt
 
-  lazy val lastComment: Option[String] = Option(lastPayCommentString).filter(_.nonEmpty)
+  override val identity: String = payString
 
   lazy val payLink: Option[LNUrl] = Try(payString).map(LNUrl.apply).toOption
 
-  lazy val nextWithdrawLink: Option[LNUrl] = Try(nextWithdrawString).map(LNUrl.apply).toOption
-
   lazy val payMetaData: Try[PayRequestMeta] = Try(payMetaString) map to[PayRequest.TagsAndContents] map PayRequestMeta
 
-  lazy val lastBalance: Option[MilliSatoshi] = Option(lastBalanceLong).filter(0L.>=).map(MilliSatoshi.apply)
-
   lazy val imageBytes: Option[Bytes] = payMetaData.map(_.imageBase64s.head).map(Base64.decode).toOption
+
+  lazy val lastComment: Option[String] = Option(lastCommentString).filter(_.nonEmpty)
 }
 
 case class DelayedRefunds(txToParent: Map[Transaction, TxConfirmedAtOpt] = Map.empty) extends TransactionDetails {
-  lazy val totalAmount: MilliSatoshi = txToParent.keys.flatMap(_.txOut).map(_.amount).sum.toMilliSatoshi
+  val totalAmount: MilliSatoshi = txToParent.keys.flatMap(_.txOut).map(_.amount).sum.toMilliSatoshi
 
-  override val updatedAt: Long = System.currentTimeMillis * 2 // To never hide it if user chooses an update-filtered view
-  override val seenAt: Long = System.currentTimeMillis * 2 // To make it always appear on top in lists on UI
+  override val updatedAt: Long = System.currentTimeMillis * 2
+
+  override val seenAt: Long = System.currentTimeMillis * 2
+
   override val identity: String = "DelayedRefunds"
+
+  override val description: TransactionDescription = new TransactionDescription {
+    val semanticOrder: Option[SemanticOrder] = None
+    val label: Option[String] = None
+  }
 }
 
-case class SplitParams(prExt: PaymentRequestExt, action: Option[PaymentAction], description: PaymentDescription, cmd: SendMultiPart, chainFee: MilliSatoshi)
+// Payment descriptions
 
-case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, seenAt: Long, updatedAt: Long, descriptionString: String,
-                       actionString: String, paymentHash: ByteVector32, paymentSecret: ByteVector32, received: MilliSatoshi, sent: MilliSatoshi,
-                       fee: MilliSatoshi, balanceSnapshot: MilliSatoshi, fiatRatesString: String, chainFee: MilliSatoshi,
-                       incoming: Long) extends TransactionDetails {
+sealed trait PaymentDescription extends TransactionDescription {
+  val externalInfo: Option[String] // The one which comes from invoice description, LNURL-PAY metadata, etc...
+  val proofTxid: Option[String] // If this is an incoming HC-routed payment with revealed preimage and stalling Host
+  val split: Option[SplitInfo]
+  val invoiceText: String
+  val queryText: String
+}
+
+case class PlainDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder],
+                            proofTxid: Option[String], invoiceText: String) extends PaymentDescription {
+
+  val externalInfo: Option[String] = Some(invoiceText).find(_.nonEmpty)
+
+  val queryText: String = invoiceText + SEPARATOR + label.orNull
+}
+
+case class PlainMetaDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder],
+                                proofTxid: Option[String], invoiceText: String, meta: String) extends PaymentDescription {
+
+  val externalInfo: Option[String] = List(meta, invoiceText).find(_.nonEmpty)
+
+  val queryText: String = invoiceText + SEPARATOR + meta + SEPARATOR + label.orNull
+}
+
+case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, seenAt: Long, updatedAt: Long, description: PaymentDescription, actionString: String,
+                       paymentHash: ByteVector32, paymentSecret: ByteVector32, received: MilliSatoshi, sent: MilliSatoshi, fee: MilliSatoshi, balanceSnapshot: MilliSatoshi,
+                       fiatRatesString: String, chainFee: MilliSatoshi, incoming: Long) extends TransactionDetails {
 
   override val identity: String = prString
 
@@ -86,8 +120,6 @@ case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, se
   lazy val fullTag: FullPaymentTag = FullPaymentTag(paymentHash, paymentSecret, if (isIncoming) PaymentTagTlv.FINAL_INCOMING else PaymentTagTlv.LOCALLY_SENT)
 
   lazy val action: Option[PaymentAction] = if (actionString == PaymentInfo.NO_ACTION) None else to[PaymentAction](actionString).asSome
-
-  lazy val description: PaymentDescription = to[PaymentDescription](descriptionString)
 
   lazy val prExt: PaymentRequestExt = PaymentRequestExt.fromRaw(prString)
 
@@ -116,35 +148,13 @@ case class AESAction(domain: Option[String], description: String, ciphertext: St
   val finalMessage = s"<br>${description take 144}"
 }
 
-// Payment descriptions
-
-sealed trait PaymentDescription {
-  val proofTxid: Option[String]
-  val split: Option[SplitInfo]
-  val label: Option[String]
-  val invoiceText: String
-
-  val externalInfo: Option[String]
-  val queryText: String
-}
-
-case class PlainDescription(split: Option[SplitInfo], label: Option[String], invoiceText: String, proofTxid: Option[String] = None) extends PaymentDescription {
-  val externalInfo: Option[String] = Some(invoiceText).find(_.nonEmpty)
-  val queryText: String = invoiceText + SEPARATOR + label.orNull
-}
-
-case class PlainMetaDescription(split: Option[SplitInfo], label: Option[String], invoiceText: String, meta: String, proofTxid: Option[String] = None) extends PaymentDescription {
-  val queryText: String = invoiceText + SEPARATOR + meta + SEPARATOR + label.orNull
-  val externalInfo: Option[String] = List(meta, invoiceText).find(_.nonEmpty)
-}
-
 // Relayed preimages
 
 case class RelayedPreimageInfo(paymentHashString: String, paymentSecretString: String,
                                preimageString: String, relayed: MilliSatoshi, earned: MilliSatoshi,
                                seenAt: Long, updatedAt: Long) extends TransactionDetails {
 
-  override val identity: String = paymentHashString
+  override val identity: String = paymentHashString + paymentSecretString
 
   lazy val preimage: ByteVector32 = ByteVector32.fromValidHex(preimageString)
 
@@ -153,16 +163,20 @@ case class RelayedPreimageInfo(paymentHashString: String, paymentSecretString: S
   lazy val paymentSecret: ByteVector32 = ByteVector32.fromValidHex(paymentSecretString)
 
   lazy val fullTag: FullPaymentTag = FullPaymentTag(paymentHash, paymentSecret, PaymentTagTlv.TRAMPLOINE_ROUTED)
+
+  override val description: TransactionDescription = new TransactionDescription {
+    val semanticOrder: Option[SemanticOrder] = None
+    val label: Option[String] = None
+  }
 }
 
 // Tx descriptions
 
-case class TxInfo(txString: String, txidString: String, pubKeyString: String, depth: Long, receivedSat: Satoshi,
-                  sentSat: Satoshi, feeSat: Satoshi, seenAt: Long, updatedAt: Long, descriptionString: String,
-                  balanceSnapshot: MilliSatoshi, fiatRatesString: String, incoming: Long,
-                  doubleSpent: Long) extends TransactionDetails {
+case class TxInfo(txString: String, txidString: String, pubKeyString: String, depth: Long, receivedSat: Satoshi, sentSat: Satoshi,
+                  feeSat: Satoshi, seenAt: Long, updatedAt: Long, description: TxDescription, balanceSnapshot: MilliSatoshi,
+                  fiatRatesString: String, incoming: Long, doubleSpent: Long) extends TransactionDetails {
 
-  override val identity: String = txString
+  override val identity: String = txidString
 
   lazy val isIncoming: Boolean = 1L == incoming
   
@@ -172,8 +186,6 @@ case class TxInfo(txString: String, txidString: String, pubKeyString: String, de
 
   lazy val fiatRateSnapshot: Fiat2Btc = to[Fiat2Btc](fiatRatesString)
 
-  lazy val description: TxDescription = to[TxDescription](descriptionString)
-
   lazy val pubKey: PublicKey = PublicKey(ByteVector fromValidHex pubKeyString)
 
   lazy val txid: ByteVector32 = ByteVector32.fromValidHex(txidString)
@@ -181,19 +193,18 @@ case class TxInfo(txString: String, txidString: String, pubKeyString: String, de
   lazy val tx: Transaction = Transaction.read(txString)
 }
 
-sealed trait TxDescription {
-  def toAddress: Option[String] = None
-  def withNodeId: Option[PublicKey] = None
+sealed trait TxDescription extends TransactionDescription {
   def queryText(txid: ByteVector32): String
-  val label: Option[String]
+  def withNodeId: Option[PublicKey] = None
+  def toAddress: Option[String] = None
 }
 
-case class PlainTxDescription(addresses: List[String], label: Option[String] = None) extends TxDescription {
+case class PlainTxDescription(addresses: List[String], label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends TxDescription {
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + addresses.mkString(SEPARATOR) + SEPARATOR + label.getOrElse(new String)
   override def toAddress: Option[String] = addresses.headOption
 }
 
-case class OpReturnTxDescription(preimages: List[ByteVector32], label: Option[String] = None) extends TxDescription {
+case class OpReturnTxDescription(preimages: List[ByteVector32], label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends TxDescription {
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + preimages.map(_.toHex).mkString(SEPARATOR)
 }
 
@@ -202,19 +213,19 @@ sealed trait ChanTxDescription extends TxDescription {
   def nodeId: PublicKey
 }
 
-case class ChanFundingTxDescription(nodeId: PublicKey, label: Option[String] = None) extends ChanTxDescription {
+case class ChanFundingTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString
 }
 
-case class ChanRefundingTxDescription(nodeId: PublicKey, label: Option[String] = None) extends ChanTxDescription {
+case class ChanRefundingTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString
 }
 
-case class HtlcClaimTxDescription(nodeId: PublicKey, label: Option[String] = None) extends ChanTxDescription {
+case class HtlcClaimTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString
 }
 
-case class PenaltyTxDescription(nodeId: PublicKey, label: Option[String] = None) extends ChanTxDescription {
+case class PenaltyTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString
 }
 

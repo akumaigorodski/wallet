@@ -21,7 +21,7 @@ class SQLiteTx(val db: DBInterface) {
 
   def searchTransactions(rawSearchQuery: String): RichCursor = db.search(TxTable.searchSql, rawSearchQuery)
 
-  def updDescription(description: TxDescription, txid: ByteVector32): Unit = {
+  def updDescription(description: TxDescription, txid: ByteVector32): Unit = db txWrap {
     db.change(TxTable.updateDescriptionSql, description.toJson.compactPrint, txid.toHex)
     for (label <- description.label) addSearchableTransaction(label, txid)
     ChannelMaster.next(ChannelMaster.txDbStream)
@@ -34,8 +34,7 @@ class SQLiteTx(val db: DBInterface) {
 
   def txSummary: Try[TxSummary] =
     db.select(TxTable.selectSummarySql).headTry { rc =>
-      TxSummary(fees = Satoshi(rc long 0), received = Satoshi(rc long 1),
-        sent = Satoshi(rc long 2), count = rc long 3)
+      TxSummary(fees = Satoshi(rc long 0), received = Satoshi(rc long 1), sent = Satoshi(rc long 2), count = rc long 3)
     }
 
   def addTx(tx: Transaction, depth: Long, received: Satoshi, sent: Satoshi, feeOpt: Option[Satoshi], xPub: ExtendedPublicKey,
@@ -48,7 +47,8 @@ class SQLiteTx(val db: DBInterface) {
   }
 
   def toTxInfo(rc: RichCursor): TxInfo =
-    TxInfo(rc string TxTable.rawTx, rc string TxTable.txid, rc string TxTable.pub, rc long TxTable.depth, Satoshi(rc long TxTable.receivedSat),
-      Satoshi(rc long TxTable.sentSat), Satoshi(rc long TxTable.feeSat), rc long TxTable.seenAt, rc long TxTable.updatedAt, rc string TxTable.description,
-      MilliSatoshi(rc long TxTable.balanceMsat), rc string TxTable.fiatRates, rc long TxTable.incoming, rc long TxTable.doubleSpent)
+    TxInfo(txString = rc string TxTable.rawTx, txidString = rc string TxTable.txid, pubKeyString = rc string TxTable.pub, depth = rc long TxTable.depth,
+      receivedSat = Satoshi(rc long TxTable.receivedSat), sentSat = Satoshi(rc long TxTable.sentSat), feeSat = Satoshi(rc long TxTable.feeSat), seenAt = rc long TxTable.seenAt,
+      updatedAt = rc long TxTable.updatedAt, description = to[TxDescription](rc string TxTable.description), balanceSnapshot = MilliSatoshi(rc long TxTable.balanceMsat),
+      fiatRatesString = rc string TxTable.fiatRates, incoming = rc long TxTable.incoming, doubleSpent = rc long TxTable.doubleSpent)
 }

@@ -45,7 +45,7 @@ import scala.util.Try
 
 object WalletApp {
   var txDataBag: SQLiteTx = _
-  var lnUrlBag: SQLiteLNUrl = _
+  var lnUrlPayBag: SQLiteLNUrlPay = _
   var chainWalletBag: SQLiteChainWallet = _
   var extDataBag: SQLiteDataExtended = _
   var app: WalletApp = _
@@ -95,7 +95,7 @@ object WalletApp {
     nodeaddress.decode(BitVector fromValidHex rawAddress).require.value
   }
 
-  def isAlive: Boolean = null != txDataBag && null != lnUrlBag && null != chainWalletBag && null != extDataBag && null != app
+  def isAlive: Boolean = null != txDataBag && null != lnUrlPayBag && null != chainWalletBag && null != extDataBag && null != app
 
   def freePossiblyUsedResouces: Unit = {
     // Drop whatever network connections we still have
@@ -128,7 +128,7 @@ object WalletApp {
 
     miscInterface txWrap {
       txDataBag = new SQLiteTx(miscInterface)
-      lnUrlBag = new SQLiteLNUrl(miscInterface)
+      lnUrlPayBag = new SQLiteLNUrlPay(miscInterface)
       chainWalletBag = new SQLiteChainWallet(miscInterface)
       extDataBag = new SQLiteDataExtended(miscInterface)
     }

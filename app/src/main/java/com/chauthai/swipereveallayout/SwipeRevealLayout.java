@@ -99,6 +99,7 @@ public class SwipeRevealLayout extends ViewGroup {
      */
     private int mMinDistRequestDisallowParent = 0;
 
+    private boolean mIsOpenBeforeInit = false;
     private volatile boolean mAborted = false;
     private volatile boolean mIsScrolling = false;
     private volatile boolean mLockDrag = false;
@@ -106,9 +107,6 @@ public class SwipeRevealLayout extends ViewGroup {
     private int mMinFlingVelocity = DEFAULT_MIN_FLING_VELOCITY;
     private int mState = STATE_CLOSE;
     private int mMode = MODE_NORMAL;
-
-    private int mLastMainLeft = 0;
-    private int mLastMainTop  = 0;
 
     private int mDragEdge = DRAG_EDGE_LEFT;
 
@@ -227,10 +225,14 @@ public class SwipeRevealLayout extends ViewGroup {
 
         initRects();
 
-        mSecondaryView.setTranslationY(mMainView.getMeasuredHeight() / 2 - mSecondaryView.getMeasuredHeight() / 2);
+        if (mIsOpenBeforeInit) {
+            open(false);
+        } else {
+            close(false);
+        }
+
+        mSecondaryView.setTranslationY(mMainView.getMeasuredHeight() / 2f - mSecondaryView.getMeasuredHeight() / 2f);
         mSecondaryView.setVisibility(mLockDrag ? View.GONE : View.VISIBLE);
-        mLastMainLeft = mMainView.getLeft();
-        mLastMainTop = mMainView.getTop();
         mOnLayoutCount++;
     }
 
@@ -321,6 +323,7 @@ public class SwipeRevealLayout extends ViewGroup {
      * Open the panel to show the secondary view
      */
     public void open(boolean animation) {
+        mIsOpenBeforeInit = true;
         mAborted = false;
 
         if (animation) {
@@ -356,6 +359,7 @@ public class SwipeRevealLayout extends ViewGroup {
      * Close the panel to hide the secondary view
      */
     public void close(boolean animation) {
+        mIsOpenBeforeInit = false;
         mAborted = false;
 
         if (animation) {
@@ -847,8 +851,6 @@ public class SwipeRevealLayout extends ViewGroup {
         @Override
         public void onViewPositionChanged(View changedView, int left, int top, int dx, int dy) {
             super.onViewPositionChanged(changedView, left, top, dx, dy);
-            mLastMainLeft = mMainView.getLeft();
-            mLastMainTop = mMainView.getTop();
             ViewCompat.postInvalidateOnAnimation(SwipeRevealLayout.this);
         }
 
