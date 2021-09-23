@@ -27,6 +27,7 @@
         android:allowBackup="true"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
+        android:requestLegacyExternalStorage="true"
         android:networkSecurityConfig="@xml/network_security_config"
         android:name="com.btcontract.wallet.WalletApp"
         android:icon="@mipmap/ic_launcher"

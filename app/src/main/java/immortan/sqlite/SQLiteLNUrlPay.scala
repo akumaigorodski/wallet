@@ -20,8 +20,8 @@ class SQLiteLNUrlPay(db: DBInterface) {
 
   def saveLink(info: LNUrlPayLink): Unit = db txWrap {
     val descriptionString = info.description.toJson.compactPrint
-    db.change(LNUrlPayTable.newSql, info.domain, info.payMetaString, info.updatedAt: JLong, descriptionString, info.lastHashString, info.lastNodeIdString, info.lastCommentString)
-    db.change(LNUrlPayTable.updInfoSql, info.payMetaString, info.updatedAt: JLong, descriptionString, info.lastHashString, info.lastNodeIdString, info.lastCommentString)
+    db.change(LNUrlPayTable.newSql, info.domain, info.payString, info.payMetaString, info.updatedAt: JLong, descriptionString, info.lastNodeIdString, info.lastCommentString)
+    db.change(LNUrlPayTable.updInfoSql, info.payMetaString, info.updatedAt: JLong, descriptionString, info.lastNodeIdString, info.lastCommentString, info.payString)
     db.change(LNUrlPayTable.newVirtualSql, info.payMetaData.get.queryText, info.domain)
     ChannelMaster.next(ChannelMaster.payMarketDbStream)
   }
@@ -31,7 +31,7 @@ class SQLiteLNUrlPay(db: DBInterface) {
   def listRecentLinks(limit: Int): RichCursor = db.select(LNUrlPayTable.selectRecentSql, limit.toString)
 
   def toLinkInfo(rc: RichCursor): LNUrlPayLink =
-    LNUrlPayLink(domain = rc string LNUrlPayTable.domain, payString = rc string LNUrlPayTable.domain, payMetaString = rc string LNUrlPayTable.payMeta,
-      updatedAt = rc long LNUrlPayTable.updatedAt, description = to[LNUrlDescription](rc string LNUrlPayTable.description), lastHashString = rc string LNUrlPayTable.lastHash,
+    LNUrlPayLink(domain = rc string LNUrlPayTable.domain, payString = rc string LNUrlPayTable.pay, payMetaString = rc string LNUrlPayTable.payMeta,
+      updatedAt = rc long LNUrlPayTable.updatedAt, description = to[LNUrlDescription](rc string LNUrlPayTable.description),
       lastNodeIdString = rc string LNUrlPayTable.lastNodeId, lastCommentString = rc string LNUrlPayTable.lastComment)
 }

@@ -31,6 +31,25 @@ object PaymentStatus {
 
 case class SplitParams(prExt: PaymentRequestExt, action: Option[PaymentAction], description: PaymentDescription, cmd: SendMultiPart, chainFee: MilliSatoshi)
 
+object SemanticOrder {
+  type SemanticGroup = Seq[TransactionDetails]
+
+  private def orderIdOrBaseId(details: TransactionDetails) = details.description.semanticOrder match { case Some(ord) => ord.id case None => details.identity }
+
+  private def parentAndOrderId(details: TransactionDetails) = details.description.semanticOrder match { case Some(ord) => !ord.isParent -> ord.order case None => true -> Long.MaxValue }
+
+  private def collapseChildren(items: SemanticGroup) = {
+    items.tail.foreach(_.isExpandedItem = false)
+    items.head.isExpandedItem = true
+    items
+  }
+
+  def makeSemanticOrder(items: SemanticGroup): SemanticGroup =
+    items.distinct.groupBy(orderIdOrBaseId).mapValues(_ sortBy parentAndOrderId)
+      .mapValues(collapseChildren).values.toList.sortBy(_.head.seenAt)(Ordering[Long].reverse)
+      .flatten
+}
+
 case class SemanticOrder(id: String, isParent: Boolean, order: Long)
 
 sealed trait TransactionDescription {
@@ -39,6 +58,7 @@ sealed trait TransactionDescription {
 }
 
 sealed trait TransactionDetails {
+  var isExpandedItem: Boolean = true
   // We order items on UI by when they were first seen
   // We hide items depending on when they were updated
   def updatedAt: Long
@@ -49,11 +69,12 @@ sealed trait TransactionDetails {
   val identity: String
 }
 
-case class LNUrlDescription(label: Option[String], semanticOrder: Option[SemanticOrder], lastMsat: MilliSatoshi) extends TransactionDescription
+case class LNUrlDescription(label: Option[String], semanticOrder: Option[SemanticOrder], lastHash: ByteVector32, lastSecret: ByteVector32, lastMsat: MilliSatoshi) extends TransactionDescription {
+  lazy val fullTag: FullPaymentTag = FullPaymentTag(lastHash, lastSecret, PaymentTagTlv.LOCALLY_SENT)
+}
 
-case class LNUrlPayLink(domain: String, payString: String, payMetaString: String, updatedAt: Long,
-                        description: LNUrlDescription, lastHashString: String, lastNodeIdString: String,
-                        lastCommentString: String) extends TransactionDetails {
+case class LNUrlPayLink(domain: String, payString: String, payMetaString: String, updatedAt: Long, description: LNUrlDescription,
+                        lastNodeIdString: String, lastCommentString: String) extends TransactionDetails {
 
   override val seenAt: Long = updatedAt
 

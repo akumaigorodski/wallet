@@ -34,14 +34,20 @@
     <LinearLayout
         android:paddingEnd="15dp"
         android:paddingStart="15dp"
-        android:paddingBottom="1dp"
         android:orientation="vertical"
         style="@style/FillingView">
 
         <View
             android:id="@+id/spacer"
-            android:layout_height="9dp"
+            android:layout_height="10dp"
             android:layout_width="match_parent"/>
+
+        <View
+            android:id="@+id/spacer1"
+            android:layout_height="1dp"
+            android:background="@color/bg"
+            android:layout_width="match_parent"
+            android:layout_marginBottom="-1dp"/>
 
         <androidx.cardview.widget.CardView
             card_view:cardCornerRadius="@dimen/corner_radius"

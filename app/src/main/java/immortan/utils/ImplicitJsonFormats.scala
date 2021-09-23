@@ -77,7 +77,9 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
 
   implicit val semanticOrderFmt: JsonFormat[SemanticOrder] = jsonFormat[String, Boolean, Long, SemanticOrder](SemanticOrder.apply, "id", "isParent", "order")
 
-  implicit val lNUrlDescription: JsonFormat[LNUrlDescription] = jsonFormat[Option[String], Option[SemanticOrder], MilliSatoshi, LNUrlDescription](LNUrlDescription.apply, "label", "semanticOrder", "lastMsat")
+  implicit val lNUrlDescription: JsonFormat[LNUrlDescription] =
+    jsonFormat[Option[String], Option[SemanticOrder], ByteVector32, ByteVector32, MilliSatoshi,
+      LNUrlDescription](LNUrlDescription.apply, "label", "semanticOrder", "lastHash", "lastSecret", "lastMsat")
 
   implicit object TxDescriptionFmt extends JsonFormat[TxDescription] {
     def read(raw: JsValue): TxDescription = raw.asJsObject.fields(TAG) match {

@@ -334,10 +334,10 @@ object ElectrumHeadersTable extends Table {
 }
 
 object LNUrlPayTable extends Table {
-  val (table, search, domain, pay, payMeta, updatedAt, description, lastHash, lastNodeId, lastComment) =
-    ("lnurlpay", "search", "domain", "pay", "meta", "updated", "description", "lasthash", "lastnodeid", "lastcomment")
+  val (table, search, domain, pay, payMeta, updatedAt, description, lastNodeId, lastComment) =
+    ("lnurlpay", "search", "domain", "pay", "meta", "updated", "description", "lastnodeid", "lastcomment")
 
-  val newSql = s"INSERT OR IGNORE INTO $table ($domain, $pay, $payMeta, $updatedAt, $description, $lastHash, $lastNodeId, $lastComment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  val newSql = s"INSERT OR IGNORE INTO $table ($domain, $pay, $payMeta, $updatedAt, $description, $lastNodeId, $lastComment) VALUES (?, ?, ?, ?, ?, ?, ?)"
 
   val newVirtualSql = s"INSERT INTO $fts$table ($search, $domain) VALUES (?, ?)"
 
@@ -345,7 +345,7 @@ object LNUrlPayTable extends Table {
 
   val searchSql = s"SELECT * FROM $table WHERE $domain IN (SELECT $domain FROM $fts$table WHERE $search MATCH ?) LIMIT 50"
 
-  val updInfoSql = s"UPDATE $table SET $payMeta = ?, $updatedAt = ?, $description = ?, $lastHash = ?, $lastNodeId = ?, $lastComment = ? WHERE $pay = ?"
+  val updInfoSql = s"UPDATE $table SET $payMeta = ?, $updatedAt = ?, $description = ?, $lastNodeId = ?, $lastComment = ? WHERE $pay = ?"
 
   val updateDescriptionSql = s"UPDATE $table SET $description = ? WHERE $pay = ?"
 
@@ -353,8 +353,9 @@ object LNUrlPayTable extends Table {
 
   def createStatements: Seq[String] = {
     val createTable = s"""CREATE TABLE IF NOT EXISTS $table(
-      $IDAUTOINC, $domain STRING NOT NULL, $pay STRING NOT NULL $UNIQUE, $payMeta STRING NOT NULL,$updatedAt INTEGER NOT NULL,
-      $description STRING NOT NULL, $lastHash STRING NOT NULL, $lastNodeId STRING NOT NULL, $lastComment STRING NOT NULL
+      $IDAUTOINC, $domain STRING NOT NULL, $pay STRING NOT NULL $UNIQUE, $payMeta STRING NOT NULL,
+      $updatedAt INTEGER NOT NULL, $description STRING NOT NULL, $lastNodeId STRING NOT NULL,
+      $lastComment STRING NOT NULL
     )"""
 
     val addSearchTable = s"CREATE VIRTUAL TABLE IF NOT EXISTS $fts$table USING $fts($search, $domain)"
