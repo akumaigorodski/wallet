@@ -160,6 +160,10 @@ object PayRequest {
   type TagsAndContents = List[TagAndContent]
 }
 
+case class ExpectedAuth(k1: ByteVector32, isMandatory: Boolean)
+
+case class ExpectedIds(wantsAuth: Option[ExpectedAuth], wantsRandomKey: Boolean)
+
 case class PayRequestMeta(records: TagsAndContents) {
 
   val texts: List[String] = records.collect { case List("text/plain", txt) => txt }
@@ -167,6 +171,22 @@ case class PayRequestMeta(records: TagsAndContents) {
   val emails: List[String] = records.collect { case List("text/email", txt) => txt }
 
   val identities: List[String] = records.collect { case List("text/identifier", txt) => txt }
+
+  val expectedIds: Option[ExpectedIds] = records.collectFirst {
+    case "application/payer-ids" +: actualRestOfExpectedRecords =>
+      val base = ExpectedIds(wantsAuth = None, wantsRandomKey = false)
+
+      actualRestOfExpectedRecords.map(_.toJson).foldLeft(base) {
+        case base1 ~ JsArray(JsString("application/lnurl-auth") +: JsBoolean(isMandatory) +: JsString(k1) +: _) =>
+          base1.copy(wantsAuth = ExpectedAuth(ByteVector32.fromValidHex(k1), isMandatory).asSome)
+
+        case base1 ~ JsArray(JsString("application/pubkey") +: _) =>
+          base1.copy(wantsRandomKey = true)
+
+        case base1 ~ _ =>
+          base1
+      }
+  }
 
   val textPlain: String = trimmed(texts.head)
 
@@ -179,17 +199,20 @@ case class PayRequestMeta(records: TagsAndContents) {
 }
 
 case class PayRequest(callback: String, maxSendable: Long, minSendable: Long, metadata: String, commentAllowed: Option[Int] = None) extends CallbackLNUrlData {
-
-  def requestFinal(comment: Option[String], amount: MilliSatoshi): Observable[String] = LNUrl.level2DataResponse {
-    val base = callbackUri.buildUpon.appendQueryParameter("amount", amount.toLong.toString)
-    if (comment.isDefined) base.appendQueryParameter("comment", comment.get) else base
-  }
+//  def requestFinal(commentOpt: Option[String], idsOpt: Option[TagsAndContents], amount: MilliSatoshi): Observable[String] = LNUrl.level2DataResponse {
+//
+//    val base = callbackUri.buildUpon.appendQueryParameter("amount", amount.toLong.toString)
+//    val base1 = commentOpt.map(comment => base.appendQueryParameter("comment", comment)).getOrElse(base)
+//    val base2 = idsOpt.map(ids => base1.appendQueryParameter("payerid", ids.toJson.compactPrint)).getOrElse(base1)
+//    base2
+//  }
 
   def metaDataHash: ByteVector32 = Crypto.sha256(ByteVector view metadata.getBytes)
 
   val meta: PayRequestMeta = {
     val records = to[TagsAndContents](metadata)
-    PayRequestMeta(records)
+    // No reason to have too much records
+    PayRequestMeta(records take 10)
   }
 
   private[this] val identifiers = meta.emails ++ meta.identities

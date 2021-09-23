@@ -302,6 +302,7 @@
 
     <!-- lnurl-auth -->
 
+    <string name="lnurl_auth_identity">Attach payer identity</string>
     <string name="lnurl_auth_register">Registrarse</string>
     <string name="lnurl_auth_login">Acceso</string>
     <string name="lnurl_auth_auth">Auth</string>

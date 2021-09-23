@@ -59,12 +59,7 @@ object WalletApp {
 
   val backupSaveWorker: ThrottledWork[Boolean, Any] = new ThrottledWork[Boolean, Any] {
     private def doAttemptStore: Unit = LocalBackup.encryptAndWritePlainBackup(app, dbFileNameEssential, LNParams.chainHash, LNParams.secret.seed)
-    def process(useDelay: Boolean, unitAfterDelay: Any): Unit = {
-      println(s"-- ${LocalBackup isAllowed app}")
-      if (LocalBackup isAllowed app) try doAttemptStore catch {
-        case error: Throwable => error.printStackTrace()
-      }
-    }
+    def process(useDelay: Boolean, unitAfterDelay: Any): Unit = if (LocalBackup isAllowed app) try doAttemptStore catch none
     def work(useDelay: Boolean): Observable[Any] = if (useDelay) Rx.ioQueue.delay(4.seconds) else Observable.just(null)
   }
 

@@ -461,13 +461,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         swipeWrap.setLockDrag(true)
 
       case info: LNUrlPayLink =>
-        val lastAmount = WalletApp.denom.parsedWithSign(info.description.lastMsat, cardIn, cardZero)
-        setVisMany(false -> labelIcon, true -> linkContainer, false -> nonLinkContainer, true -> removeItem)
-        setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.description.label.isDefined -> marketLabel)
-
         marketItems.removeAllViewsInLayout
+        setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.description.label.isDefined -> marketLabel, false -> labelIcon, true -> linkContainer, false -> nonLinkContainer, true -> removeItem)
         addFlowChip(marketItems, marketLinkCaption(info).take(28), R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(marketLinkIcon(info), null, null, null)
-        addFlowChip(marketItems, lastAmount, R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(getDrawable(R.drawable.baseline_arrow_upward_18), null, null, null)
         for (lastComment <- info.lastComment) addFlowChip(marketItems, lastComment, R.drawable.border_blue)
         linkContainer setBackgroundResource paymentBackground(info.description.fullTag)
         info.imageBytes.map(payLinkImageMemo.get).foreach(linkImage.setImageBitmap)
@@ -1175,9 +1171,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           }
         }
 
-        val obs = getFinal(minSendable).doOnTerminate(removeCurrentSnack.run)
-        val msg = getString(dialog_lnurl_splitting).format(data.callbackUri.getHost).html
-        cancellingSnack(contentWindow, obs.subscribe(prf => proceed(prf).run, onFail), msg)
+//        val obs = getFinal(minSendable).doOnTerminate(removeCurrentSnack.run)
+//        val msg = getString(dialog_lnurl_splitting).format(data.callbackUri.getHost).html
+//        cancellingSnack(contentWindow, obs.subscribe(prf => proceed(prf).run, onFail), msg)
       }
 
       override def send(alert: AlertDialog): Unit = {
@@ -1198,11 +1194,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           }
         }
 
-        val obs = getFinal(manager.resultMsat).doOnTerminate(removeCurrentSnack.run)
-        val amountHuman = WalletApp.denom.parsedWithSign(manager.resultMsat, cardIn, cardZero).html
-        val msg = getString(dialog_lnurl_sending).format(amountHuman, data.callbackUri.getHost).html
-        cancellingSnack(contentWindow, obs.subscribe(prf => proceed(prf).run, onFail), msg)
-        alert.dismiss
+//        val obs = getFinal(manager.resultMsat).doOnTerminate(removeCurrentSnack.run)
+//        val amountHuman = WalletApp.denom.parsedWithSign(manager.resultMsat, cardIn, cardZero).html
+//        val msg = getString(dialog_lnurl_sending).format(amountHuman, data.callbackUri.getHost).html
+//        cancellingSnack(contentWindow, obs.subscribe(prf => proceed(prf).run, onFail), msg)
+//        alert.dismiss
       }
 
       override val alert: AlertDialog = {
@@ -1211,14 +1207,16 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         mkCheckFormNeutral(send, none, neutral, title, dialog_ok, dialog_cancel, dialog_split)
       }
 
-      private def getFinal(amount: MilliSatoshi) =
-        data.requestFinal(getComment, amount).map { rawResponse =>
-          val payRequestFinal: PayRequestFinal = to[PayRequestFinal](rawResponse)
-          val descriptionHashOpt: Option[ByteVector32] = payRequestFinal.prExt.pr.description.right.toOption
-          require(descriptionHashOpt.contains(data.metaDataHash), s"Metadata hash mismatch, original=${data.metaDataHash}, provided=$descriptionHashOpt")
-          require(payRequestFinal.prExt.pr.amount.contains(amount), s"Payment amount mismatch, requested=$amount, provided=${payRequestFinal.prExt.pr.amount}")
-          payRequestFinal.modify(_.successAction.each.domain).setTo(data.callbackUri.getHost.asSome)
-        }
+      private def getFinal(amount: MilliSatoshi) = LNUrl.level2DataResponse {
+        data.callbackUri.buildUpon
+      }
+//        data.requestFinal(getComment, amount).map { rawResponse =>
+//          val payRequestFinal: PayRequestFinal = to[PayRequestFinal](rawResponse)
+//          val descriptionHashOpt: Option[ByteVector32] = payRequestFinal.prExt.pr.description.right.toOption
+//          require(descriptionHashOpt.contains(data.metaDataHash), s"Metadata hash mismatch, original=${data.metaDataHash}, provided=$descriptionHashOpt")
+//          require(payRequestFinal.prExt.pr.amount.contains(amount), s"Payment amount mismatch, requested=$amount, provided=${payRequestFinal.prExt.pr.amount}")
+//          payRequestFinal.modify(_.successAction.each.domain).setTo(data.callbackUri.getHost.asSome)
+//        }
 
       // Prefill with min possible
       manager.updateText(minSendable)

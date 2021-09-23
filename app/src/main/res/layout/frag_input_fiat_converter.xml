@@ -4,6 +4,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <!-- Fiat and hint -->
+
     <FrameLayout style="@style/FillingView">
         <com.cottacush.android.currencyedittext.CurrencyEditText
             style="@style/XSmallMarginFillingView"
@@ -28,6 +30,8 @@
         android:layout_width="fill_parent"
         android:id="@+id/hintFiatDenom"/>
 
+    <!-- Bitcoin and hint -->
+
     <FrameLayout style="@style/FillingView">
         <com.cottacush.android.currencyedittext.CurrencyEditText
             style="@style/XSmallMarginFillingView"
@@ -48,6 +52,8 @@
         style="@style/XMarginFillingView"
         android:id="@+id/hintDenom"/>
 
+    <!-- Extra input -->
+
     <include
         android:visibility="gone"
         layout="@layout/frag_hint_input"/>
@@ -62,7 +68,16 @@
         style="@style/XMarginFillingView"
         android:id="@+id/extraInputVisibility"/>
 
+    <!-- Auth -->
+
+    <CheckBox
+        style="@style/FillingView"
+        android:layout_marginTop="25dp"
+        android:layout_marginStart="8dp"
+        android:text="@string/lnurl_auth_identity"/>
+
     <View
         android:layout_marginTop="25dp"
         style="@style/GrayDivider"/>
+
 </LinearLayout>
