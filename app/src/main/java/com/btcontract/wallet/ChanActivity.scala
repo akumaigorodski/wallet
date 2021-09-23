@@ -325,9 +325,11 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
 
       val footer = new TitleView(me getString chan_open)
       val isMainnet = LNParams.chainHash == Block.LivenetGenesisBlock.hash
+
       addFlowChip(footer.flow, getString(chan_open_scan), R.drawable.border_blue, _ => scanNodeQr)
       if (isMainnet) addFlowChip(footer.flow, getString(chan_open_lnbig), R.drawable.border_blue, _ => me browse "https://lnbig.com/#/open-channel")
       if (isMainnet) addFlowChip(footer.flow, getString(chan_open_bitrefill), R.drawable.border_blue, _ => me browse "https://www.bitrefill.com/buy/lightning-channel")
+      if (isMainnet && LNParams.cm.allHostedCommits.isEmpty && LNParams.currentBlockDay > 0) addFlowChip(footer.flow, getString(rpa_request_hc), R.drawable.border_yellow, _ => requestHostedChannel)
       chanList.addFooterView(footer.view)
       chanList.setAdapter(chanAdapter)
       chanList.setDividerHeight(0)
@@ -341,6 +343,11 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       WalletApp.freePossiblyUsedResouces
       me exitTo ClassNames.mainActivityClass
     }
+  }
+
+  private def requestHostedChannel: Unit = {
+    HubActivity.requestHostedChannel
+    finish
   }
 
   private def getBrandingInfos = for {

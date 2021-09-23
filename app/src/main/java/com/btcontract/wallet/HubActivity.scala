@@ -23,6 +23,7 @@ import rx.lang.scala.{Observable, Subject, Subscription}
 import com.androidstudy.networkmanager.{Monitor, Tovuti}
 import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv}
 import fr.acinq.bitcoin.{ByteVector32, Crypto, Transaction}
+import fr.acinq.eclair.blockchain.{CurrentBlockCount, TxAndFee}
 import immortan.ChannelMaster.{OutgoingAdds, RevealedLocalFulfills}
 import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, Scripts}
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
@@ -39,7 +40,6 @@ import com.btcontract.wallet.utils.LocalBackup
 import androidx.transition.TransitionManager
 import immortan.ChannelListener.Malfunction
 import com.google.common.cache.LoadingCache
-import fr.acinq.eclair.blockchain.TxAndFee
 import com.indicator.ChannelIndicatorLine
 import androidx.appcompat.app.AlertDialog
 import org.apmem.tools.layouts.FlowLayout
@@ -67,6 +67,20 @@ object HubActivity {
   var lastHashToReveals: Map[ByteVector32, RevealedLocalFulfills] = Map.empty
   var lastInChannelOutgoing: Map[FullPaymentTag, OutgoingAdds] = Map.empty
   var allInfos: Seq[TransactionDetails] = Nil
+
+  def requestHostedChannel: Unit = {
+    val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minDustLimit)
+    new HCOpenHandler(LNParams.syncParams.motherbase, randomBytes32, localParams.defaultFinalScriptPubKey, LNParams.cm) {
+      // Stop automatic HC opening attempts on getting any kind of local/remote error, this won't be triggered on disconnect
+      def onFailure(reason: Throwable): Unit = WalletApp.app.prefs.edit.putBoolean(WalletApp.OPEN_HC, false).commit
+      def onEstablished(cs: Commitments, channel: ChannelHosted): Unit = implant(cs, channel)
+    }
+
+    def implant(cs: Commitments, channel: ChannelHosted): Unit = {
+      WalletApp.app.prefs.edit.putBoolean(WalletApp.OPEN_HC, false).commit
+      RemotePeerActivity.implantNewChannel(cs, channel)
+    }
+  }
 }
 
 class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener { me =>
@@ -665,6 +679,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   private val chainListener = new WalletEventsListener {
+    override def onChainTipKnown(event: CurrentBlockCount): Unit =
+      if (WalletApp.openHc) HubActivity.requestHostedChannel
+
     override def onChainSyncStarted(localTip: Long, remoteTip: Long): Unit = UITask {
       setVis(isVisible = remoteTip - localTip > 2016 * 4, walletCards.chainSyncIndicator)
     }.run
@@ -960,21 +977,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       inFinalizedSubscription = ChannelMaster.inFinalized
         .collect { case _: IncomingRevealed => true }
         .subscribe(_ => Vibrator.vibrate).asSome
-
-      if (WalletApp.openHc) {
-        def implant(cs: Commitments, channel: ChannelHosted): Unit = {
-          WalletApp.app.prefs.edit.putBoolean(WalletApp.OPEN_HC, false).commit
-          RemotePeerActivity.implantNewChannel(cs, channel)
-        }
-
-        // We only need local params to extract defaultFinalScriptPubKey
-        val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minDustLimit)
-        new HCOpenHandler(LNParams.syncParams.motherbase, randomBytes32, localParams.defaultFinalScriptPubKey, LNParams.cm) {
-          // Stop automatic HC opening attempts on getting any kind of local/remote error, this won't be triggered on disconnect
-          def onFailure(reason: Throwable): Unit = WalletApp.app.prefs.edit.putBoolean(WalletApp.OPEN_HC, false).commit
-          def onEstablished(cs: Commitments, channel: ChannelHosted): Unit = implant(cs, channel)
-        }
-      }
 
       timer.scheduleAtFixedRate(paymentAdapterDataChanged, 30000, 30000)
       val backupAllowed = LocalBackup.isAllowed(context = WalletApp.app)

@@ -72,7 +72,7 @@ object WalletApp {
   final val LAST_NORMAL_GOSSIP_SYNC = "lastNormalGossipSync"
   final val CUSTOM_ELECTRUM_ADDRESS = "customElectrumAddress"
   final val SHOW_RATE_US = "showRateUs"
-  final val OPEN_HC = "openHc"
+  final val OPEN_HC = "openHc1"
 
   def useAuth: Boolean = app.prefs.getBoolean(USE_AUTH, false)
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
