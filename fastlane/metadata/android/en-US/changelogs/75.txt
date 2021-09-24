@@ -1,0 +1,3 @@
+* Multiple UI improvements and bugfixes.
+* Minor hosted channel related bugfixes.
+* Improved LNURL support.

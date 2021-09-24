@@ -19,8 +19,8 @@ Everyone is welcome to provide a translation on [Transifex project site](https:/
 
 ## Lightning part roadmap
 
-- [ ] Finalize and enable private hosted channels.
-- [ ] Achieve complete LNURL spec support (as far as non-custodial wallet can go).
+- [x] Finalize and enable private hosted channels.
+- [x] Achieve complete LNURL spec support (as far as non-custodial wallet can go).
 - [ ] Incorporate Rene Pickhardt and Stefan Richter [research](https://arxiv.org/abs/2107.05322) to futher improve pathfinding.
 - [ ] Develop an Eclair plugin which would allow full LN nodes to easily utilize SBW routing capabilities.
 - [ ] Implement Addon system for integration of 3rd party Lightning-enabled services.
