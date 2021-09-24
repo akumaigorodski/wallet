@@ -142,11 +142,6 @@
         %1$s
     ]]></string>
 
-    <string name="error_nothing_in_clipboard"><![CDATA[
-        <b>No se encontró nada útil</b>: por favor <b>copie</b> algo primero o directamente <b>compártalo</b> con su billetera.
-        <br><br>Alternativamente, escriba o copie algo en el espacio debajo y vea si la billetera lo reconoce.
-    ]]></string>
-
     <!-- /errors -->
 
     <!-- Notifications -->

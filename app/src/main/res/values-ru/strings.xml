@@ -21,7 +21,7 @@
 
     <string name="search_recent">Поиск платежей и транзакций</string>
     <string name="emergency_mode">Что-то пошло не так</string>
-    <string name="emergency_share">Поделиться отчётом об ошибке</string>
+    <string name="emergency_share">Отчёт об ошибке</string>
 
     <string name="setup_title">Установка кошелька</string>
     <string name="setup_create_new">Создать новый кошелёк</string>
@@ -51,7 +51,7 @@
     <string name="title_chans">Каналы Молнии</string>
 
     <string name="dialog_ok">OK</string>
-    <string name="dialog_send">Отправить</string>
+    <string name="dialog_send">Послать</string>
     <string name="dialog_stamp">Печать</string>
     <string name="dialog_receive">Получить</string>
     <string name="dialog_cancel">Отмена</string>
@@ -76,7 +76,7 @@
 
     <string name="dialog_legacy_transfer_btc">Перевод на современный кошелёк</string>
     <string name="dialog_legacy_send_btc">Отправить средства на адрес</string>
-    <string name="scan_btc_address">Сканировать биткойн-адрес</string>
+    <string name="scan_btc_address">Отсканируйте биткойн-адрес</string>
 
     <string name="dialog_up_to"><![CDATA[<b> до </b> %1$s]]></string>
     <string name="dialog_fee_sat_vbyte"><![CDATA[<b>сбор</b> %1$s sat/vB]]></string>
@@ -142,11 +142,6 @@
         %1$s
     ]]></string>
 
-    <string name="error_nothing_in_clipboard"><![CDATA[
-        <b>Ничего не найдено</b>: сперва <b>скопируйте</b> что-то или <b>поделитесь</b> с кошельком.
-        <br><br>Или можете набрать что-нибудь в поле ниже.
-    ]]></string>
-
     <!-- /errors -->
 
     <!-- Notifications -->
@@ -181,7 +176,7 @@
     <string name="popup_retry">Повторить попытку</string>
     <string name="popup_explorer"><![CDATA[mempool.space]]></string>
     <string name="popup_run_action"><![CDATA[запустить&#160;экшн&#160;]]></string>
-    <string name="popup_proof_stamp"><![CDATA[поделиться&#160;крипто-печатью&#160;]]></string>
+    <string name="popup_proof_stamp"><![CDATA[крипто-печать&#160;]]></string>
     <string name="popup_to_address"><![CDATA[<b>адрес</b>&#160;%1$s]]></string>
     <string name="popup_ln_payee"><![CDATA[<b>получатель</b>&#160;%1$s]]></string>
     <string name="popup_ln_node"><![CDATA[<b>узел</b>&#160;%1$s]]></string>
@@ -216,7 +211,7 @@
     <string name="rpa_hc_warn"><![CDATA[<br><b>Внимание!</b><br><br>Ваши средства в hosted-канале будут храниться на стороне хоста: убедитесь, что вы доверяете этому ему!]]></string>
     <string name="rpa_request_channel">Поделитесь своим node ID с удалённым узлом и оставьте открытой эту страницу до получения входящего канала</string>
     <string name="rpa_request_hc">Запросить hosted-канал</string>
-    <string name="rpa_share_node_id">Поделиться node ID</string>
+    <string name="rpa_share_node_id">Поделиться Node ID</string>
     <string name="rpa_open_nc">Открыть новый канал</string>
 
     <!-- /Remote peer activity -->
@@ -360,7 +355,7 @@
     <string name="chan_open">Новый канал</string>
     <string name="chan_open_lnbig">Купить на LNBIG.COM</string>
     <string name="chan_open_bitrefill">Купить на BITREFILL.COM</string>
-    <string name="chan_open_scan">Сканировать QR код</string>
+    <string name="chan_open_scan">Отсканируйте QR код узла</string>
 
     <string name="ln_info_no_update">Прием пока невозможен</string>
     <string name="ln_info_fee_mismatch">Временное расхождение комиссий</string>

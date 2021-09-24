@@ -6,16 +6,12 @@ import com.btcontract.wallet.{BaseActivity, R, WalletApp}
 import com.journeyapps.barcodescanner.{BarcodeCallback, BarcodeResult, BarcodeView}
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import androidx.appcompat.view.ContextThemeWrapper
-import com.ornach.nobobutton.NoboButton
 import immortan.utils.InputParser
 import immortan.crypto.Tools
 import android.os.Bundle
-import scala.util.Try
 
 
-class ScannerBottomSheet(host: BaseActivity, instructionOpt: Option[String], onTypeOpt: Option[Runnable],
-                         onScan: Runnable, onPaste: Runnable) extends BottomSheetDialogFragment with BarcodeCallback { me =>
-
+class ScannerBottomSheet(host: BaseActivity, instructionOpt: Option[String], onScan: Runnable) extends BottomSheetDialogFragment with BarcodeCallback { me =>
   var lastAttempt: Long = System.currentTimeMillis
   var barcodeReader: BarcodeView = _
   var flashlight: ImageButton = _
@@ -40,25 +36,6 @@ class ScannerBottomSheet(host: BaseActivity, instructionOpt: Option[String], onT
     barcodeReader = view.findViewById(R.id.reader).asInstanceOf[BarcodeView]
     flashlight = view.findViewById(R.id.flashlight).asInstanceOf[ImageButton]
     flashlight setOnClickListener host.onButtonTap(toggleTorch)
-
-    // Look into clipboard and prefill a text so user can see what is going to be pasted
-    val clipboardContent = view.findViewById(R.id.clipboardContent).asInstanceOf[TextView]
-    val typeSomethingIn = view.findViewById(R.id.typeSomethingIn).asInstanceOf[NoboButton]
-    Try(WalletApp.app.getBufferUnsafe).foreach(clipboardContent.setText)
-    host.setVis(isVisible = onTypeOpt.isDefined, typeSomethingIn)
-
-    view.findViewById(R.id.pasteFromClipbard).asInstanceOf[NoboButton] setOnClickListener host.onButtonTap {
-      host.runInFutureProcessOnUI(InputParser recordValue WalletApp.app.getBufferUnsafe, failedPaste)(_ => onPaste.run)
-      dismiss
-    }
-
-    onTypeOpt foreach { onType =>
-      typeSomethingIn setOnClickListener host.onButtonTap {
-        // Always allow user to type something in
-        onType.run
-        dismiss
-      }
-    }
 
     instructionOpt foreach { instruction =>
       val instructionView = view.findViewById(R.id.instruction).asInstanceOf[TextView]

@@ -38,16 +38,21 @@
 
         <com.ornach.nobobutton.NoboButton
             app:nb_text="@string/dialog_send"
-            android:layout_margin="@dimen/chip_default_padding_edge"
+            android:onClick="bringSendOptions"
+            android:layout_width="120dp"
+            android:layout_margin="10dp"
+            style="@style/GrayButton"/>
+
+        <com.ornach.nobobutton.NoboButton
+            app:nb_drawableResource="@drawable/outline_qr_code_scanner_24"
             android:onClick="bringScanner"
-            android:layout_width="135dp"
             style="@style/GrayButton"/>
 
         <com.ornach.nobobutton.NoboButton
             app:nb_text="@string/dialog_receive"
-            android:layout_margin="@dimen/chip_default_padding_edge"
             android:onClick="bringReceiveOptions"
-            android:layout_width="135dp"
+            android:layout_width="120dp"
+            android:layout_margin="10dp"
             style="@style/GrayButton"/>
 
     </LinearLayout>

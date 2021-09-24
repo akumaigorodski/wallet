@@ -1003,22 +1003,19 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     walletCards.searchField.setVisibility(View.GONE)
   }
 
-  def bringScanner(view: View): Unit = {
+  def bringSendOptions(view: View): Unit = {
+    singleInputPopup(typing_hints, title = null)(parseTypedInput)
     def parseTypedInput(input: String): Unit = runInFutureProcessOnUI(InputParser recordValue input, onFail) { _ =>
-      // Try to parse user input, show terminal failure details, fallback to manual input if nothing useful was found
-      def proceed: Unit = runAnd(switchToTypeInputOnFailure.run)(nothingUsefulTask.run)
+      def switchToTypeInputOnFailure: Unit = singleInputPopup(typing_hints, title = null)(parseTypedInput)
+      def proceed: Unit = runAnd(switchToTypeInputOnFailure)(nothingUsefulTask.run)
       me checkExternalData UITask(proceed)
     }
+  }
 
-    def switchToTypeInputOnFailure: Runnable = UITask {
-      val title = getString(error_nothing_in_clipboard).asDefView
-      singleInputPopup(typing_hints, title)(parseTypedInput)
-    }
-
-    val onType = UITask { singleInputPopup(typing_hints, null)(parseTypedInput) /* Has no title */ }
-    val onScan = UITask { checkExternalData(nothingUsefulTask) /* Check data and tell nothing useful is found as fallback */ }
-    val onPaste = UITask { checkExternalData(switchToTypeInputOnFailure) /* Check data and propose to type it as fallback */ }
-    val sheet = new sheets.ScannerBottomSheet(me, None, Some(onType), onScan, onPaste)
+  def bringScanner(view: View): Unit = {
+    val instruction = getString(typing_hints).asSome
+    val onScan = UITask(me checkExternalData nothingUsefulTask)
+    val sheet = new sheets.ScannerBottomSheet(me, instruction, onScan)
     callScanner(sheet)
   }
 
@@ -1030,7 +1027,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     val instruction = getString(scan_btc_address).asSome
     def onData: Runnable = UITask(resolveLegacyWalletBtcAddressQr)
-    val sheet = new sheets.ScannerBottomSheet(me, instruction, None, onData, onData)
+    val sheet = new sheets.ScannerBottomSheet(me, instruction, onData)
     callScanner(sheet)
   }
 

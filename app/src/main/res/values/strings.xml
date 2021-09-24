@@ -142,11 +142,6 @@
         %1$s
     ]]></string>
 
-    <string name="error_nothing_in_clipboard"><![CDATA[
-        <b>Nothing useful is found</b>: please <b>copy</b> something first or directly <b>share</b> it with wallet.
-        <br><br>Alternatively, type or paste something into the field below and see if wallet can recognize it.
-    ]]></string>
-
     <!-- /errors -->
 
     <!-- Notifications -->

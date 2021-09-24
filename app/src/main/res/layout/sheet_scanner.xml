@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout style="@style/StandardLinearLayout"
+<LinearLayout
+    style="@style/StandardLinearLayout"
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/almostBlack">
 
     <TextView
@@ -40,33 +40,4 @@
             android:background="?android:selectableItemBackground"/>
 
     </FrameLayout>
-
-    <RelativeLayout
-        android:layout_marginTop="25dp"
-        android:layout_marginBottom="25dp"
-        style="@style/XMarginFillingView">
-
-        <com.ornach.nobobutton.NoboButton
-            app:nb_drawableResource="@drawable/baseline_create_24"
-            android:id="@+id/typeSomethingIn"
-            android:layout_marginEnd="15dp"
-            style="@style/GrayButton"/>
-
-        <com.ornach.nobobutton.NoboButton
-            app:nb_drawableResource="@drawable/baseline_content_paste_24"
-            android:layout_toEndOf="@id/typeSomethingIn"
-            android:id="@+id/pasteFromClipbard"
-            android:layout_marginEnd="5dp"
-            style="@style/GrayButton"/>
-
-        <TextView
-            style="@style/InFlightView"
-            android:layout_toEndOf="@id/pasteFromClipbard"
-            android:layout_centerVertical="true"
-            android:id="@+id/clipboardContent"
-            android:textSize="16sp"
-            android:ellipsize="end"
-            android:maxLines="1"/>
-
-    </RelativeLayout>
 </LinearLayout>
