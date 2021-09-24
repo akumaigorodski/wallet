@@ -285,10 +285,14 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     callScanner(sheet)
   }
 
-  def drainHc(hc: HostedCommits): Unit = maxNormalReceivable match {
-    case _ if hc.availableForSend < LNParams.minPayment => snack(chanContainer, getString(ln_hosted_chan_drain_impossible).html, R.string.dialog_ok, _.dismiss)
-    case ncOpt if ncOpt.forall(_.maxReceivable < LNParams.minPayment) => snack(chanContainer, getString(ln_hosted_chan_drain_impossible).html, R.string.dialog_ok, _.dismiss)
-    case Some(csAndMax) => LNParams.cm.localSendToSelf(getChanByCommits(hc).toList, csAndMax, randomBytes32, typicalChainTxFee, capLNFeeToChain = false)
+  def drainHc(hc: HostedCommits): Unit = {
+    val relatedHc = getChanByCommits(hc).toList
+
+    maxNormalReceivable match {
+      case _ if LNParams.cm.maxSendable(relatedHc) < LNParams.minPayment => snack(chanContainer, getString(ln_hosted_chan_drain_impossible_few_funds).html, R.string.dialog_ok, _.dismiss)
+      case ncOpt if ncOpt.forall(_.maxReceivable < LNParams.minPayment) => snack(chanContainer, getString(ln_hosted_chan_drain_impossible_no_chans).html, R.string.dialog_ok, _.dismiss)
+      case Some(csAndMax) => LNParams.cm.localSendToSelf(relatedHc, csAndMax, randomBytes32, typicalChainTxFee, capLNFeeToChain = false)
+    }
   }
 
   def removeHc(hc: HostedCommits): Unit = {

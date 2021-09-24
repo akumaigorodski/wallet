@@ -362,7 +362,8 @@
     <string name="ln_info_shutdown">Shutting down&#8230;</string>
     <string name="ln_info_opening">Opening&#8230;</string>
 
-    <string name="ln_hosted_chan_drain_impossible">Funds can not be drained from this hosted channel at the moment.</string>
+    <string name="ln_hosted_chan_drain_impossible_few_funds">Funds can not be drained from this hosted channel at the moment because an amount it contains is too small.</string>
+    <string name="ln_hosted_chan_drain_impossible_no_chans">Funds can not be drained from this hosted channel at the moment because there are no normal channels capable of receiving.</string>
     <string name="ln_hosted_chan_remove_impossible">This hosted channel can not be removed right now because it contains in-flight payments, please wait until they are resolved.</string>
     <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string>
     <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
