@@ -219,7 +219,7 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     // Example: we have (25, 50, 60, 100) chans -> (25, 50, 60, 100), receivable = 50*3 = 150 (because 50*3 > 25*4), but #channels = 4
     val withoutSmall = sorted.dropWhile(_.commits.availableForReceive * sorted.size < sorted.last.commits.availableForReceive).takeRight(4)
     val candidates = for (cs <- withoutSmall.indices map withoutSmall.drop) yield cs.head.commits.availableForReceive * cs.size
-    if (candidates.isEmpty) None else CommitsAndMax(withoutSmall, candidates.max).asSome
+    if (candidates.isEmpty) None else CommitsAndMax(sorted.takeRight(4), candidates.max).asSome
   }
 
   def maxSendable(chans: Iterable[Channel] = Nil): MilliSatoshi = {
