@@ -1225,6 +1225,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         manager.attachIdentity.setEnabled(!expectedAuth.isMandatory)
         setVis(isVisible = true, manager.attachIdentity)
       }
+
+      data.commentAllowed.foreach { limit =>
+        manager.extraInputLayout.setCounterEnabled(true)
+        manager.extraInputLayout.setCounterMaxLength(limit)
+      }
     }
   }
 
