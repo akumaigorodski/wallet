@@ -5,7 +5,7 @@ import fr.acinq.eclair._
 import immortan.crypto.Tools._
 import immortan.utils.ImplicitJsonFormats._
 import immortan.{LNParams, PaymentAction, RemoteNodeInfo}
-import fr.acinq.bitcoin.{Bech32, ByteVector32, Crypto}
+import fr.acinq.bitcoin.{Bech32, ByteVector32, ByteVector64, Crypto}
 import immortan.utils.PayRequest.TagsAndContents
 import com.github.kevinsawicki.http.HttpRequest
 import fr.acinq.bitcoin.Crypto.PublicKey
@@ -155,12 +155,24 @@ case class WithdrawRequest(callback: String, k1: String, maxWithdrawable: Long, 
 
 // LNURL-PAY
 
+case class LNUrlAuthSpec(host: String, k1: ByteVector32) {
+  val linkingPrivKey: Crypto.PrivateKey = LNParams.secret.keys.makeLinkingKey(host)
+  val linkingPubKey: String = linkingPrivKey.publicKey.toString
+
+  def signature: ByteVector64 = Crypto.sign(k1, linkingPrivKey)
+  def derSignatureHex: String = Crypto.compact2der(signature).toHex
+}
+
 object PayRequest {
   type TagAndContent = List[String]
   type TagsAndContents = List[TagAndContent]
 }
 
-case class ExpectedAuth(k1: ByteVector32, isMandatory: Boolean)
+case class ExpectedAuth(k1: ByteVector32, isMandatory: Boolean) {
+  def getRecord(host: String): PayRequest.TagAndContent = LNUrlAuthSpec(host, k1) match { case spec =>
+    List("application/lnurl-auth", spec.linkingPubKey.toString, spec.derSignatureHex)
+  }
+}
 
 case class ExpectedIds(wantsAuth: Option[ExpectedAuth], wantsRandomKey: Boolean)
 
@@ -199,13 +211,6 @@ case class PayRequestMeta(records: TagsAndContents) {
 }
 
 case class PayRequest(callback: String, maxSendable: Long, minSendable: Long, metadata: String, commentAllowed: Option[Int] = None) extends CallbackLNUrlData {
-//  def requestFinal(commentOpt: Option[String], idsOpt: Option[TagsAndContents], amount: MilliSatoshi): Observable[String] = LNUrl.level2DataResponse {
-//
-//    val base = callbackUri.buildUpon.appendQueryParameter("amount", amount.toLong.toString)
-//    val base1 = commentOpt.map(comment => base.appendQueryParameter("comment", comment)).getOrElse(base)
-//    val base2 = idsOpt.map(ids => base1.appendQueryParameter("payerid", ids.toJson.compactPrint)).getOrElse(base1)
-//    base2
-//  }
 
   def metaDataHash: ByteVector32 = Crypto.sha256(ByteVector view metadata.getBytes)
 

@@ -363,6 +363,8 @@ trait BaseActivity extends AppCompatActivity { me =>
     val extraInputLayout: TextInputLayout = content.findViewById(R.id.extraInputLayout).asInstanceOf[TextInputLayout]
     val extraInput: EditText = content.findViewById(R.id.extraInput).asInstanceOf[EditText]
 
+    val attachIdentity: CheckBox = content.findViewById(R.id.attachIdentity).asInstanceOf[CheckBox]
+
     def updateButton(button: Button, isEnabled: Boolean): Unit = {
       val alpha = if (isEnabled) 1F else 0.3F
       button.setEnabled(isEnabled)

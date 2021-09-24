@@ -1,6 +1,7 @@
 package com.btcontract.wallet
 
 import immortan._
+import spray.json._
 import immortan.fsm._
 import immortan.utils._
 import android.widget._
@@ -876,30 +877,26 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   def showAuthForm(lnUrl: LNUrl): Unit = lnUrl.k1.foreach { k1 =>
-    val linkingPrivKey = LNParams.secret.keys.makeLinkingKey(lnUrl.uri.getHost)
-    val linkingPubKey = linkingPrivKey.publicKey.toString
-    val dataToSign = ByteVector32.fromValidHex(k1)
-
-    val (successRes, actionRes) = lnUrl.authAction match {
+    val (successResource, actionResource) = lnUrl.authAction match {
       case "register" => (lnurl_auth_register_ok, lnurl_auth_register)
       case "auth" => (lnurl_auth_auth_ok, lnurl_auth_auth)
       case "link" => (lnurl_auth_link_ok, lnurl_auth_link)
       case _ => (lnurl_auth_login_ok, lnurl_auth_login)
     }
 
+    val spec = LNUrlAuthSpec(lnUrl.uri.getHost, ByteVector32 fromValidHex k1)
     val title = titleBodyAsViewBuilder(s"<big>${lnUrl.uri.getHost}</big>".asColoredView(R.color.cardLightning), null)
-    mkCheckFormNeutral(doAuth, none, displayInfo, title, actionRes, dialog_cancel, dialog_info)
+    mkCheckFormNeutral(doAuth, none, displayInfo, title, actionResource, dialog_cancel, dialog_info)
 
     def displayInfo(alert: AlertDialog): Unit = {
-      val explanation = getString(lnurl_auth_info).format(lnUrl.uri.getHost, linkingPubKey.humanFour).html
-      mkCheckFormNeutral(_.dismiss, none, _ => share(linkingPubKey), new AlertDialog.Builder(me).setMessage(explanation), dialog_ok, -1, dialog_share)
+      val explanation = getString(lnurl_auth_info).format(lnUrl.uri.getHost, spec.linkingPubKey.humanFour).html
+      mkCheckFormNeutral(_.dismiss, none, _ => share(spec.linkingPubKey), new AlertDialog.Builder(me).setMessage(explanation), dialog_ok, -1, dialog_share)
     }
 
     def doAuth(alert: AlertDialog): Unit = {
-      val signature = Crypto.sign(dataToSign, linkingPrivKey)
       val msg = getString(dialog_lnurl_processing).format(lnUrl.uri.getHost).html
-      val uri = lnUrl.uri.buildUpon.appendQueryParameter("sig", Crypto.compact2der(signature).toHex).appendQueryParameter("key", linkingPubKey)
-      val sub = LNUrl.level2DataResponse(uri).doOnTerminate(removeCurrentSnack.run).subscribe(_ => UITask(WalletApp.app quickToast successRes).run, onFail)
+      val uri = lnUrl.uri.buildUpon.appendQueryParameter("sig", spec.derSignatureHex).appendQueryParameter("key", spec.linkingPubKey)
+      val sub = LNUrl.level2DataResponse(uri).doOnTerminate(removeCurrentSnack.run).subscribe(_ => UITask(WalletApp.app quickToast successResource).run, onFail)
       cancellingSnack(contentWindow, sub, msg)
       alert.dismiss
     }
@@ -1153,13 +1150,13 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def bringPayPopup(data: PayRequest, lnUrl: LNUrl): TimerTask = UITask {
     new OffChainSender(maxSendable = LNParams.cm.maxSendable(LNParams.cm.all.values).min(data.maxSendable.msat), minSendable = Denomination.satCeil(data.minSendable.msat) max LNParams.minPayment) {
       override lazy val manager: RateManager = new RateManager(body, data.commentAllowed.map(_ => me getString dialog_add_comment), dialog_visibility_public, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+      val expectedIds: ExpectedIds = data.meta.expectedIds getOrElse ExpectedIds(wantsAuth = None, wantsRandomKey = false)
+      val maxCommentLength: Int = data.commentAllowed getOrElse 0
+      val randKey: Crypto.PrivateKey = randomKey
+
       override def isNeutralEnabled: Boolean = manager.resultMsat >= LNParams.minPayment && manager.resultMsat <= minSendable - LNParams.minPayment
       override def isPayEnabled: Boolean = manager.resultMsat >= minSendable && manager.resultMsat <= maxSendable
-
-      private def getComment = for {
-        maxLength <- data.commentAllowed
-        comment <- manager.resultExtraInput
-      } yield comment.take(maxLength)
+      private def getComment: String = manager.resultExtraInput.getOrElse(new String).take(maxCommentLength)
 
       override def neutral(alert: AlertDialog): Unit = {
         def proceed(pf: PayRequestFinal): TimerTask = UITask {
@@ -1173,9 +1170,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           }
         }
 
-//        val obs = getFinal(minSendable).doOnTerminate(removeCurrentSnack.run)
-//        val msg = getString(dialog_lnurl_splitting).format(data.callbackUri.getHost).html
-//        cancellingSnack(contentWindow, obs.subscribe(prf => proceed(prf).run, onFail), msg)
+        val obs = getFinal(minSendable).doOnTerminate(removeCurrentSnack.run)
+        val msg = getString(dialog_lnurl_splitting).format(data.callbackUri.getHost).html
+        cancellingSnack(contentWindow, obs.subscribe(prf => proceed(prf).run, onFail), msg)
       }
 
       override def send(alert: AlertDialog): Unit = {
@@ -1189,18 +1186,19 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
             LNParams.cm.localSend(cmd)
 
             if (!pf.isThrowAway) {
-              val desc = LNUrlDescription(label = None, semanticOrder.copy(isParent = true, order = Long.MinValue).asSome, pf.prExt.pr.paymentHash, pf.prExt.pr.paymentSecret.get, manager.resultMsat)
-              val info = LNUrlPayLink(domain = lnUrl.uri.getHost, payString = lnUrl.request, data.metadata, System.currentTimeMillis, desc, pf.prExt.pr.nodeId.toString, getComment getOrElse new String)
+              val semanticOrder1 = semanticOrder.copy(isParent = true, order = Long.MinValue)
+              val desc = LNUrlDescription(label = None, semanticOrder1.asSome, randKey.value.toHex, pf.prExt.pr.paymentHash, pf.prExt.pr.paymentSecret.get, manager.resultMsat)
+              val info = LNUrlPayLink(domain = lnUrl.uri.getHost, payString = lnUrl.request, data.metadata, updatedAt = System.currentTimeMillis, desc, pf.prExt.pr.nodeId.toString, getComment)
               WalletApp.lnUrlPayBag.saveLink(info)
             }
           }
         }
 
-//        val obs = getFinal(manager.resultMsat).doOnTerminate(removeCurrentSnack.run)
-//        val amountHuman = WalletApp.denom.parsedWithSign(manager.resultMsat, cardIn, cardZero).html
-//        val msg = getString(dialog_lnurl_sending).format(amountHuman, data.callbackUri.getHost).html
-//        cancellingSnack(contentWindow, obs.subscribe(prf => proceed(prf).run, onFail), msg)
-//        alert.dismiss
+        val obs = getFinal(manager.resultMsat).doOnTerminate(removeCurrentSnack.run)
+        val amountHuman = WalletApp.denom.parsedWithSign(manager.resultMsat, cardIn, cardZero).html
+        val msg = getString(dialog_lnurl_sending).format(amountHuman, data.callbackUri.getHost).html
+        cancellingSnack(contentWindow, obs.subscribe(prf => proceed(prf).run, onFail), msg)
+        alert.dismiss
       }
 
       override val alert: AlertDialog = {
@@ -1209,19 +1207,27 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         mkCheckFormNeutral(send, none, neutral, title, dialog_ok, dialog_cancel, dialog_split)
       }
 
-      private def getFinal(amount: MilliSatoshi) = LNUrl.level2DataResponse {
-        data.callbackUri.buildUpon
-      }
-//        data.requestFinal(getComment, amount).map { rawResponse =>
-//          val payRequestFinal: PayRequestFinal = to[PayRequestFinal](rawResponse)
-//          val descriptionHashOpt: Option[ByteVector32] = payRequestFinal.prExt.pr.description.right.toOption
-//          require(descriptionHashOpt.contains(data.metaDataHash), s"Metadata hash mismatch, original=${data.metaDataHash}, provided=$descriptionHashOpt")
-//          require(payRequestFinal.prExt.pr.amount.contains(amount), s"Payment amount mismatch, requested=$amount, provided=${payRequestFinal.prExt.pr.amount}")
-//          payRequestFinal.modify(_.successAction.each.domain).setTo(data.callbackUri.getHost.asSome)
-//        }
+      private def getFinal(amount: MilliSatoshi) = LNUrl level2DataResponse {
+        val ids1: PayRequest.TagsAndContents = if (expectedIds.wantsRandomKey) List("application/pubkey", randKey.publicKey.toString) :: Nil else Nil
+        val ids2: PayRequest.TagsAndContents = expectedIds.wantsAuth.filter(_ => manager.attachIdentity.isChecked).map(_.getRecord(lnUrl.uri.getHost) :: ids1) getOrElse ids1
 
-      // Prefill with min possible
+        val base1 = data.callbackUri.buildUpon.appendQueryParameter("amount", amount.toLong.toString)
+        val base2 = if (maxCommentLength > 0) base1.appendQueryParameter("comment", getComment) else base1
+        if (ids2.nonEmpty) base2.appendQueryParameter("payerid", ids2.toJson.compactPrint) else base2
+      } map { rawResponse =>
+        val payRequestFinal = to[PayRequestFinal](rawResponse)
+        val descriptionHashOpt = payRequestFinal.prExt.pr.description.right.toOption
+        require(descriptionHashOpt.contains(data.metaDataHash), s"Metadata hash mismatch, original=${data.metaDataHash}, provided=$descriptionHashOpt")
+        require(payRequestFinal.prExt.pr.amount.contains(amount), s"Payment amount mismatch, requested=$amount, provided=${payRequestFinal.prExt.pr.amount}")
+        payRequestFinal.modify(_.successAction.each.domain).setTo(data.callbackUri.getHost.asSome)
+      }
+
       manager.updateText(minSendable)
+      expectedIds.wantsAuth.foreach { expectedAuth =>
+        manager.attachIdentity.setChecked(expectedAuth.isMandatory)
+        manager.attachIdentity.setEnabled(!expectedAuth.isMandatory)
+        setVis(isVisible = true, manager.attachIdentity)
+      }
     }
   }
 

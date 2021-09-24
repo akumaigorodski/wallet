@@ -69,7 +69,10 @@ sealed trait TransactionDetails {
   val identity: String
 }
 
-case class LNUrlDescription(label: Option[String], semanticOrder: Option[SemanticOrder], lastHash: ByteVector32, lastSecret: ByteVector32, lastMsat: MilliSatoshi) extends TransactionDescription {
+case class LNUrlDescription(label: Option[String], semanticOrder: Option[SemanticOrder],
+                            privKey: String, lastHash: ByteVector32, lastSecret: ByteVector32,
+                            lastMsat: MilliSatoshi) extends TransactionDescription {
+
   lazy val fullTag: FullPaymentTag = FullPaymentTag(lastHash, lastSecret, PaymentTagTlv.LOCALLY_SENT)
 }
 

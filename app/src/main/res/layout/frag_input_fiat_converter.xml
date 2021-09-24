@@ -74,7 +74,9 @@
         style="@style/FillingView"
         android:layout_marginTop="25dp"
         android:layout_marginStart="8dp"
-        android:text="@string/lnurl_auth_identity"/>
+        android:text="@string/lnurl_auth_identity"
+        android:id="@+id/attachIdentity"
+        android:visibility="gone"/>
 
     <View
         android:layout_marginTop="25dp"
