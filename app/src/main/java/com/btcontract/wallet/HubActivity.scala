@@ -1209,13 +1209,13 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         val ids2: PayRequest.TagsAndContents = expectedIds.wantsAuth.filter(_ => manager.attachIdentity.isChecked).map(_.getRecord(lnUrl.uri.getHost) :: ids1) getOrElse ids1
 
         val base1 = data.callbackUri.buildUpon.appendQueryParameter("amount", amount.toLong.toString)
-        val base2 = if (maxCommentLength > 0) base1.appendQueryParameter("comment", getComment) else base1
-        if (ids2.nonEmpty) base2.appendQueryParameter("payerid", ids2.toJson.compactPrint) else base2
+        val base2 = if (ids2.nonEmpty) base1.appendQueryParameter("payerid", ids2.toJson.compactPrint) else base1
+        if (manager.resultExtraInput.isDefined) base2.appendQueryParameter("comment", getComment) else base2
       } map { rawResponse =>
         val payRequestFinal = to[PayRequestFinal](rawResponse)
         val descriptionHashOpt = payRequestFinal.prExt.pr.description.right.toOption
-        require(descriptionHashOpt.contains(data.metaDataHash), s"Metadata hash mismatch, original=${data.metaDataHash}, provided=$descriptionHashOpt")
-        require(payRequestFinal.prExt.pr.amount.contains(amount), s"Payment amount mismatch, requested=$amount, provided=${payRequestFinal.prExt.pr.amount}")
+        require(descriptionHashOpt.contains(data.metaDataHash), s"Metadata hash mismatch, original=${data.metaDataHash}, later provided=$descriptionHashOpt")
+        require(payRequestFinal.prExt.pr.amount.contains(amount), s"Payment amount mismatch, requested by wallet=$amount, provided in invoice=${payRequestFinal.prExt.pr.amount}")
         payRequestFinal.modify(_.successAction.each.domain).setTo(data.callbackUri.getHost.asSome)
       }
 
