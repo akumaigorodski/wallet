@@ -48,7 +48,7 @@ object InputParser {
     case _ if rawInput.startsWith(bitcoin.toUpperCase) => BitcoinUri.fromRaw(rawInput.toLowerCase)
     case nodeLink(key, host, port) => RemoteNodeInfo(PublicKey.fromBin(ByteVector fromValidHex key), NodeAddress.fromParts(host, port.toInt), host)
     case shortNodeLink(key, host) => RemoteNodeInfo(PublicKey.fromBin(ByteVector fromValidHex key), NodeAddress.fromParts(host, port = 9735), host)
-    case _ if identifier.findFirstMatchIn(rawInput).isDefined => LNUrl.fromIdentifier(identifier = rawInput)
+    case _ if identifier.findFirstMatchIn(rawInput).isDefined => LNUrl.fromIdentifier(identifier = rawInput.trim)
     case _ if rawInput.toLowerCase.startsWith(lightning) => PaymentRequestExt.fromUri(rawInput.toLowerCase)
     case lnPayReq(prefix, data) => PaymentRequestExt.fromRaw(s"$prefix$data")
     case _ => BitcoinUri.fromRaw(s"$bitcoin$rawInput")
