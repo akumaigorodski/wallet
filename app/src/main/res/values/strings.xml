@@ -60,6 +60,7 @@
     <string name="dialog_break">Break</string>
     <string name="dialog_open">Open</string>
     <string name="dialog_copy">Copy</string>
+    <string name="dialog_scan">Scan</string>
     <string name="dialog_info">Info</string>
     <string name="dialog_max">Max</string>
 

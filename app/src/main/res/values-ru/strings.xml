@@ -60,6 +60,7 @@
     <string name="dialog_break">Прервать</string>
     <string name="dialog_open">Открыть</string>
     <string name="dialog_copy">Копия</string>
+    <string name="dialog_scan">Скан</string>
     <string name="dialog_info">Инфо</string>
     <string name="dialog_max">Макс</string>
 

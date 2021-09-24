@@ -141,12 +141,19 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     setVis(isVisible = false, settingsCheck)
 
     view setOnClickListener onButtonTap {
-      singleInputPopup(settings_custom_electrum_host_port, title = getString(settings_custom_electrum_disabled).asDefView) { input =>
-        if (input.trim.isEmpty) runAnd(WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM_ADDRESS, new String).commit)(warnAndUpdateView)
-        else runInFutureProcessOnUI(saveUnsafe, onFail)(_ => warnAndUpdateView)
+      val (container, extraInputLayout, extraInput) = singleInputPopup
+      val builder = titleBodyAsViewBuilder(getString(settings_custom_electrum_disabled).asDefView, container)
+      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
+      extraInputLayout.setHint(settings_custom_electrum_host_port)
+      showKeys(extraInput)
 
-        def saveUnsafe: Unit = {
-          val hostOrIP ~ port = input.trim.splitAt(input lastIndexOf ':')
+      def proceed: Unit = {
+        val input = extraInput.getText.toString.trim
+        if (input.nonEmpty) runInFutureProcessOnUI(saveUnsafeElectrumAddress, onFail)(_ => warnAndUpdateView)
+        else runAnd(WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM_ADDRESS, new String).commit)(warnAndUpdateView)
+
+        def saveUnsafeElectrumAddress: Unit = {
+          val hostOrIP ~ port = input.splitAt(input lastIndexOf ':')
           val nodeAddress = NodeAddress.fromParts(host = hostOrIP, port = port.tail.toInt, orElse = Domain)
           WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM_ADDRESS, nodeaddress.encode(nodeAddress).require.toHex).commit
         }

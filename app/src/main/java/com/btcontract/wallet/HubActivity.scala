@@ -221,13 +221,19 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     shareItem setOnClickListener onButtonTap(doShareItem)
 
     def doSetItemLabel: Unit = {
-      singleInputPopup(dialog_set_record_label, title = null) { input =>
-        val trimmedLabelInput = Option(input).map(trimmed).filter(_.nonEmpty)
+      val (container, extraInputLayout, extraInput) = singleInputPopup
+      val builder = titleBodyAsViewBuilder(title = null, body = container)
+      mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
+      extraInputLayout.setHint(dialog_set_record_label)
+      showKeys(extraInput)
+
+      def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
+        val optionalInput = Option(extraInput.getText.toString).map(trimmed).filter(_.nonEmpty)
 
         currentDetails match {
-          case info: LNUrlPayLink => WalletApp.lnUrlPayBag.updDescription(info.description.modify(_.label).setTo(trimmedLabelInput), info.domain, info.payString)
-          case info: PaymentInfo => LNParams.cm.payBag.updDescription(info.description.modify(_.label).setTo(trimmedLabelInput), info.paymentHash)
-          case info: TxInfo => WalletApp.txDataBag.updDescription(info.description.modify(_.label).setTo(trimmedLabelInput), info.txid)
+          case info: LNUrlPayLink => WalletApp.lnUrlPayBag.updDescription(info.description.modify(_.label).setTo(optionalInput), info.domain, info.payString)
+          case info: PaymentInfo => LNParams.cm.payBag.updDescription(info.description.modify(_.label).setTo(optionalInput), info.paymentHash)
+          case info: TxInfo => WalletApp.txDataBag.updDescription(info.description.modify(_.label).setTo(optionalInput), info.txid)
           case _ =>
         }
       }
@@ -1004,12 +1010,23 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   def bringSendOptions(view: View): Unit = {
-    singleInputPopup(typing_hints, title = null)(parseTypedInput)
-    def parseTypedInput(input: String): Unit = runInFutureProcessOnUI(InputParser recordValue input, onFail) { _ =>
-      def switchToTypeInputOnFailure: Unit = singleInputPopup(typing_hints, title = null)(parseTypedInput)
-      def proceed: Unit = runAnd(switchToTypeInputOnFailure)(nothingUsefulTask.run)
-      me checkExternalData UITask(proceed)
+    def doBringSendInputWithOptionalScan: Unit = {
+      val (container, extraInputLayout, extraInput) = singleInputPopup
+      val builder = titleBodyAsViewBuilder(title = null, body = container)
+      def switchToScanner(alert: AlertDialog): Unit = runAnd(alert.dismiss)(me bringScanner null)
+      mkCheckFormNeutral(proceed, none, switchToScanner, builder, dialog_ok, dialog_cancel, dialog_scan)
+      extraInputLayout.setHint(typing_hints)
+      showKeys(extraInput)
+
+      def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
+        runInFutureProcessOnUI(InputParser recordValue extraInput.getText.toString, onFail) { _ =>
+          def attemptProcessInput: Unit = runAnd(doBringSendInputWithOptionalScan)(nothingUsefulTask.run)
+          me checkExternalData UITask(attemptProcessInput)
+        }
+      }
     }
+
+    doBringSendInputWithOptionalScan
   }
 
   def bringScanner(view: View): Unit = {

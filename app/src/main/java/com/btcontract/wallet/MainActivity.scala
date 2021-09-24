@@ -12,6 +12,7 @@ import fr.acinq.eclair.blockchain.electrum.db.SigningWallet
 import info.guardianproject.netcipher.proxy.OrbotHelper
 import org.ndeftools.util.activity.NfcReaderActivity
 import com.btcontract.wallet.BaseActivity.StringOps
+import androidx.appcompat.app.AlertDialog
 import com.ornach.nobobutton.NoboButton
 import immortan.utils.InputParser
 import android.widget.TextView
@@ -114,9 +115,15 @@ class MainActivity extends NfcReaderActivity with BaseActivity { me =>
     }
 
     def makeAttempt: Unit = {
-      singleInputPopup(password, title = null) { input =>
-        decrypt(restoreLegacyWallet, input.trim) map { seed =>
-          val core = SigningWallet(walletType = BIP32, isRemovable = true)
+      val (container, extraInputLayout, extraInput) = singleInputPopup
+      val builder = titleBodyAsViewBuilder(title = null, body = container)
+      mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
+      extraInputLayout.setHint(password)
+      showKeys(extraInput)
+
+      def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
+        val core = SigningWallet(walletType = BIP32, isRemovable = true)
+        decrypt(restoreLegacyWallet, extraInput.getText.toString) map { seed =>
           SetupActivity.fromMnemonics(seed.getMnemonicCode.asScala.toList, host = me)
           val walletExt1 = LNParams.chainWallets.withNewSigning(core, core.walletType)
           LNParams.updateChainWallet(walletExt = walletExt1)
