@@ -34,7 +34,7 @@ object InputParser {
 
   val lnPayReq: UnanchoredRegex = s"(?im).*?($prefixes)([0-9]{1,}[a-z0-9]+){1}".r.unanchored
 
-  val identifier: Regex = """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
+  val identifier: UnanchoredRegex = "^[a-zA-Z0-9_.]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$".r.unanchored
 
   val lightning: String = "lightning:"
 
@@ -44,20 +44,28 @@ object InputParser {
 
   def parse(rawInput: String): Any = rawInput take 2880 match {
     case lnUrl(prefix, data) => LNUrl.fromBech32(s"$prefix$data")
-    case _ if rawInput.startsWith(bitcoin) => BitcoinUri.fromRaw(rawInput)
-    case _ if rawInput.startsWith(bitcoin.toUpperCase) => BitcoinUri.fromRaw(rawInput.toLowerCase)
     case nodeLink(key, host, port) => RemoteNodeInfo(PublicKey.fromBin(ByteVector fromValidHex key), NodeAddress.fromParts(host, port.toInt), host)
     case shortNodeLink(key, host) => RemoteNodeInfo(PublicKey.fromBin(ByteVector fromValidHex key), NodeAddress.fromParts(host, port = 9735), host)
-    case _ if identifier.findFirstMatchIn(rawInput).isDefined => LNUrl.fromIdentifier(identifier = rawInput.trim)
-    case _ if rawInput.toLowerCase.startsWith(lightning) => PaymentRequestExt.fromUri(rawInput.toLowerCase)
     case lnPayReq(prefix, data) => PaymentRequestExt.fromRaw(s"$prefix$data")
-    case _ => BitcoinUri.fromRaw(s"$bitcoin$rawInput")
+
+    case _ =>
+      val isLightning = rawInput.toLowerCase.startsWith(lightning)
+      val withoutPrefix = PaymentRequestExt.removePrefix(rawInput).trim
+      val isLightningAddress = identifier.findFirstMatchIn(withoutPrefix)
+      if (isLightningAddress.isDefined) LNUrl.fromIdentifier(withoutPrefix)
+      else if (isLightning) PaymentRequestExt.fromUri(withoutPrefix.toLowerCase)
+      else BitcoinUri.fromRaw(s"$bitcoin$withoutPrefix")
   }
 }
 
 object PaymentRequestExt {
-  def fromUri(raw: String): PaymentRequestExt = {
-    val invoiceWithoutPrefix = raw.split(':').drop(1).mkString.replace("//", "")
+  def removePrefix(raw: String): String = raw.split(':').toList match {
+    case prefix :: content if lightning.startsWith(prefix.toLowerCase) => content.mkString.replace("//", "")
+    case prefix :: content if bitcoin.startsWith(prefix.toLowerCase) => content.mkString.replace("//", "")
+    case _ => raw
+  }
+
+  def fromUri(invoiceWithoutPrefix: String): PaymentRequestExt = {
     val lnPayReq(invoicePrefix, invoiceData) = invoiceWithoutPrefix
     val uri = Try(Uri parse s"$lightning//$invoiceWithoutPrefix")
     val pr = PaymentRequest.read(s"$invoicePrefix$invoiceData")
@@ -88,7 +96,7 @@ case class PaymentRequestExt(uri: Try[Uri], pr: PaymentRequest, raw: String) {
 
 object BitcoinUri {
   def fromRaw(raw: String): BitcoinUri = {
-    val dataWithoutPrefix = raw.split(':').drop(1).mkString.replace("//", "")
+    val dataWithoutPrefix = PaymentRequestExt.removePrefix(raw)
     val uri = Uri.parse(s"$bitcoin//$dataWithoutPrefix")
     BitcoinUri(Success(uri), uri.getHost)
   }
