@@ -229,7 +229,7 @@ case class PlainTxDescription(addresses: List[String], label: Option[String] = N
 }
 
 case class OpReturnTxDescription(preimages: List[ByteVector32], label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends TxDescription {
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + preimages.map(_.toHex).mkString(SEPARATOR) + label.getOrElse(new String)
+  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + preimages.map(_.toHex).mkString(SEPARATOR) + SEPARATOR + label.getOrElse(new String)
 }
 
 sealed trait ChanTxDescription extends TxDescription {
@@ -238,19 +238,19 @@ sealed trait ChanTxDescription extends TxDescription {
 }
 
 case class ChanFundingTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + label.getOrElse(new String)
+  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
 }
 
 case class ChanRefundingTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + label.getOrElse(new String)
+  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
 }
 
 case class HtlcClaimTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + label.getOrElse(new String)
+  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
 }
 
 case class PenaltyTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + label.getOrElse(new String)
+  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
 }
 
 object TxDescription {

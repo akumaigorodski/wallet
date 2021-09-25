@@ -8,9 +8,11 @@ import java.lang.{Long => JLong}
 
 class SQLiteLNUrlPay(db: DBInterface) {
   def updDescription(description: LNUrlDescription, domain: String, pay: String): Unit = db txWrap {
-    db.change(LNUrlPayTable.updateDescriptionSql, description.toJson.compactPrint, pay)
+    val updateDescriptionSqlPQ = db.makePreparedQuery(LNUrlPayTable.updateDescriptionSql)
+    db.change(updateDescriptionSqlPQ, description.toJson.compactPrint, pay)
     for (label <- description.label) addSearchableLink(label, domain)
     ChannelMaster.next(ChannelMaster.payMarketDbStream)
+    updateDescriptionSqlPQ.close
   }
 
   def remove(pay: String): Unit = {
@@ -20,13 +22,22 @@ class SQLiteLNUrlPay(db: DBInterface) {
 
   def saveLink(info: LNUrlPayLink): Unit = db txWrap {
     val descriptionString = info.description.toJson.compactPrint
-    db.change(LNUrlPayTable.newSql, info.domain, info.payString, info.payMetaString, info.updatedAt: JLong, descriptionString, info.lastNodeIdString, info.lastCommentString)
-    db.change(LNUrlPayTable.updInfoSql, info.payMetaString, info.updatedAt: JLong, descriptionString, info.lastNodeIdString, info.lastCommentString, info.payString)
+    val updInfoSqlPQ = db.makePreparedQuery(LNUrlPayTable.updInfoSql)
+    val newSqlPQ = db.makePreparedQuery(LNUrlPayTable.newSql)
+
+    db.change(newSqlPQ, info.domain, info.payString, info.payMetaString, info.updatedAt: JLong, descriptionString, info.lastNodeIdString, info.lastCommentString)
+    db.change(updInfoSqlPQ, info.payMetaString, info.updatedAt: JLong, descriptionString, info.lastNodeIdString, info.lastCommentString, info.payString)
     addSearchableLink(info.payMetaData.get.queryText, info.domain)
     ChannelMaster.next(ChannelMaster.payMarketDbStream)
+    updInfoSqlPQ.close
+    newSqlPQ.close
   }
 
-  def addSearchableLink(search: String, domain: String): Unit = db.change(LNUrlPayTable.newVirtualSql, search.toLowerCase, domain)
+  def addSearchableLink(search: String, domain: String): Unit = {
+    val newVirtualSqlPQ = db.makePreparedQuery(LNUrlPayTable.newVirtualSql)
+    db.change(newVirtualSqlPQ, search.toLowerCase, domain)
+    newVirtualSqlPQ.close
+  }
 
   def searchLinks(rawSearchQuery: String): RichCursor = db.search(LNUrlPayTable.searchSql, rawSearchQuery.toLowerCase)
 

@@ -17,14 +17,20 @@ case class TxSummary(fees: Satoshi, received: Satoshi, sent: Satoshi, count: Lon
 class SQLiteTx(val db: DBInterface) {
   def listRecentTxs(limit: Int): RichCursor = db.select(TxTable.selectRecentSql, limit.toString)
 
-  def addSearchableTransaction(search: String, txid: ByteVector32): Unit = db.change(TxTable.newVirtualSql, search.toLowerCase, txid.toHex)
+  def addSearchableTransaction(search: String, txid: ByteVector32): Unit = {
+    val newVirtualSqlPQ = db.makePreparedQuery(TxTable.newVirtualSql)
+    db.change(newVirtualSqlPQ, search.toLowerCase, txid.toHex)
+    newVirtualSqlPQ.close
+  }
 
   def searchTransactions(rawSearchQuery: String): RichCursor = db.search(TxTable.searchSql, rawSearchQuery.toLowerCase)
 
   def updDescription(description: TxDescription, txid: ByteVector32): Unit = db txWrap {
-    db.change(TxTable.updateDescriptionSql, description.toJson.compactPrint, txid.toHex)
+    val updateDescriptionSqlPQ = db.makePreparedQuery(TxTable.updateDescriptionSql)
+    db.change(updateDescriptionSqlPQ, description.toJson.compactPrint, txid.toHex)
     for (label <- description.label) addSearchableTransaction(label, txid)
     ChannelMaster.next(ChannelMaster.txDbStream)
+    updateDescriptionSqlPQ.close
   }
 
   def updStatus(txid: ByteVector32, depth: Long, doubleSpent: Boolean): Unit = {
@@ -40,10 +46,12 @@ class SQLiteTx(val db: DBInterface) {
   def addTx(tx: Transaction, depth: Long, received: Satoshi, sent: Satoshi, feeOpt: Option[Satoshi], xPub: ExtendedPublicKey,
             description: TxDescription, isIncoming: Long, balanceSnap: MilliSatoshi, fiatRateSnap: Fiat2Btc): Unit = {
 
-    db.change(TxTable.newSql, tx.toString, tx.txid.toHex, xPub.publicKey.toString /* WHICH WALLET DOES IT COME FROM */, depth: JLong, received.toLong: JLong,
+    val newSqlPQ = db.makePreparedQuery(TxTable.newSql)
+    db.change(newSqlPQ, tx.toString, tx.txid.toHex, xPub.publicKey.toString /* WHICH WALLET TYPE IS IT COMING FROM */, depth: JLong, received.toLong: JLong,
       sent.toLong: JLong, feeOpt.map(_.toLong: JLong).getOrElse(0L: JLong), System.currentTimeMillis: JLong /* SEEN */, System.currentTimeMillis: JLong /* UPDATED */,
       description.toJson.compactPrint, balanceSnap.toLong: JLong, fiatRateSnap.toJson.compactPrint, isIncoming: JLong, 0L: JLong)
     ChannelMaster.next(ChannelMaster.txDbStream)
+    newSqlPQ.close
   }
 
   def toTxInfo(rc: RichCursor): TxInfo =
