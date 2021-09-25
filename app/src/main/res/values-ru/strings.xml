@@ -175,7 +175,6 @@
     <string name="tx_state_double_spent">отменён</string>
 
     <string name="popup_retry">Повторить попытку</string>
-    <string name="popup_explorer"><![CDATA[mempool.space]]></string>
     <string name="popup_run_action"><![CDATA[запустить&#160;экшн&#160;]]></string>
     <string name="popup_proof_stamp"><![CDATA[крипто-печать&#160;]]></string>
     <string name="popup_to_address"><![CDATA[<b>адрес</b>&#160;%1$s]]></string>
@@ -375,7 +374,6 @@
 
     <array name="ln_normal_chan_actions">
         <item><![CDATA[Информация о <b>канале-Молнии</b>]]></item>
-        <item><![CDATA[Открывающая транзакция]]></item>
         <item><![CDATA[Закрыть канал в кошелек]]></item>
         <item><![CDATA[Закрыть канал на адрес]]></item>
     </array>

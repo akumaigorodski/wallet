@@ -244,10 +244,10 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
   }
 
   override def onChoiceMade(tag: AnyRef, pos: Int): Unit = (tag, pos) match {
-    case (cs: NormalCommits, 1) => browseTxid(cs.commitInput.outPoint.txid)
+    case (commits: Commitments, 0) => share(ChanActivity getDetails commits)
     case (hc: HostedCommits, 1) => share(ChanActivity getHcState hc)
 
-    case (cs: NormalCommits, 2) =>
+    case (cs: NormalCommits, 1) =>
       val builder = confirmationBuilder(cs, getString(confirm_ln_normal_chan_close_wallet).html)
       def proceed: Unit = for (chan <- me getChanByCommits cs) chan process CMD_CLOSE(None, force = false)
       mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
@@ -256,8 +256,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       val builder = confirmationBuilder(hc, getString(confirm_ln_hosted_chan_drain).html)
       mkCheckForm(alert => runAnd(alert.dismiss)(me drainHc hc), none, builder, dialog_ok, dialog_cancel)
 
-    case (cs: NormalCommits, 3) => closeNcToAddress(cs)
-    case (c: Commitments, 0) => share(ChanActivity getDetails c)
+    case (cs: NormalCommits, 2) => closeNcToAddress(cs)
     case _ =>
   }
 

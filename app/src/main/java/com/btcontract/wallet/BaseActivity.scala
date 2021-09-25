@@ -126,12 +126,6 @@ trait BaseActivity extends AppCompatActivity { me =>
     if (null != view) view.setVisibility(View.GONE)
   }
 
-  def browseTxid(txid: ByteVector32): Unit = LNParams.chainHash match {
-    case Block.TestnetGenesisBlock.hash => browse(s"https://mempool.space/testnet/tx/${txid.toHex}")
-    case Block.LivenetGenesisBlock.hash => browse(s"https://mempool.space/tx/${txid.toHex}")
-    case _ =>
-  }
-
   def share(text: CharSequence): Unit = startActivity {
     val shareAction = new Intent setAction Intent.ACTION_SEND
     shareAction.setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
