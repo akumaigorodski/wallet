@@ -364,17 +364,3 @@ object LNUrlPayTable extends Table {
     createTable :: addSearchTable :: addIndex1 :: addIndex2 :: Nil
   }
 }
-
-object UsedDomainsTable extends Table {
-  val (table, domain, stamp, protocol) = ("useddomains", "domain", "stamp", "protocol")
-
-  val newSql = s"INSERT INTO $table ($domain, $stamp, $protocol) VALUES (?, ?, ?)"
-
-  val selectCountSql = s"SELECT COUNT($domain) FROM $table WHERE $domain = ?"
-
-  def createStatements: Seq[String] = {
-    val createTable = s"CREATE TABLE IF NOT EXISTS $table($IDAUTOINC, $domain STRING NOT NULL, $stamp INTEGER NOT NULL, $protocol STRING NOT NULL)"
-    val addIndex1 = s"CREATE INDEX IF NOT EXISTS idx1$table ON $table ($domain)"
-    createTable :: addIndex1 :: Nil
-  }
-}

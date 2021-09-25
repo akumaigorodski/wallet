@@ -13,7 +13,6 @@ class DBInterfaceSQLiteAndroidMisc(context: Context, name: String) extends SQLit
     ChannelTxFeesTable.createStatements.foreach(dbs.execSQL)
     ElectrumHeadersTable.createStatements.foreach(dbs.execSQL)
     ChainWalletTable.createStatements.foreach(dbs.execSQL)
-    UsedDomainsTable.createStatements.foreach(dbs.execSQL)
     LNUrlPayTable.createStatements.foreach(dbs.execSQL)
     PaymentTable.createStatements.foreach(dbs.execSQL)
     RelayTable.createStatements.foreach(dbs.execSQL)
