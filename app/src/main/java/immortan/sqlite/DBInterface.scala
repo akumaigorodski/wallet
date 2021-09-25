@@ -14,10 +14,8 @@ trait DBInterface {
 
   def makePreparedQuery(sql: String): PreparedQuery
 
-  def search(sqlSelectQuery: String, rawQuery: String): RichCursor = {
-    val purified = rawQuery.replaceAll("[^ a-zA-Z0-9]", "").trim
-    select(sqlSelectQuery, s"$purified*")
-  }
+  def search(sqlSelectQuery: String, rawQuery: String): RichCursor =
+    select(sqlSelectQuery, s"${rawQuery.replaceAll("'", "\\'").trim}*")
 }
 
 case class DBInterfaceSQLiteGeneral(connection: java.sql.Connection) extends DBInterface {

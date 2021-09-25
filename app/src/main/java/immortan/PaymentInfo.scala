@@ -122,7 +122,7 @@ case class PlainDescription(split: Option[SplitInfo], label: Option[String], sem
 
   val externalInfo: Option[String] = Some(invoiceText).find(_.nonEmpty)
 
-  val queryText: String = invoiceText + SEPARATOR + label.orNull
+  val queryText: String = invoiceText + SEPARATOR + label.getOrElse(new String)
 }
 
 case class PlainMetaDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder],
@@ -130,7 +130,7 @@ case class PlainMetaDescription(split: Option[SplitInfo], label: Option[String],
 
   val externalInfo: Option[String] = List(meta, invoiceText).find(_.nonEmpty)
 
-  val queryText: String = invoiceText + SEPARATOR + meta + SEPARATOR + label.orNull
+  val queryText: String = invoiceText + SEPARATOR + meta + SEPARATOR + label.getOrElse(new String)
 }
 
 case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, seenAt: Long, updatedAt: Long, description: PaymentDescription, actionString: String,
@@ -229,7 +229,7 @@ case class PlainTxDescription(addresses: List[String], label: Option[String] = N
 }
 
 case class OpReturnTxDescription(preimages: List[ByteVector32], label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends TxDescription {
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + preimages.map(_.toHex).mkString(SEPARATOR)
+  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + preimages.map(_.toHex).mkString(SEPARATOR) + label.getOrElse(new String)
 }
 
 sealed trait ChanTxDescription extends TxDescription {
@@ -238,19 +238,19 @@ sealed trait ChanTxDescription extends TxDescription {
 }
 
 case class ChanFundingTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString
+  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + label.getOrElse(new String)
 }
 
 case class ChanRefundingTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString
+  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + label.getOrElse(new String)
 }
 
 case class HtlcClaimTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString
+  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + label.getOrElse(new String)
 }
 
 case class PenaltyTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None) extends ChanTxDescription {
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString
+  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + label.getOrElse(new String)
 }
 
 object TxDescription {

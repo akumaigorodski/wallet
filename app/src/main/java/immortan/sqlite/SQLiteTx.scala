@@ -17,9 +17,9 @@ case class TxSummary(fees: Satoshi, received: Satoshi, sent: Satoshi, count: Lon
 class SQLiteTx(val db: DBInterface) {
   def listRecentTxs(limit: Int): RichCursor = db.select(TxTable.selectRecentSql, limit.toString)
 
-  def addSearchableTransaction(search: String, txid: ByteVector32): Unit = db.change(TxTable.newVirtualSql, search, txid.toHex)
+  def addSearchableTransaction(search: String, txid: ByteVector32): Unit = db.change(TxTable.newVirtualSql, search.toLowerCase, txid.toHex)
 
-  def searchTransactions(rawSearchQuery: String): RichCursor = db.search(TxTable.searchSql, rawSearchQuery)
+  def searchTransactions(rawSearchQuery: String): RichCursor = db.search(TxTable.searchSql, rawSearchQuery.toLowerCase)
 
   def updDescription(description: TxDescription, txid: ByteVector32): Unit = db txWrap {
     db.change(TxTable.updateDescriptionSql, description.toJson.compactPrint, txid.toHex)

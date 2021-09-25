@@ -26,9 +26,9 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
     ChannelMaster.next(ChannelMaster.paymentDbStream)
   }
 
-  def addSearchablePayment(search: String, paymentHash: ByteVector32): Unit = db.change(PaymentTable.newVirtualSql, search, paymentHash.toHex)
+  def addSearchablePayment(search: String, paymentHash: ByteVector32): Unit = db.change(PaymentTable.newVirtualSql, search.toLowerCase, paymentHash.toHex)
 
-  def searchPayments(rawSearchQuery: String): RichCursor = db.search(PaymentTable.searchSql, rawSearchQuery)
+  def searchPayments(rawSearchQuery: String): RichCursor = db.search(PaymentTable.searchSql, rawSearchQuery.toLowerCase)
 
   def listRecentPayments(limit: Int): RichCursor = {
     val failedHidingThreshold = System.currentTimeMillis - 60 * 60 * 24 * 1000L
@@ -83,10 +83,11 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
     }
 
   def toPaymentInfo(rc: RichCursor): PaymentInfo =
-    PaymentInfo(prString = rc string PaymentTable.pr, preimage = ByteVector32.fromValidHex(rc string PaymentTable.preimage), status = rc int PaymentTable.status,
-      seenAt = rc long PaymentTable.seenAt, updatedAt = rc long PaymentTable.updatedAt, description = to[PaymentDescription](rc string PaymentTable.description), actionString = rc string PaymentTable.action,
-      paymentHash = ByteVector32.fromValidHex(rc string PaymentTable.hash), paymentSecret = ByteVector32.fromValidHex(rc string PaymentTable.secret), received = MilliSatoshi(rc long PaymentTable.receivedMsat),
-      sent = MilliSatoshi(rc long PaymentTable.sentMsat), fee = MilliSatoshi(rc long PaymentTable.feeMsat), balanceSnapshot = MilliSatoshi(rc long PaymentTable.balanceMsat), fiatRatesString = rc string PaymentTable.fiatRates,
+    PaymentInfo(prString = rc string PaymentTable.pr, preimage = ByteVector32.fromValidHex(rc string PaymentTable.preimage),
+      status = rc int PaymentTable.status, seenAt = rc long PaymentTable.seenAt, updatedAt = rc long PaymentTable.updatedAt, description = to[PaymentDescription](rc string PaymentTable.description),
+      actionString = rc string PaymentTable.action, paymentHash = ByteVector32.fromValidHex(rc string PaymentTable.hash), paymentSecret = ByteVector32.fromValidHex(rc string PaymentTable.secret),
+      received = MilliSatoshi(rc long PaymentTable.receivedMsat), sent = MilliSatoshi(rc long PaymentTable.sentMsat), fee = MilliSatoshi(rc long PaymentTable.feeMsat),
+      balanceSnapshot = MilliSatoshi(rc long PaymentTable.balanceMsat), fiatRatesString = rc string PaymentTable.fiatRates,
       chainFee = MilliSatoshi(rc long PaymentTable.chainFeeMsat), incoming = rc long PaymentTable.incoming)
 
   // Preimage storage
