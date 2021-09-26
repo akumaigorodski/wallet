@@ -47,7 +47,6 @@ import org.apmem.tools.layouts.FlowLayout
 import android.graphics.drawable.Drawable
 import android.content.pm.PackageManager
 import com.ornach.nobobutton.NoboButton
-import immortan.LNParams.WalletExt
 import scala.concurrent.Await
 import org.ndeftools.Message
 import java.util.TimerTask
@@ -298,7 +297,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         WalletApp.txDescriptions += Tuple2(stampTx.txid, txDesc)
         alert.dismiss
 
-        runFutureProcessOnUI(fromWallet.commit(stampTx), onFail) {
+        runFutureProcessOnUI(fromWallet.commit(stampTx, "hc-stamp-tx"), onFail) {
           case true => LNParams.cm.payBag.updDescription(infoDesc1, info.paymentHash)
           case false => onFail(error = me getString error_btc_broadcast_fail)
         }
@@ -1101,7 +1100,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         knownDescription = PlainTxDescription(uri.address :: Nil, manager.resultExtraInput orElse uri.label orElse uri.message)
         // Record this description before sending, we won't be able to know a memo and label otherwise
         _ = WalletApp.txDescriptions += Tuple2(txAndFee.tx.txid, knownDescription)
-        committed <- fromWallet.commit(txAndFee.tx) if !committed
+        committed <- fromWallet.commit(txAndFee.tx, "send-tx") if !committed
       } onFail(me getString error_btc_broadcast_fail)
     }
 

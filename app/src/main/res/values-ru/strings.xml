@@ -21,7 +21,7 @@
 
     <string name="search_recent">Поиск платежей и транзакций</string>
     <string name="emergency_mode">Что-то пошло не так</string>
-    <string name="emergency_share">Отчёт об ошибке</string>
+    <string name="error_log">Логи ошибок</string>
 
     <string name="setup_title">Установка кошелька</string>
     <string name="setup_create_new">Создать новый кошелёк</string>

@@ -1,7 +1,7 @@
 package immortan.fsm
 
 import fr.acinq.eclair.channel.{ChannelFeatures, Commitments, DATA_WAIT_FOR_FUNDING_CONFIRMED, INPUT_INIT_FUNDEE, PersistentChannelData}
-import immortan.{ChannelListener, ChannelMaster, ChannelNormal, CommsTower, ConnectionListener, LNParams, RemoteNodeInfo}
+import immortan.{ChannelListener, ChannelMaster, ChannelNormal, CommsTower, ConnectionListener, LNParams, RemoteNodeInfo, WalletExt}
 import fr.acinq.eclair.wire.{HasChannelId, HasTemporaryChannelId, Init, LightningMessage, OpenChannel}
 import immortan.Channel.{WAIT_FOR_ACCEPT, WAIT_FUNDING_DONE}
 import immortan.ChannelListener.{Malfunction, Transition}
@@ -15,7 +15,7 @@ abstract class NCFundeeOpenHandler(info: RemoteNodeInfo, theirOpen: OpenChannel,
   private val freshChannel = new ChannelNormal(cm.chanBag) {
     def SEND(messages: LightningMessage*): Unit = CommsTower.sendMany(messages, info.nodeSpecificPair)
     def STORE(normalData: PersistentChannelData): PersistentChannelData = cm.chanBag.put(normalData)
-    val chainWallet: LNParams.WalletExt = LNParams.chainWallets
+    val chainWallet: WalletExt = LNParams.chainWallets
   }
 
   private val makeChanListener = new ConnectionListener with ChannelListener { me =>

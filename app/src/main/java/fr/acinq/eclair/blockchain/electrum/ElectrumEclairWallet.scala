@@ -2,23 +2,26 @@ package fr.acinq.eclair.blockchain.electrum
 
 import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet._
-import fr.acinq.bitcoin.{ByteVector32, OP_PUSHDATA, OP_RETURN, Satoshi, Script, Transaction, TxIn, TxOut}
 import fr.acinq.eclair.blockchain.{EclairWallet, MakeFundingTxResponse, TxAndFee}
-import scala.concurrent.{ExecutionContext, Future}
-import akka.actor.{ActorRef, ActorSystem}
-
+import fr.acinq.bitcoin.{ByteVector32, OP_PUSHDATA, OP_RETURN, Satoshi, Script, Transaction, TxIn, TxOut}
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.BroadcastTransaction
 import fr.acinq.eclair.blockchain.electrum.db.CompleteChainWalletInfo
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.addressToPublicKeyScript
+import scala.concurrent.Future
 import scodec.bits.ByteVector
-import akka.util.Timeout
+import akka.actor.ActorRef
 import akka.pattern.ask
 
 
-case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, info: CompleteChainWalletInfo)(implicit system: ActorSystem, ec: ExecutionContext, timeout: Timeout) extends EclairWallet {
+case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, info: CompleteChainWalletInfo) extends EclairWallet {
+
+  import immortan.LNParams.{ec, timeout, logBag}
+
   override def getReceiveAddresses: Future[GetCurrentReceiveAddressesResponse] = (walletRef ? GetCurrentReceiveAddresses).mapTo[GetCurrentReceiveAddressesResponse]
+
   private def isInChain(error: fr.acinq.eclair.blockchain.bitcoind.rpc.Error): Boolean = error.message.toLowerCase.contains("already in block chain")
+
   private def emptyUtxo(pubKeyScript: ByteVector): TxOut = TxOut(Satoshi(0L), pubKeyScript)
 
   override def makeFundingTx(pubkeyScript: ByteVector, amount: Satoshi, feeRatePerKw: FeeratePerKw): Future[MakeFundingTxResponse] =
@@ -40,15 +43,24 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
         }
     }
 
-  override def commit(tx: Transaction): Future[Boolean] = {
+  override def commit(tx: Transaction, tag: String): Future[Boolean] = {
     val broadcast = BroadcastTransaction(tx)
     val commit = CommitTransaction(tx)
 
     (walletRef ? broadcast).flatMap {
-      case ElectrumClient.BroadcastTransactionResponse(_, None) => (walletRef ? commit).mapTo[Boolean]
-      case res: ElectrumClient.BroadcastTransactionResponse if res.error.exists(isInChain) => (walletRef ? commit).mapTo[Boolean]
-      case res: ElectrumClient.BroadcastTransactionResponse if res.error.isDefined => Future(false)
-      case ElectrumClient.ServerError(_: ElectrumClient.BroadcastTransaction, _) => Future(false)
+      case ElectrumClient.BroadcastTransactionResponse(_, None) =>
+        (walletRef ? commit).mapTo[Boolean]
+
+      case res: ElectrumClient.BroadcastTransactionResponse if res.error.exists(isInChain) =>
+        (walletRef ? commit).mapTo[Boolean]
+
+      case res: ElectrumClient.BroadcastTransactionResponse if res.error.isDefined =>
+        logBag.put(tag, res.error.get.message)
+        Future(false)
+
+      case ElectrumClient.ServerError(_: ElectrumClient.BroadcastTransaction, error) =>
+        logBag.put(tag, error.message)
+        Future(false)
     }
   }
 

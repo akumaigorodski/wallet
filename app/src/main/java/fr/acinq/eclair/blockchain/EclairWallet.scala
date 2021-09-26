@@ -28,7 +28,7 @@ trait EclairWallet {
 
   def sendPayment(amount: Satoshi, address: String, feeRatePerKw: FeeratePerKw): Future[TxAndFee]
 
-  def commit(tx: Transaction): Future[Boolean]
+  def commit(tx: Transaction, tag: String): Future[Boolean]
 
   def doubleSpent(tx: Transaction): Future[DepthAndDoubleSpent]
 }

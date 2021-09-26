@@ -69,6 +69,7 @@ object LNParams {
   var secret: WalletSecret = _
   var chainHash: ByteVector32 = _
   var chainWallets: WalletExt = _
+  var logBag: SQLiteLog = _
   var cm: ChannelMaster = _
 
   var ourInit: Init = _
@@ -84,7 +85,7 @@ object LNParams {
   def isOperational: Boolean =
     null != chainHash && null != secret && null != chainWallets && null != syncParams && null != trampoline &&
       null != fiatRates && null != feeRates && null != cm && null != cm.inProcessors && null != cm.sendTo &&
-      null != routerConf && null != ourInit
+      null != logBag && null != routerConf && null != ourInit
 
   implicit val timeout: Timeout = Timeout(30.seconds)
   implicit val system: ActorSystem = ActorSystem("immortan-actor-system")
@@ -133,69 +134,67 @@ object LNParams {
 
   def defaultTrampolineOn = TrampolineOn(minPayment, maximumMsat = 1000000000L.msat, feeBaseMsat = 10000L.msat, feeProportionalMillionths = 1000L, exponent = 0.0, logExponent = 0.0, minRoutingCltvExpiryDelta)
 
+  def loggedActor(childProps: Props, childName: String): ActorRef = system actorOf Props(new LoggingSupervisor(childProps, childName))
+
   def updateChainWallet(walletExt: WalletExt): Unit = synchronized(chainWallets = walletExt)
+}
 
-  // Defined here since when modified it takes implicit parameters
+case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, sync: ActorRef, pool: ActorRef, watcher: ActorRef, params: WalletParameters) extends CanBeShutDown { me =>
 
-  case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, sync: ActorRef, pool: ActorRef, watcher: ActorRef, params: WalletParameters) extends CanBeShutDown { me =>
+  def withBalanceUpdated(event: WalletReady): WalletExt = me.modify(_.wallets.eachWhere(_.ewt.xPub == event.xPub).info.lastBalance).setTo(event.balance)
 
-    def withBalanceUpdated(event: WalletReady): WalletExt = me.modify(_.wallets.eachWhere(_.ewt.xPub == event.xPub).info.lastBalance).setTo(event.balance)
+  def findByPubKey(pub: PublicKey): Option[ElectrumEclairWallet] = wallets.find(_.ewt.xPub.publicKey == pub)
 
-    def findByPubKey(pub: PublicKey): Option[ElectrumEclairWallet] = wallets.find(_.ewt.xPub.publicKey == pub)
+  def findByTag(tag: String): Option[ElectrumEclairWallet] = wallets.find(_.info.core.walletType == tag)
 
-    def findByTag(tag: String): Option[ElectrumEclairWallet] = wallets.find(_.info.core.walletType == tag)
+  def + (wallet: ElectrumEclairWallet): WalletExt = copy(wallets = wallet :: wallets)
 
-    def + (wallet: ElectrumEclairWallet): WalletExt = copy(wallets = wallet :: wallets)
+  def mostFundedWallet: ElectrumEclairWallet = wallets.maxBy(_.info.lastBalance)
 
-    def mostFundedWallet: ElectrumEclairWallet = wallets.maxBy(_.info.lastBalance)
+  lazy val lnWallet: ElectrumEclairWallet = findByTag(EclairWallet.BIP84).filter(_.ewt.secrets.isDefined).get
 
-    lazy val lnWallet: ElectrumEclairWallet = findByTag(EclairWallet.BIP84).filter(_.ewt.secrets.isDefined).get
+  def makeSigningWalletParts(core: SigningWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
+    val ewt = ElectrumWalletType.makeSigningType(tag = core.walletType, LNParams.secret.keys.master, LNParams.chainHash)
+    val walletRef = LNParams.loggedActor(Props(new ElectrumWallet(pool, sync, params, ewt)), core.walletType + "-signing-wallet")
+    val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label)
+    ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
+  }
 
-    lazy val totalBalance: MilliSatoshi = chainWallets.wallets.map(_.info.lastBalance).sum.toMilliSatoshi
+  def withNewSigning(core: SigningWallet, label: String): WalletExt = {
+    val eclairWallet = makeSigningWalletParts(core, lastBalance = Satoshi(0L), label)
+    params.walletDb.addChainWallet(eclairWallet.info, params.emptyPersistentDataBytes, eclairWallet.ewt.xPub.publicKey)
+    eclairWallet.walletRef ! params.emptyPersistentDataBytes
+    sync ! ElectrumWallet.ChainFor(eclairWallet.walletRef)
+    me + eclairWallet
+  }
 
-    def makeSigningWalletParts(core: SigningWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
-      val ewt = ElectrumWalletType.makeSigningType(core.walletType, LNParams.secret.keys.master, LNParams.chainHash)
-      val walletRef = system.actorOf(Props apply new ElectrumWallet(pool, sync, params, ewt), core.walletType)
-      val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label)
-      ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
-    }
+  def makeWatchingWalletParts(core: WatchingWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
+    val ewt = ElectrumWalletType.makeWatchingType(tag = core.walletType, xPub = core.xPub, chainHash = LNParams.chainHash)
+    val walletRef = LNParams.loggedActor(Props(new ElectrumWallet(pool, sync, params, ewt)), core.walletType + "-watching-wallet")
+    val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label)
+    ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
+  }
 
-    def withNewSigning(core: SigningWallet, label: String): WalletExt = {
-      val eclairWallet = makeSigningWalletParts(core, lastBalance = Satoshi(0L), label)
-      params.walletDb.addChainWallet(eclairWallet.info, params.emptyPersistentDataBytes, eclairWallet.ewt.xPub.publicKey)
-      eclairWallet.walletRef ! params.emptyPersistentDataBytes
-      sync ! ElectrumWallet.ChainFor(eclairWallet.walletRef)
-      me + eclairWallet
-    }
+  def withNewWatching(core: WatchingWallet, label: String): WalletExt = {
+    val eclairWallet = makeWatchingWalletParts(core, lastBalance = Satoshi(0L), label)
+    params.walletDb.addChainWallet(eclairWallet.info, params.emptyPersistentDataBytes, eclairWallet.ewt.xPub.publicKey)
+    eclairWallet.walletRef ! params.emptyPersistentDataBytes
+    sync ! ElectrumWallet.ChainFor(eclairWallet.walletRef)
+    me + eclairWallet
+  }
 
-    def makeWatchingWalletParts(core: WatchingWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
-      val ewt = ElectrumWalletType.makeWatchingType(tag = core.walletType, xPub = core.xPub, chainHash = LNParams.chainHash)
-      val walletRef = system.actorOf(Props apply new ElectrumWallet(pool, sync, params, ewt), core.xPub.publicKey.toString)
-      val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label)
-      ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
-    }
+  def withoutWallet(wallet: ElectrumEclairWallet): WalletExt = {
+    require(wallet.info.core.isRemovable, "Can not remove wallet")
+    params.walletDb.remove(wallet.ewt.xPub.publicKey)
+    val wallets1 = wallets diff List(wallet)
+    wallet.walletRef ! PoisonPill
+    copy(wallets = wallets1)
+  }
 
-    def withNewWatching(core: WatchingWallet, label: String): WalletExt = {
-      val eclairWallet = makeWatchingWalletParts(core, lastBalance = Satoshi(0L), label)
-      params.walletDb.addChainWallet(eclairWallet.info, params.emptyPersistentDataBytes, eclairWallet.ewt.xPub.publicKey)
-      eclairWallet.walletRef ! params.emptyPersistentDataBytes
-      sync ! ElectrumWallet.ChainFor(eclairWallet.walletRef)
-      me + eclairWallet
-    }
-
-    def withoutWallet(wallet: ElectrumEclairWallet): WalletExt = {
-      require(wallet.info.core.isRemovable, "Can not remove wallet")
-      params.walletDb.remove(wallet.ewt.xPub.publicKey)
-      val wallets1 = wallets diff List(wallet)
-      wallet.walletRef ! PoisonPill
-      copy(wallets = wallets1)
-    }
-
-    override def becomeShutDown: Unit = {
-      val actors = List(catcher, sync, pool, watcher)
-      val allActors = wallets.map(_.walletRef) ++ actors
-      allActors.foreach(_ ! PoisonPill)
-    }
+  override def becomeShutDown: Unit = {
+    val actors = List(catcher, sync, pool, watcher)
+    val allActors = wallets.map(_.walletRef) ++ actors
+    allActors.foreach(_ ! PoisonPill)
   }
 }
 

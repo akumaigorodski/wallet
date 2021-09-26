@@ -283,6 +283,12 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
       addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/btcontract/wallet")
       addFlowChip(links.flow, getString(rate), R.drawable.border_green, _ => me bringRateDialog null)
 
+      for (count <- LNParams.logBag.count if count > 0) {
+        def exportLog: Unit = me share LNParams.logBag.recent.map(_.asString).mkString("\n\n")
+        val errorCount = s"${me getString error_log} <font color=$cardZero>$count</font>"
+        addFlowChip(links.flow, errorCount, R.drawable.border_yellow, _ => exportLog)
+      }
+
       settingsContainer.addView(settingsPageitle.view)
       settingsContainer.addView(storeLocalBackup.view)
       settingsContainer.addView(chainWallets.view)

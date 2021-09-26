@@ -12,7 +12,7 @@
 
     <com.ornach.nobobutton.NoboButton
         android:layout_marginTop="@dimen/large_button_margin"
-        app:nb_text="@string/emergency_share"
+        app:nb_text="@string/error_log"
         android:onClick="shareErrorReport"
         style="@style/GrayButton"/>
 

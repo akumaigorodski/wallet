@@ -133,7 +133,8 @@ object WalletApp {
       extDataBag = new SQLiteDataExtended(miscInterface)
     }
 
-    // Initialized here in case these are needed early
+    // In case these are needed early
+    LNParams.logBag = new SQLiteLog(miscInterface)
     LNParams.chainHash = Block.LivenetGenesisBlock.hash
     LNParams.routerConf = RouterConf(initRouteMaxLength = 6)
     LNParams.ourInit = LNParams.createInit
@@ -191,16 +192,15 @@ object WalletApp {
       override def initConnect: Unit = if (ensureTor) app.checkTorProxy(restartApplication)(super.initConnect) else super.initConnect
     }
 
-    // Initialize chain wallet
-    import LNParams.{ec, system}
+    import LNParams.ec
     val params = WalletParameters(extDataBag, chainWalletBag, LNParams.minDustLimit, allowSpendUnconfirmed = true)
-    val pool = system.actorOf(Props apply new ElectrumClientPool(LNParams.blockCount, LNParams.chainHash), "connection-pool")
-    val sync = system.actorOf(Props apply new ElectrumChainSync(pool, params.headerDb, LNParams.chainHash), "chain-sync")
-    val watcher = system.actorOf(Props apply new ElectrumWatcher(LNParams.blockCount, pool), "channel-tx-watcher")
-    val catcher = system.actorOf(Props(new WalletEventsCatcher), "events-catcher")
+    val pool = LNParams.loggedActor(Props(new ElectrumClientPool(LNParams.blockCount, LNParams.chainHash)), "connection-pool")
+    val sync = LNParams.loggedActor(Props(new ElectrumChainSync(pool, params.headerDb, LNParams.chainHash)), "chain-sync")
+    val watcher = LNParams.loggedActor(Props(new ElectrumWatcher(LNParams.blockCount, pool)), "channel-watcher")
+    val catcher = LNParams.loggedActor(Props(new WalletEventsCatcher), "events-catcher")
 
-    val walletExt: LNParams.WalletExt =
-      (LNParams.WalletExt(wallets = Nil, catcher, sync, pool, watcher, params) /: chainWalletBag.listWallets) {
+    val walletExt: WalletExt =
+      (WalletExt(wallets = Nil, catcher, sync, pool, watcher, params) /: chainWalletBag.listWallets) {
         case walletExt1 ~ CompleteChainWalletInfo(core: SigningWallet, persistentSigningData, lastBalance, label) =>
           val signingWallet = walletExt1.makeSigningWalletParts(core, lastBalance, label)
           signingWallet.walletRef ! persistentSigningData

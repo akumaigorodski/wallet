@@ -45,7 +45,6 @@ import android.content.pm.PackageManager
 import android.view.View.OnClickListener
 import androidx.core.app.ActivityCompat
 import java.util.concurrent.TimeUnit
-import immortan.LNParams.WalletExt
 import rx.lang.scala.Subscription
 import scala.concurrent.Future
 import android.os.Bundle
@@ -65,8 +64,8 @@ object BaseActivity {
   }
 
   def totalBalance: MilliSatoshi = {
-    val ln = Channel.totalBalance(LNParams.cm.all.values)
-    ln + LNParams.chainWallets.totalBalance
+    val chainBalance = LNParams.chainWallets.wallets.map(_.info.lastBalance).sum
+    Channel.totalBalance(LNParams.cm.all.values) + chainBalance.toMilliSatoshi
   }
 }
 

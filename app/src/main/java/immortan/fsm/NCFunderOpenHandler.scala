@@ -20,11 +20,11 @@ object NCFunderOpenHandler {
   val dummyLocal: PublicKey = randomKey.publicKey
   val dummyRemote: PublicKey = randomKey.publicKey
 
-  def makeFunding(chainWallet: LNParams.WalletExt, fundingAmount: Satoshi, feeratePerKw: FeeratePerKw, local: PublicKey = dummyLocal, remote: PublicKey = dummyRemote): Future[MakeFundingTxResponse] =
+  def makeFunding(chainWallet: WalletExt, fundingAmount: Satoshi, feeratePerKw: FeeratePerKw, local: PublicKey = dummyLocal, remote: PublicKey = dummyRemote): Future[MakeFundingTxResponse] =
     chainWallet.lnWallet.makeFundingTx(Script.write(Script pay2wsh Scripts.multiSig2of2(local, remote).toList), fundingAmount, feeratePerKw)
 }
 
-abstract class NCFunderOpenHandler(info: RemoteNodeInfo, fakeFunding: MakeFundingTxResponse, fundingFeeratePerKw: FeeratePerKw, cw: LNParams.WalletExt, cm: ChannelMaster) {
+abstract class NCFunderOpenHandler(info: RemoteNodeInfo, fakeFunding: MakeFundingTxResponse, fundingFeeratePerKw: FeeratePerKw, cw: WalletExt, cm: ChannelMaster) {
   // Important: this must be initiated when chain tip is actually known
   def onEstablished(cs: Commitments, channel: ChannelNormal): Unit
   def onFailure(err: Throwable): Unit
@@ -33,7 +33,7 @@ abstract class NCFunderOpenHandler(info: RemoteNodeInfo, fakeFunding: MakeFundin
   private val freshChannel = new ChannelNormal(cm.chanBag) {
     def SEND(messages: LightningMessage*): Unit = CommsTower.sendMany(messages, info.nodeSpecificPair)
     def STORE(normalData: PersistentChannelData): PersistentChannelData = cm.chanBag.put(normalData)
-    val chainWallet: LNParams.WalletExt = cw
+    val chainWallet: WalletExt = cw
   }
 
   private var assignedChanId = Option.empty[ByteVector32]
