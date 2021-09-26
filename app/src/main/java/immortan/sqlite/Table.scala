@@ -12,7 +12,7 @@ trait Table {
 }
 
 object Table {
-  val DEFAULT_LIMIT = new AtomicInteger(10)
+  val DEFAULT_LIMIT = new AtomicInteger(20)
 }
 
 // Database #1, essential data, exportable to backup

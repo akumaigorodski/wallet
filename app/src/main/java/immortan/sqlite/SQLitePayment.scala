@@ -72,6 +72,7 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
         action.map(_.toJson.compactPrint).getOrElse(PaymentInfo.NO_ACTION), prex.pr.paymentHash.toHex, prex.pr.paymentSecret.get.toHex, 0L: JLong /* RECEIVED AMOUNT = 0 FOR OUTGOING PAYMENT */,
         finalAmount.toLong: JLong, 0L: JLong /* FEE IS UNCERTAIN YET */, balanceSnap.toLong: JLong, fiatRateSnap.toJson.compactPrint, chainFee.toLong: JLong, 0: JInt /* INCOMING TYPE = 0 */)
       ChannelMaster.next(ChannelMaster.paymentDbStream)
+      newSqlPQ.close
     }
 
   def replaceIncomingPayment(prex: PaymentRequestExt, preimage: ByteVector32, description: PaymentDescription,
@@ -83,6 +84,7 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
         PaymentInfo.NO_ACTION, prex.pr.paymentHash.toHex, prex.pr.paymentSecret.get.toHex, prex.pr.amount.getOrElse(0L.msat).toLong: JLong /* 0 WHEN UNDEFINED */, 0L: JLong /* SENT = 0 MSAT, NOTHING TO SEND */,
         0L: JLong /* NO FEE FOR INCOMING PAYMENT */, balanceSnap.toLong: JLong, fiatRateSnap.toJson.compactPrint, 0L: JLong /* NO CHAIN FEE FOR INCOMING PAYMENTS */, 1: JInt /* INCOMING TYPE = 1 */)
       ChannelMaster.next(ChannelMaster.paymentDbStream)
+      newSqlPQ.close
     }
 
   def paymentSummary: Try[PaymentSummary] =

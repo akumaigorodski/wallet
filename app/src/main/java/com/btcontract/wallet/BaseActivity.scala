@@ -322,13 +322,6 @@ trait BaseActivity extends AppCompatActivity { me =>
       view
     }
 
-    def asFlowOnly: LinearLayout = {
-      view.setBackgroundColor(0x00000000)
-      tipTitle.setVisibility(View.GONE)
-      flow.setPadding(0, 0, 0, 0)
-      view
-    }
-
     def asColoredView(colorRes: Int): LinearLayout = {
       val resultColor = ContextCompat.getColor(me, colorRes)
       view.setBackgroundColor(resultColor)

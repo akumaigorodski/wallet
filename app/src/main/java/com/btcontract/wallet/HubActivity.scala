@@ -920,6 +920,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def INIT(state: Bundle): Unit = {
     if (WalletApp.isAlive && LNParams.isOperational) {
       setContentView(com.btcontract.wallet.R.layout.activity_hub)
+
+      // LISTENERS
+
       for (channel <- LNParams.cm.all.values) channel.listeners += me
       LNParams.cm.localPaymentListeners add extraOutgoingListener
       LNParams.fiatRates.listeners += fiatRatesListener
@@ -930,6 +933,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         bottomBlurringArea.setHeightTo(bottomActionBar)
         itemsList.setPadding(0, 0, 0, bottomActionBar.getHeight)
       }
+
+      // TOGGLE MENU
 
       val defaultButtons = Set("bitcoinPayments", "lightningPayments")
       val checkedButtonTags = WalletApp.getCheckedButtons(defaultButtons)
@@ -948,6 +953,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         }
       }
 
+      // LIST
+
       itemsList.addHeaderView(walletCards.view)
       itemsList.setAdapter(paymentsAdapter)
       itemsList.setDividerHeight(0)
@@ -964,6 +971,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         runAnd(updateLnCaches)(paymentAdapterDataChanged.run)
         markAsFailedOnce
       }
+
+      // STREAMS
 
       val window = 600.millis
       val txEvents = ChannelMaster.txDbStream.onBackpressureLatest.doOnNext(_ => reloadTxInfos)

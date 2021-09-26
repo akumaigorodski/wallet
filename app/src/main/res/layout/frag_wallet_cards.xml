@@ -256,7 +256,7 @@
                 android:tint="@color/colorAccent"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-                android:src="@drawable/ic_search_black_24dp"
+                android:src="@drawable/ic_search_white_24dp"
                 android:background="?android:selectableItemBackground"
                 style="@style/BoundedView"/>
 
