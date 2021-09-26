@@ -9,8 +9,8 @@
 
     <EditText
         style="@style/FillingView"
-        android:inputType="textCapSentences"
+        android:inputType="textMultiLine"
         android:id="@+id/extraInput"
-        android:maxLines="1"/>
+        android:maxLines="4"/>
 
 </com.google.android.material.textfield.TextInputLayout>
