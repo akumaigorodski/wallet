@@ -216,8 +216,9 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
         case _ => stay replying CompleteTransactionResponse(None)
       }
 
-    case Event(SendAll(publicKeyScript, extraUtxos, feeRatePerKw, sequenceFlag), data) =>
-      Try apply data.spendAll(publicKeyScript, extraUtxos, feeRatePerKw, params.dustLimit, sequenceFlag) match {
+    case Event(SendAll(publicKeyScript, feeRatePerKw, sequenceFlag, fromOutpoints, extraOutUtxos), data) =>
+      val inUtxos = if (fromOutpoints.nonEmpty) data.utxos.filter(fromOutpoints contains _.item.outPoint) else data.utxos
+      Try apply data.spendAll(publicKeyScript, inUtxos, extraOutUtxos, feeRatePerKw, params.dustLimit, sequenceFlag) match {
         case Success(txAndFee) => stay replying SendAllResponse(txAndFee.asSome)
         case _ => stay replying SendAllResponse(None)
       }
@@ -273,7 +274,7 @@ object ElectrumWallet {
   case class CompleteTransaction(tx: Transaction, feeRatePerKw: FeeratePerKw, sequenceFlag: Long) extends Request
   case class CompleteTransactionResponse(result: Option[TxAndFee] = None) extends Response
 
-  case class SendAll(publicKeyScript: ByteVector, extraUtxos: List[TxOut], feeRatePerKw: FeeratePerKw, sequenceFlag: Long) extends Request
+  case class SendAll(publicKeyScript: ByteVector, feeRatePerKw: FeeratePerKw, sequenceFlag: Long, fromOutpoints: Set[OutPoint] = Set.empty, extraUtxos: List[TxOut] = Nil) extends Request
   case class SendAllResponse(result: Option[TxAndFee] = None) extends Response
 
   case class ChainFor(target: ActorRef) extends Request
@@ -450,12 +451,15 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
     copy(transactions = transactions1, history = history2)
   }
 
-  def spendAll(publicKeyScript: ByteVector, extraUtxos: List[TxOut], feeRatePerKw: FeeratePerKw, dustLimit: Satoshi, sequenceFlag: Long): TxAndFee = {
-    val tx1 = ewt.addUtxosWithDummySig(utxos, Transaction(version = 2, Nil, TxOut(balance.totalBalance, publicKeyScript) :: extraUtxos, lockTime = 0), sequenceFlag)
+  def spendAll(publicKeyScript: ByteVector, usableInUtxos: Seq[Utxo], extraOutUtxos: List[TxOut],
+               feeRatePerKw: FeeratePerKw, dustLimit: Satoshi, sequenceFlag: Long): TxAndFee = {
+
+    val txOut = TxOut(amount = usableInUtxos.map(_.item.value.sat).sum, publicKeyScript)
+    val tx1 = ewt.addUtxosWithDummySig(usableInUtxos, Transaction(version = 2, Nil, txOut :: extraOutUtxos, lockTime = 0), sequenceFlag)
     val fee = Transactions.weight2fee(weight = tx1.weight(Protocol.PROTOCOL_VERSION), feeratePerKw = feeRatePerKw)
-    require(balance.totalBalance - fee > dustLimit, "Resulting tx amount to send is below dust limit")
-    val tx2 = tx1.copy(txOut = TxOut(balance.totalBalance - fee, publicKeyScript) :: extraUtxos)
-    TxAndFee(ewt.signTransaction(utxos, tx2), fee)
+    require(txOut.amount - fee > dustLimit, "Resulting tx amount to send is below dust limit")
+    val tx2 = tx1.copy(txOut = TxOut(txOut.amount - fee, publicKeyScript) :: extraOutUtxos)
+    TxAndFee(ewt.signTransaction(usableInUtxos, tx2), fee)
   }
 }
 

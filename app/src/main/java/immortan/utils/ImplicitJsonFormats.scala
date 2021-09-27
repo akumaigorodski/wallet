@@ -75,7 +75,7 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
 
   // PaymentInfo stuff
 
-  implicit val semanticOrderFmt: JsonFormat[SemanticOrder] = jsonFormat[String, Boolean, Long, SemanticOrder](SemanticOrder.apply, "id", "isParent", "order")
+  implicit val semanticOrderFmt: JsonFormat[SemanticOrder] = jsonFormat[String, Long, SemanticOrder](SemanticOrder.apply, "id", "order")
 
   implicit val lNUrlDescription: JsonFormat[LNUrlDescription] =
     jsonFormat[Option[String], Option[SemanticOrder], String, ByteVector32, ByteVector32, MilliSatoshi,

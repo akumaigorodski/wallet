@@ -290,9 +290,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       runFutureProcessOnUI(fromWallet.sendPreimageBroadcast(myFulfills.map(_.ourPreimage).toSet, chainAddress, rate), onCanNot)(onCan)
 
       def stampProof(stampTx: Transaction)(alert: AlertDialog): Unit = {
-        val txOrder = SemanticOrder(id = info.identity, isParent = true, order = Long.MinValue).asSome
+        val txOrder = SemanticOrder(id = info.identity, order = Long.MinValue).asSome
+        val infoOrder = SemanticOrder(id = info.identity, order = -System.currentTimeMillis).asSome
         val txDesc = OpReturnTxDescription(myFulfills.map(_.ourPreimage), label = None, semanticOrder = txOrder)
-        val infoOrder = SemanticOrder(id = info.identity, isParent = false, order = -System.currentTimeMillis).asSome
         val infoDesc1 = info.description.modify(_.proofTxid).setTo(stampTx.txid.toHex.asSome).modify(_.semanticOrder).setTo(infoOrder)
         WalletApp.txDescriptions += Tuple2(stampTx.txid, txDesc)
         alert.dismiss
@@ -1182,10 +1182,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       override def neutral(alert: AlertDialog): Unit = {
         def proceed(pf: PayRequestFinal): TimerTask = UITask {
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
-            // This LN payment is related to LNURL-PAY link, more recent payments are displayed higher under link
-            val semanticOrder = SemanticOrder(id = lnUrl.request, isParent = false, order = -System.currentTimeMillis)
+            val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
             val cmd = LNParams.cm.makeSendCmd(pf.prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(minSendable)
-            val pd = PlainMetaDescription(cmd.split.asSome, label = None, semanticOrder = semanticOrder.asSome, proofTxid = None, invoiceText = new String, meta = data.meta.textPlain)
+            val pd = PlainMetaDescription(cmd.split.asSome, label = None, semanticOrder = paymentOrder.asSome, proofTxid = None, invoiceText = new String, meta = data.meta.textPlain)
             InputParser.value = SplitParams(pf.prExt, pf.successAction, pd, cmd, typicalChainTxFee)
             runAnd(alert.dismiss)(me goTo ClassNames.qrSplitActivityClass)
           }
@@ -1199,16 +1198,15 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       override def send(alert: AlertDialog): Unit = {
         def proceed(pf: PayRequestFinal): TimerTask = UITask {
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
-            // This LN payment is related to LNURL-PAY link, more recent payments are displayed higher under link
-            val semanticOrder = SemanticOrder(id = lnUrl.request, isParent = false, order = -System.currentTimeMillis)
+            val linkOrder = SemanticOrder(id = lnUrl.request, order = Long.MinValue)
+            val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
             val cmd = LNParams.cm.makeSendCmd(pf.prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(manager.resultMsat)
-            val pd = PlainMetaDescription(split = None, label = None, semanticOrder = semanticOrder.asSome, proofTxid = None, invoiceText = new String, meta = data.meta.textPlain)
+            val pd = PlainMetaDescription(split = None, label = None, semanticOrder = paymentOrder.asSome, proofTxid = None, invoiceText = new String, meta = data.meta.textPlain)
             replaceOutgoingPayment(pf.prExt, pd, pf.successAction, sentAmount = cmd.split.myPart)
             LNParams.cm.localSend(cmd)
 
             if (!pf.isThrowAway) {
-              val semanticOrder1 = semanticOrder.copy(isParent = true, order = Long.MinValue)
-              val desc = LNUrlDescription(label = None, semanticOrder1.asSome, randKey.value.toHex, pf.prExt.pr.paymentHash, pf.prExt.pr.paymentSecret.get, manager.resultMsat)
+              val desc = LNUrlDescription(label = None, linkOrder.asSome, randKey.value.toHex, pf.prExt.pr.paymentHash, pf.prExt.pr.paymentSecret.get, manager.resultMsat)
               val info = LNUrlPayLink(domain = lnUrl.uri.getHost, payString = lnUrl.request, data.metadata, updatedAt = System.currentTimeMillis, desc, pf.prExt.pr.nodeId.toString, getComment)
               WalletApp.lnUrlPayBag.saveLink(info)
             }

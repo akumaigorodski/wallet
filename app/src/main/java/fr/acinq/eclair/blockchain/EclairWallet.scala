@@ -1,7 +1,7 @@
 package fr.acinq.eclair.blockchain
 
 import fr.acinq.eclair.blockchain.EclairWallet._
-import fr.acinq.bitcoin.{ByteVector32, Satoshi, Transaction, TxIn}
+import fr.acinq.bitcoin.{ByteVector32, OutPoint, Satoshi, Transaction, TxIn}
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GetCurrentReceiveAddressesResponse
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import scala.concurrent.Future
@@ -27,6 +27,8 @@ trait EclairWallet {
   def sendPreimageBroadcast(preimages: Set[ByteVector32], address: String, feeRatePerKw: FeeratePerKw): Future[TxAndFee]
 
   def makeTx(amount: Satoshi, address: String, feeRatePerKw: FeeratePerKw): Future[TxAndFee]
+
+  def makeCPFP(fromOutpoints: Set[OutPoint], address: String, feeRatePerKw: FeeratePerKw): Future[TxAndFee]
 
   def commit(tx: Transaction, tag: String): Future[Boolean]
 
