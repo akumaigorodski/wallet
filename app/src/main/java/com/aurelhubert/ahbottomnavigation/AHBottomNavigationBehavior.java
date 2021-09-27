@@ -7,7 +7,7 @@ import android.content.res.TypedArray;
 import android.os.Build;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
-import com.btcontract.wallet.R;
+import com.btcontract.wallettest.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;

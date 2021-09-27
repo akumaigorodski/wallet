@@ -26,7 +26,7 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.RequiresApi;
 
-import com.btcontract.wallet.R;
+import com.btcontract.wallettest.R;
 
 //import android.support.annotation.RequiresApi;
 

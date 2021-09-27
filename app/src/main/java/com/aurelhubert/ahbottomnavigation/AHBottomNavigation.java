@@ -17,7 +17,7 @@ import androidx.annotation.ColorRes;
 import androidx.annotation.DrawableRes;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
-import com.btcontract.wallet.R;
+import com.btcontract.wallettest.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;

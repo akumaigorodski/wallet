@@ -10,7 +10,7 @@ import android.view.View;
 import android.view.ViewDebug;
 import android.view.ViewGroup;
 
-import com.btcontract.wallet.R;
+import com.btcontract.wallettest.R;
 
 import org.apmem.tools.layouts.logic.CommonLogic;
 import org.apmem.tools.layouts.logic.ConfigDefinition;

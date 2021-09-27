@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        applicationId 'com.btcontract.wallet'
+        applicationId 'com.btcontract.wallettest'
         multiDexEnabled true
         targetSdkVersion 30
         minSdkVersion 21
