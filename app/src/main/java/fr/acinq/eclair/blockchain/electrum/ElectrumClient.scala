@@ -382,8 +382,8 @@ object ElectrumClient {
   case class GetScriptHashHistoryResponse(scriptHash: ByteVector32, history: List[TransactionHistoryItem]) extends Response
 
   case class AddressListUnspent(address: String) extends Request
-  case class UnspentItem(tx_hash: ByteVector32, tx_pos: Int, value: Long, height: Long) {
-    lazy val outPoint = OutPoint(tx_hash.reverse, tx_pos)
+  case class UnspentItem(txHash: ByteVector32, txPos: Int, value: Long, height: Long) {
+    lazy val outPoint = OutPoint(txHash.reverse, txPos)
   }
   case class AddressListUnspentResponse(address: String, unspents: Seq[UnspentItem]) extends Response
 

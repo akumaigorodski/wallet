@@ -70,7 +70,7 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
     (walletRef ? sendAll).mapTo[SendAllResponse].map(_.result.get)
   }
 
-  override def sendPayment(amount: Satoshi, address: String, feeRatePerKw: FeeratePerKw): Future[TxAndFee] = {
+  override def makeTx(amount: Satoshi, address: String, feeRatePerKw: FeeratePerKw): Future[TxAndFee] = {
     val publicKeyScript = Script write addressToPublicKeyScript(address, ewt.chainHash)
 
     (walletRef ? GetBalance).mapTo[GetBalanceResponse].flatMap {

@@ -1096,7 +1096,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       alert.dismiss
 
       for {
-        txAndFee <- fromWallet.sendPayment(manager.resultMsat.truncateToSatoshi, uri.address, feeView.rate)
+        txAndFee <- fromWallet.makeTx(manager.resultMsat.truncateToSatoshi, uri.address, feeView.rate)
         knownDescription = PlainTxDescription(uri.address :: Nil, manager.resultExtraInput orElse uri.label orElse uri.message)
         // Record this description before sending, we won't be able to know a memo and label otherwise
         _ = WalletApp.txDescriptions += Tuple2(txAndFee.tx.txid, knownDescription)
@@ -1132,7 +1132,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       worker = new ThrottledWork[String, TxAndFee] {
-        def work(reason: String): Observable[TxAndFee] = Rx fromFutureOnIo fromWallet.sendPayment(manager.resultMsat.truncateToSatoshi, uri.address, rate)
+        def work(reason: String): Observable[TxAndFee] = Rx fromFutureOnIo fromWallet.makeTx(manager.resultMsat.truncateToSatoshi, uri.address, rate)
         def process(reason: String, txAndFee: TxAndFee): Unit = update(feeOpt = txAndFee.fee.toMilliSatoshi.asSome, showIssue = false)
         override def error(exc: Throwable): Unit = update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.minDustLimit)
       }
