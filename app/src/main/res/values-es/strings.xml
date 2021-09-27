@@ -167,6 +167,7 @@
     <string name="tx_description_refunding">Reembolsar saldo de canal</string>
     <string name="tx_description_htlc_claiming">Reclamando pago Lightning</string>
     <string name="tx_description_penalty">Penalización por incumplimiento</string>
+    <string name="tx_description_cpfp">CPFP Boosting</string>
 
     <string name="tx_btc">Transacción Bitcoin</string>
     <string name="tx_ln">Pago Lightning</string>
@@ -400,5 +401,15 @@
     <string name="confirm_ln_hosted_chan_drain">&#9888; Quieres mover los fondos de este canal hacia otros canales de esta billetera??</string>
 
     <!-- /action confirmations -->
+
+    <!-- CPFP/RBF -->
+
+    <string name="tx_boost">Impulsar</string>
+    <string name="tx_cpfp_current">Presente</string>
+    <string name="tx_cpfp_after">After CPFP</string>
+
+    <string name="tc_cpfp_explain">Apply CPFP to this incoming transaction to increase its fee and get it confirmed faster</string>
+
+    <!-- /CPFP/RBF -->
 
 </resources>

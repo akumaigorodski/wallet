@@ -320,6 +320,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
     }
 
+    def doCPFPBoost(info: TxInfo): Unit = {
+      println("-- boosting")
+    }
+
     def retry(info: PaymentInfo): Unit = new HasTypicalChainFee {
       // When retrying we never cap max LN fee to chain because original failure may have happened because more expensive routes were omitted, but it's hard to figure that out with certainty
       private val cmd = LNParams.cm.makeSendCmd(info.prExt, info.sent, LNParams.cm.all.values.toList, info.chainFee, capLNFeeToChain = false).modify(_.split.totalSum).setTo(info.sent)
@@ -384,6 +388,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           addFlowChip(extraInfo, getString(popup_prior_chain_balance) format WalletApp.denom.parsedWithSign(info.balanceSnapshot, cardIn, cardZero), R.drawable.border_gray)
           addFlowChip(extraInfo, getString(popup_then) format WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise), R.drawable.border_gray)
           addFlowChip(extraInfo, getString(popup_now) format WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise), R.drawable.border_gray)
+          if (info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.canBeCPFPd) addFlowChip(extraInfo, getString(tx_boost), R.drawable.border_yellow, _ => self doCPFPBoost info)
           if (!info.isIncoming) addFlowChip(extraInfo, getString(popup_chain_fee) format fee, R.drawable.border_gray)
 
         case info: RelayedPreimageInfo =>
@@ -511,6 +516,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     // TX helpers
 
     def txDescription(transactionInfo: TxInfo): String = transactionInfo.description match {
+      case cpfp: CPFPEnabledTxDescription if cpfp.cpfpOf.isDefined => getString(tx_description_cpfp)
       case plain: PlainTxDescription => plain.toAddress.map(_.short) getOrElse getString(tx_btc)
       case _: ChanRefundingTxDescription => getString(tx_description_refunding)
       case _: HtlcClaimTxDescription => getString(tx_description_htlc_claiming)
@@ -1120,7 +1126,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       else mkCheckFormNeutral(attempt, none, switchToLn, builder, dialog_ok, dialog_cancel, lightning_wallet)
     }
 
-    lazy val feeView: FeeView[TxAndFee] = new FeeView[TxAndFee](body) {
+    lazy val feeView: FeeView[TxAndFee] = new FeeView[TxAndFee](body, from = 1) {
       override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
         manager.updateButton(getPositiveButton(alert), feeOpt.isDefined)
         super.update(feeOpt, showIssue)

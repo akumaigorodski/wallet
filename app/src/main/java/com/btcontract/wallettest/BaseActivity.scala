@@ -412,7 +412,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     inputAmount setLocale Denomination.locale
   }
 
-  class FeeView[T](val content: View) {
+  class FeeView[T](val content: View, from: Int) {
     val feeRate: TextView = content.findViewById(R.id.feeRate).asInstanceOf[TextView]
     val txIssues: TextView = content.findViewById(R.id.txIssues).asInstanceOf[TextView]
     val bitcoinFee: TextView = content.findViewById(R.id.bitcoinFee).asInstanceOf[TextView]
@@ -438,7 +438,7 @@ trait BaseActivity extends AppCompatActivity { me =>
       val currentFeerate = FeeratePerByte(rate).feerate.toLong
       customFeerate.setValueTo(currentFeerate * 10)
       customFeerate.setValue(currentFeerate)
-      customFeerate.setValueFrom(1L)
+      customFeerate.setValueFrom(from)
 
       customFeerateOption setVisibility View.GONE
       customFeerate setVisibility View.VISIBLE

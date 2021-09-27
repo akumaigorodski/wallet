@@ -167,6 +167,7 @@
     <string name="tx_description_refunding">Channel balance refunding</string>
     <string name="tx_description_htlc_claiming">Lightning payment claiming</string>
     <string name="tx_description_penalty">Channel breach penalty</string>
+    <string name="tx_description_cpfp">CPFP Boosting</string>
 
     <string name="tx_btc">Bitcoin Transaction</string>
     <string name="tx_ln">Lightning Payment</string>
@@ -400,5 +401,15 @@
     <string name="confirm_ln_hosted_chan_drain">&#9888; Do you want to drain funds from this channel into other channels in this wallet?</string>
 
     <!-- /action confirmations -->
+
+    <!-- CPFP/RBF -->
+
+    <string name="tx_boost">Boost</string>
+    <string name="tx_cpfp_current">Current</string>
+    <string name="tx_cpfp_after">After CPFP</string>
+
+    <string name="tc_cpfp_explain">Apply CPFP to this incoming transaction to increase its fee and get it confirmed faster</string>
+
+    <!-- /CPFP/RBF -->
 
 </resources>

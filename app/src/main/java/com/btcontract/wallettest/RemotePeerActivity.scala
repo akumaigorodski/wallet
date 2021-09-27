@@ -188,7 +188,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       mkCheckFormNeutral(attempt, none, setMax, builder, dialog_ok, dialog_cancel, dialog_max)
     }
 
-    lazy val feeView: FeeView[MakeFundingTxResponse] = new FeeView[MakeFundingTxResponse](body) {
+    lazy val feeView: FeeView[MakeFundingTxResponse] = new FeeView[MakeFundingTxResponse](body, from = 1) {
       override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
         manager.updateButton(getPositiveButton(alert), feeOpt.isDefined)
         super.update(feeOpt, showIssue)
