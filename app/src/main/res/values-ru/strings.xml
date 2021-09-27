@@ -167,6 +167,7 @@
     <string name="tx_description_refunding">Возврат средств из канала</string>
     <string name="tx_description_htlc_claiming">Возврат платежа-Молнии</string>
     <string name="tx_description_penalty">Штраф за пролом канала</string>
+    <string name="tx_description_cpfp">CPFP ускорение</string>
 
     <string name="tx_btc">Биткойн-транзакция</string>
     <string name="tx_ln">Платёж-Молния</string>
@@ -404,5 +405,15 @@
     <string name="confirm_ln_hosted_chan_drain">&#9888; Хотите переместить средства из этого канала в другие каналы в этом кошельке?</string>
 
     <!-- /action confirmations -->
+
+    <!-- CPFP/RBF -->
+
+    <string name="tx_boost">Ускорить</string>
+    <string name="tx_cpfp_current">Теперь</string>
+    <string name="tx_cpfp_after">После CPFP</string>
+
+    <string name="tc_cpfp_explain">Примените CPFP к входящей транзакции, чтобы увеличить ее комиссию и подтвердить транзакцию быстрее</string>
+
+    <!-- /CPFP/RBF -->
 
 </resources>

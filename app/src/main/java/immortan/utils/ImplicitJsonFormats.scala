@@ -103,8 +103,9 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
     }
   }
 
-  implicit val plainTxDescriptionFmt: JsonFormat[PlainTxDescription] = taggedJsonFmt(jsonFormat[List[String], Option[String], Option[SemanticOrder],
-    PlainTxDescription](PlainTxDescription.apply, "addresses", "label", "semanticOrder"), tag = "PlainTxDescription")
+  implicit val plainTxDescriptionFmt: JsonFormat[PlainTxDescription] =
+    taggedJsonFmt(jsonFormat[List[String], Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
+      PlainTxDescription](PlainTxDescription.apply, "addresses", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "PlainTxDescription")
 
   implicit val opReturnTxDescriptionFmt: JsonFormat[OpReturnTxDescription] = taggedJsonFmt(jsonFormat[List[ByteVector32], Option[String], Option[SemanticOrder],
     OpReturnTxDescription](OpReturnTxDescription.apply, "preimages", "label", "semanticOrder"), tag = "OpReturnTxDescription")
@@ -112,14 +113,17 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
   implicit val chanFundingTxDescriptionFmt: JsonFormat[ChanFundingTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder],
     ChanFundingTxDescription](ChanFundingTxDescription.apply, "nodeId", "label", "semanticOrder"), tag = "ChanFundingTxDescription")
 
-  implicit val chanRefundingTxDescriptionFmt: JsonFormat[ChanRefundingTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder],
-    ChanRefundingTxDescription](ChanRefundingTxDescription.apply, "nodeId", "label", "semanticOrder"), tag = "ChanRefundingTxDescription")
+  implicit val chanRefundingTxDescriptionFmt: JsonFormat[ChanRefundingTxDescription] =
+    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
+      ChanRefundingTxDescription](ChanRefundingTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "ChanRefundingTxDescription")
 
-  implicit val htlcClaimTxDescriptionFmt: JsonFormat[HtlcClaimTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder],
-    HtlcClaimTxDescription](HtlcClaimTxDescription.apply, "nodeId", "label", "semanticOrder"), tag = "HtlcClaimTxDescription")
+  implicit val htlcClaimTxDescriptionFmt: JsonFormat[HtlcClaimTxDescription] =
+    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
+      HtlcClaimTxDescription](HtlcClaimTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "HtlcClaimTxDescription")
 
-  implicit val penaltyTxDescriptionFmt: JsonFormat[PenaltyTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder],
-    PenaltyTxDescription](PenaltyTxDescription.apply, "nodeId", "label", "semanticOrder"), tag = "PenaltyTxDescription")
+  implicit val penaltyTxDescriptionFmt: JsonFormat[PenaltyTxDescription] =
+    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
+      PenaltyTxDescription](PenaltyTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "PenaltyTxDescription")
 
   implicit object PaymentDescriptionFmt extends JsonFormat[PaymentDescription] {
     def read(raw: JsValue): PaymentDescription = raw.asJsObject.fields(TAG) match {

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    style="@style/StandardLinearLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:scrollbars="none">
+
+    <LinearLayout style="@style/StandardLinearLayout">
+        <RelativeLayout style="@style/StandardXYMarginLinearLayout">
+
+            <TextView
+                style="@style/BoundedView"
+                android:text="@string/tx_cpfp_current"
+                android:layout_centerVertical="true"/>
+
+            <TextView
+                style="@style/BoundedView"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:id="@+id/cpfpCurrent"/>
+
+        </RelativeLayout>
+
+        <RelativeLayout style="@style/StandardXYMarginLinearLayout">
+
+            <TextView
+                style="@style/BoundedView"
+                android:text="@string/tx_cpfp_after"
+                android:layout_centerVertical="true"/>
+
+            <TextView
+                style="@style/BoundedView"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:id="@+id/cpfpAfter"/>
+
+        </RelativeLayout>
+
+        <include layout="@layout/frag_fees"/>
+        <View style="@style/GrayDivider"/>
+    </LinearLayout>
+
+</ScrollView>
