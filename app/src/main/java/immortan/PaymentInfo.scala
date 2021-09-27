@@ -36,7 +36,7 @@ object SemanticOrder {
 
   private def orderIdOrBaseId(details: TransactionDetails) = details.description.semanticOrder match { case Some(ord) => ord.id case None => details.identity }
 
-  private def parentAndOrderId(details: TransactionDetails) = details.description.semanticOrder match { case Some(ord) => !ord.isParent -> ord.order case None => true -> Long.MaxValue }
+  private def parentAndOrderId(details: TransactionDetails) = details.description.semanticOrder match { case Some(ord) => ord.order case None => Long.MaxValue }
 
   private def collapseChildren(items: SemanticGroup) = {
     items.tail.foreach(_.isExpandedItem = false)
@@ -50,7 +50,7 @@ object SemanticOrder {
       .flatten
 }
 
-case class SemanticOrder(id: String, isParent: Boolean, order: Long)
+case class SemanticOrder(id: String, order: Long)
 
 sealed trait TransactionDescription {
   val semanticOrder: Option[SemanticOrder]
