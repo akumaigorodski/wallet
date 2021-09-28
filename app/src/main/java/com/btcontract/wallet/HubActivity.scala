@@ -1297,8 +1297,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       private def getFinal(amount: MilliSatoshi) = LNUrl level2DataResponse {
-        val ids1: PayRequest.TagsAndContents = if (expectedIds.wantsRandomKey) List("application/pubkey", randKey.publicKey.toString) :: Nil else Nil
-        val ids2: PayRequest.TagsAndContents = expectedIds.wantsAuth.filter(_ => manager.attachIdentity.isChecked).map(_.getRecord(lnUrl.uri.getHost) :: ids1) getOrElse ids1
+        val ids1 = if (expectedIds.wantsRandomKey) List("application/pubkey", randKey.publicKey.toString) :: Nil else Nil
+        val ids2 = expectedIds.wantsAuth.filter(_ => manager.attachIdentity.isChecked).map(_.getRecord(lnUrl.uri.getHost) :: ids1) getOrElse ids1
 
         val base1 = data.callbackUri.buildUpon.appendQueryParameter("amount", amount.toLong.toString)
         val base2 = if (ids2.nonEmpty) base1.appendQueryParameter("payerid", ids2.toJson.compactPrint) else base1

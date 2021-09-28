@@ -11,7 +11,6 @@ import immortan.utils.FiatRates.{BitpayItemList, CoinGeckoItemMap}
 import fr.acinq.eclair.blockchain.electrum.db.{ChainWalletInfo, SigningWallet, WatchingWallet}
 import fr.acinq.eclair.wire.ChannelCodecs.extendedPublicKeyCodec
 import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
-import immortan.utils.PayRequest.TagAndContent
 import fr.acinq.eclair.wire.ChannelUpdate
 import fr.acinq.bitcoin.Crypto.PublicKey
 import immortan.crypto.Tools.Fiat2Btc
@@ -201,8 +200,6 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
     PayRequest](PayRequest.apply, "callback", "maxSendable", "minSendable", "metadata", "commentAllowed"), tag = "payRequest")
 
   implicit val payRequestFinalFmt: JsonFormat[PayRequestFinal] = jsonFormat[Option[PaymentAction], Option[Boolean], String, PayRequestFinal](PayRequestFinal.apply, "successAction", "disposable", "pr")
-
-  implicit val payRequestMetaFmt: JsonFormat[PayRequestMeta] = jsonFormat[List[TagAndContent], PayRequestMeta](PayRequestMeta.apply, "records")
 
   // Fiat feerates
 

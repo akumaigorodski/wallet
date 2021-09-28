@@ -1,10 +1,11 @@
 package immortan
 
+import spray.json._
 import fr.acinq.eclair._
 import immortan.utils.ImplicitJsonFormats._
-import immortan.utils.{LNUrl, PayRequest, PayRequestMeta, PaymentRequestExt}
 import immortan.crypto.Tools.{Any2Some, Bytes, Fiat2Btc, SEPARATOR}
 import fr.acinq.eclair.channel.{DATA_CLOSING, HasNormalCommitments}
+import immortan.utils.{LNUrl, PayRequestMeta, PaymentRequestExt}
 import fr.acinq.bitcoin.{ByteVector32, Satoshi, Transaction}
 import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv}
 import immortan.fsm.{SendMultiPart, SplitInfo}
@@ -12,8 +13,9 @@ import immortan.ChannelMaster.TxConfirmedAtOpt
 import org.bouncycastle.util.encoders.Base64
 import fr.acinq.bitcoin.Crypto.PublicKey
 import scodec.bits.ByteVector
-import java.util.Date
+import spray.json.JsArray
 import scala.util.Try
+import java.util.Date
 
 
 object PaymentInfo {
@@ -85,7 +87,7 @@ case class LNUrlPayLink(domain: String, payString: String, payMetaString: String
 
   lazy val payLink: Option[LNUrl] = Try(payString).map(LNUrl.apply).toOption
 
-  lazy val payMetaData: Try[PayRequestMeta] = Try(payMetaString) map to[PayRequest.TagsAndContents] map PayRequestMeta
+  lazy val payMetaData: Try[PayRequestMeta] = Try(payMetaString.parseJson.asInstanceOf[JsArray].elements).map(PayRequestMeta)
 
   lazy val imageBytes: Option[Bytes] = payMetaData.map(_.imageBase64s.head).map(Base64.decode).toOption
 

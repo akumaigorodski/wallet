@@ -6,7 +6,6 @@ import immortan.crypto.Tools._
 import immortan.utils.ImplicitJsonFormats._
 import immortan.{LNParams, PaymentAction, RemoteNodeInfo}
 import fr.acinq.bitcoin.{Bech32, ByteVector32, ByteVector64, Crypto}
-import immortan.utils.PayRequest.TagsAndContents
 import com.github.kevinsawicki.http.HttpRequest
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.eclair.wire.NodeAddress
@@ -164,31 +163,30 @@ case class LNUrlAuthSpec(host: String, k1: ByteVector32) {
 }
 
 object PayRequest {
-  type TagAndContent = List[String]
-  type TagsAndContents = List[TagAndContent]
+  type TagAndContent = Vector[JsValue]
 }
 
 case class ExpectedAuth(k1: ByteVector32, isMandatory: Boolean) {
-  def getRecord(host: String): PayRequest.TagAndContent = LNUrlAuthSpec(host, k1) match { case spec =>
+  def getRecord(host: String): List[String] = LNUrlAuthSpec(host, k1) match { case spec =>
     List("application/lnurl-auth", spec.linkingPubKey.toString, spec.derSignatureHex)
   }
 }
 
 case class ExpectedIds(wantsAuth: Option[ExpectedAuth], wantsRandomKey: Boolean)
 
-case class PayRequestMeta(records: TagsAndContents) {
+case class PayRequestMeta(records: PayRequest.TagAndContent) {
 
-  val texts: List[String] = records.collect { case List("text/plain", txt) => txt }
+  val texts: Vector[String] = records.collect { case JsArray(JsString("text/plain") +: JsString(txt) +: _) => txt }
 
-  val emails: List[String] = records.collect { case List("text/email", txt) => txt }
+  val emails: Vector[String] = records.collect { case JsArray(JsString("text/email") +: JsString(email) +: _) => email }
 
-  val identities: List[String] = records.collect { case List("text/identifier", txt) => txt }
+  val identities: Vector[String] = records.collect { case JsArray(JsString("text/identifier") +: JsString(identifier) +: _) => identifier }
 
   val expectedIds: Option[ExpectedIds] = records.collectFirst {
-    case "application/payer-ids" +: actualRestOfExpectedRecords =>
+    case JsArray(JsString("application/payer-ids") +: allowedIds) =>
       val base = ExpectedIds(wantsAuth = None, wantsRandomKey = false)
 
-      actualRestOfExpectedRecords.map(_.toJson).foldLeft(base) {
+      allowedIds.foldLeft(base) {
         case base1 ~ JsArray(JsString("application/lnurl-auth") +: JsBoolean(isMandatory) +: JsString(k1) +: _) =>
           base1.copy(wantsAuth = ExpectedAuth(ByteVector32.fromValidHex(k1), isMandatory).asSome)
 
@@ -205,20 +203,16 @@ case class PayRequestMeta(records: TagsAndContents) {
   val queryText = s"${emails.headOption orElse identities.headOption getOrElse new String} $textPlain"
 
   val imageBase64s: Seq[String] = for {
-    List("image/png;base64" | "image/jpeg;base64", content) <- records
-    _ = require(content.length <= 136536, s"Image is too big, length=${content.length}")
-  } yield content
+    JsArray(JsString("image/png;base64" | "image/jpeg;base64") +: JsString(image) +: _) <- records
+    _ = require(image.length <= 136536, s"Image is too big, length=${image.length}, max=136536")
+  } yield image
 }
 
 case class PayRequest(callback: String, maxSendable: Long, minSendable: Long, metadata: String, commentAllowed: Option[Int] = None) extends CallbackLNUrlData {
 
   def metaDataHash: ByteVector32 = Crypto.sha256(ByteVector view metadata.getBytes)
 
-  val meta: PayRequestMeta = {
-    val records = to[TagsAndContents](metadata)
-    // No reason to have too much records
-    PayRequestMeta(records take 10)
-  }
+  val meta: PayRequestMeta = PayRequestMeta(metadata.parseJson.asInstanceOf[JsArray].elements)
 
   private[this] val identifiers = meta.emails ++ meta.identities
   require(identifiers.forall(id => InputParser.identifier.findFirstMatchIn(id).isDefined), "text/email or text/identity format is wrong")
