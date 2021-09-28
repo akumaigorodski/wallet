@@ -16,7 +16,8 @@
                 style="@style/BoundedView"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-                android:id="@+id/cpfpCurrent"/>
+                android:id="@+id/cpfpCurrent"
+                android:textStyle="bold"/>
 
         </RelativeLayout>
 
@@ -31,12 +32,12 @@
                 style="@style/BoundedView"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-                android:id="@+id/cpfpAfter"/>
+                android:id="@+id/cpfpAfter"
+                android:textStyle="bold"/>
 
         </RelativeLayout>
 
         <include layout="@layout/frag_fees"/>
         <View style="@style/GrayDivider"/>
     </LinearLayout>
-
 </ScrollView>

@@ -185,7 +185,6 @@ case class NormalCommits(channelFlags: Byte, channelId: ByteVector32, channelFea
   }
 
   def receiveFailMalformed(fail: UpdateFailMalformedHtlc): NormalCommits = localCommit.spec.findOutgoingHtlcById(fail.id) match {
-    case _ if fail.failureCode.&(FailureMessageCodecs.BADONION) != 0 => throw ChannelTransitionFail(channelId)
     case None => throw ChannelTransitionFail(channelId)
     case _ => addRemoteProposal(fail)
   }

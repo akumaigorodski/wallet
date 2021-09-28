@@ -366,8 +366,8 @@ class WalletApp extends Application { me =>
 
     if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
       val manager = this getSystemService classOf[NotificationManager]
-      val chan1 = new NotificationChannel(AwaitService.CHANNEL_ID, "Foreground notifications", NotificationManager.IMPORTANCE_DEFAULT)
-      val chan2 = new NotificationChannel(DelayedNotification.CHANNEL_ID, "Scheduled notifications", NotificationManager.IMPORTANCE_DEFAULT)
+      val chan1 = new NotificationChannel(AwaitService.CHANNEL_ID, "Foreground notifications", NotificationManager.IMPORTANCE_LOW)
+      val chan2 = new NotificationChannel(DelayedNotification.CHANNEL_ID, "Scheduled notifications", NotificationManager.IMPORTANCE_LOW)
       manager.createNotificationChannel(chan1)
       manager.createNotificationChannel(chan2)
     }

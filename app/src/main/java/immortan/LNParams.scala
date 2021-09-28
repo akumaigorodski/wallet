@@ -137,6 +137,8 @@ object LNParams {
   def loggedActor(childProps: Props, childName: String): ActorRef = system actorOf Props(new LoggingSupervisor(childProps, childName))
 
   def updateChainWallet(walletExt: WalletExt): Unit = synchronized(chainWallets = walletExt)
+
+  def isMainnet: Boolean = chainHash == Block.LivenetGenesisBlock.hash
 }
 
 case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, sync: ActorRef, pool: ActorRef, watcher: ActorRef, params: WalletParameters) extends CanBeShutDown { me =>

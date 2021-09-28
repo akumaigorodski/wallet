@@ -113,6 +113,7 @@
     ]]></string>
 
     <string name="error_rejected_incoming_public">Rejected public channel offer, only private channels are allowed.</string>
+    <string name="error_btc_no_wallet">Can not proceed because related chain wallet is not found, please add it from app settings.</string>
     <string name="error_btc_broadcast_fail">Could not broadcast a transaction, please make sure that wallet has network connection and then try again.</string>
     <string name="error_could_not_decrypt"><![CDATA[<b>Backup decryption failed</b>.<br><br>Make sure that both backup file and recovery phrase are correct and belong to the same wallet.<br><br>Error details<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>Provided phrase is incorrect</b>.<br><br>Error details<br><b>%1$s</b>]]></string>
@@ -167,7 +168,7 @@
     <string name="tx_description_refunding">Channel balance refunding</string>
     <string name="tx_description_htlc_claiming">Lightning payment claiming</string>
     <string name="tx_description_penalty">Channel breach penalty</string>
-    <string name="tx_description_cpfp">CPFP Boosting</string>
+    <string name="tx_description_cpfp">CPFP boosting fee</string>
 
     <string name="tx_btc">Bitcoin Transaction</string>
     <string name="tx_ln">Lightning Payment</string>
@@ -404,10 +405,9 @@
 
     <!-- CPFP/RBF -->
 
-    <string name="tx_boost">Boost</string>
     <string name="tx_cpfp_current">Current</string>
     <string name="tx_cpfp_after">After CPFP</string>
-
+    <string name="tx_boost"><![CDATA[<b>Boost</b>]]></string>
     <string name="tc_cpfp_explain">Apply CPFP to this incoming transaction to increase its fee and get it confirmed faster</string>
 
     <!-- /CPFP/RBF -->

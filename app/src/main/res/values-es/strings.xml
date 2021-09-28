@@ -113,6 +113,7 @@
     ]]></string>
 
     <string name="error_rejected_incoming_public">Ofrecimiento de canal publico rechazado, solo son permitidos canales privados.</string>
+    <string name="error_btc_no_wallet">Can not proceed because related chain wallet is not found, please add it from app settings.</string>
     <string name="error_btc_broadcast_fail">No se pudo transmitir la transacción, por favor asegúrese de que la billetera tenga conexión de red e intente de nuevo.</string>
     <string name="error_could_not_decrypt"><![CDATA[<b>Falló el descifrado del respaldo</b>.<br><br>Asegúrese que tanto el archivo de respaldo como la frase de recuperación sean las correctas.<br><br>Detalles del error<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>La frase introducida es incorrecta</b>.<br><br>Detalles del error<br><b>%1$s</b>]]></string>
@@ -167,7 +168,7 @@
     <string name="tx_description_refunding">Reembolsar saldo de canal</string>
     <string name="tx_description_htlc_claiming">Reclamando pago Lightning</string>
     <string name="tx_description_penalty">Penalización por incumplimiento</string>
-    <string name="tx_description_cpfp">CPFP Boosting</string>
+    <string name="tx_description_cpfp">CPFP boosting fee</string>
 
     <string name="tx_btc">Transacción Bitcoin</string>
     <string name="tx_ln">Pago Lightning</string>
@@ -404,10 +405,9 @@
 
     <!-- CPFP/RBF -->
 
-    <string name="tx_boost">Impulsar</string>
     <string name="tx_cpfp_current">Presente</string>
     <string name="tx_cpfp_after">After CPFP</string>
-
+    <string name="tx_boost"><![CDATA[<b>Impulsar</b>]]></string>
     <string name="tc_cpfp_explain">Apply CPFP to this incoming transaction to increase its fee and get it confirmed faster</string>
 
     <!-- /CPFP/RBF -->
