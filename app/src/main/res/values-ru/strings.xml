@@ -258,6 +258,11 @@
     <string name="settings_view_revocery_phrase">Фраза для восстановления</string>
     <string name="settings_stats">Статистика использования</string>
 
+    <string name="settings_old_api_warn"><![CDATA[
+        Этот кошелек работает на довольно старой версии Андроида: есть риск что в такой системе <i>могут быть</i> найдены дыры в безопасности.
+        <br><br>Разработчики рекомендуют перенести кошелек на более новую версию Андроида как только появится такая возможность.
+    ]]></string>
+
     <!-- /Settings activity -->
 
     <array name="parts_in_flight">

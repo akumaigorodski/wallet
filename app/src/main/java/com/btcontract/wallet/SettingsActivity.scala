@@ -6,6 +6,7 @@ import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
 import fr.acinq.eclair.blockchain.EclairWallet._
 
+import android.os.{Build, Bundle}
 import android.view.{View, ViewGroup}
 import immortan.{ChannelMaster, LNParams}
 import fr.acinq.eclair.wire.{Domain, NodeAddress}
@@ -20,7 +21,6 @@ import com.btcontract.wallet.BaseActivity.StringOps
 import fr.acinq.eclair.MilliSatoshi
 import android.content.Intent
 import scala.util.Success
-import android.os.Bundle
 
 
 class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceReceiver { me =>
@@ -282,6 +282,8 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
       addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://lightning-wallet.com/posts/manual")
       addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/btcontract/wallet")
       addFlowChip(links.flow, getString(rate), R.drawable.border_green, _ => me bringRateDialog null)
+
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) addFlowChip(links.flow, getString(settings_old_api_warn), R.drawable.border_yellow).setMaxLines(10)
 
       for (count <- LNParams.logBag.count if count > 0) {
         def exportLog: Unit = me share LNParams.logBag.recent.map(_.asString).mkString("\n\n")

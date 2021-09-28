@@ -258,6 +258,11 @@
     <string name="settings_view_revocery_phrase">Ver la frase de recuperación BIP39</string>
     <string name="settings_stats">Estadísticas de uso</string>
 
+    <string name="settings_old_api_warn"><![CDATA[
+        This wallet is currently running on a rather old version of Android which <i>may</i> get unpatched security issues at some point.
+        <br><br>It is therefore recommended to migrate this wallet to a more recent Android version sooner rather than later.
+    ]]></string>
+
     <!-- /Settings activity -->
 
     <array name="parts_in_flight">
