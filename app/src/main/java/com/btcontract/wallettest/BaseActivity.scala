@@ -330,6 +330,12 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   // Fiat / BTC converter
 
+  def updatePopupButton(button: Button, isEnabled: Boolean): Unit = {
+    val alpha = if (isEnabled) 1F else 0.3F
+    button.setEnabled(isEnabled)
+    button.setAlpha(alpha)
+  }
+
   class RateManager(val content: ViewGroup, extraText: Option[String], visHintRes: Int, rates: Fiat2Btc, fiatCode: String) {
     val fiatInputAmount: CurrencyEditText = content.findViewById(R.id.fiatInputAmount).asInstanceOf[CurrencyEditText]
     val inputAmount: CurrencyEditText = content.findViewById(R.id.inputAmount).asInstanceOf[CurrencyEditText]
@@ -346,12 +352,6 @@ trait BaseActivity extends AppCompatActivity { me =>
     val extraInput: EditText = content.findViewById(R.id.extraInput).asInstanceOf[EditText]
 
     val attachIdentity: CheckBox = content.findViewById(R.id.attachIdentity).asInstanceOf[CheckBox]
-
-    def updateButton(button: Button, isEnabled: Boolean): Unit = {
-      val alpha = if (isEnabled) 1F else 0.3F
-      button.setEnabled(isEnabled)
-      button.setAlpha(alpha)
-    }
 
     def updateText(value: MilliSatoshi): Unit = {
       val amount = WalletApp.denom.fromMsat(value)
@@ -412,7 +412,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     inputAmount setLocale Denomination.locale
   }
 
-  class FeeView[T](val content: View, from: Int) {
+  class FeeView[T](from: FeeratePerByte, val content: View) {
     val feeRate: TextView = content.findViewById(R.id.feeRate).asInstanceOf[TextView]
     val txIssues: TextView = content.findViewById(R.id.txIssues).asInstanceOf[TextView]
     val bitcoinFee: TextView = content.findViewById(R.id.bitcoinFee).asInstanceOf[TextView]
@@ -436,9 +436,9 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     customFeerateOption setOnClickListener onButtonTap {
       val currentFeerate = FeeratePerByte(rate).feerate.toLong
+      customFeerate.setValueFrom(from.feerate.toLong)
       customFeerate.setValueTo(currentFeerate * 10)
       customFeerate.setValue(currentFeerate)
-      customFeerate.setValueFrom(from)
 
       customFeerateOption setVisibility View.GONE
       customFeerate setVisibility View.VISIBLE
@@ -503,8 +503,8 @@ trait BaseActivity extends AppCompatActivity { me =>
     manager.hintDenom.setText(getString(dialog_up_to).format(canSendHuman).html)
 
     manager.inputAmount addTextChangedListener onTextChange { _ =>
-      manager.updateButton(getNeutralButton(alert), isNeutralEnabled)
-      manager.updateButton(getPositiveButton(alert), isPayEnabled)
+      updatePopupButton(getNeutralButton(alert), isNeutralEnabled)
+      updatePopupButton(getPositiveButton(alert), isPayEnabled)
     }
 
     // Load graph while user is looking at payment form
@@ -561,12 +561,12 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     manager.inputAmount addTextChangedListener onTextChange { _ =>
       val withinBounds = finalMinReceivable <= manager.resultMsat && finalMaxReceivable >= manager.resultMsat
-      manager.updateButton(button = getPositiveButton(alert), isEnabled = withinBounds)
+      updatePopupButton(button = getPositiveButton(alert), isEnabled = withinBounds)
     }
 
     manager.hintFiatDenom.setText(getString(dialog_up_to).format(canReceiveFiatHuman).html)
     manager.hintDenom.setText(getString(dialog_up_to).format(canReceiveHuman).html)
-    manager.updateButton(getPositiveButton(alert), isEnabled = false)
+    updatePopupButton(getPositiveButton(alert), isEnabled = false)
 
     def getTitleText: String
     def getManager: RateManager

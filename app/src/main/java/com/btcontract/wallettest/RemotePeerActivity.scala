@@ -15,6 +15,7 @@ import android.widget.{LinearLayout, ProgressBar, TextView}
 import immortan.fsm.{HCOpenHandler, NCFundeeOpenHandler, NCFunderOpenHandler}
 import fr.acinq.eclair.blockchain.MakeFundingTxResponse
 import com.btcontract.wallettest.BaseActivity.StringOps
+import fr.acinq.eclair.blockchain.fee.FeeratePerByte
 import concurrent.ExecutionContext.Implicits.global
 import fr.acinq.eclair.channel.Commitments
 import androidx.appcompat.app.AlertDialog
@@ -188,22 +189,19 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       mkCheckFormNeutral(attempt, none, setMax, builder, dialog_ok, dialog_cancel, dialog_max)
     }
 
-    lazy val feeView: FeeView[MakeFundingTxResponse] = new FeeView[MakeFundingTxResponse](body, from = 1) {
-      override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
-        manager.updateButton(getPositiveButton(alert), feeOpt.isDefined)
-        super.update(feeOpt, showIssue)
-      }.run
-
-      rate = {
-        val target = LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
-        LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(target)
-      }
+    lazy val feeView: FeeView[MakeFundingTxResponse] = new FeeView[MakeFundingTxResponse](FeeratePerByte(1L.sat), body) {
+      rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget)
 
       worker = new ThrottledWork[String, MakeFundingTxResponse] {
         def work(reason: String): Observable[MakeFundingTxResponse] = Rx fromFutureOnIo NCFunderOpenHandler.makeFunding(LNParams.chainWallets, manager.resultMsat.truncateToSatoshi, rate)
         def process(reason: String, result: MakeFundingTxResponse): Unit = update(feeOpt = result.fee.toMilliSatoshi.asSome, showIssue = false)
         override def error(exc: Throwable): Unit = update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.minDustLimit)
       }
+
+      override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
+        updatePopupButton(getPositiveButton(alert), feeOpt.isDefined)
+        super.update(feeOpt, showIssue)
+      }.run
     }
 
     manager.hintDenom.setText(getString(dialog_up_to).format(canSend).html)

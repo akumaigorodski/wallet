@@ -107,11 +107,13 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
     taggedJsonFmt(jsonFormat[List[String], Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
       PlainTxDescription](PlainTxDescription.apply, "addresses", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "PlainTxDescription")
 
-  implicit val opReturnTxDescriptionFmt: JsonFormat[OpReturnTxDescription] = taggedJsonFmt(jsonFormat[List[ByteVector32], Option[String], Option[SemanticOrder],
-    OpReturnTxDescription](OpReturnTxDescription.apply, "preimages", "label", "semanticOrder"), tag = "OpReturnTxDescription")
+  implicit val opReturnTxDescriptionFmt: JsonFormat[OpReturnTxDescription] =
+    taggedJsonFmt(jsonFormat[List[ByteVector32], Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
+      OpReturnTxDescription](OpReturnTxDescription.apply, "preimages", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "OpReturnTxDescription")
 
-  implicit val chanFundingTxDescriptionFmt: JsonFormat[ChanFundingTxDescription] = taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder],
-    ChanFundingTxDescription](ChanFundingTxDescription.apply, "nodeId", "label", "semanticOrder"), tag = "ChanFundingTxDescription")
+  implicit val chanFundingTxDescriptionFmt: JsonFormat[ChanFundingTxDescription] =
+    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
+      ChanFundingTxDescription](ChanFundingTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "ChanFundingTxDescription")
 
   implicit val chanRefundingTxDescriptionFmt: JsonFormat[ChanRefundingTxDescription] =
     taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],

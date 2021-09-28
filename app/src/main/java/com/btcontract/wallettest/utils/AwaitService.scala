@@ -12,7 +12,7 @@ object AwaitService {
   final val TITLE_TO_DISPLAY = "titleToDisplay"
   final val BODY_TO_DISPLAY = "bodyToDisplay"
 
-  final val CHANNEL_ID = "awaitChannelId"
+  final val CHANNEL_ID = "awaitChannelId1"
   final val NOTIFICATION_ID = 14
 
   final val ACTION_CANCEL = "actionCancel"

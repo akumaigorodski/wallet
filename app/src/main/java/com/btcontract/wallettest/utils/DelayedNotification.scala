@@ -12,7 +12,7 @@ import fr.acinq.eclair.secureRandom
 object DelayedNotification {
   final val WATCH_TOWER_TAG = "watchTower"
   final val IN_FLIGHT_HTLC_TAG = "inFlightHtlc"
-  final val CHANNEL_ID = "delayedNotificationChannelId"
+  final val CHANNEL_ID = "delayedNotificationChannelId1"
 
   final val WATCH_TOWER_PERIOD_MSEC = 12 * 24 * 3600 * 1000L
   final val IN_FLIGHT_HTLC_PERIOD_MSEC = 10 * 60 * 1000L

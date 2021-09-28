@@ -92,7 +92,6 @@ case class HostedCommits(remoteInfo: RemoteNodeInfo, localSpec: CommitmentSpec, 
   }
 
   def receiveFailMalformed(fail: UpdateFailMalformedHtlc): HostedCommits = localSpec.findOutgoingHtlcById(fail.id) match {
-    case _ if fail.failureCode.&(FailureMessageCodecs.BADONION) != 0 => throw ChannelTransitionFail(channelId)
     case _ if postErrorOutgoingResolvedIds.contains(fail.id) => throw ChannelTransitionFail(channelId)
     case None => throw ChannelTransitionFail(channelId)
     case _ => addRemoteProposal(fail)
