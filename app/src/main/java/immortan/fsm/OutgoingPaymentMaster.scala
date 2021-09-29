@@ -246,8 +246,8 @@ sealed trait PartStatus { me =>
 case class InFlightInfo(cmd: CMD_ADD_HTLC, route: Route)
 case class WaitForChanOnline(onionKey: PrivateKey, amount: MilliSatoshi) extends PartStatus
 case class WaitForRouteOrInFlight(onionKey: PrivateKey, amount: MilliSatoshi, cnc: ChanAndCommits, flight: Option[InFlightInfo] = None, localFailed: List[Channel] = Nil, remoteAttempts: Int = 0) extends PartStatus {
-  def oneMoreRemoteAttempt(cnc1: ChanAndCommits): WaitForRouteOrInFlight = copy(onionKey = randomKey, flight = None, remoteAttempts = remoteAttempts + 1, cnc = cnc1)
-  def oneMoreLocalAttempt(cnc1: ChanAndCommits): WaitForRouteOrInFlight = copy(onionKey = randomKey, flight = None, localFailed = localFailedChans, cnc = cnc1)
+  def oneMoreRemoteAttempt(cnc1: ChanAndCommits): WaitForRouteOrInFlight = copy(onionKey = randomKey, flight = None, remoteAttempts = remoteAttempts + 1, cnc = cnc1) // Session key must be changed
+  def oneMoreLocalAttempt(cnc1: ChanAndCommits): WaitForRouteOrInFlight = copy(flight = None, localFailed = localFailedChans, cnc = cnc1) // Session key may be reused since payment was not tried
   lazy val localFailedChans: List[Channel] = cnc.chan :: localFailed
 }
 
@@ -330,7 +330,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
           val otherOpt = singleCapableCncCandidates.collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc }
 
           otherOpt match {
-            case Some(okCnc) => become(data.withoutPartId(wait.partId).copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
+            case Some(okCnc) => become(data.copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
             case None if canBeSplit => become(data.withoutPartId(wait.partId), PENDING) doProcess CutIntoHalves(wait.amount)
             case _ => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(NO_ROUTES_FOUND, wait.amount)
           }
@@ -357,8 +357,8 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
           otherOpt match {
             case _ if reject.isInstanceOf[InPrincipleNotSendable] => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(PAYMENT_NOT_SENDABLE, wait.amount)
             case None if reject.isInstanceOf[ChannelOffline] => assignToChans(opm.rightNowSendable(data.cmd.allowedChans, feeLeftover), data.withoutPartId(wait.partId), wait.amount)
-            case Some(okCnc) => become(data.withoutPartId(wait.partId).copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
             case None => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(RUN_OUT_OF_CAPABLE_CHANNELS, wait.amount)
+            case Some(okCnc) => become(data.copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
           }
       }
 
@@ -370,8 +370,8 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
           val otherOpt = singleCapableCncCandidates.collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc }
 
           otherOpt match {
-            case Some(okCnc) => become(data.withoutPartId(wait.partId).copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
             case None => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(PEER_COULD_NOT_PARSE_ONION, wait.amount)
+            case Some(okCnc) => become(data.copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
           }
       }
 
