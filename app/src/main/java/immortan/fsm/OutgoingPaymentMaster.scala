@@ -245,12 +245,9 @@ sealed trait PartStatus { me =>
 
 case class InFlightInfo(cmd: CMD_ADD_HTLC, route: Route)
 case class WaitForChanOnline(onionKey: PrivateKey, amount: MilliSatoshi) extends PartStatus
-case class WaitForRouteOrInFlight(onionKey: PrivateKey, amount: MilliSatoshi, cnc: ChanAndCommits,
-                                  flight: Option[InFlightInfo] = None, localFailed: List[Channel] = Nil,
-                                  remoteAttempts: Int = 0) extends PartStatus {
-
-  def oneMoreRemoteAttempt(cnc1: ChanAndCommits): WaitForRouteOrInFlight = copy(flight = None, remoteAttempts = remoteAttempts + 1, cnc = cnc1)
-  def oneMoreLocalAttempt(cnc1: ChanAndCommits): WaitForRouteOrInFlight = copy(flight = None, localFailed = localFailedChans, cnc = cnc1)
+case class WaitForRouteOrInFlight(onionKey: PrivateKey, amount: MilliSatoshi, cnc: ChanAndCommits, flight: Option[InFlightInfo] = None, localFailed: List[Channel] = Nil, remoteAttempts: Int = 0) extends PartStatus {
+  def oneMoreRemoteAttempt(cnc1: ChanAndCommits): WaitForRouteOrInFlight = copy(onionKey = randomKey, flight = None, remoteAttempts = remoteAttempts + 1, cnc = cnc1)
+  def oneMoreLocalAttempt(cnc1: ChanAndCommits): WaitForRouteOrInFlight = copy(onionKey = randomKey, flight = None, localFailed = localFailedChans, cnc = cnc1)
   lazy val localFailedChans: List[Channel] = cnc.chan :: localFailed
 }
 
@@ -333,7 +330,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
           val otherOpt = singleCapableCncCandidates.collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc }
 
           otherOpt match {
-            case Some(otherCapableCnc) => become(data.copy(parts = data.parts + wait.oneMoreLocalAttempt(otherCapableCnc).tuple), PENDING)
+            case Some(okCnc) => become(data.withoutPartId(wait.partId).copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
             case None if canBeSplit => become(data.withoutPartId(wait.partId), PENDING) doProcess CutIntoHalves(wait.amount)
             case _ => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(NO_ROUTES_FOUND, wait.amount)
           }
@@ -360,7 +357,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
           otherOpt match {
             case _ if reject.isInstanceOf[InPrincipleNotSendable] => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(PAYMENT_NOT_SENDABLE, wait.amount)
             case None if reject.isInstanceOf[ChannelOffline] => assignToChans(opm.rightNowSendable(data.cmd.allowedChans, feeLeftover), data.withoutPartId(wait.partId), wait.amount)
-            case Some(otherCapableCnc) => become(data.copy(parts = data.parts + wait.oneMoreLocalAttempt(otherCapableCnc).tuple), PENDING)
+            case Some(okCnc) => become(data.withoutPartId(wait.partId).copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
             case None => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(RUN_OUT_OF_CAPABLE_CHANNELS, wait.amount)
           }
       }
@@ -373,7 +370,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
           val otherOpt = singleCapableCncCandidates.collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc }
 
           otherOpt match {
-            case Some(otherCapableCnc) => become(data.copy(parts = data.parts + wait.oneMoreLocalAttempt(otherCapableCnc).tuple), PENDING)
+            case Some(okCnc) => become(data.withoutPartId(wait.partId).copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
             case None => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(PEER_COULD_NOT_PARSE_ONION, wait.amount)
           }
       }
@@ -510,7 +507,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
     become(data.withoutPartId(wait.partId).copy(failures = failure +: data.failures), PENDING)
 
     shuffle(opm.rightNowSendable(data.cmd.allowedChans, feeLeftover).toSeq).collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc } match {
-      case Some(otherCapableCnc) if wait.remoteAttempts < data.cmd.routerConf.maxRemoteAttempts => become(data.copy(parts = data.parts + wait.oneMoreRemoteAttempt(otherCapableCnc).tuple), PENDING)
+      case Some(okCnc) if wait.remoteAttempts < data.cmd.routerConf.maxRemoteAttempts => become(data.copy(parts = data.parts + wait.oneMoreRemoteAttempt(okCnc).tuple), PENDING)
       case _  => if (canBeSplit) become(data, PENDING) doProcess CutIntoHalves(wait.amount) else me abortMaybeNotify data.withLocalFailure(RUN_OUT_OF_RETRY_ATTEMPTS, wait.amount)
     }
   }
