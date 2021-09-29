@@ -10,10 +10,10 @@ import com.softwaremill.quicklens._
 import com.btcontract.wallet.Colors._
 
 import java.lang.{Integer => JInt}
-import scala.util.{Failure, Success}
 import android.view.{View, ViewGroup}
 import java.io.{File, FileOutputStream}
 import android.graphics.{Bitmap, Color}
+import scala.util.{Failure, Success, Try}
 import android.content.{DialogInterface, Intent}
 import android.text.{Editable, Spanned, TextWatcher}
 import com.google.common.cache.{Cache, CacheBuilder}
@@ -45,7 +45,6 @@ import android.content.pm.PackageManager
 import android.view.View.OnClickListener
 import androidx.core.app.ActivityCompat
 import java.util.concurrent.TimeUnit
-import rx.lang.scala.Subscription
 import scala.concurrent.Future
 import android.os.Bundle
 import android.net.Uri
@@ -79,8 +78,10 @@ object Colors {
 }
 
 trait ExternalDataChecker {
-  val noneRunnable: Runnable = new Runnable { def run: Unit = none }
+
   def checkExternalData(onNothing: Runnable): Unit
+
+  val noneRunnable: Runnable = new Runnable { def run: Unit = none }
 }
 
 trait ChoiceReceiver {
@@ -88,7 +89,9 @@ trait ChoiceReceiver {
 }
 
 trait BaseActivity extends AppCompatActivity { me =>
+
   val nothingUsefulTask: Runnable = UITask(WalletApp.app quickToast error_nothing_useful)
+
   val timer: java.util.Timer = new java.util.Timer
 
   val goTo: Class[_] => Any = target => {
@@ -142,30 +145,16 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   // Snackbar
 
-  var currentSnackbar: Option[Snackbar] = Option.empty
-  def removeCurrentSnack: java.util.TimerTask = UITask {
-    currentSnackbar.foreach { snackBar =>
-      currentSnackbar = None
-      snackBar.dismiss
-    }
+  def snack(parent: View, msg: CharSequence, res: Int): Try[Snackbar] = Try {
+    val snack: Snackbar = Snackbar.make(parent, msg, BaseTransientBottomBar.LENGTH_INDEFINITE)
+    snack.getView.findViewById(com.google.android.material.R.id.snackbar_text).asInstanceOf[TextView].setMaxLines(15)
+    snack
   }
 
-  def snack(parent: View, msg: CharSequence, actionRes: Int, fun: Snackbar => Unit): Unit = try {
-    val bottomSnackbar: Snackbar = Snackbar.make(parent, msg, BaseTransientBottomBar.LENGTH_INDEFINITE)
-    bottomSnackbar.getView.findViewById(com.google.android.material.R.id.snackbar_text).asInstanceOf[TextView].setMaxLines(15)
-
-    val listener = onButtonTap {
-      currentSnackbar = None
-      fun(bottomSnackbar)
-    }
-
-    bottomSnackbar.setAction(actionRes, listener).show
-    currentSnackbar = Some(bottomSnackbar)
-  } catch none
-
-  def cancellingSnack(parent: View, subscription: Subscription, msg: CharSequence): Unit = {
-    def cancel(snack: Snackbar): Unit = runAnd(subscription.unsubscribe)(snack.dismiss)
-    snack(parent, msg, dialog_cancel, cancel)
+  def snack(parent: View, msg: CharSequence, res: Int, fun: Snackbar => Unit): Try[Snackbar] = snack(parent, msg, res).map { snack =>
+    val listener = onButtonTap(fun apply snack)
+    snack.setAction(res, listener).show
+    snack
   }
 
   // Listener helpers
@@ -214,11 +203,18 @@ trait BaseActivity extends AppCompatActivity { me =>
   }
 
   def titleBodyAsViewBuilder(title: View, body: View): AlertDialog.Builder = new AlertDialog.Builder(me).setCustomTitle(title).setView(body)
+
   def onFail(error: String): Unit = UITask(me showForm titleBodyAsViewBuilder(null, error.asDefView).setPositiveButton(dialog_ok, null).create).run
-  def onFail(error: Throwable): Unit = onFail(error.toString)
+
+  def onFail(error: Throwable): Unit = error match {
+    case exc if exc.getCause.isInstanceOf[java.io.InterruptedIOException] =>
+    case _ => onFail(error.toString)
+  }
 
   def getPositiveButton(alert: AlertDialog): Button = alert.getButton(DialogInterface.BUTTON_POSITIVE)
+
   def getNegativeButton(alert: AlertDialog): Button = alert.getButton(DialogInterface.BUTTON_NEGATIVE)
+
   def getNeutralButton(alert: AlertDialog): Button = alert.getButton(DialogInterface.BUTTON_NEUTRAL)
 
   def mkCheckForm(ok: AlertDialog => Unit, no: => Unit, bld: AlertDialog.Builder, okRes: Int, noRes: Int): AlertDialog = {

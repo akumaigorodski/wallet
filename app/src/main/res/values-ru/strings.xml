@@ -302,7 +302,7 @@
     <string name="dialog_lnurl_pay"><![CDATA[Платежный <b>LNURL</b><br><br><b>%1$s</b>%2$s]]></string>
 
     <string name="dialog_lnurl_processing"><![CDATA[Обработка&#8230;<br><br><b>%1$s</b>]]></string>
-    <string name="dialog_lnurl_splitting"><![CDATA[Запрос на оплату&#8230;<br><br><b>%1$s</b>]]></string>
+    <string name="dialog_lnurl_splitting"><![CDATA[Запрос инвойса&#8230;<br><br><b>%1$s</b>]]></string>
     <string name="dialog_lnurl_sending"><![CDATA[Отправка %1$s<br><br><b>%2$s</b>]]></string>
     <string name="dialog_lnurl_from_vendor"><![CDATA[Ответ от продавца%1$s]]></string>
 

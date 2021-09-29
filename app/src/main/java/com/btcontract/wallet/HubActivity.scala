@@ -801,8 +801,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   // NFC
 
-  def readEmptyNdefMessage: Unit = WalletApp.app quickToast error_nothing_useful
-  def readNonNdefMessage: Unit = WalletApp.app quickToast error_nothing_useful
+  def readEmptyNdefMessage: Unit = nothingUsefulTask.run
+  def readNonNdefMessage: Unit = nothingUsefulTask.run
   def onNfcStateChange(ok: Boolean): Unit = none
   def onNfcFeatureNotFound: Unit = none
   def onNfcStateDisabled: Unit = none
@@ -844,14 +844,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     super.onDestroy
   }
 
-  override def onBackPressed: Unit = {
-    if (viewBinderHelper.getOpenCount > 0) viewBinderHelper.closeOthers(new String, null)
-    else if (currentSnackbar.isDefined) removeCurrentSnack.run
-    else if (isSearchOn) rmSearch(null)
-    else super.onBackPressed
-  }
+  override def onBackPressed: Unit = if (viewBinderHelper.getOpenCount > 0) viewBinderHelper.closeOthers(new String, null) else if (isSearchOn) rmSearch(null) else super.onBackPressed
 
   type GrantResults = Array[Int]
+
   override def onRequestPermissionsResult(reqCode: Int, permissions: Array[String], results: GrantResults): Unit =
     if (reqCode == scannerRequestCode && results.nonEmpty && results.head == PackageManager.PERMISSION_GRANTED)
       bringScanner(null)
@@ -948,9 +944,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       case _ => nothingUsefulTask.run
     }
 
-    val msg = getString(dialog_lnurl_processing).format(lnUrl.uri.getHost).html
-    val obs = lnUrl.level1DataResponse.doOnTerminate(removeCurrentSnack.run)
-    cancellingSnack(contentWindow, obs.subscribe(resolve, onFail), msg)
+    snack(contentWindow, getString(dialog_lnurl_processing).format(lnUrl.uri.getHost).html, dialog_cancel) foreach { snack =>
+      val level1Sub = lnUrl.level1DataResponse.doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss).subscribe(resolve, onFail)
+      val listener = onButtonTap(level1Sub.unsubscribe)
+      snack.setAction(dialog_cancel, listener).show
+    }
   }
 
   def showAuthForm(lnUrl: LNUrl): Unit = lnUrl.k1.foreach { k1 =>
@@ -970,12 +968,14 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       mkCheckFormNeutral(_.dismiss, none, _ => share(spec.linkingPubKey), new AlertDialog.Builder(me).setMessage(explanation), dialog_ok, -1, dialog_share)
     }
 
-    def doAuth(alert: AlertDialog): Unit = {
-      val msg = getString(dialog_lnurl_processing).format(lnUrl.uri.getHost).html
-      val uri = lnUrl.uri.buildUpon.appendQueryParameter("sig", spec.derSignatureHex).appendQueryParameter("key", spec.linkingPubKey)
-      val sub = LNUrl.level2DataResponse(uri).doOnTerminate(removeCurrentSnack.run).subscribe(_ => UITask(WalletApp.app quickToast successResource).run, onFail)
-      cancellingSnack(contentWindow, sub, msg)
-      alert.dismiss
+    def doAuth(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
+      snack(contentWindow, getString(dialog_lnurl_processing).format(lnUrl.uri.getHost).html, dialog_cancel) foreach { snack =>
+        val uri = lnUrl.uri.buildUpon.appendQueryParameter("sig", spec.derSignatureHex).appendQueryParameter("key", spec.linkingPubKey)
+        val level2Obs = LNUrl.level2DataResponse(uri).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
+        val level2Sub = level2Obs.subscribe(_ => UITask(WalletApp.app quickToast successResource).run, onFail)
+        val listener = onButtonTap(level2Sub.unsubscribe)
+        snack.setAction(dialog_cancel, listener).show
+      }
     }
   }
 
@@ -1249,23 +1249,34 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       override def isPayEnabled: Boolean = manager.resultMsat >= minSendable && manager.resultMsat <= maxSendable
       private def getComment: String = manager.resultExtraInput.getOrElse(new String).take(maxCommentLength)
 
-      override def neutral(alert: AlertDialog): Unit = {
+      override def neutral(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
+        snack(contentWindow, getString(dialog_lnurl_splitting).format(data.callbackUri.getHost).html, dialog_cancel) foreach { snack =>
+          val level2Obs = getFinal(amount = minSendable).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
+          val level2Sub = level2Obs.subscribe(payReqFinal => proceed(payReqFinal).run, onFail)
+          val listener = onButtonTap(level2Sub.unsubscribe)
+          snack.setAction(dialog_cancel, listener).show
+        }
+
         def proceed(pf: PayRequestFinal): TimerTask = UITask {
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
             val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
             val cmd = LNParams.cm.makeSendCmd(pf.prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(minSendable)
             val pd = PlainMetaDescription(cmd.split.asSome, label = None, semanticOrder = paymentOrder.asSome, proofTxid = None, invoiceText = new String, meta = data.meta.textPlain)
             InputParser.value = SplitParams(pf.prExt, pf.successAction, pd, cmd, typicalChainTxFee)
-            runAnd(alert.dismiss)(me goTo ClassNames.qrSplitActivityClass)
+            me goTo ClassNames.qrSplitActivityClass
           }
         }
-
-        val obs = getFinal(minSendable).doOnTerminate(removeCurrentSnack.run)
-        val msg = getString(dialog_lnurl_splitting).format(data.callbackUri.getHost).html
-        cancellingSnack(contentWindow, obs.subscribe(prf => proceed(prf).run, onFail), msg)
       }
 
-      override def send(alert: AlertDialog): Unit = {
+      override def send(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
+        val amountHuman = WalletApp.denom.parsedWithSign(manager.resultMsat, cardIn, cardZero).html
+        snack(contentWindow, getString(dialog_lnurl_sending).format(amountHuman, data.callbackUri.getHost).html, dialog_cancel) foreach { snack =>
+          val level2Obs = getFinal(manager.resultMsat).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
+          val level2Sub = level2Obs.subscribe(payReqFinal => proceed(payReqFinal).run, onFail)
+          val listener = onButtonTap(level2Sub.unsubscribe)
+          snack.setAction(dialog_cancel, listener).show
+        }
+
         def proceed(pf: PayRequestFinal): TimerTask = UITask {
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
             val linkOrder = SemanticOrder(id = lnUrl.request, order = Long.MinValue)
@@ -1282,12 +1293,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
             }
           }
         }
-
-        val obs = getFinal(manager.resultMsat).doOnTerminate(removeCurrentSnack.run)
-        val amountHuman = WalletApp.denom.parsedWithSign(manager.resultMsat, cardIn, cardZero).html
-        val msg = getString(dialog_lnurl_sending).format(amountHuman, data.callbackUri.getHost).html
-        cancellingSnack(contentWindow, obs.subscribe(prf => proceed(prf).run, onFail), msg)
-        alert.dismiss
       }
 
       override val alert: AlertDialog = {
