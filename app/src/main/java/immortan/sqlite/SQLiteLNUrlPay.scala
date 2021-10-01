@@ -27,7 +27,7 @@ class SQLiteLNUrlPay(db: DBInterface) {
 
     db.change(newSqlPQ, info.domain, info.payString, info.payMetaString, info.updatedAt: JLong, descriptionString, info.lastNodeIdString, info.lastCommentString)
     db.change(updInfoSqlPQ, info.payMetaString, info.updatedAt: JLong, descriptionString, info.lastNodeIdString, info.lastCommentString, info.payString)
-    addSearchableLink(info.payMetaData.get.queryText, info.domain)
+    addSearchableLink(info.payMetaData.get.queryText(info.domain), info.domain)
     ChannelMaster.next(ChannelMaster.payMarketDbStream)
     updInfoSqlPQ.close
     newSqlPQ.close

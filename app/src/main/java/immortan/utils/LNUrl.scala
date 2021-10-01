@@ -200,12 +200,16 @@ case class PayRequestMeta(records: PayRequest.TagAndContent) {
 
   val textPlain: String = trimmed(texts.head)
 
-  val queryText = s"${emails.headOption orElse identities.headOption getOrElse new String} $textPlain"
-
   val imageBase64s: Seq[String] = for {
     JsArray(JsString("image/png;base64" | "image/jpeg;base64") +: JsString(image) +: _) <- records
     _ = require(image.length <= 136536, s"Image is too big, length=${image.length}, max=136536")
   } yield image
+
+  def queryText(domain: String): String = {
+    val ids = emails.headOption.orElse(identities.headOption).getOrElse(new String)
+    val tokenizedDomain = domain.replace('.', ' ')
+    s"$ids $textPlain $tokenizedDomain"
+  }
 }
 
 case class PayRequest(callback: String, maxSendable: Long, minSendable: Long, metadata: String, commentAllowed: Option[Int] = None) extends CallbackLNUrlData {
