@@ -193,7 +193,7 @@ object WalletApp {
     }
 
     import LNParams.ec
-    val params = WalletParameters(extDataBag, chainWalletBag, LNParams.minDustLimit, allowSpendUnconfirmed = true)
+    val params = WalletParameters(extDataBag, chainWalletBag, LNParams.minDustLimit)
     val pool = LNParams.loggedActor(Props(new ElectrumClientPool(LNParams.blockCount, LNParams.chainHash)), "connection-pool")
     val sync = LNParams.loggedActor(Props(new ElectrumChainSync(pool, params.headerDb, LNParams.chainHash)), "chain-sync")
     val watcher = LNParams.loggedActor(Props(new ElectrumWatcher(LNParams.blockCount, pool)), "channel-watcher")

@@ -93,6 +93,16 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
     (walletRef ? cpfp).mapTo[SendAllResponse].map(_.result.get)
   }
 
+  override def makeRBFBump(tx: Transaction, feeRatePerKw: FeeratePerKw): Future[RBFResponse] = {
+    val rbfBump = RBFBump(tx, feeRatePerKw, OPT_IN_FULL_RBF)
+    (walletRef ? rbfBump).mapTo[RBFResponse]
+  }
+
+  override def makeRBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, publicKeyScript: ByteVector): Future[RBFResponse] = {
+    val rbfReroute = RBFReroute(tx, feeRatePerKw, publicKeyScript, OPT_IN_FULL_RBF)
+    (walletRef ? rbfReroute).mapTo[RBFResponse]
+  }
+
   override def doubleSpent(tx: Transaction): Future[DepthAndDoubleSpent] = for {
     response <- (walletRef ? IsDoubleSpent(tx)).mapTo[IsDoubleSpentResponse]
   } yield (response.depth, response.isDoubleSpent)

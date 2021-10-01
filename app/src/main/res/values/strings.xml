@@ -58,6 +58,7 @@
     <string name="dialog_split">Split</string>
     <string name="dialog_share">Share</string>
     <string name="dialog_break">Break</string>
+    <string name="dialog_boost">Boost</string>
     <string name="dialog_open">Open</string>
     <string name="dialog_copy">Copy</string>
     <string name="dialog_scan">Scan</string>
@@ -168,6 +169,8 @@
     <string name="tx_description_refunding">Channel balance refunding</string>
     <string name="tx_description_htlc_claiming">Lightning payment claiming</string>
     <string name="tx_description_penalty">Channel breach penalty</string>
+    <string name="tx_description_rbf_cancel">RBF cancelling</string>
+    <string name="tx_description_rbf_boost">RBF boosting</string>
     <string name="tx_description_cpfp">CPFP boosting fee</string>
 
     <string name="tx_btc">Bitcoin Transaction</string>
@@ -410,9 +413,8 @@
 
     <!-- CPFP/RBF -->
 
-    <string name="tx_cpfp_current">Current</string>
-    <string name="tx_cpfp_after">After CPFP</string>
-    <string name="tx_boost"><![CDATA[<b>Boost</b>]]></string>
+    <string name="tx_cpfp_after">After boost</string>
+    <string name="tx_cpfp_current">Current sum</string>
     <string name="tc_cpfp_explain">Apply CPFP to this incoming transaction to increase its fee and get it confirmed faster</string>
 
     <!-- /CPFP/RBF -->

@@ -86,11 +86,18 @@
                     <ImageView style="@style/BoundedView" android:background="@drawable/ic_logo_bitcoin_24dp"/>
                 </LinearLayout>
 
-                <!-- BTC CPFP boosted -->
+                <!-- BTC incoming boosted -->
 
-                <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/btcCPFPBoosted">
+                <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/btcInBoosted">
                     <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_upward_18" android:rotation="180"/>
                     <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_upward_18" android:rotation="180"/>
+                </LinearLayout>
+
+                <!-- BTC out boosted -->
+
+                <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/btcOutBoosted">
+                    <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_upward_18"/>
+                    <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_upward_18"/>
                 </LinearLayout>
 
                 <!-- BTC outgoing -->

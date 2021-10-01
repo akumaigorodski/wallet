@@ -2,7 +2,7 @@ package fr.acinq.eclair.blockchain
 
 import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.bitcoin.{ByteVector32, OutPoint, Satoshi, Transaction, TxIn}
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GetCurrentReceiveAddressesResponse
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GetCurrentReceiveAddressesResponse, RBFResponse}
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import scala.concurrent.Future
 import scodec.bits.ByteVector
@@ -10,9 +10,11 @@ import scodec.bits.ByteVector
 
 object EclairWallet {
   type DepthAndDoubleSpent = (Long, Boolean)
+  def isRBFEnabled(tx: Transaction): Boolean = tx.txIn.forall(_.sequence <= OPT_IN_FULL_RBF)
   final val OPT_IN_FULL_RBF = TxIn.SEQUENCE_FINAL - 2
   final val MAX_RECEIVE_ADDRESSES = 10
 
+  // Wallet types
   final val BIP32 = "BIP32"
   final val BIP44 = "BIP44"
   final val BIP49 = "BIP49"
@@ -29,6 +31,10 @@ trait EclairWallet {
   def makeTx(amount: Satoshi, address: String, feeRatePerKw: FeeratePerKw): Future[TxAndFee]
 
   def makeCPFP(fromOutpoints: Set[OutPoint], address: String, feeRatePerKw: FeeratePerKw): Future[TxAndFee]
+
+  def makeRBFBump(tx: Transaction, feeRatePerKw: FeeratePerKw): Future[RBFResponse]
+
+  def makeRBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, publicKeyScript: ByteVector): Future[RBFResponse]
 
   def commit(tx: Transaction, tag: String): Future[Boolean]
 

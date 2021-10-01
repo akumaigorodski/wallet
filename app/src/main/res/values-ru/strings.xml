@@ -168,7 +168,9 @@
     <string name="tx_description_refunding">Возврат средств из канала</string>
     <string name="tx_description_htlc_claiming">Возврат платежа-Молнии</string>
     <string name="tx_description_penalty">Штраф за пролом канала</string>
-    <string name="tx_description_cpfp">Сбор за CPFP ускорение</string>
+    <string name="tx_description_rbf_cancel">RBF-отмена</string>
+    <string name="tx_description_rbf_boost">RBF-ускорение</string>
+    <string name="tx_description_cpfp">Сбор за CPFP-ускорение</string>
 
     <string name="tx_btc">Биткойн-транзакция</string>
     <string name="tx_ln">Платёж-Молния</string>
@@ -414,9 +416,9 @@
 
     <!-- CPFP/RBF -->
 
-    <string name="tx_cpfp_current">Теперь</string>
     <string name="tx_cpfp_after">После CPFP</string>
-    <string name="tx_boost"><![CDATA[<b>Ускорить</b>]]></string>
+    <string name="tx_cpfp_current">Сумма сейчас</string>
+    <string name="dialog_boost"><![CDATA[<b>Ускорить</b>]]></string>
     <string name="tc_cpfp_explain">Примените CPFP к входящей транзакции, чтобы увеличить ее комиссию и подтвердить транзакцию быстрее</string>
 
     <!-- /CPFP/RBF -->

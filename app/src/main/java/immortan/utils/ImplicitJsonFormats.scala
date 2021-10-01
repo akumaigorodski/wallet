@@ -102,29 +102,31 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
     }
   }
 
+  implicit val rbfParams: JsonFormat[RBFParams] = jsonFormat[ByteVector32, Long, RBFParams](RBFParams.apply, "ofTxid", "mode")
+
   implicit val plainTxDescriptionFmt: JsonFormat[PlainTxDescription] =
-    taggedJsonFmt(jsonFormat[List[String], Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
-      PlainTxDescription](PlainTxDescription.apply, "addresses", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "PlainTxDescription")
+    taggedJsonFmt(jsonFormat[List[String], Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
+      PlainTxDescription](PlainTxDescription.apply, "addresses", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "PlainTxDescription")
 
   implicit val opReturnTxDescriptionFmt: JsonFormat[OpReturnTxDescription] =
-    taggedJsonFmt(jsonFormat[List[ByteVector32], Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
-      OpReturnTxDescription](OpReturnTxDescription.apply, "preimages", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "OpReturnTxDescription")
+    taggedJsonFmt(jsonFormat[List[ByteVector32], Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
+      OpReturnTxDescription](OpReturnTxDescription.apply, "preimages", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "OpReturnTxDescription")
 
   implicit val chanFundingTxDescriptionFmt: JsonFormat[ChanFundingTxDescription] =
-    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
-      ChanFundingTxDescription](ChanFundingTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "ChanFundingTxDescription")
+    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
+      ChanFundingTxDescription](ChanFundingTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "ChanFundingTxDescription")
 
   implicit val chanRefundingTxDescriptionFmt: JsonFormat[ChanRefundingTxDescription] =
-    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
-      ChanRefundingTxDescription](ChanRefundingTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "ChanRefundingTxDescription")
+    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
+      ChanRefundingTxDescription](ChanRefundingTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "ChanRefundingTxDescription")
 
   implicit val htlcClaimTxDescriptionFmt: JsonFormat[HtlcClaimTxDescription] =
-    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
-      HtlcClaimTxDescription](HtlcClaimTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "HtlcClaimTxDescription")
+    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
+      HtlcClaimTxDescription](HtlcClaimTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "HtlcClaimTxDescription")
 
   implicit val penaltyTxDescriptionFmt: JsonFormat[PenaltyTxDescription] =
-    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32],
-      PenaltyTxDescription](PenaltyTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf"), tag = "PenaltyTxDescription")
+    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
+      PenaltyTxDescription](PenaltyTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "PenaltyTxDescription")
 
   implicit object PaymentDescriptionFmt extends JsonFormat[PaymentDescription] {
     def read(raw: JsValue): PaymentDescription = raw.asJsObject.fields(TAG) match {

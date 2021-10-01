@@ -82,7 +82,7 @@ abstract class ElectrumWalletType {
 
   def extractPubKeySpentFrom(txIn: TxIn): Option[PublicKey]
 
-  def addUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction
+  def setUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction
 
   def signTransaction(usableUtxos: Seq[Utxo], tx: Transaction): Transaction
 
@@ -109,7 +109,7 @@ class ElectrumWallet44(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
     PublicKey(data)
   }.toOption
 
-  override def addUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction = {
+  override def setUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction = {
     val txIn1 = for {
       utxo <- usableUtxos
       dummySig = ByteVector.fill(71)(1)
@@ -160,7 +160,7 @@ class ElectrumWallet49(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
     }.toOption
   }
 
-  override def addUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction = {
+  override def setUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction = {
     val txIn1 = for {
       utxo <- usableUtxos
       pubKeyScript = Script.write(Script pay2wpkh utxo.key.publicKey)
@@ -195,7 +195,7 @@ class ElectrumWallet84(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
 
   override def computePublicKeyScript(key: PublicKey): Seq[ScriptElt] = Script.pay2wpkh(key)
 
-  override def addUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction = {
+  override def setUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction = {
     val txIn1 = for {
       utxo <- usableUtxos
       witness = ScriptWitness(ByteVector.fill(71)(1) :: utxo.key.publicKey.value :: Nil)

@@ -104,7 +104,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   private[this] lazy val lnSplitNotice = getString(tx_ln_notice_split)
   private[this] lazy val lnDefTitle = getString(tx_ln)
 
-  private[this] lazy val paymentTypeIconIds = List(R.id.btcIncoming, R.id.btcCPFPBoosted, R.id.btcOutgoing, R.id.lnIncoming, R.id.lnOutgoing, R.id.lnRouted, R.id.btcLn, R.id.lnBtc, R.id.lnOutgoing)
+  private[this] lazy val paymentTypeIconIds = List(R.id.btcIncoming, R.id.btcInBoosted, R.id.btcOutBoosted, R.id.btcOutgoing, R.id.lnIncoming, R.id.lnOutgoing, R.id.lnRouted, R.id.btcLn, R.id.lnBtc, R.id.lnOutgoing)
 
   private[this] lazy val bottomBlurringArea = findViewById(R.id.bottomBlurringArea).asInstanceOf[RealtimeBlurView]
   private[this] lazy val bottomActionBar = findViewById(R.id.bottomActionBar).asInstanceOf[LinearLayout]
@@ -220,6 +220,13 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     removeItem setOnClickListener onButtonTap(doRemoveItem)
     shareItem setOnClickListener onButtonTap(doShareItem)
 
+    // MENU BUTTONS
+
+    def doCallPayLink(info: LNUrlPayLink): Unit = {
+      InputParser.value = info.payLink.get
+      checkExternalData(noneRunnable)
+    }
+
     def doSetItemLabel: Unit = {
       val (container, extraInputLayout, extraInput) = singleInputPopup
       val builder = titleBodyAsViewBuilder(title = null, body = container)
@@ -274,6 +281,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         else expand(info)
     }
 
+    // DANGEROUS HC STUFF
+
     def getStallingCommits(localFulfills: List[LocalFulfill], info: PaymentInfo): String = {
       val hcStates = LNParams.cm.allHostedCommits.map(commits => commits.channelId -> commits).toMap
       val details = localFulfills.map(_.theirAdd.channelId).toSet.flatMap(hcStates.get).map(ChanActivity.getDetails)
@@ -320,6 +329,47 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         mkCheckFormNeutral(_.dismiss, none, shareDetails, new AlertDialog.Builder(me).setCustomTitle(title).setMessage(msg), dialog_ok, noRes = -1, dialog_share)
       }
     }
+
+    // PENDING CHANNEL REFUNDS
+
+    def showPending(info: DelayedRefunds): Unit = {
+      val adapter = new ArrayAdapter(me, R.layout.simple_list_item_2, R.id.text1, info.txToParent.toArray) {
+        override def getView(position: Int, convertView: View, parentViewGroup: ViewGroup): View = {
+          val view: View = super.getView(position, convertView, parentViewGroup)
+          val text1 = view.findViewById(R.id.text1).asInstanceOf[TextView]
+          val text2 = view.findViewById(R.id.text2).asInstanceOf[TextView]
+
+          getItem(position) match {
+            case tx ~ _ if LNParams.blockCount.get == 0L =>
+              text1.setText(incoming(tx.txOut.head.amount.toMilliSatoshi).html)
+              text2.setText(inBlocks.head)
+
+            case tx ~ Some(at) =>
+              val blocksDone = LNParams.blockCount.get - at.blockHeight
+              val csv = math.max(Scripts.csvTimeouts(tx).values.headOption.getOrElse(0L) - blocksDone, 0L)
+              val cltv = math.max(Scripts.cltvTimeout(tx) - LNParams.blockCount.get, 0L)
+              text2.setText(WalletApp.app.plurOrZero(inBlocks)(cltv + csv).html)
+              text1.setText(incoming(tx.txOut.head.amount.toMilliSatoshi).html)
+
+            case tx ~ None =>
+              val csvEstimate = math.max(Scripts.csvTimeouts(tx).values.headOption.getOrElse(0L), 0L)
+              val cltv = math.max(Scripts.cltvTimeout(tx) - LNParams.blockCount.get, 0L)
+              text1.setText(incoming(tx.txOut.head.amount.toMilliSatoshi).html)
+              text2.setText(inBlocks.last.format(cltv + csvEstimate).html)
+          }
+
+          view
+        }
+      }
+
+      val list = selectorList(adapter)
+      val title = getString(delayed_refunding).asDefView
+      titleBodyAsViewBuilder(title, list).show
+      list.setDividerHeight(0)
+      list.setDivider(null)
+    }
+
+    // CPFP / RBF
 
     def boostCPFP(info: TxInfo): Unit = LNParams.chainWallets.findByPubKey(info.pubKey) match {
       case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
@@ -388,12 +438,32 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       feeView.customFeerateOption.performClick
     }
 
+    def boostRBF(info: TxInfo): Unit = LNParams.chainWallets.findByPubKey(info.pubKey) match {
+      case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
+      case Some(fromWallet) => doBoostRBF(fromWallet, info)
+    }
+
+    def doBoostRBF(fromWallet: ElectrumEclairWallet, info: TxInfo): Unit = {
+
+    }
+
+    def cancelRBF(info: TxInfo): Unit = LNParams.chainWallets.findByPubKey(info.pubKey) match {
+      case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
+      case Some(fromWallet) => doCancelRBF(fromWallet, info)
+    }
+
+    def doCancelRBF(fromWallet: ElectrumEclairWallet, info: TxInfo): Unit = {
+
+    }
+
     def retry(info: PaymentInfo): Unit = new HasTypicalChainFee {
       // When retrying we never cap max LN fee to chain because original failure may have happened because more expensive routes were omitted, but it's hard to figure that out with certainty
       private val cmd = LNParams.cm.makeSendCmd(info.prExt, info.sent, LNParams.cm.all.values.toList, info.chainFee, capLNFeeToChain = false).modify(_.split.totalSum).setTo(info.sent)
       replaceOutgoingPayment(ext = info.prExt, description = info.description, action = info.action, sentAmount = cmd.split.myPart, seenAt = info.seenAt)
       LNParams.cm.localSend(cmd)
     }
+
+    // VIEW RELATED
 
     def collapse[T <: TransactionDetails](item: T): Unit = {
       setVis(isVisible = false, extraInfo)
@@ -452,8 +522,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           addFlowChip(extraInfo, getString(popup_prior_chain_balance) format WalletApp.denom.parsedWithSign(info.balanceSnapshot, cardIn, cardZero), R.drawable.border_gray)
           addFlowChip(extraInfo, getString(popup_then) format WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise), R.drawable.border_gray)
           addFlowChip(extraInfo, getString(popup_now) format WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise), R.drawable.border_gray)
-          if (info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.canBeCPFPd) addFlowChip(extraInfo, getString(tx_boost), R.drawable.border_yellow, _ => self boostCPFP info)
+          if (info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.canBeCPFPd) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
+
           if (!info.isIncoming && info.description.cpfpOf.isEmpty) addFlowChip(extraInfo, getString(popup_chain_fee) format fee, R.drawable.border_gray)
+          if (!info.isIncoming && info.depth < 1 && info.description.rbf.isEmpty) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
+          if (!info.isIncoming && info.depth < 1 && info.description.rbf.isEmpty) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
 
         case info: RelayedPreimageInfo =>
           val relayedHuman = WalletApp.denom.parsedWithSign(info.relayed, cardIn, cardZero)
@@ -463,48 +536,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         case _ =>
           // Do nothing
       }
-    }
-
-    def showPending(info: DelayedRefunds): Unit = {
-      val adapter = new ArrayAdapter(me, R.layout.simple_list_item_2, R.id.text1, info.txToParent.toArray) {
-        override def getView(position: Int, convertView: View, parentViewGroup: ViewGroup): View = {
-          val view: View = super.getView(position, convertView, parentViewGroup)
-          val text1 = view.findViewById(R.id.text1).asInstanceOf[TextView]
-          val text2 = view.findViewById(R.id.text2).asInstanceOf[TextView]
-
-          getItem(position) match {
-            case tx ~ _ if LNParams.blockCount.get == 0L =>
-              text1.setText(incoming(tx.txOut.head.amount.toMilliSatoshi).html)
-              text2.setText(inBlocks.head)
-
-            case tx ~ Some(at) =>
-              val blocksDone = LNParams.blockCount.get - at.blockHeight
-              val csv = math.max(Scripts.csvTimeouts(tx).values.headOption.getOrElse(0L) - blocksDone, 0L)
-              val cltv = math.max(Scripts.cltvTimeout(tx) - LNParams.blockCount.get, 0L)
-              text2.setText(WalletApp.app.plurOrZero(inBlocks)(cltv + csv).html)
-              text1.setText(incoming(tx.txOut.head.amount.toMilliSatoshi).html)
-
-            case tx ~ None =>
-              val csvEstimate = math.max(Scripts.csvTimeouts(tx).values.headOption.getOrElse(0L), 0L)
-              val cltv = math.max(Scripts.cltvTimeout(tx) - LNParams.blockCount.get, 0L)
-              text1.setText(incoming(tx.txOut.head.amount.toMilliSatoshi).html)
-              text2.setText(inBlocks.last.format(cltv + csvEstimate).html)
-          }
-
-          view
-        }
-      }
-
-      val list = selectorList(adapter)
-      val title = getString(delayed_refunding).asDefView
-      titleBodyAsViewBuilder(title, list).show
-      list.setDividerHeight(0)
-      list.setDivider(null)
-    }
-
-    def doCallPayLink(info: LNUrlPayLink): Unit = {
-      InputParser.value = info.payLink.get
-      checkExternalData(noneRunnable)
     }
 
     def updateDetails: Unit = currentDetails match {
@@ -590,7 +621,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     def setTxTypeIcon(info: TxInfo): Unit = info.description match {
-      case _ if info.description.cpfpOf.isDefined => setVisibleIcon(id = R.id.btcCPFPBoosted)
+      case _ if info.description.cpfpOf.isDefined => setVisibleIcon(id = R.id.btcInBoosted)
       case _: PlainTxDescription if info.isIncoming => setVisibleIcon(id = R.id.btcIncoming)
       case _: OpReturnTxDescription => setVisibleIcon(id = R.id.btcOutgoing)
       case _: ChanRefundingTxDescription => setVisibleIcon(id = R.id.lnBtc)
@@ -600,17 +631,17 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       case _ => setVisibleIcon(id = R.id.btcOutgoing)
     }
 
+    def txStatusIcon(info: TxInfo): Int = {
+      if (info.isConfirmed) R.drawable.baseline_done_24
+      else if (info.isDoubleSpent) R.drawable.baseline_block_24
+      else R.drawable.baseline_hourglass_empty_24
+    }
+
     def setTxMeta(info: TxInfo): Unit = {
       if (info.isDoubleSpent) meta setText getString(tx_state_double_spent).html
       else if (info.isConfirmed) meta setText WalletApp.app.when(info.date, WalletApp.app.dateFormat).html
       else if (info.depth > 0) meta setText getString(tx_state_confs).format(info.depth, LNParams.minDepthBlocks).html
       else meta setText pctCollected.head
-    }
-
-    def txStatusIcon(info: TxInfo): Int = {
-      if (info.isConfirmed) R.drawable.baseline_done_24
-      else if (info.isDoubleSpent) R.drawable.baseline_block_24
-      else R.drawable.baseline_hourglass_empty_24
     }
 
     // LN helpers

@@ -38,7 +38,7 @@ object SemanticOrder {
 
   private def orderIdOrBaseId(details: TransactionDetails) = details.description.semanticOrder match { case Some(ord) => ord.id case None => details.identity }
 
-  private def parentAndOrderId(details: TransactionDetails) = details.description.semanticOrder match { case Some(ord) => ord.order case None => Long.MaxValue }
+  private def orderOrMax(details: TransactionDetails) = details.description.semanticOrder match { case Some(ord) => ord.order case None => Long.MaxValue }
 
   private def collapseChildren(items: SemanticGroup) = {
     items.tail.foreach(_.isExpandedItem = false)
@@ -47,7 +47,7 @@ object SemanticOrder {
   }
 
   def makeSemanticOrder(items: SemanticGroup): SemanticGroup =
-    items.distinct.groupBy(orderIdOrBaseId).mapValues(_ sortBy parentAndOrderId)
+    items.distinct.groupBy(orderIdOrBaseId).mapValues(_ sortBy orderOrMax)
       .mapValues(collapseChildren).values.toList.sortBy(_.head.seenAt)(Ordering[Long].reverse)
       .flatten
 }
@@ -224,13 +224,18 @@ sealed trait TxDescription extends TransactionDescription {
   def withNodeId: Option[PublicKey] = None
   def toAddress: Option[String] = None
 
+  val rbf: Option[RBFParams]
   val cpfpBy: Option[ByteVector32]
   val cpfpOf: Option[ByteVector32]
   def canBeCPFPd: Boolean = false
 }
 
-case class PlainTxDescription(addresses: List[String], label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
-                              cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None) extends TxDescription {
+case class RBFParams(ofTxid: ByteVector32, mode: Long)
+
+case class PlainTxDescription(addresses: List[String],
+                              label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
+                              cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
+                              rbf: Option[RBFParams] = None) extends TxDescription {
 
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + addresses.mkString(SEPARATOR) + SEPARATOR + label.getOrElse(new String)
 
@@ -239,8 +244,10 @@ case class PlainTxDescription(addresses: List[String], label: Option[String] = N
   override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
 }
 
-case class OpReturnTxDescription(preimages: List[ByteVector32], label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
-                                 cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None) extends TxDescription {
+case class OpReturnTxDescription(preimages: List[ByteVector32],
+                                 label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
+                                 cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
+                                 rbf: Option[RBFParams] = None) extends TxDescription {
 
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + preimages.map(_.toHex).mkString(SEPARATOR) + SEPARATOR + label.getOrElse(new String)
 }
@@ -250,30 +257,38 @@ sealed trait ChanTxDescription extends TxDescription {
   def nodeId: PublicKey
 }
 
-case class ChanFundingTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
-                                    cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None) extends ChanTxDescription {
+case class ChanFundingTxDescription(nodeId: PublicKey,
+                                    label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
+                                    cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
+                                    rbf: Option[RBFParams] = None) extends ChanTxDescription {
 
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
 }
 
-case class ChanRefundingTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
-                                      cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None) extends ChanTxDescription {
-
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
-
-  override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
-}
-
-case class HtlcClaimTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
-                                  cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None) extends ChanTxDescription {
+case class ChanRefundingTxDescription(nodeId: PublicKey,
+                                      label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
+                                      cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
+                                      rbf: Option[RBFParams] = None) extends ChanTxDescription {
 
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
 
   override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
 }
 
-case class PenaltyTxDescription(nodeId: PublicKey, label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
-                                cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None) extends ChanTxDescription {
+case class HtlcClaimTxDescription(nodeId: PublicKey,
+                                  label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
+                                  cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
+                                  rbf: Option[RBFParams] = None) extends ChanTxDescription {
+
+  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
+
+  override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
+}
+
+case class PenaltyTxDescription(nodeId: PublicKey,
+                                label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
+                                cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
+                                rbf: Option[RBFParams] = None) extends ChanTxDescription {
 
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
 
@@ -281,6 +296,9 @@ case class PenaltyTxDescription(nodeId: PublicKey, label: Option[String] = None,
 }
 
 object TxDescription {
+  final val RBF_CANCEL = 1
+  final val RBF_BOOST = 2
+
   def define(chans: Iterable[Channel], walletAddresses: List[String], tx: Transaction): TxDescription =
     defineOpeningRelation(chans, tx) orElse defineClosingRelation(chans, tx) getOrElse PlainTxDescription(walletAddresses)
 
