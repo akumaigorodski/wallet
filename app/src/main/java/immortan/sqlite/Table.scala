@@ -1,7 +1,6 @@
 package immortan.sqlite
 
 import immortan.PaymentStatus.{SUCCEEDED, PENDING, ABORTED}
-import java.util.concurrent.atomic.AtomicInteger
 
 
 trait Table {
@@ -9,10 +8,6 @@ trait Table {
   val Tuple2(id, fts) = Tuple2("_id", "fts4")
   val IDAUTOINC = s"$id INTEGER PRIMARY KEY AUTOINCREMENT"
   val UNIQUE = "UNIQUE"
-}
-
-object Table {
-  val DEFAULT_LIMIT = new AtomicInteger(20)
 }
 
 // Database #1, essential data, exportable to backup
@@ -212,10 +207,8 @@ object PaymentTable extends Table {
 
   // Selecting
 
-  val selectByHashSql = s"SELECT * FROM $table WHERE $hash = ?"
-
   val selectRecentSql: String = {
-    val recentFailed = s"($updatedAt > ? AND $status = $ABORTED)" // Skip all payments which have been failed a long time ago
+    val recentFailed = s"($updatedAt > ? AND $status = $ABORTED AND $incoming = 0)" // Skip outgoing which have been failed a long time ago
     val nonFailedOutgoing = s"($updatedAt > 0 AND $status <> $ABORTED AND $incoming = 0)" // Select all outgoing payments which are not failed yet
     val recentPendingIncoming = s"($updatedAt > ? AND $status = $PENDING AND $incoming = 1)" // Skip unfulfilled incoming payments which are expired
     val allFulfilledIncoming = s"($updatedAt > 0 AND $status = $SUCCEEDED AND $incoming = 1)" // Select all incoming payments which are fulfilled by now
@@ -226,13 +219,17 @@ object PaymentTable extends Table {
 
   val searchSql = s"SELECT * FROM $table WHERE $hash IN (SELECT DISTINCT $hash FROM $fts$table WHERE $search MATCH ? LIMIT 50)"
 
+  val selectPendingIncomingSql = s"SELECT * FROM $table WHERE ($updatedAt > ? AND $status = $PENDING AND $incoming = 1)"
+
+  val selectByHashSql = s"SELECT * FROM $table WHERE $hash = ?"
+
   // Updating
 
-  val updOkOutgoingSql = s"UPDATE $table SET $status = $SUCCEEDED, $preimage = ?, $feeMsat = ?, $updatedAt = ? WHERE $hash = ? AND ($updatedAt > 0 AND status <> $SUCCEEDED AND $incoming = 0)"
+  val updOkOutgoingSql = s"UPDATE $table SET $status = $SUCCEEDED, $preimage = ?, $feeMsat = ?, $updatedAt = ? WHERE $hash = ? AND ($updatedAt > 0 AND $status <> $SUCCEEDED AND $incoming = 0)"
 
-  val updOkIncomingSql = s"UPDATE $table SET $status = $SUCCEEDED, $receivedMsat = ?, $seenAt = ?, $updatedAt = ? WHERE $hash = ? AND ($updatedAt > 0 AND status <> $SUCCEEDED AND $incoming = 1)"
+  val updOkIncomingSql = s"UPDATE $table SET $status = $SUCCEEDED, $receivedMsat = ?, $seenAt = ?, $updatedAt = ? WHERE $hash = ? AND ($updatedAt > 0 AND $status <> $SUCCEEDED AND $incoming = 1)"
 
-  val updStatusSql = s"UPDATE $table SET $status = ?, $updatedAt = ? WHERE $hash = ? AND ($updatedAt > 0 AND status <> $SUCCEEDED)"
+  val updStatusSql = s"UPDATE $table SET $status = ?, $updatedAt = ? WHERE $hash = ? AND ($updatedAt > 0 AND $status <> $SUCCEEDED)"
 
   val updateDescriptionSql = s"UPDATE $table SET $description = ? WHERE $hash = ?"
 

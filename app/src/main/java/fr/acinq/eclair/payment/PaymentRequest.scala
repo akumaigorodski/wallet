@@ -123,7 +123,7 @@ object PaymentRequest {
 
   val basicFeatures: PaymentRequestFeatures = PaymentRequestFeatures(Features.VariableLengthOnion.mandatory, Features.PaymentSecret.mandatory, Features.BasicMultiPartPayment.optional)
 
-  def apply(chainHash: ByteVector32, amount: Option[MilliSatoshi], paymentHash: ByteVector32, privateKey: PrivateKey, description: String,
+  def apply(chainHash: ByteVector32, amount: Option[MilliSatoshi], paymentHash: ByteVector32, paymentSecret: ByteVector32, privateKey: PrivateKey, description: String,
             minFinalCltvExpiryDelta: CltvExpiryDelta, extraHops: List[ExtraHops], features: Option[PaymentRequestFeatures] = Some(basicFeatures),
             fallbackAddress: Option[String] = None, timestamp: Long = System.currentTimeMillis / 1000L): PaymentRequest = {
 
@@ -132,7 +132,7 @@ object PaymentRequest {
       val defaultTags = List(
         Some(PaymentHash(paymentHash)),
         Some(Description(description)),
-        Some(PaymentSecret(randomBytes32)),
+        Some(PaymentSecret(paymentSecret)),
         fallbackAddress.map(FallbackAddress.apply),
         Some(Expiry(OUR_EXPIRY_SECONDS)),
         Some(MinFinalCltvExpiry(minFinalCltvExpiryDelta.toInt)),

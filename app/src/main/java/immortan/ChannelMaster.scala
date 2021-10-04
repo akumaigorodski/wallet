@@ -51,29 +51,8 @@ object ChannelMaster {
   final val NO_PREIMAGE = ByteVector32.One
   final val NO_SECRET = ByteVector32.Zeroes
 
-  def initResolve(ext: UpdateAddHtlcExt): IncomingResolution = IncomingPacket.decrypt(ext.theirAdd, ext.remoteInfo.nodeSpecificPrivKey) match {
-    case Left(_: BadOnion) => fallbackResolve(secret = LNParams.secret.keys.fakeInvoiceKey(ext.theirAdd.paymentHash), ext.theirAdd)
-    case Left(onionFailure) => CMD_FAIL_HTLC(Right(onionFailure), ext.remoteInfo.nodeSpecificPrivKey, ext.theirAdd)
-    case Right(packet: IncomingPacket) => defineResolution(ext.remoteInfo.nodeSpecificPrivKey, packet)
-  }
-
-  def fallbackResolve(secret: PrivateKey, theirAdd: UpdateAddHtlc): IncomingResolution = IncomingPacket.decrypt(theirAdd, secret) match {
-    case Left(failure: BadOnion) => CMD_FAIL_MALFORMED_HTLC(failure.onionHash, failureCode = failure.code, theirAdd)
-    case Left(onionFailure) => CMD_FAIL_HTLC(Right(onionFailure), secret, theirAdd)
-    case Right(packet: IncomingPacket) => defineResolution(secret, packet)
-  }
-
-  // Make sure incoming payment secret is always present
-  private def defineResolution(secret: PrivateKey, pkt: IncomingPacket): IncomingResolution = pkt match {
-    case packet: IncomingPacket.FinalPacket if packet.payload.paymentSecret != NO_SECRET => ReasonableLocal(packet, secret)
-    case packet: IncomingPacket.NodeRelayPacket if packet.outerPayload.paymentSecret != NO_SECRET => ReasonableTrampoline(packet, secret)
-    case packet: IncomingPacket.ChannelRelayPacket => CMD_FAIL_HTLC(LNParams.incorrectDetails(packet.add.amountMsat).asRight, secret, packet.add)
-    case packet: IncomingPacket.NodeRelayPacket => CMD_FAIL_HTLC(LNParams.incorrectDetails(packet.add.amountMsat).asRight, secret, packet.add)
-    case packet: IncomingPacket.FinalPacket => CMD_FAIL_HTLC(LNParams.incorrectDetails(packet.add.amountMsat).asRight, secret, packet.add)
-  }
-
   def dangerousHCRevealed(allRevealed: Map[ByteVector32, RevealedLocalFulfills], tip: Long, hash: ByteVector32): Iterable[LocalFulfill] = {
-    // Of all incoming payments inside of HCs for which we have revealed a preimage, find those which are dangerously close to expiration, but not expired yet
+    // Of all incoming payments inside of HCs for which we have revealed a preimage, find those which are dangerously close to expiration, but not expired yet, but not hopelessly close
     allRevealed.getOrElse(hash, Iterable.empty).filter(tip >= _.theirAdd.cltvExpiry.toLong - LNParams.hcFulfillSafetyBlocks).filter(tip <= _.theirAdd.cltvExpiry.toLong - 3)
   }
 }
@@ -126,6 +105,35 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
   var inProcessors = Map.empty[FullPaymentTag, IncomingPaymentProcessor]
 
   var sendTo: (Any, ByteVector32) => Unit = (change, channelId) => all.get(channelId).foreach(_ process change)
+
+  private def defineResolution(secret: PrivateKey, pkt: IncomingPacket): IncomingResolution = pkt match {
+    case packet: IncomingPacket.FinalPacket if packet.payload.paymentSecret != NO_SECRET => ReasonableLocal(packet, secret)
+    case packet: IncomingPacket.NodeRelayPacket if packet.outerPayload.paymentSecret != NO_SECRET => ReasonableTrampoline(packet, secret)
+    case packet: IncomingPacket.ChannelRelayPacket => CMD_FAIL_HTLC(IncorrectOrUnknownPaymentDetails(packet.add.amountMsat, LNParams.blockCount.get).asRight, secret, packet.add)
+    case packet: IncomingPacket.NodeRelayPacket => CMD_FAIL_HTLC(IncorrectOrUnknownPaymentDetails(packet.add.amountMsat, LNParams.blockCount.get).asRight, secret, packet.add)
+    case packet: IncomingPacket.FinalPacket => CMD_FAIL_HTLC(IncorrectOrUnknownPaymentDetails(packet.add.amountMsat, LNParams.blockCount.get).asRight, secret, packet.add)
+  }
+
+  def initResolve(ext: UpdateAddHtlcExt): IncomingResolution =
+    IncomingPacket.decrypt(ext.theirAdd, ext.remoteInfo.nodeSpecificPrivKey) match {
+      // Attempt to decrypt an onion with our peer-specific nodeId, this would be a routed payment
+      // If fails with BadOnion: get all waiting incoming secrets and try to find a matching one
+
+      case Left(_: BadOnion) =>
+        // Add random secret to find at least one BadOnion result and fail this HTLC properly
+        val ephemeralKeys = (payBag.listPendingSecrets + randomBytes32).map(LNParams.secret.keys.fakeInvoiceKey)
+        val decryptionResults = for (ephemeralKey <- ephemeralKeys) yield IncomingPacket.decrypt(ext.theirAdd, ephemeralKey)
+        val resultsAndKeys = decryptionResults.zip(ephemeralKeys)
+
+        resultsAndKeys.find(_._1.isRight).orElse(resultsAndKeys.headOption).map {
+          case Left(failure: BadOnion) ~ _ => CMD_FAIL_MALFORMED_HTLC(failure.onionHash, failure.code, ext.theirAdd)
+          case Left(onionFail) ~ secret => CMD_FAIL_HTLC(Right(onionFail), secret, ext.theirAdd)
+          case Right(packet) ~ secret => defineResolution(secret, packet)
+        }.get
+
+      case Left(onionFail) => CMD_FAIL_HTLC(Right(onionFail), ext.remoteInfo.nodeSpecificPrivKey, ext.theirAdd)
+      case Right(packet) => defineResolution(ext.remoteInfo.nodeSpecificPrivKey, packet)
+    }
 
   def finalizeIncoming(data: IncomingProcessorData): Unit = {
     // Let subscribers know after no incoming payment parts are left
@@ -247,9 +255,9 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     SendMultiPart(fullTag, chainExpiry, split, LNParams.routerConf, targetNodeId = prExt.pr.nodeId, feeReserve, allowedChans, fullTag.paymentSecret, extraEdges)
   }
 
-  def makePrExt(toReceive: MilliSatoshi, description: PaymentDescription, allowedChans: Seq[ChanAndCommits], hash: ByteVector32): PaymentRequestExt = {
-    val hops = allowedChans.map(_.commits.updateOpt).zip(allowedChans).collect { case Some(update) ~ cnc => update.extraHop(cnc.commits.remoteInfo.nodeId) :: Nil }
-    val pr = PaymentRequest(LNParams.chainHash, Some(toReceive), hash, LNParams.secret.keys.fakeInvoiceKey(hash), description.invoiceText, LNParams.incomingFinalCltvExpiry, hops.toList)
+  def makePrExt(toReceive: MilliSatoshi, description: PaymentDescription, allowedChans: Seq[ChanAndCommits], hash: ByteVector32, secret: ByteVector32): PaymentRequestExt = {
+    val hops = allowedChans.map(_.commits.updateOpt).zip(allowedChans).collect { case Some(usableUpdate) ~ ChanAndCommits(_, commits) => usableUpdate.extraHop(commits.remoteInfo.nodeId) :: Nil }
+    val pr = PaymentRequest(LNParams.chainHash, Some(toReceive), hash, secret, LNParams.secret.keys.fakeInvoiceKey(secret), description.invoiceText, LNParams.incomingFinalCltvExpiry, hops.toList)
     PaymentRequestExt.from(pr)
   }
 
@@ -261,7 +269,7 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
 
   def localSendToSelf(sources: List[Channel], destinations: CommitsAndMax, preimage: ByteVector32, typicalChainTxFee: MilliSatoshi, capLNFeeToChain: Boolean): Unit = {
     val pd = PlainMetaDescription(split = None, label = None, semanticOrder = None, proofTxid = None, invoiceText = new String, meta = "Keysend to self")
-    val prExt = makePrExt(maxSendable(sources).min(destinations.maxReceivable), pd, destinations.commits, Crypto sha256 preimage)
+    val prExt = makePrExt(maxSendable(sources).min(destinations.maxReceivable), pd, destinations.commits, Crypto.sha256(preimage), randomBytes32)
     val keySendCmd = makeSendCmd(prExt, prExt.pr.amount.get, allowedChans = sources, typicalChainTxFee, capLNFeeToChain)
     val keySendCmd1 = keySendCmd.copy(userCustomTlvs = GenericTlv(OnionCodecs.keySendNumber, preimage) :: Nil)
     localSend(keySendCmd1)
@@ -327,7 +335,6 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
   override def notifyResolvers: Unit = {
     // Used to notify FSMs that we have cross-signed incoming HTLCs which FSMs may somehow act upon
     val allIns = all.values.flatMap(Channel.chanAndCommitsOpt).flatMap(_.commits.crossSignedIncoming).map(initResolveMemo.get)
-    allIns.foreach { case finalResolve: FinalResolution => sendTo(finalResolve, finalResolve.theirAdd.channelId) case _ => }
     val reasonableIncoming = allIns.collect { case resolution: ReasonableResolution => resolution }.groupBy(_.fullTag)
     val inFlightsBag = InFlightPayments(allInChannelOutgoing, reasonableIncoming)
 
@@ -337,8 +344,9 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
       case fullTag if PaymentTagTlv.LOCALLY_SENT == fullTag.tag => opm process CreateSenderFSM(localPaymentListeners, fullTag)
     }
 
-    // FSM exists because there were related HTLCs, none may be left now
-    // this change is used by existing FSMs to properly finalize themselves
+    // First, fail invalid and malformed incoming HTLCs right away
+    allIns.foreach { case finalResolve: FinalResolution => sendTo(finalResolve, finalResolve.theirAdd.channelId) case _ => }
+    // FSM exists because there were related HTLCs, none may be left now: this change is used by existing FSMs to finalize themselves
     for (incomingFSM <- inProcessors.values) incomingFSM doProcess inFlightsBag
     // Sign all fails and fulfills that could have been sent from FSMs above
     for (chan <- all.values) chan process CMD_SIGN

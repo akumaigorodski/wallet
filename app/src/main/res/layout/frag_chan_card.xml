@@ -18,9 +18,15 @@
 
     </LinearLayout>
 
-    <FrameLayout
-        android:padding="15dp"
+    <LinearLayout
+        android:paddingEnd="15dp"
+        android:paddingStart="15dp"
+        android:orientation="vertical"
         style="@style/FillingView">
+
+        <View
+            android:layout_height="15dp"
+            android:layout_width="match_parent"/>
 
         <androidx.cardview.widget.CardView
             card_view:cardCornerRadius="@dimen/corner_radius"
@@ -175,6 +181,6 @@
 
         </androidx.cardview.widget.CardView>
 
-    </FrameLayout>
+    </LinearLayout>
 
 </com.chauthai.swipereveallayout.SwipeRevealLayout>

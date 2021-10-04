@@ -100,7 +100,7 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
     for (local <- adds) cm.sendTo(CMD_FULFILL_HTLC(preimage, local.add), local.add.channelId)
 
   def abort(data1: IncomingAborted, adds: ReasonableLocals): Unit = data1.failure match {
-    case None => for (local <- adds) cm.sendTo(CMD_FAIL_HTLC(LNParams.incorrectDetails(local.add.amountMsat).asRight, local.secret, local.add), local.add.channelId)
+    case None => for (local <- adds) cm.sendTo(CMD_FAIL_HTLC(IncorrectOrUnknownPaymentDetails(local.add.amountMsat, LNParams.blockCount.get).asRight, local.secret, local.add), local.add.channelId)
     case Some(specificLocalFail) => for (local <- adds) cm.sendTo(CMD_FAIL_HTLC(specificLocalFail.asRight, local.secret, local.add), local.add.channelId)
   }
 
@@ -148,8 +148,8 @@ class TrampolinePaymentRelayer(val fullTag: FullPaymentTag, cm: ChannelMaster) e
   def validateRelay(params: TrampolineOn, adds: ReasonableTrampolines, blockHeight: Long): Option[FailureMessage] = firstOpt(adds) collectFirst {
     case pkt if pkt.innerPayload.invoiceFeatures.isDefined && pkt.innerPayload.paymentSecret.isEmpty => InvalidOnionPayload(UInt64(8), 0) // We do not serve legacy recepients
     case pkt if relayFee(pkt.innerPayload, params) > lastAmountIn - pkt.innerPayload.amountToForward => TrampolineFeeInsufficient // Proposed trampoline fee is less than required
-    case pkt if adds.map(_.packet.innerPayload.amountToForward).toSet.size != 1 => LNParams.incorrectDetails(pkt.add.amountMsat) // All incoming parts must have the same amount to be forwareded
-    case pkt if adds.map(_.packet.outerPayload.totalAmount).toSet.size != 1 => LNParams.incorrectDetails(pkt.add.amountMsat) // All incoming parts must have the same TotalAmount value
+    case pkt if adds.map(_.packet.innerPayload.amountToForward).toSet.size != 1 => IncorrectOrUnknownPaymentDetails(pkt.add.amountMsat, LNParams.blockCount.get) // All incoming parts must have the same amount
+    case pkt if adds.map(_.packet.outerPayload.totalAmount).toSet.size != 1 => IncorrectOrUnknownPaymentDetails(pkt.add.amountMsat, LNParams.blockCount.get) // All incoming parts must have the same TotalAmount
     case pkt if expiryIn(adds) - pkt.innerPayload.outgoingCltv < params.cltvExpiryDelta => TrampolineExpiryTooSoon // Proposed delta is less than required by our node
     case _ if !adds.map(_.add.channelId).flatMap(cm.all.get).forall(Channel.isOperational) => TemporaryNodeFailure // Some channels got into error state, better stop
     case pkt if CltvExpiry(blockHeight) >= pkt.innerPayload.outgoingCltv => TrampolineExpiryTooSoon // Final recepient's CLTV expiry is below current chain height

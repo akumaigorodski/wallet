@@ -35,6 +35,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import androidx.core.view.GestureDetectorCompat;
 import androidx.core.view.ViewCompat;
@@ -66,7 +67,12 @@ public class SwipeRevealLayout extends ViewGroup {
     /**
      * Main view is the view which is shown when the layout is closed.
      */
-    private View mMainView;
+    private LinearLayout mMainView;
+
+    /**
+     * The last view inside of mMainView where actual content is shown.
+     */
+    private View mContentView;
 
     /**
      * Secondary view is the view which is shown when the layout is opened.
@@ -175,7 +181,8 @@ public class SwipeRevealLayout extends ViewGroup {
 
         // get views
         mSecondaryView = getChildAt(0);
-        mMainView = getChildAt(1);
+        mMainView = (LinearLayout) getChildAt(1);
+        mContentView = mMainView.getChildAt(mMainView.getChildCount() - 1);
     }
 
     @Override
@@ -231,7 +238,7 @@ public class SwipeRevealLayout extends ViewGroup {
             close(false);
         }
 
-        mSecondaryView.setTranslationY(mMainView.getMeasuredHeight() / 2f - mSecondaryView.getMeasuredHeight() / 2f);
+        mSecondaryView.setTranslationY(getMeasuredHeight() - mSecondaryView.getMeasuredHeight() / 2F - mContentView.getMeasuredHeight() / 2F);
         mSecondaryView.setVisibility(mLockDrag ? View.GONE : View.VISIBLE);
         mOnLayoutCount++;
     }

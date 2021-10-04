@@ -4,13 +4,14 @@ import immortan._
 import spray.json._
 import fr.acinq.eclair._
 import immortan.utils.ImplicitJsonFormats._
-import java.lang.{Long => JLong, Integer => JInt}
+import java.lang.{Integer => JInt, Long => JLong}
 import fr.acinq.eclair.transactions.RemoteFulfill
 import fr.acinq.eclair.payment.PaymentRequest
 import fr.acinq.eclair.wire.FullPaymentTag
 import immortan.utils.PaymentRequestExt
 import immortan.crypto.Tools.Fiat2Btc
 import fr.acinq.bitcoin.ByteVector32
+import scodec.bits.ByteVector
 import scala.util.Try
 
 
@@ -34,10 +35,15 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
 
   def searchPayments(rawSearchQuery: String): RichCursor = db.search(PaymentTable.searchSql, rawSearchQuery.toLowerCase)
 
+  def listPendingSecrets: Set[ByteVector32] = {
+    val incomingThreshold = System.currentTimeMillis - PaymentRequest.OUR_EXPIRY_SECONDS * 1000L // Skip incoming payments which are expired by now
+    db.select(PaymentTable.selectPendingIncomingSql, incomingThreshold.toString).set(_ string PaymentTable.secret).map(ByteVector32.fromValidHex)
+  }
+
   def listRecentPayments(limit: Int): RichCursor = {
-    val failedHidingThreshold = System.currentTimeMillis - 60 * 60 * 24 * 1000L
-    val expiryHidingThreshold = System.currentTimeMillis - PaymentRequest.OUR_EXPIRY_SECONDS * 1000L
-    db.select(PaymentTable.selectRecentSql, expiryHidingThreshold.toString, failedHidingThreshold.toString, limit.toString)
+    val outgoingThreshold = System.currentTimeMillis - 60 * 60 * 24 * 1000L // Skip outgoing payments which have been failed more than a day ago
+    val incomingThreshold = System.currentTimeMillis - PaymentRequest.OUR_EXPIRY_SECONDS * 1000L // Skip incoming payments which are expired by now
+    db.select(PaymentTable.selectRecentSql, outgoingThreshold.toString, incomingThreshold.toString, limit.toString)
   }
 
   def updDescription(description: PaymentDescription, payHash: ByteVector32): Unit = {
@@ -122,6 +128,6 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
 
   def toRelayedPreimageInfo(rc: RichCursor): RelayedPreimageInfo =
     RelayedPreimageInfo(rc string RelayTable.hash, rc string RelayTable.secret, rc string RelayTable.preimage,
-      MilliSatoshi(rc long RelayTable.relayed), MilliSatoshi(rc long RelayTable.earned),
-      rc long RelayTable.seenAt, rc long RelayTable.updatedAt)
+      MilliSatoshi(rc long RelayTable.relayed), MilliSatoshi(rc long RelayTable.earned), rc long RelayTable.seenAt,
+      rc long RelayTable.updatedAt)
 }

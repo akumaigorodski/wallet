@@ -220,14 +220,12 @@ object OutgoingPacket {
     (firstAmount, firstExpiry, onion)
   }
 
-  def buildHtlcFailure(cmd: CMD_FAIL_HTLC, theirAdd: UpdateAddHtlc): UpdateFailHtlc = {
-    val packet = Sphinx.PaymentPacket.peel(cmd.nodeSecret, theirAdd.paymentHash, theirAdd.onionRoutingPacket).right.get
-
-    val reason = cmd.reason match {
-      case Left(forwarded) => Sphinx.FailurePacket.wrap(forwarded, packet.sharedSecret)
-      case Right(failure) => Sphinx.FailurePacket.create(packet.sharedSecret, failure)
+  import immortan.crypto.Tools._
+  def buildHtlcFailure(cmd: CMD_FAIL_HTLC, theirAdd: UpdateAddHtlc): UpdateMessage = {
+    (Sphinx.PaymentPacket.peel(cmd.nodeSecret, theirAdd.paymentHash, theirAdd.onionRoutingPacket), cmd.reason) match {
+      case Right(packet) ~ Left(forwarded) => UpdateFailHtlc(theirAdd.channelId, reason = Sphinx.FailurePacket.wrap(forwarded, packet.sharedSecret), id = cmd.theirAdd.id)
+      case Right(packet) ~ Right(failure) => UpdateFailHtlc(theirAdd.channelId, reason = Sphinx.FailurePacket.create(packet.sharedSecret, failure), id = cmd.theirAdd.id)
+      case Left(fail) ~ _ => UpdateFailMalformedHtlc(theirAdd.channelId, cmd.theirAdd.id, fail.onionHash, fail.code)
     }
-
-    UpdateFailHtlc(theirAdd.channelId, cmd.theirAdd.id, reason)
   }
 }

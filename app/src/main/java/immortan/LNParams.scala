@@ -32,7 +32,7 @@ import scala.util.Try
 object LNParams {
   val blocksPerDay: Int = 144 // On average we can expect this many blocks per day
   val ncFulfillSafetyBlocks: Int = 36 // Force-close and redeem revealed incoming payment on chain if NC peer stalls state update and this many blocks are left until expiration
-  val hcFulfillSafetyBlocks: Int = 144 // Offer to publish revealed incoming payment preimage on chain if HC peer stalls state update and this many blocks are left until expiration
+  val hcFulfillSafetyBlocks: Int = 72 // Offer to publish revealed incoming payment preimage on chain if HC peer stalls state update and this many blocks are left until expiration
   val cltvRejectThreshold: Int = hcFulfillSafetyBlocks + 36 // Reject incoming payment right away if CLTV expiry is closer than this to current chain tip when HTLC arrives
   val incomingFinalCltvExpiry: CltvExpiryDelta = CltvExpiryDelta(hcFulfillSafetyBlocks + 72) // Ask payer to set final CLTV expiry to current chain tip + this many blocks
 
@@ -128,13 +128,11 @@ object LNParams {
 
   def currentBlockDay: Long = blockCount.get / blocksPerDay
 
-  def incorrectDetails(amount: MilliSatoshi): FailureMessage = IncorrectOrUnknownPaymentDetails(amount, blockCount.get)
-
   def isPeerSupports(theirInit: Init)(feature: Feature): Boolean = Features.canUseFeature(ourInit.features, theirInit.features, feature)
 
   def defaultTrampolineOn = TrampolineOn(minPayment, maximumMsat = 1000000000L.msat, feeBaseMsat = 10000L.msat, feeProportionalMillionths = 1000L, exponent = 0.0, logExponent = 0.0, minRoutingCltvExpiryDelta)
 
-  def loggedActor(childProps: Props, childName: String): ActorRef = system actorOf Props(new LoggingSupervisor(childProps, childName))
+  def loggedActor(childProps: Props, childName: String): ActorRef = system actorOf Props(classOf[LoggingSupervisor], childProps, childName)
 
   def updateChainWallet(walletExt: WalletExt): Unit = synchronized(chainWallets = walletExt)
 
@@ -300,6 +298,7 @@ trait PaymentBag {
 
   def listRecentRelays(limit: Int): RichCursor
   def listRecentPayments(limit: Int): RichCursor
+  def listPendingSecrets: Set[ByteVector32]
 
   def paymentSummary: Try[PaymentSummary]
   def relaySummary: Try[RelaySummary]

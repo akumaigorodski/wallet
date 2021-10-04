@@ -209,7 +209,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
 
       overrideProposal setOnClickListener onButtonTap {
         val newBalance = hc.lastCrossSignedState.initHostedChannel.channelCapacityMsat - hc.overrideProposal.get.localBalanceMsat
-        val current = WalletApp.denom.parsedWithSign(hc.availableForReceive, cardIn, cardZero)
+        val current = WalletApp.denom.parsedWithSign(hc.availableForSend, cardIn, cardZero)
         val overridden = WalletApp.denom.parsedWithSign(newBalance, cardIn, cardZero)
 
         def proceed: Unit = chan process CMD_HOSTED_STATE_OVERRIDE(hc.overrideProposal.get)

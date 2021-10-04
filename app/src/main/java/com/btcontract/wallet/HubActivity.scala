@@ -19,7 +19,6 @@ import immortan.utils.ImplicitJsonFormats._
 
 import scala.util.{Success, Try}
 import android.view.{View, ViewGroup}
-import immortan.sqlite.{SQLiteData, Table}
 import android.graphics.{Bitmap, BitmapFactory}
 import rx.lang.scala.{Observable, Subject, Subscription}
 import com.androidstudy.networkmanager.{Monitor, Tovuti}
@@ -48,6 +47,7 @@ import org.apmem.tools.layouts.FlowLayout
 import android.graphics.drawable.Drawable
 import android.content.pm.PackageManager
 import com.ornach.nobobutton.NoboButton
+import immortan.sqlite.SQLiteData
 import scala.concurrent.Await
 import org.ndeftools.Message
 import java.util.TimerTask
@@ -68,6 +68,7 @@ object HubActivity {
   var lastHashToReveals: Map[ByteVector32, RevealedLocalFulfills] = Map.empty
   var lastInChannelOutgoing: Map[FullPaymentTag, OutgoingAdds] = Map.empty
   var allInfos: Seq[TransactionDetails] = Nil
+  var itemLimit = 10
 
   def requestHostedChannel: Unit = {
     val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minDustLimit)
@@ -119,10 +120,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   // PAYMENT LIST
 
-  def reloadTxInfos: Unit = txInfos.setItems(WalletApp.txDataBag.listRecentTxs(Table.DEFAULT_LIMIT.get) map WalletApp.txDataBag.toTxInfo)
-  def reloadPaymentInfos: Unit = paymentInfos.setItems(LNParams.cm.payBag.listRecentPayments(Table.DEFAULT_LIMIT.get) map LNParams.cm.payBag.toPaymentInfo)
-  def reloadRelayedPreimageInfos: Unit = relayedPreimageInfos.setItems(LNParams.cm.payBag.listRecentRelays(Table.DEFAULT_LIMIT.get) map LNParams.cm.payBag.toRelayedPreimageInfo)
-  def reloadPayMarketInfos: Unit = payMarketInfos.setItems(WalletApp.lnUrlPayBag.listRecentLinks(Table.DEFAULT_LIMIT.get) map WalletApp.lnUrlPayBag.toLinkInfo)
+  def reloadTxInfos: Unit = txInfos.setItems(WalletApp.txDataBag.listRecentTxs(itemLimit) map WalletApp.txDataBag.toTxInfo)
+  def reloadPaymentInfos: Unit = paymentInfos.setItems(LNParams.cm.payBag.listRecentPayments(itemLimit) map LNParams.cm.payBag.toPaymentInfo)
+  def reloadRelayedPreimageInfos: Unit = relayedPreimageInfos.setItems(LNParams.cm.payBag.listRecentRelays(itemLimit) map LNParams.cm.payBag.toRelayedPreimageInfo)
+  def reloadPayMarketInfos: Unit = payMarketInfos.setItems(WalletApp.lnUrlPayBag.listRecentLinks(itemLimit) map WalletApp.lnUrlPayBag.toLinkInfo)
 
   def isImportantItem: PartialFunction[TransactionDetails, Boolean] = {
     case anyFreshInfo if anyFreshInfo.updatedAt > disaplyThreshold => true

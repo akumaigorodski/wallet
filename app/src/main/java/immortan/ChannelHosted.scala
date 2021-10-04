@@ -286,6 +286,7 @@ abstract class ChannelHosted extends Channel { me =>
       SEND(List(hc.lastCrossSignedState) ++ hc1.resizeProposal ++ hc1.nextLocalUpdates:_*)
       // Forget about their unsigned updates, they are expected to resend
       BECOME(hc1.copy(nextRemoteUpdates = Nil), OPEN)
+      // There will be no state update
       events.notifyResolvers
     } else {
       val localUpdatesAcked = remoteLCSS.remoteUpdates - hc1.lastCrossSignedState.localUpdates
@@ -302,14 +303,15 @@ abstract class ChannelHosted extends Channel { me =>
         // We have fallen behind a bit but have all the data required to successfully synchronize such that an updated state is reached
         val hc3 = hc2.copy(lastCrossSignedState = syncedLCSS, localSpec = hc2.nextLocalSpec, nextLocalUpdates = localUpdatesLeftover, nextRemoteUpdates = Nil)
         StoreBecomeSend(hc3, OPEN, List(syncedLCSS) ++ hc2.resizeProposal ++ localUpdatesLeftover:_*)
-        events.notifyResolvers
       } else {
         // We are too far behind, restore from their future data
         val hc3 = restoreCommits(remoteLCSS.reverse, hc2.remoteInfo)
         StoreBecomeSend(hc3, OPEN, remoteLCSS.reverse)
         rejectOverriddenOutgoingAdds(hc1, hc3)
-        events.notifyResolvers
       }
+
+      // There will be no state update
+      events.notifyResolvers
     }
   }
 
