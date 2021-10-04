@@ -125,11 +125,11 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
         val decryptionResults = for (ephemeralKey <- ephemeralKeys) yield IncomingPacket.decrypt(ext.theirAdd, ephemeralKey)
         val resultsAndKeys = decryptionResults.zip(ephemeralKeys)
 
-        resultsAndKeys.find(_._1.isRight).orElse(resultsAndKeys.headOption).map {
+        resultsAndKeys.find(_._1.isRight).getOrElse(resultsAndKeys.head) match {
           case Left(failure: BadOnion) ~ _ => CMD_FAIL_MALFORMED_HTLC(failure.onionHash, failure.code, ext.theirAdd)
           case Left(onionFail) ~ secret => CMD_FAIL_HTLC(Right(onionFail), secret, ext.theirAdd)
           case Right(packet) ~ secret => defineResolution(secret, packet)
-        }.get
+        }
 
       case Left(onionFail) => CMD_FAIL_HTLC(Right(onionFail), ext.remoteInfo.nodeSpecificPrivKey, ext.theirAdd)
       case Right(packet) => defineResolution(ext.remoteInfo.nodeSpecificPrivKey, packet)
