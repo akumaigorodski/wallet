@@ -260,8 +260,8 @@ case class LastCrossSignedState(isHost: Boolean, refundScriptPubKey: ByteVector,
       incomingHtlcs = outgoingHtlcs, outgoingHtlcs = incomingHtlcs)
 
   lazy val hostedSigHash: ByteVector32 = {
-    val inPayments = incomingHtlcs.map(add => LightningMessageCodecs.updateAddHtlcCodec.encode(add).require.toByteVector).sortWith(LexicographicalOrdering.isLessThan)
-    val outPayments = outgoingHtlcs.map(add => LightningMessageCodecs.updateAddHtlcCodec.encode(add).require.toByteVector).sortWith(LexicographicalOrdering.isLessThan)
+    val inPayments = incomingHtlcs.map(add => LightningMessageCodecs.updateAddHtlcCodec.encode(add).require.toByteVector)
+    val outPayments = outgoingHtlcs.map(add => LightningMessageCodecs.updateAddHtlcCodec.encode(add).require.toByteVector)
     val hostFlag = if (isHost) 1 else 0
 
     Crypto.sha256(refundScriptPubKey ++

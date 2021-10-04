@@ -118,6 +118,24 @@ abstract class ChannelHosted extends Channel { me =>
       events addReceived theirAddExt
 
 
+    case (hc: HostedCommits, msg: UpdateFailHtlc, OPEN) if hc.error.isEmpty =>
+      hc.localSpec.findOutgoingHtlcById(msg.id) match {
+        case None if hc.nextLocalSpec.findOutgoingHtlcById(msg.id).isDefined => disconnectAndBecomeSleeping(hc)
+        case _ if hc.postErrorOutgoingResolvedIds.contains(msg.id) => throw ChannelTransitionFail(msg.channelId)
+        case None => throw ChannelTransitionFail(msg.channelId)
+        case _ => BECOME(hc.addRemoteProposal(msg), OPEN)
+      }
+
+
+    case (hc: HostedCommits, msg: UpdateFailMalformedHtlc, OPEN) if hc.error.isEmpty =>
+      hc.localSpec.findOutgoingHtlcById(msg.id) match {
+        case None if hc.nextLocalSpec.findOutgoingHtlcById(msg.id).isDefined => disconnectAndBecomeSleeping(hc)
+        case _ if hc.postErrorOutgoingResolvedIds.contains(msg.id) => throw ChannelTransitionFail(hc.channelId)
+        case None => throw ChannelTransitionFail(hc.channelId)
+        case _ => BECOME(hc.addRemoteProposal(msg), OPEN)
+      }
+
+
     case (hc: HostedCommits, msg: UpdateFulfillHtlc, OPEN | SLEEPING) if hc.error.isEmpty =>
       val remoteFulfill = hc.makeRemoteFulfill(msg)
       BECOME(hc.addRemoteProposal(msg), state)
@@ -133,10 +151,6 @@ abstract class ChannelHosted extends Channel { me =>
       events fulfillReceived remoteFulfill
       // There will be no state update
       events.notifyResolvers
-
-
-    case (hc: HostedCommits, msg: UpdateFailHtlc, OPEN) if hc.error.isEmpty => BECOME(hc.receiveFail(msg), OPEN)
-    case (hc: HostedCommits, msg: UpdateFailMalformedHtlc, OPEN) if hc.error.isEmpty => BECOME(hc.receiveFailMalformed(msg), OPEN)
 
 
     case (hc: HostedCommits, CMD_SIGN, OPEN) if (hc.nextLocalUpdates.nonEmpty || hc.resizeProposal.isDefined) && hc.error.isEmpty =>
@@ -322,8 +336,7 @@ abstract class ChannelHosted extends Channel { me =>
     val isBlockDayWrong = isOutOfSync(remoteSU.blockDay)
 
     if (isBlockDayWrong) {
-      // We could suspend, but instead choose to wait for chain wallet to synchronize
-      CommsTower.workers.get(hc.remoteInfo.nodeSpecificPair).foreach(_.disconnect)
+      disconnectAndBecomeSleeping(hc)
     } else if (remoteSU.remoteUpdates < lcss1.localUpdates) {
       // Persist unsigned remote updates to use them on re-sync
       // we do not update runtime data because ours is newer one
@@ -344,5 +357,12 @@ abstract class ChannelHosted extends Channel { me =>
       for (reject <- remoteRejects) events addRejectedRemotely reject
       events.notifyResolvers
     }
+  }
+
+  def disconnectAndBecomeSleeping(hc: HostedCommits): Unit = {
+    // Could have implemented a more involved partially-signed LCSS resolution
+    // but for now we will just disconnect and resolve on reconnect if it gets too busy
+    CommsTower.workers.get(hc.remoteInfo.nodeSpecificPair).foreach(_.disconnect)
+    StoreBecomeSend(hc, SLEEPING)
   }
 }
