@@ -9,7 +9,6 @@ import immortan.ChannelMaster._
 import fr.acinq.eclair.channel._
 import scala.concurrent.duration._
 import immortan.utils.{PaymentRequestExt, Rx}
-import fr.acinq.bitcoin.{ByteVector32, Crypto}
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import immortan.ChannelListener.{Malfunction, Transition}
 import fr.acinq.eclair.payment.{IncomingPacket, PaymentRequest}
@@ -20,6 +19,7 @@ import fr.acinq.eclair.router.RouteCalculation
 import java.util.concurrent.atomic.AtomicLong
 import com.google.common.cache.LoadingCache
 import immortan.crypto.CanBeShutDown
+import fr.acinq.bitcoin.ByteVector32
 import scala.collection.mutable
 import rx.lang.scala.Subject
 import scala.util.Try
@@ -126,9 +126,10 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
         val resultsAndKeys = decryptionResults.zip(ephemeralKeys)
 
         resultsAndKeys.find(_._1.isRight).getOrElse(resultsAndKeys.head) match {
-          case Left(failure: BadOnion) ~ _ => CMD_FAIL_MALFORMED_HTLC(failure.onionHash, failure.code, ext.theirAdd)
+          case Left(fail: BadOnion) ~ _ => CMD_FAIL_MALFORMED_HTLC(fail.onionHash, fail.code, ext.theirAdd)
           case Left(onionFail) ~ secret => CMD_FAIL_HTLC(Right(onionFail), secret, ext.theirAdd)
           case Right(packet) ~ secret => defineResolution(secret, packet)
+          case _ => throw new RuntimeException
         }
 
       case Left(onionFail) => CMD_FAIL_HTLC(Right(onionFail), ext.remoteInfo.nodeSpecificPrivKey, ext.theirAdd)
@@ -265,14 +266,6 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     opm process CreateSenderFSM(localPaymentListeners, cmd.fullTag)
     opm process ClearFailures
     opm process cmd
-  }
-
-  def localSendToSelf(sources: List[Channel], destinations: CommitsAndMax, preimage: ByteVector32, typicalChainTxFee: MilliSatoshi, capLNFeeToChain: Boolean): Unit = {
-    val pd = PlainMetaDescription(split = None, label = None, semanticOrder = None, proofTxid = None, invoiceText = new String, meta = "Keysend to self")
-    val prExt = makePrExt(maxSendable(sources).min(destinations.maxReceivable), pd, destinations.commits, Crypto.sha256(preimage), randomBytes32)
-    val keySendCmd = makeSendCmd(prExt, prExt.pr.amount.get, allowedChans = sources, typicalChainTxFee, capLNFeeToChain)
-    val keySendCmd1 = keySendCmd.copy(userCustomTlvs = GenericTlv(OnionCodecs.keySendNumber, preimage) :: Nil)
-    localSend(keySendCmd1)
   }
 
   def checkIfSendable(paymentHash: ByteVector32): Option[Int] = {

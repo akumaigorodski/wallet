@@ -2,19 +2,18 @@ package immortan.fsm
 
 import fr.acinq.eclair._
 import fr.acinq.eclair.wire._
+import immortan.crypto.Tools._
 import immortan.fsm.IncomingPaymentProcessor._
 import fr.acinq.eclair.channel.{CMD_FAIL_HTLC, CMD_FULFILL_HTLC, ReasonableLocal, ReasonableTrampoline}
-import immortan.{Channel, ChannelMaster, InFlightPayments, LNParams, PaymentStatus}
 import immortan.ChannelMaster.{ReasonableLocals, ReasonableTrampolines}
+import immortan.{Channel, ChannelMaster, InFlightPayments, LNParams}
 import immortan.crypto.{CanBeShutDown, StateMachine}
-import fr.acinq.bitcoin.{ByteVector32, Crypto}
-
 import fr.acinq.eclair.transactions.RemoteFulfill
 import fr.acinq.eclair.router.RouteCalculation
 import fr.acinq.eclair.payment.IncomingPacket
 import immortan.fsm.PaymentFailure.Failures
 import fr.acinq.bitcoin.Crypto.PublicKey
-import immortan.crypto.Tools.Any2Some
+import fr.acinq.bitcoin.ByteVector32
 import scala.util.Success
 
 
@@ -58,21 +57,16 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
       // we only do that once we reveal a preimage, thus letting us know that we have already revealed it on restart
       // having PaymentStatus.SUCCEEDED in payment db is not enough because that table does not get included in backup
       lastAmountIn = adds.foldLeft(0L.msat) { case (accumulator, incomingLocal) => accumulator + incomingLocal.add.amountMsat }
-      val keySend = adds.flatMap(_.packet.payload.paymentPreimage).find(preimage => Crypto.sha256(preimage) == fullTag.paymentHash)
-      val gotAllParts = adds.headOption.exists(lastAmountIn >= _.packet.payload.totalAmount)
 
-      cm.getPaymentInfoMemo.get(fullTag.paymentHash).toOption match {
-        case None => cm.getPreimageMemo.get(fullTag.paymentHash).toOption match {
-          case Some(paymentPreimage) => becomeRevealed(paymentPreimage, new String, adds) // Did not ask but fulfill since we happen to have a preimage
-          case None if keySend.nonEmpty => if (gotAllParts) becomeRevealed(keySend.get, new String, adds) // Either reveal preimage or keep waiting
-          case None => becomeAborted(IncomingAborted(None, fullTag), adds) // This is not a keysend and we don't have a preimage
-        }
+      val infoOpt = cm.getPaymentInfoMemo.get(fullTag.paymentHash).toOption
+      val preimageOpt = cm.getPreimageMemo.get(fullTag.paymentHash).toOption
 
-        case Some(info) if info.isIncoming && PaymentStatus.SUCCEEDED == info.status => becomeRevealed(info.preimage, info.description.queryText, adds) // Already revealed, but not finalized
+      (infoOpt, preimageOpt) match {
+        case _ ~ Some(preimage) => becomeRevealed(preimage, infoOpt.map(_.description.queryText).getOrElse(new String), adds) // Already (probably partially) revealed, but not finalized
         case _ if adds.exists(_.add.cltvExpiry.toLong < LNParams.blockCount.get + LNParams.cltvRejectThreshold) => becomeAborted(IncomingAborted(None, fullTag), adds) // Not enough time to react if stalls
-        case Some(info) if info.isIncoming && info.prExt.pr.amount.exists(asked => lastAmountIn >= asked) => becomeRevealed(info.preimage, info.description.queryText, adds) // Got enough parts to cover an amount
-        case Some(info) if info.isIncoming && adds.size >= cm.all.values.count(Channel.isOperational) * LNParams.maxInChannelHtlcs => becomeAborted(IncomingAborted(None, fullTag), adds) // Run out of slots
-        case Some(info) if !info.isIncoming => becomeAborted(IncomingAborted(None, fullTag), adds) // Abort self-payment immediately
+        case Some(info) ~ None if info.isIncoming && info.prExt.pr.amount.exists(asked => lastAmountIn >= asked) => becomeRevealed(info.preimage, info.description.queryText, adds) // Got enough parts to cover an amount
+        case Some(info) ~ None if info.isIncoming && adds.size >= cm.all.values.count(Channel.isOperational) * LNParams.maxInChannelHtlcs => becomeAborted(IncomingAborted(None, fullTag), adds) // Ran out of slots
+        case None ~ None => becomeAborted(IncomingAborted(None, fullTag), adds) // Never asked, no preimage
         case _ => // Do nothing and wait for more parts or timout
       }
 

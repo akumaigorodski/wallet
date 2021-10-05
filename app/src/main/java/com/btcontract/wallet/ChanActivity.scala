@@ -7,6 +7,7 @@ import fr.acinq.bitcoin._
 import immortan.crypto.Tools._
 import fr.acinq.eclair.channel._
 import scala.concurrent.duration._
+import com.softwaremill.quicklens._
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
 
@@ -286,11 +287,21 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
 
   def drainHc(hc: HostedCommits): Unit = {
     val relatedHc = getChanByCommits(hc).toList
+    val maxSendable = LNParams.cm.maxSendable(relatedHc)
+    val preimage = randomBytes32
 
     maxNormalReceivable match {
-      case _ if LNParams.cm.maxSendable(relatedHc) < LNParams.minPayment => snack(chanContainer, getString(ln_hosted_chan_drain_impossible_few_funds).html, R.string.dialog_ok, _.dismiss)
+      case _ if maxSendable < LNParams.minPayment => snack(chanContainer, getString(ln_hosted_chan_drain_impossible_few_funds).html, R.string.dialog_ok, _.dismiss)
       case ncOpt if ncOpt.forall(_.maxReceivable < LNParams.minPayment) => snack(chanContainer, getString(ln_hosted_chan_drain_impossible_no_chans).html, R.string.dialog_ok, _.dismiss)
-      case Some(csAndMax) => LNParams.cm.localSendToSelf(relatedHc, csAndMax, randomBytes32, typicalChainTxFee, capLNFeeToChain = false)
+      case Some(csAndMax) =>
+        val toSend = maxSendable.min(csAndMax.maxReceivable)
+        val pd = PlainDescription(split = None, getString(tx_ln_label_reflexive).asSome, semanticOrder = None, proofTxid = None, invoiceText = new String)
+        val prExt = LNParams.cm.makePrExt(toReceive = toSend, description = pd, allowedChans = csAndMax.commits, hash = Crypto.sha256(preimage), secret = randomBytes32)
+        val cmd = LNParams.cm.makeSendCmd(prExt, toSend, allowedChans = relatedHc, typicalChainTxFee, capLNFeeToChain = false).modify(_.split.totalSum).setTo(toSend)
+        replaceOutgoingPayment(prExt, pd, action = None, sentAmount = prExt.pr.amount.get)
+        // By setting a preimage beforehand we can fulfill this without incoming payment
+        LNParams.cm.payBag.setPreimage(prExt.pr.paymentHash, preimage)
+        LNParams.cm.localSend(cmd)
     }
   }
 

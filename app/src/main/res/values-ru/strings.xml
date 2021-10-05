@@ -161,6 +161,7 @@
 
     <!-- special tx/payment descriptions -->
 
+    <string name="tx_ln_label_reflexive">Платеж самому себе</string>
     <string name="tx_ln_notice_split">%1$d\%% сплит&#160;|&#160;</string>
 
     <string name="tx_description_op_return">Крипто-печать</string>

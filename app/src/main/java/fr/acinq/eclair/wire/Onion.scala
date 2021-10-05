@@ -309,8 +309,6 @@ object OnionCodecs {
 
   val trampolineOnionPacketCodec: Codec[OnionRoutingPacket] = onionRoutingPacketCodec(Sphinx.TrampolinePacket.PayloadLength)
 
-  final val keySendNumber: UInt64 = UInt64(5482373484L)
-
   /**
     * The 1.1 BOLT spec changed the onion frame format to use variable-length per-hop payloads.
     * The first bytes contain a varint encoding the length of the payload data (not including the trailing mac).
@@ -348,7 +346,6 @@ object OnionCodecs {
     .typecase(UInt64(66098), outgoingNodeId)
     .typecase(UInt64(66099), invoiceRoutingInfo)
     .typecase(UInt64(66100), trampolineOnion)
-    .typecase(keySendNumber, keySend)
 
   val tlvPerHopPayloadCodec: Codec[TlvStream[OnionTlv]] = TlvCodecs.lengthPrefixedTlvStream[OnionTlv](onionTlvCodec).complete
 
