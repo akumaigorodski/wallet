@@ -55,26 +55,28 @@ abstract class ChannelHosted extends Channel { me =>
       val isRightRemoteUpdateNumber = localHalfSignedHC.lastCrossSignedState.remoteUpdates == remoteSU.localUpdates
       val isRightLocalUpdateNumber = localHalfSignedHC.lastCrossSignedState.localUpdates == remoteSU.remoteUpdates
       val isRemoteSigOk = localCompleteLCSS.verifyRemoteSig(localHalfSignedHC.remoteInfo.nodeId)
+      val askBrandingInfo = AskBrandingInfo(localHalfSignedHC.channelId)
       val isBlockDayWrong = isOutOfSync(remoteSU.blockDay)
 
       if (isBlockDayWrong) throw new RuntimeException("Their blockday is wrong")
       if (!isRemoteSigOk) throw new RuntimeException("Their signature is wrong")
-      if (!isRightRemoteUpdateNumber) throw new RuntimeException("Their remote update number is wrong")
       if (!isRightLocalUpdateNumber) throw new RuntimeException("Their local update number is wrong")
-      StoreBecomeSend(localHalfSignedHC.copy(lastCrossSignedState = localCompleteLCSS), OPEN)
+      if (!isRightRemoteUpdateNumber) throw new RuntimeException("Their remote update number is wrong")
+      StoreBecomeSend(localHalfSignedHC.copy(lastCrossSignedState = localCompleteLCSS), OPEN, askBrandingInfo)
 
 
     case (wait: WaitRemoteHostedReply, remoteLCSS: LastCrossSignedState, WAIT_FOR_ACCEPT) =>
-      // We have expected InitHostedChannel but got LastCrossSignedState so this channel exists already
-      // make sure our signature match and if so then become OPEN using host supplied state data
       val isLocalSigOk = remoteLCSS.verifyRemoteSig(wait.remoteInfo.nodeSpecificPubKey)
       val isRemoteSigOk = remoteLCSS.reverse.verifyRemoteSig(wait.remoteInfo.nodeId)
       val hc = restoreCommits(remoteLCSS.reverse, wait.remoteInfo)
+      val askBrandingInfo = AskBrandingInfo(hc.channelId)
 
       if (!isRemoteSigOk) localSuspend(hc, ERR_HOSTED_WRONG_REMOTE_SIG)
       else if (!isLocalSigOk) localSuspend(hc, ERR_HOSTED_WRONG_LOCAL_SIG)
       else {
-        StoreBecomeSend(hc, OPEN, hc.lastCrossSignedState)
+        // We have expected InitHostedChannel but got LastCrossSignedState so this channel exists already
+        // make sure our signature match and if so then become OPEN using host supplied state data
+        StoreBecomeSend(hc, OPEN, hc.lastCrossSignedState, askBrandingInfo)
         // Remote LCSS could contain pending incoming
         events.notifyResolvers
       }

@@ -350,8 +350,8 @@ trait BaseActivity extends AppCompatActivity { me =>
     val attachIdentity: CheckBox = content.findViewById(R.id.attachIdentity).asInstanceOf[CheckBox]
 
     def updateText(value: MilliSatoshi): Unit = {
-      val amount = WalletApp.denom.fromMsat(value)
-      inputAmount.setText(amount.toString)
+      val amount = WalletApp.denom.fromMsat(value).toString
+      runAnd(inputAmount.requestFocus)(inputAmount setText amount)
       updateFiatInput
     }
 

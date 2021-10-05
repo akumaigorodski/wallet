@@ -327,6 +327,8 @@ object LightningMessageCodecs {
       (bytes64 withContext "clientSig")
   }.as[ResizeChannel]
 
+  val askBrandingInfoCodec = (bytes32 withContext "chainHash").as[AskBrandingInfo]
+
   val queryPublicHostedChannelsCodec = (bytes32 withContext "chainHash").as[QueryPublicHostedChannels]
 
   val replyPublicHostedChannelsEndCodec = (bytes32 withContext "chainHash").as[ReplyPublicHostedChannelsEnd]
@@ -358,6 +360,8 @@ object LightningMessageCodecs {
   final val HC_QUERY_PREIMAGES_TAG = 65515
 
   final val HC_REPLY_PREIMAGES_TAG = 65513
+
+  final val HC_ASK_BRANDING_INFO = 65511
 
 
   final val PHC_ANNOUNCE_GOSSIP_TAG = 64513
@@ -541,6 +545,7 @@ object LightningMessageCodecs {
       case HC_REPLY_PUBLIC_HOSTED_CHANNELS_END_TAG => replyPublicHostedChannelsEndCodec
       case HC_QUERY_PREIMAGES_TAG => queryPreimagesCodec
       case HC_REPLY_PREIMAGES_TAG => replyPreimagesCodec
+      case HC_ASK_BRANDING_INFO => askBrandingInfoCodec
 
       case PHC_ANNOUNCE_GOSSIP_TAG => channelAnnouncementCodec
       case PHC_ANNOUNCE_SYNC_TAG => channelAnnouncementCodec
@@ -588,6 +593,7 @@ object LightningMessageCodecs {
     case msg: ReplyPublicHostedChannelsEnd => UnknownMessage(HC_REPLY_PUBLIC_HOSTED_CHANNELS_END_TAG, replyPublicHostedChannelsEndCodec.encode(msg).require.toByteVector)
     case msg: QueryPreimages => UnknownMessage(HC_QUERY_PREIMAGES_TAG, queryPreimagesCodec.encode(msg).require.toByteVector)
     case msg: ReplyPreimages => UnknownMessage(HC_REPLY_PREIMAGES_TAG, replyPreimagesCodec.encode(msg).require.toByteVector)
+    case msg: AskBrandingInfo => UnknownMessage(HC_ASK_BRANDING_INFO, askBrandingInfoCodec.encode(msg).require.toByteVector)
 
     case SwapInRequest => UnknownMessage(SWAP_IN_REQUEST_MESSAGE_TAG, provide(SwapInRequest).encode(SwapInRequest).require.toByteVector)
     case msg: SwapInPaymentRequest => UnknownMessage(SWAP_IN_PAYMENT_REQUEST_MESSAGE_TAG, swapInPaymentRequestCodec.encode(msg).require.toByteVector)

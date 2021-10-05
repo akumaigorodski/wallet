@@ -4,8 +4,8 @@ import fr.acinq.eclair._
 import immortan.{ChannelMaster, LNParams}
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
+import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, Protocol, Satoshi}
 import fr.acinq.eclair.{CltvExpiry, CltvExpiryDelta, Features, MilliSatoshi, ShortChannelId, UInt64}
-import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, LexicographicalOrdering, Protocol, Satoshi}
 import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.router.Announcements
@@ -300,6 +300,8 @@ case class ResizeChannel(newCapacity: Satoshi, clientSig: ByteVector64 = ByteVec
   lazy val sigMaterial: ByteVector = Protocol.writeUInt64(newCapacity.toLong, ByteOrder.LITTLE_ENDIAN)
   lazy val newCapacityMsatU64: UInt64 = UInt64(newCapacity.toMilliSatoshi.toLong)
 }
+
+case class AskBrandingInfo(chainHash: ByteVector32) extends HostedChannelMessage
 
 // PHC
 
