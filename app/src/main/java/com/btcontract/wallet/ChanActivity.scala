@@ -240,6 +240,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
   }
 
   override def onDestroy: Unit = {
+    try for (channel <- LNParams.cm.all.values) channel.listeners -= me catch none
     updateSubscription.foreach(_.unsubscribe)
     super.onDestroy
   }
@@ -329,6 +330,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
 
   def INIT(state: Bundle): Unit = {
     if (WalletApp.isAlive && LNParams.isOperational) {
+      for (channel <- LNParams.cm.all.values) channel.listeners += me
       setContentView(R.layout.activity_chan)
       updateChanData.run
 
