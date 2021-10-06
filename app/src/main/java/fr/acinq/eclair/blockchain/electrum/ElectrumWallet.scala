@@ -50,8 +50,8 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
 
       val blockchain0 = Blockchain(ewt.chainHash, checkpoints = Vector.empty, headersMap = Map.empty, bestchain = Vector.empty)
       val data0 = ElectrumData(ewt, blockchain0, firstAccountKeys.toVector, firstChangeKeys.toVector, persisted.status, persisted.transactions,
-        persisted.history, persisted.proofs, pendingHistoryRequests = Set.empty, pendingHeadersRequests = Set.empty, pendingTransactionRequests = Set.empty,
-        pendingTransactions = persisted.pendingTransactions)
+        persisted.overriddenPendingTxids, persisted.history, persisted.proofs, pendingHistoryRequests = Set.empty, pendingHeadersRequests = Set.empty,
+        pendingTransactionRequests = Set.empty, pendingTransactions = persisted.pendingTransactions)
       stay using data0
 
     case Event(blockchain1: Blockchain, data) =>
@@ -312,9 +312,10 @@ case class WalletParameters(headerDb: HeaderDb, walletDb: WalletDb, dustLimit: S
 }
 
 case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, accountKeys: Vector[ExtendedPublicKey], changeKeys: Vector[ExtendedPublicKey], status: Map[ByteVector32, String] = Map.empty,
-                        transactions: Map[ByteVector32, Transaction] = Map.empty, history: Map[ByteVector32, TransactionHistoryItemList] = Map.empty, proofs: Map[ByteVector32, GetMerkleResponse] = Map.empty,
-                        pendingHistoryRequests: Set[ByteVector32] = Set.empty, pendingTransactionRequests: Set[ByteVector32] = Set.empty, pendingHeadersRequests: Set[GetHeaders] = Set.empty,
-                        pendingTransactions: List[Transaction] = Nil, pendingMerkleResponses: Set[GetMerkleResponse] = Set.empty, lastReadyMessage: Option[WalletReady] = None) {
+                        transactions: Map[ByteVector32, Transaction] = Map.empty, overriddenPendingTxids: Set[ByteVector32] = Set.empty, history: Map[ByteVector32, TransactionHistoryItemList] = Map.empty,
+                        proofs: Map[ByteVector32, GetMerkleResponse] = Map.empty, pendingHistoryRequests: Set[ByteVector32] = Set.empty, pendingTransactionRequests: Set[ByteVector32] = Set.empty,
+                        pendingHeadersRequests: Set[GetHeaders] = Set.empty, pendingTransactions: List[Transaction] = Nil, pendingMerkleResponses: Set[GetMerkleResponse] = Set.empty,
+                        lastReadyMessage: Option[WalletReady] = None) {
 
   lazy val accountKeyMap: Map[ByteVector32, ExtendedPublicKey] = accountKeys.map(key => ewt.computeScriptHashFromPublicKey(key.publicKey) -> key).toMap
 
@@ -348,7 +349,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
 
   def isReceive(txOut: TxOut, scriptHash: ByteVector32): Boolean = publicScriptMap.get(txOut.publicKeyScript).exists(key => ewt.computeScriptHashFromPublicKey(key.publicKey) == scriptHash)
 
-  def toPersistent: PersistentData = PersistentData(accountKeys.length, changeKeys.length, status, transactions, Map.empty, history, proofs, pendingTransactions)
+  def toPersistent: PersistentData = PersistentData(accountKeys.length, changeKeys.length, status, transactions, overriddenPendingTxids, history, proofs, pendingTransactions)
 
   def computeTransactionDepth(txid: ByteVector32): Int = proofs.get(txid).map(_.blockHeight).map(computeDepth).getOrElse(0)
 
@@ -373,9 +374,9 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
           } yield Utxo(key, unspent)
 
           // Find all transactions that send to or receive from this script hash
-          val txs = historyItems.map(_.txHash).flatMap(transactions.get).flatMap(_.txIn).map(_.outPoint)
+          val outPoints = historyItems.map(_.txHash).flatMap(transactions.get).flatMap(_.txIn).map(_.outPoint)
           // Because we may have unconfirmed UTXOs that are spend by unconfirmed transactions
-          unspents.filterNot(utxo => txs contains utxo.item.outPoint)
+          unspents.filterNot(utxo => outPoints contains utxo.item.outPoint)
         } getOrElse Nil
     }
 
@@ -518,5 +519,5 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
 
 case class PersistentData(accountKeysCount: Int, changeKeysCount: Int,
                           status: Map[ByteVector32, String] = Map.empty, transactions: Map[ByteVector32, Transaction] = Map.empty,
-                          heights: Map[ByteVector32, Int] = Map.empty, history: Map[ByteVector32, TransactionHistoryItemList] = Map.empty,
+                          overriddenPendingTxids: Set[ByteVector32] = Set.empty, history: Map[ByteVector32, TransactionHistoryItemList] = Map.empty,
                           proofs: Map[ByteVector32, GetMerkleResponse] = Map.empty, pendingTransactions: List[Transaction] = Nil)

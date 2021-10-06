@@ -27,11 +27,6 @@ object SqliteWalletDb {
     (wire: BitVector) => listOfN(uint16, bytes32 ~ cstring).decode(wire).map(_.map(_.toMap))
   )
 
-  val heightsCodec: Codec[Map[ByteVector32, Int]] = Codec[Map[ByteVector32, Int]](
-    (runtimeMap: Map[ByteVector32, Int]) => listOfN(uint16, bytes32 ~ int32).encode(runtimeMap.toList),
-    (wire: BitVector) => listOfN(uint16, bytes32 ~ int32).decode(wire).map(_.map(_.toMap))
-  )
-
   val transactionsCodec: Codec[Map[ByteVector32, Transaction]] = Codec[Map[ByteVector32, Transaction]](
     (runtimeMap: Map[ByteVector32, Transaction]) => listOfN(uint16, bytes32 ~ txCodec).encode(runtimeMap.toList),
     (wire: BitVector) => listOfN(uint16, bytes32 ~ txCodec).decode(wire).map(_.map(_.toMap))
@@ -62,7 +57,7 @@ object SqliteWalletDb {
       (int32 withContext "changeKeysCount") ::
       (statusCodec withContext "status") ::
       (transactionsCodec withContext "transactions") ::
-      (heightsCodec withContext "heights") ::
+      (setCodec(bytes32) withContext "overriddenPendingTxids") ::
       (historyCodec withContext "history") ::
       (proofsCodec withContext "proofs") ::
       (listOfN(uint16, txCodec) withContext "pendingTransactions")

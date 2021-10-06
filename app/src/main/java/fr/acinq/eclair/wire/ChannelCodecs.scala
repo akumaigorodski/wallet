@@ -160,18 +160,18 @@ object ChannelCodecs {
   }.as[LocalParams]
 
   val remoteParamsCodec = {
-    ("dustLimit" | satoshi) ::
-      ("maxHtlcValueInFlightMsat" | uint64) ::
-      ("channelReserve" | satoshi) ::
-      ("htlcMinimum" | millisatoshi) ::
-      ("toSelfDelay" | cltvExpiryDelta) ::
-      ("maxAcceptedHtlcs" | uint16) ::
-      ("fundingPubKey" | publicKey) ::
-      ("revocationBasepoint" | publicKey) ::
-      ("paymentBasepoint" | publicKey) ::
-      ("delayedPaymentBasepoint" | publicKey) ::
-      ("htlcBasepoint" | publicKey) ::
-      ("shutdownScript" | optional(bool8, bytes))
+    (satoshi withContext "dustLimit") ::
+      (uint64 withContext "maxHtlcValueInFlightMsat") ::
+      (satoshi withContext "channelReserve") ::
+      (millisatoshi withContext "htlcMinimum") ::
+      (cltvExpiryDelta withContext "toSelfDelay") ::
+      (uint16 withContext "maxAcceptedHtlcs") ::
+      (publicKey withContext "fundingPubKey") ::
+      (publicKey withContext "revocationBasepoint") ::
+      (publicKey withContext "paymentBasepoint") ::
+      (publicKey withContext "delayedPaymentBasepoint") ::
+      (publicKey withContext "htlcBasepoint") ::
+      (optional(bool8, lengthDelimited(bytes)) withContext "shutdownScript")
   }.as[RemoteParams]
 
   val remoteNodeInfoCodec = {
