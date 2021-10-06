@@ -582,7 +582,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       case info: LNUrlPayLink =>
         marketItems.removeAllViewsInLayout
         setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.description.label.isDefined -> marketLabel, false -> labelIcon, true -> linkContainer, false -> nonLinkContainer, true -> removeItem)
-        addFlowChip(marketItems, marketLinkCaption(info).take(28), R.drawable.border_gray).setCompoundDrawablesWithIntrinsicBounds(marketLinkIcon(info), null, null, null)
+        addFlowChip(marketItems, marketLinkCaption(info).take(28), R.drawable.border_gray, _ => self doCallPayLink info).setCompoundDrawablesWithIntrinsicBounds(marketLinkIcon(info), null, null, null)
         for (lastComment <- info.lastComment) addFlowChip(marketItems, lastComment, R.drawable.border_blue)
         linkContainer setBackgroundResource paymentBackground(info.description.fullTag)
         info.imageBytes.map(payLinkImageMemo.get).foreach(linkImage.setImageBitmap)
@@ -799,18 +799,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       setVis(isVisible = false, walletCards.chainSyncIndicator)
     }.run
 
-    override def onWalletReady(event: WalletReady): Unit = {
-      // First, update payments to highlight nearly expired revealed incoming now that chain tip it known
-      // Second, check if any of unconfirmed chain transactions became confirmed or double-spent
-      ChannelMaster.next(ChannelMaster.statusUpdateStream)
-
-      for {
-        txInfo <- txInfos.lastItems if !txInfo.isDoubleSpent && !txInfo.isConfirmed
-        relatedChainWallet <- LNParams.chainWallets.findByPubKey(pub = txInfo.pubKey)
-        (depth, doubleSpent) <- relatedChainWallet.doubleSpent(tx = txInfo.tx)
-        if depth != txInfo.depth || doubleSpent != txInfo.isDoubleSpent
-      } WalletApp.txDataBag.updStatus(txInfo.txid, depth, doubleSpent)
-    }
+    override def onWalletReady(event: WalletReady): Unit =
+      ChannelMaster.next(ChannelMaster.stateUpdateStream)
   }
 
   private val fiatRatesListener = new FiatRatesListener {
@@ -1078,7 +1068,19 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       // STREAMS
 
       val window = 600.millis
-      val txEvents = ChannelMaster.txDbStream.onBackpressureLatest.doOnNext(_ => reloadTxInfos)
+      val txEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.txDbStream, window).doOnNext { _ =>
+        // After each delayed update we check if pending txs got confirmed or double-spent
+        // do this check specifically after updating txInfos with new items
+        reloadTxInfos
+
+        for {
+          txInfo <- txInfos.lastItems if !txInfo.isDoubleSpent && !txInfo.isConfirmed
+          relatedChainWallet <- LNParams.chainWallets.findByPubKey(pub = txInfo.pubKey)
+          (depth, doubleSpent) <- relatedChainWallet.doubleSpent(tx = txInfo.tx)
+          if depth != txInfo.depth || doubleSpent != txInfo.isDoubleSpent
+        } WalletApp.txDataBag.updStatus(txInfo.txid, depth, doubleSpent)
+      }
+
       val relayEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.relayDbStream, window).doOnNext(_ => reloadRelayedPreimageInfos)
       val marketEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.payMarketDbStream, window).doOnNext(_ => reloadPayMarketInfos)
       val paymentEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.paymentDbStream, window).doOnNext(_ => reloadPaymentInfos)
