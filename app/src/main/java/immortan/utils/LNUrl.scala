@@ -7,6 +7,7 @@ import immortan.utils.ImplicitJsonFormats._
 import immortan.{LNParams, PaymentAction, RemoteNodeInfo}
 import fr.acinq.bitcoin.{Bech32, ByteVector32, ByteVector64, Crypto}
 import com.github.kevinsawicki.http.HttpRequest
+import com.google.common.base.CharMatcher
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.eclair.wire.NodeAddress
 import rx.lang.scala.Observable
@@ -57,12 +58,17 @@ object LNUrl {
 
 case class LNUrl(request: String) {
   val uri: Uri = LNUrl.checkHost(request)
+  val warnUri: String = uri.getHost.map { char =>
+    if (CharMatcher.ascii matches char) char.toString
+    else s"<b>[$char]</b>"
+  }.mkString
+
   lazy val k1: Try[String] = Try(uri getQueryParameter "k1")
   lazy val isAuth: Boolean = Try(uri.getQueryParameter("tag").toLowerCase == "login").getOrElse(false)
   lazy val authAction: String = Try(uri.getQueryParameter("action").toLowerCase).getOrElse("login")
 
   lazy val fastWithdrawAttempt: Try[WithdrawRequest] = Try {
-    require(uri getQueryParameter "tag" equals "withdrawRequest")
+    require(uri.getQueryParameter("tag") equals "withdrawRequest")
     WithdrawRequest(uri.getQueryParameter("callback"), uri.getQueryParameter("k1"),
       uri.getQueryParameter("maxWithdrawable").toLong, uri.getQueryParameter( "defaultDescription"),
       uri.getQueryParameter("minWithdrawable").toLong.asSome)

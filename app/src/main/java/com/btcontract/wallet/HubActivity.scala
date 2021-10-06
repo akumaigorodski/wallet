@@ -582,7 +582,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       case info: LNUrlPayLink =>
         marketItems.removeAllViewsInLayout
         setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.description.label.isDefined -> marketLabel, false -> labelIcon, true -> linkContainer, false -> nonLinkContainer, true -> removeItem)
-        addFlowChip(marketItems, marketLinkCaption(info).take(28), R.drawable.border_gray, _ => self doCallPayLink info).setCompoundDrawablesWithIntrinsicBounds(marketLinkIcon(info), null, null, null)
+        addFlowChip(marketItems, marketLinkCaption(info), R.drawable.border_gray, _ => self doCallPayLink info).setCompoundDrawablesWithIntrinsicBounds(marketLinkIcon(info), null, null, null)
         for (lastComment <- info.lastComment) addFlowChip(marketItems, lastComment, R.drawable.border_blue)
         linkContainer setBackgroundResource paymentBackground(info.description.fullTag)
         info.imageBytes.map(payLinkImageMemo.get).foreach(linkImage.setImageBitmap)
@@ -599,7 +599,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     def marketLinkCaption(info: LNUrlPayLink): String = info.payMetaData match {
       case Success(payMeta) if payMeta.identities.nonEmpty => payMeta.identities.head
       case Success(payMeta) if payMeta.emails.nonEmpty => payMeta.emails.head
-      case _ => info.payLink.get.uri.getHost
+      case _ => info.payLink.get.warnUri
     }
 
     def marketLinkIcon(info: LNUrlPayLink): Drawable = info.payMetaData match {
@@ -965,7 +965,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       case _ => nothingUsefulTask.run
     }
 
-    snack(contentWindow, getString(dialog_lnurl_processing).format(lnUrl.uri.getHost).html, dialog_cancel) foreach { snack =>
+    snack(contentWindow, getString(dialog_lnurl_processing).format(lnUrl.warnUri).html, dialog_cancel) foreach { snack =>
       val level1Sub = lnUrl.level1DataResponse.doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss).subscribe(resolve, onFail)
       val listener = onButtonTap(level1Sub.unsubscribe)
       snack.setAction(dialog_cancel, listener).show
@@ -981,16 +981,16 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     val spec = LNUrlAuthSpec(lnUrl.uri.getHost, ByteVector32 fromValidHex k1)
-    val title = titleBodyAsViewBuilder(s"<big>${lnUrl.uri.getHost}</big>".asColoredView(R.color.cardLightning), null)
+    val title = titleBodyAsViewBuilder(s"<big>${lnUrl.warnUri}</big>".asColoredView(R.color.cardLightning), null)
     mkCheckFormNeutral(doAuth, none, displayInfo, title, actionResource, dialog_cancel, dialog_info)
 
     def displayInfo(alert: AlertDialog): Unit = {
-      val explanation = getString(lnurl_auth_info).format(lnUrl.uri.getHost, spec.linkingPubKey.humanFour).html
+      val explanation = getString(lnurl_auth_info).format(lnUrl.warnUri, spec.linkingPubKey.humanFour).html
       mkCheckFormNeutral(_.dismiss, none, _ => share(spec.linkingPubKey), new AlertDialog.Builder(me).setMessage(explanation), dialog_ok, -1, dialog_share)
     }
 
     def doAuth(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-      snack(contentWindow, getString(dialog_lnurl_processing).format(lnUrl.uri.getHost).html, dialog_cancel) foreach { snack =>
+      snack(contentWindow, getString(dialog_lnurl_processing).format(lnUrl.warnUri).html, dialog_cancel) foreach { snack =>
         val uri = lnUrl.uri.buildUpon.appendQueryParameter("sig", spec.derSignatureHex).appendQueryParameter("key", spec.linkingPubKey)
         val level2Obs = LNUrl.level2DataResponse(uri).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
         val level2Sub = level2Obs.subscribe(_ => UITask(WalletApp.app quickToast successResource).run, onFail)
