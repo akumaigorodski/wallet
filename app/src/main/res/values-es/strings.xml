@@ -161,7 +161,7 @@
 
     <!-- special tx/payment descriptions -->
 
-    <string name="tx_ln_label_reflexive">Reflexive payment</string>
+    <string name="tx_ln_label_reflexive">Payment to self</string>
     <string name="tx_ln_notice_split">%1$d\%% dividir&#160;|&#160;</string>
 
     <string name="tx_description_op_return">Sello de prueba de pago</string>

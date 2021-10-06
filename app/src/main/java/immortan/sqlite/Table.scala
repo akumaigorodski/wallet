@@ -219,7 +219,8 @@ object PaymentTable extends Table {
 
   val searchSql = s"SELECT * FROM $table WHERE $hash IN (SELECT DISTINCT $hash FROM $fts$table WHERE $search MATCH ? LIMIT 50)"
 
-  val selectPendingIncomingSql = s"SELECT * FROM $table WHERE ($updatedAt > ? AND $status = $PENDING AND $incoming = 1)"
+  // Select both incoming and outgoing payments because outgoing ones may be reflexive
+  val selectPendingSql = s"SELECT * FROM $table WHERE ($updatedAt > ? AND $status = $PENDING)"
 
   val selectByHashSql = s"SELECT * FROM $table WHERE $hash = ?"
 

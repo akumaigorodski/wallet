@@ -11,7 +11,6 @@ import fr.acinq.eclair.wire.FullPaymentTag
 import immortan.utils.PaymentRequestExt
 import immortan.crypto.Tools.Fiat2Btc
 import fr.acinq.bitcoin.ByteVector32
-import scodec.bits.ByteVector
 import scala.util.Try
 
 
@@ -23,7 +22,7 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
   def getPaymentInfo(paymentHash: ByteVector32): Try[PaymentInfo] = db.select(PaymentTable.selectByHashSql, paymentHash.toHex).headTry(toPaymentInfo)
 
   def removePaymentInfo(paymentHash: ByteVector32): Unit = {
-    db.change(PaymentTable.killSql, params = paymentHash.toHex)
+    db.change(PaymentTable.killSql, paymentHash.toHex)
     ChannelMaster.next(ChannelMaster.paymentDbStream)
   }
 
@@ -37,7 +36,7 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
 
   def listPendingSecrets: Set[ByteVector32] = {
     val incomingThreshold = System.currentTimeMillis - PaymentRequest.OUR_EXPIRY_SECONDS * 1000L // Skip incoming payments which are expired by now
-    db.select(PaymentTable.selectPendingIncomingSql, incomingThreshold.toString).set(_ string PaymentTable.secret).map(ByteVector32.fromValidHex)
+    db.select(PaymentTable.selectPendingSql, incomingThreshold.toString).set(_ string PaymentTable.secret).map(ByteVector32.fromValidHex)
   }
 
   def listRecentPayments(limit: Int): RichCursor = {

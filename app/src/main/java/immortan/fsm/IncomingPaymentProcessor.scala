@@ -6,7 +6,7 @@ import immortan.crypto.Tools._
 import immortan.fsm.IncomingPaymentProcessor._
 import fr.acinq.eclair.channel.{CMD_FAIL_HTLC, CMD_FULFILL_HTLC, ReasonableLocal, ReasonableTrampoline}
 import immortan.ChannelMaster.{ReasonableLocals, ReasonableTrampolines}
-import immortan.{Channel, ChannelMaster, InFlightPayments, LNParams}
+import immortan.{Channel, ChannelMaster, InFlightPayments, LNParams, PaymentStatus}
 import immortan.crypto.{CanBeShutDown, StateMachine}
 import fr.acinq.eclair.transactions.RemoteFulfill
 import fr.acinq.eclair.router.RouteCalculation
@@ -14,6 +14,7 @@ import fr.acinq.eclair.payment.IncomingPacket
 import immortan.fsm.PaymentFailure.Failures
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.ByteVector32
+
 import scala.util.Success
 
 
@@ -58,16 +59,21 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
       // having PaymentStatus.SUCCEEDED in payment db is not enough because that table does not get included in backup
       lastAmountIn = adds.foldLeft(0L.msat) { case (accumulator, incomingLocal) => accumulator + incomingLocal.add.amountMsat }
 
-      val infoOpt = cm.getPaymentInfoMemo.get(fullTag.paymentHash).toOption
-      val preimageOpt = cm.getPreimageMemo.get(fullTag.paymentHash).toOption
+      cm.getPaymentInfoMemo.get(fullTag.paymentHash).toOption match {
+        case None => cm.getPreimageMemo.get(fullTag.paymentHash).toOption match {
+          case Some(preimage) => becomeRevealed(preimage, fullTag.paymentHash.toHex, adds) // Did not ask but fulfill anyway
+          case None => becomeAborted(IncomingAborted(None, fullTag), adds) // Did not ask and there is no preimage
+        }
 
-      (infoOpt, preimageOpt) match {
-        case _ ~ Some(preimage) => becomeRevealed(preimage, infoOpt.map(_.description.queryText).getOrElse(new String), adds) // Already (probably partially) revealed, but not finalized
-        case _ if adds.exists(_.add.cltvExpiry.toLong < LNParams.blockCount.get + LNParams.cltvRejectThreshold) => becomeAborted(IncomingAborted(None, fullTag), adds) // Not enough time to react if stalls
-        case Some(info) ~ None if info.isIncoming && info.prExt.pr.amount.exists(asked => lastAmountIn >= asked) => becomeRevealed(info.preimage, info.description.queryText, adds) // Got enough parts to cover an amount
-        case Some(info) ~ None if info.isIncoming && adds.size >= cm.all.values.count(Channel.isOperational) * LNParams.maxInChannelHtlcs => becomeAborted(IncomingAborted(None, fullTag), adds) // Ran out of slots
-        case None ~ None => becomeAborted(IncomingAborted(None, fullTag), adds) // Never asked, no preimage
-        case _ => // Do nothing and wait for more parts or timout
+        case Some(info) => info.description.toSelfPreimage match {
+          case _ if info.isIncoming && PaymentStatus.SUCCEEDED == info.status => becomeRevealed(info.preimage, info.description.queryText, adds) // Already revealed, but not finalized
+          case Some(selfPreimage) if !info.isIncoming && PaymentStatus.SUCCEEDED == info.status => becomeRevealed(selfPreimage, info.description.queryText, adds) // Already revealed, but not finalized
+          case _ if adds.exists(_.add.cltvExpiry.toLong < LNParams.blockCount.get + LNParams.cltvRejectThreshold) => becomeAborted(IncomingAborted(None, fullTag), adds) // Not enough time to react if stalls
+          case _ if info.isIncoming && info.prExt.pr.amount.exists(askedAmt => lastAmountIn >= askedAmt) => becomeRevealed(info.preimage, info.description.queryText, adds) // Got enough parts to cover an amount
+          case Some(selfPreimage) if !info.isIncoming && info.prExt.pr.amount.exists(askedAmt => lastAmountIn >= askedAmt) => becomeRevealed(selfPreimage, info.description.queryText, adds) // Got all self-payment parts
+          case _ if info.isIncoming && adds.size >= cm.all.values.count(Channel.isOperational) * LNParams.maxInChannelHtlcs => becomeAborted(IncomingAborted(None, fullTag), adds) // Ran out of slots
+          case _ => // Do nothing, wait for more parts or a timeout
+        }
       }
 
     case (_: ReasonableLocal, null, RECEIVING) =>

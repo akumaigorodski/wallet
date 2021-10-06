@@ -129,7 +129,7 @@ trait BaseActivity extends AppCompatActivity { me =>
   }
 
   def share(text: CharSequence): Unit = startActivity {
-    val shareAction = new Intent setAction Intent.ACTION_SEND
+    val shareAction = (new Intent).setAction(Intent.ACTION_SEND)
     shareAction.setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
   }
   

@@ -112,6 +112,7 @@ case class DelayedRefunds(txToParent: Map[Transaction, TxConfirmedAtOpt] = Map.e
 // Payment descriptions
 
 sealed trait PaymentDescription extends TransactionDescription {
+  val toSelfPreimage: Option[ByteVector32] // Present for reflexive outgoing payments
   val externalInfo: Option[String] // The one which comes from invoice description, LNURL-PAY metadata, etc...
   val proofTxid: Option[String] // If this is an incoming HC-routed payment with revealed preimage and stalling Host
   val split: Option[SplitInfo]
@@ -119,16 +120,18 @@ sealed trait PaymentDescription extends TransactionDescription {
   val queryText: String
 }
 
-case class PlainDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder],
-                            proofTxid: Option[String], invoiceText: String) extends PaymentDescription {
+case class PlainDescription(split: Option[SplitInfo], label: Option[String],
+                            semanticOrder: Option[SemanticOrder], proofTxid: Option[String], invoiceText: String,
+                            toSelfPreimage: Option[ByteVector32] = None) extends PaymentDescription {
 
   val externalInfo: Option[String] = Some(invoiceText).find(_.nonEmpty)
 
   val queryText: String = invoiceText + SEPARATOR + label.getOrElse(new String)
 }
 
-case class PlainMetaDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder],
-                                proofTxid: Option[String], invoiceText: String, meta: String) extends PaymentDescription {
+case class PlainMetaDescription(split: Option[SplitInfo], label: Option[String],
+                                semanticOrder: Option[SemanticOrder], proofTxid: Option[String], invoiceText: String,
+                                meta: String, toSelfPreimage: Option[ByteVector32] = None) extends PaymentDescription {
 
   val externalInfo: Option[String] = List(meta, invoiceText).find(_.nonEmpty)
 

@@ -487,7 +487,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           val offChainFeePaid = WalletApp.denom.directedWithSign(0L.msat, liveFeePaid, cardOut, cardIn, cardZero, isIncoming = false)
           val onChainFeeSaved = WalletApp.denom.directedWithSign(info.chainFee - liveFeePaid, 0L.msat, cardOut, cardIn, cardZero, info.chainFee > liveFeePaid)
           val shouldDisplayFee = liveFeePaid > 0L.msat && (info.status == PaymentStatus.SUCCEEDED || info.status != PaymentStatus.ABORTED && outgoingFSMSpec.isDefined)
-          val shouldRetry = info.status == PaymentStatus.ABORTED && info.description.split.isEmpty && !info.prExt.pr.isExpired
+          val shouldRetry = info.status == PaymentStatus.ABORTED && !info.prExt.pr.isExpired && info.description.split.isEmpty && info.description.toSelfPreimage.isEmpty
 
           addFlowChip(extraInfo, getString(popup_hash) format info.paymentHash.toHex.short, R.drawable.border_green, info.paymentHash.toHex.asSome)
           if (info.isIncoming && myFulfills.nonEmpty) addFlowChip(extraInfo, getString(error_hc_dangerous_state), R.drawable.border_red, _ => self warnDangerousHc info)

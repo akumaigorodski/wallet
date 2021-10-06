@@ -144,11 +144,13 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
 
   implicit val splitInfoFmt: JsonFormat[SplitInfo] = jsonFormat[MilliSatoshi, MilliSatoshi, SplitInfo](SplitInfo.apply, "totalSum", "myPart")
 
-  implicit val plainDescriptionFmt: JsonFormat[PlainDescription] = taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String,
-    PlainDescription](PlainDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText"), tag = "PlainDescription")
+  implicit val plainDescriptionFmt: JsonFormat[PlainDescription] =
+    taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String, Option[ByteVector32],
+      PlainDescription](PlainDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText", "toSelfPreimage"), tag = "PlainDescription")
 
-  implicit val plainMetaDescriptionFmt: JsonFormat[PlainMetaDescription] = taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String, String,
-    PlainMetaDescription](PlainMetaDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText", "meta"), tag = "PlainMetaDescription")
+  implicit val plainMetaDescriptionFmt: JsonFormat[PlainMetaDescription] =
+    taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String, String, Option[ByteVector32],
+      PlainMetaDescription](PlainMetaDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText", "meta", "toSelfPreimage"), tag = "PlainMetaDescription")
 
   // Payment action
 
