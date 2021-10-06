@@ -17,7 +17,6 @@ SECP256K1_INLINE static int secp256k1_scalar_is_even(const secp256k1_scalar *a) 
 
 SECP256K1_INLINE static void secp256k1_scalar_clear(secp256k1_scalar *r) { *r = 0; }
 SECP256K1_INLINE static void secp256k1_scalar_set_int(secp256k1_scalar *r, unsigned int v) { *r = v; }
-SECP256K1_INLINE static void secp256k1_scalar_set_u64(secp256k1_scalar *r, uint64_t v) { *r = v % EXHAUSTIVE_TEST_ORDER; }
 
 SECP256K1_INLINE static unsigned int secp256k1_scalar_get_bits(const secp256k1_scalar *a, unsigned int offset, unsigned int count) {
     if (offset < 32)
@@ -39,8 +38,11 @@ static int secp256k1_scalar_add(secp256k1_scalar *r, const secp256k1_scalar *a, 
 
 static void secp256k1_scalar_cadd_bit(secp256k1_scalar *r, unsigned int bit, int flag) {
     if (flag && bit < 32)
-        *r += (1 << bit);
+        *r += ((uint32_t)1 << bit);
 #ifdef VERIFY
+    VERIFY_CHECK(bit < 32);
+    /* Verify that adding (1 << bit) will not overflow any in-range scalar *r by overflowing the underlying uint32_t. */
+    VERIFY_CHECK(((uint32_t)1 << bit) - 1 <= UINT32_MAX - EXHAUSTIVE_TEST_ORDER);
     VERIFY_CHECK(secp256k1_scalar_check_overflow(r) == 0);
 #endif
 }
@@ -110,11 +112,6 @@ static void secp256k1_scalar_split_128(secp256k1_scalar *r1, secp256k1_scalar *r
 
 SECP256K1_INLINE static int secp256k1_scalar_eq(const secp256k1_scalar *a, const secp256k1_scalar *b) {
     return *a == *b;
-}
-
-SECP256K1_INLINE static void secp256k1_scalar_chacha20(secp256k1_scalar *r1, secp256k1_scalar *r2, const unsigned char *seed, uint64_t n) {
-    *r1 = (seed[0] + n) % EXHAUSTIVE_TEST_ORDER;
-    *r2 = (seed[1] + n) % EXHAUSTIVE_TEST_ORDER;
 }
 
 #endif /* SECP256K1_SCALAR_REPR_IMPL_H */

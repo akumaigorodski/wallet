@@ -11,42 +11,20 @@
 /* Define this symbol to compile out all VERIFY code */
 /* #undef COVERAGE */
 
+/* Set ecmult gen precision bits */
+#define ECMULT_GEN_PREC_BITS 4
+
 /* Set window size for ecmult precomputation */
 #define ECMULT_WINDOW_SIZE 15
 
 /* Define this symbol to enable the ECDH module */
 #define ENABLE_MODULE_ECDH 1
 
-/* Define this symbol to enable the NUMS generator module */
-#define ENABLE_MODULE_GENERATOR 1
-
-/* Define this symbol to enable the MuSig module */
-/* #undef ENABLE_MODULE_MUSIG */
-
-/* Define this symbol to enable the Pedersen / zero knowledge range proof
-   module */
-#define ENABLE_MODULE_RANGEPROOF 1
-
 /* Define this symbol to enable the ECDSA pubkey recovery module */
 #define ENABLE_MODULE_RECOVERY 1
 
-/* Define this symbol to enable the schnorrsig module */
-/* #undef ENABLE_MODULE_SCHNORRSIG */
-
-/* Define this symbol to enable the surjection proof module */
-#define ENABLE_MODULE_SURJECTIONPROOF 1
-
-/* Define this symbol to enable the key whitelisting module */
-#define ENABLE_MODULE_WHITELIST 1
-
 /* Define this symbol if OpenSSL EC functions are available */
-/* #undef ENABLE_OPENSSL_TESTS */
-
-/* Define this symbol if __builtin_clzll is available */
-#define HAVE_BUILTIN_CLZLL 1
-
-/* Define this symbol if __builtin_popcount is available */
-#define HAVE_BUILTIN_POPCOUNT 1
+#define ENABLE_OPENSSL_TESTS 0
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
@@ -55,10 +33,10 @@
 #define HAVE_INTTYPES_H 1
 
 /* Define this symbol if libcrypto is installed */
-/* #undef HAVE_LIBCRYPTO */
+#define HAVE_LIBCRYPTO 0
 
 /* Define this symbol if libgmp is installed */
-/* #undef HAVE_LIBGMP */
+//#define HAVE_LIBGMP 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -85,7 +63,7 @@
 #define HAVE_UNISTD_H 1
 
 /* Define to 1 if the system has the type `__int128'. */
-/* #define HAVE___INT128 1 */
+//#define HAVE___INT128 0
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #define LT_OBJDIR ".libs/"
@@ -115,10 +93,13 @@
 #define STDC_HEADERS 1
 
 /* Define this symbol to enable x86_64 assembly optimizations */
-#define USE_ASM_X86_64 1
+//#define USE_ASM_X86_64 1
 
 /* Define this symbol to use a statically generated ecmult table */
-/* #define USE_ECMULT_STATIC_PRECOMPUTATION 1 */
+#define USE_ECMULT_STATIC_PRECOMPUTATION 1
+
+/* Define this symbol to use endomorphism optimization */
+/* #undef USE_ENDOMORPHISM */
 
 /* Define this symbol if an external (non-inline) assembly implementation is
    used */
@@ -130,39 +111,36 @@
 
 /* Define this symbol to use the FIELD_10X26 implementation */
 /* #undef USE_FIELD_10X26 */
-#define USE_FIELD_10X26
+#define USE_FIELD_10X26 1
 
 /* Define this symbol to use the FIELD_5X52 implementation */
-/* #define USE_FIELD_5X52 1 */
+//#define USE_FIELD_5X52 1
 
 /* Define this symbol to use the native field inverse implementation */
-#define USE_FIELD_INV_BUILTIN 1
-
+/* #undef USE_FIELD_INV_BUILTIN */
+#define USE_FIELD_INV_BUILTIN
 /* Define this symbol to use the num-based field inverse implementation */
-/* #undef USE_FIELD_INV_NUM */
+//#define USE_FIELD_INV_NUM 1
 
 /* Define this symbol to use the gmp implementation for num */
-/* #undef USE_NUM_GMP */
+//#define USE_NUM_GMP 0
 
 /* Define this symbol to use no num implementation */
-#define USE_NUM_NONE 1
-
-/* Define this symbol to reduce SECP256K1_SURJECTIONPROOF_MAX_N_INPUTS to 16,
-   disabling parsing and verification */
-/* #undef USE_REDUCED_SURJECTION_PROOF_SIZE */
+/* #undef USE_NUM_NONE */
+#define USE_NUM_NONE
 
 /* Define this symbol to use the 4x64 scalar implementation */
-/* #define USE_SCALAR_4X64 1 */
+//#define USE_SCALAR_4X64 1
 
 /* Define this symbol to use the 8x32 scalar implementation */
 /* #undef USE_SCALAR_8X32 */
 #define USE_SCALAR_8X32
 
 /* Define this symbol to use the native scalar inverse implementation */
-#define USE_SCALAR_INV_BUILTIN 1
-
+/* #undef USE_SCALAR_INV_BUILTIN */
+#define USE_SCALAR_INV_BUILTIN
 /* Define this symbol to use the num-based scalar inverse implementation */
-/* #undef USE_SCALAR_INV_NUM */
+//#define USE_SCALAR_INV_NUM 1
 
 /* Version number of package */
 #define VERSION "0.1"

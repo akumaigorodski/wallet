@@ -7,8 +7,8 @@
 #ifndef SECP256K1_SCALAR_IMPL_H
 #define SECP256K1_SCALAR_IMPL_H
 
-#include "group.h"
 #include "scalar.h"
+#include "util.h"
 
 #if defined HAVE_CONFIG_H
 #include "libsecp256k1-config.h"
@@ -243,6 +243,7 @@ static void secp256k1_scalar_inverse_var(secp256k1_scalar *r, const secp256k1_sc
 #endif
 }
 
+#ifdef USE_ENDOMORPHISM
 #if defined(EXHAUSTIVE_TEST_ORDER)
 /**
  * Find k1 and k2 given k, such that k1 + k2 * lambda == k mod n; unlike in the
@@ -328,3 +329,5 @@ static void secp256k1_scalar_split_lambda(secp256k1_scalar *r1, secp256k1_scalar
 }
 #endif
 #endif
+
+#endif /* SECP256K1_SCALAR_IMPL_H */

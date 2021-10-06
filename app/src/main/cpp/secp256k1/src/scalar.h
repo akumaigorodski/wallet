@@ -38,9 +38,6 @@ static void secp256k1_scalar_set_b32(secp256k1_scalar *r, const unsigned char *b
 /** Set a scalar to an unsigned integer. */
 static void secp256k1_scalar_set_int(secp256k1_scalar *r, unsigned int v);
 
-/** Set a scalar to an unsigned 64-bit integer */
-static void secp256k1_scalar_set_u64(secp256k1_scalar *r, uint64_t v);
-
 /** Convert a scalar to a byte array. */
 static void secp256k1_scalar_get_b32(unsigned char *bin, const secp256k1_scalar* a);
 
@@ -96,15 +93,14 @@ static void secp256k1_scalar_order_get_num(secp256k1_num *r);
 /** Compare two scalars. */
 static int secp256k1_scalar_eq(const secp256k1_scalar *a, const secp256k1_scalar *b);
 
+#ifdef USE_ENDOMORPHISM
 /** Find r1 and r2 such that r1+r2*2^128 = a. */
 static void secp256k1_scalar_split_128(secp256k1_scalar *r1, secp256k1_scalar *r2, const secp256k1_scalar *a);
 /** Find r1 and r2 such that r1+r2*lambda = a, and r1 and r2 are maximum 128 bits long (see secp256k1_gej_mul_lambda). */
 static void secp256k1_scalar_split_lambda(secp256k1_scalar *r1, secp256k1_scalar *r2, const secp256k1_scalar *a);
+#endif
 
 /** Multiply a and b (without taking the modulus!), divide by 2**shift, and round to the nearest integer. Shift must be at least 256. */
 static void secp256k1_scalar_mul_shift_var(secp256k1_scalar *r, const secp256k1_scalar *a, const secp256k1_scalar *b, unsigned int shift);
-
-/** Generate two scalars from a 32-byte seed and an integer using the chacha20 stream cipher */
-static void secp256k1_scalar_chacha20(secp256k1_scalar *r1, secp256k1_scalar *r2, const unsigned char *seed, uint64_t idx);
 
 #endif /* SECP256K1_SCALAR_H */

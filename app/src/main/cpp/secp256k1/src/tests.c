@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (c) 2013-2015 Pieter Wuille, Gregory Maxwell             *
+ * Copyright (c) 2013, 2014, 2015 Pieter Wuille, Gregory Maxwell      *
  * Distributed under the MIT software license, see the accompanying   *
  * file COPYING or http://www.opensource.org/licenses/mit-license.php.*
  **********************************************************************/
@@ -138,52 +138,6 @@ void random_scalar_order(secp256k1_scalar *num) {
         }
         break;
     } while(1);
-}
-
-void run_util_tests(void) {
-    int i;
-    uint64_t r;
-    uint64_t r2;
-    uint64_t r3;
-    int64_t s;
-    CHECK(secp256k1_clz64_var(0) == 64);
-    CHECK(secp256k1_clz64_var(1) == 63);
-    CHECK(secp256k1_clz64_var(2) == 62);
-    CHECK(secp256k1_clz64_var(3) == 62);
-    CHECK(secp256k1_clz64_var(~0ULL) == 0);
-    CHECK(secp256k1_clz64_var((~0ULL) - 1) == 0);
-    CHECK(secp256k1_clz64_var((~0ULL) >> 1) == 1);
-    CHECK(secp256k1_clz64_var((~0ULL) >> 2) == 2);
-    CHECK(secp256k1_sign_and_abs64(&r, INT64_MAX) == 0);
-    CHECK(r == INT64_MAX);
-    CHECK(secp256k1_sign_and_abs64(&r, INT64_MAX - 1) == 0);
-    CHECK(r == INT64_MAX - 1);
-    CHECK(secp256k1_sign_and_abs64(&r, INT64_MIN) == 1);
-    CHECK(r == (uint64_t)INT64_MAX + 1);
-    CHECK(secp256k1_sign_and_abs64(&r, INT64_MIN + 1) == 1);
-    CHECK(r == (uint64_t)INT64_MAX);
-    CHECK(secp256k1_sign_and_abs64(&r, 0) == 0);
-    CHECK(r == 0);
-    CHECK(secp256k1_sign_and_abs64(&r, 1) == 0);
-    CHECK(r == 1);
-    CHECK(secp256k1_sign_and_abs64(&r, -1) == 1);
-    CHECK(r == 1);
-    CHECK(secp256k1_sign_and_abs64(&r, 2) == 0);
-    CHECK(r == 2);
-    CHECK(secp256k1_sign_and_abs64(&r, -2) == 1);
-    CHECK(r == 2);
-    for (i = 0; i < 10; i++) {
-        CHECK(secp256k1_clz64_var((~0ULL) - secp256k1_rand32()) == 0);
-        r = ((uint64_t)secp256k1_rand32() << 32) | secp256k1_rand32();
-        r2 = secp256k1_rands64(0, r);
-        CHECK(r2 <= r);
-        r3 = secp256k1_rands64(r2, r);
-        CHECK((r3 >= r2) && (r3 <= r));
-        r = secp256k1_rands64(0, INT64_MAX);
-        s = (int64_t)r * (secp256k1_rand32()&1?-1:1);
-        CHECK(secp256k1_sign_and_abs64(&r2, s) == (s < 0));
-        CHECK(r2 == r);
-    }
 }
 
 void run_context_tests(int use_prealloc) {
@@ -1123,121 +1077,11 @@ void scalar_test(void) {
 
 }
 
-void scalar_chacha_tests(void) {
-    /* Test vectors 1 to 4 from https://tools.ietf.org/html/rfc8439#appendix-A
-     * Note that scalar_set_b32 and scalar_get_b32 represent integers
-     * underlying the scalar in big-endian format. */
-    unsigned char expected1[64] = {
-        0xad, 0xe0, 0xb8, 0x76, 0x90, 0x3d, 0xf1, 0xa0,
-        0xe5, 0x6a, 0x5d, 0x40, 0x28, 0xbd, 0x86, 0x53,
-        0xb8, 0x19, 0xd2, 0xbd, 0x1a, 0xed, 0x8d, 0xa0,
-        0xcc, 0xef, 0x36, 0xa8, 0xc7, 0x0d, 0x77, 0x8b,
-        0x7c, 0x59, 0x41, 0xda, 0x8d, 0x48, 0x57, 0x51,
-        0x3f, 0xe0, 0x24, 0x77, 0x37, 0x4a, 0xd8, 0xb8,
-        0xf4, 0xb8, 0x43, 0x6a, 0x1c, 0xa1, 0x18, 0x15,
-        0x69, 0xb6, 0x87, 0xc3, 0x86, 0x65, 0xee, 0xb2
-    };
-    unsigned char expected2[64] = {
-        0xbe, 0xe7, 0x07, 0x9f, 0x7a, 0x38, 0x51, 0x55,
-        0x7c, 0x97, 0xba, 0x98, 0x0d, 0x08, 0x2d, 0x73,
-        0xa0, 0x29, 0x0f, 0xcb, 0x69, 0x65, 0xe3, 0x48,
-        0x3e, 0x53, 0xc6, 0x12, 0xed, 0x7a, 0xee, 0x32,
-        0x76, 0x21, 0xb7, 0x29, 0x43, 0x4e, 0xe6, 0x9c,
-        0xb0, 0x33, 0x71, 0xd5, 0xd5, 0x39, 0xd8, 0x74,
-        0x28, 0x1f, 0xed, 0x31, 0x45, 0xfb, 0x0a, 0x51,
-        0x1f, 0x0a, 0xe1, 0xac, 0x6f, 0x4d, 0x79, 0x4b
-    };
-    unsigned char seed3[32] = {
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
-    };
-    unsigned char expected3[64] = {
-        0x24, 0x52, 0xeb, 0x3a, 0x92, 0x49, 0xf8, 0xec,
-        0x8d, 0x82, 0x9d, 0x9b, 0xdd, 0xd4, 0xce, 0xb1,
-        0xe8, 0x25, 0x20, 0x83, 0x60, 0x81, 0x8b, 0x01,
-        0xf3, 0x84, 0x22, 0xb8, 0x5a, 0xaa, 0x49, 0xc9,
-        0xbb, 0x00, 0xca, 0x8e, 0xda, 0x3b, 0xa7, 0xb4,
-        0xc4, 0xb5, 0x92, 0xd1, 0xfd, 0xf2, 0x73, 0x2f,
-        0x44, 0x36, 0x27, 0x4e, 0x25, 0x61, 0xb3, 0xc8,
-        0xeb, 0xdd, 0x4a, 0xa6, 0xa0, 0x13, 0x6c, 0x00
-    };
-    unsigned char seed4[32] = {
-        0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
-    unsigned char expected4[64] = {
-        0xfb, 0x4d, 0xd5, 0x72, 0x4b, 0xc4, 0x2e, 0xf1,
-        0xdf, 0x92, 0x26, 0x36, 0x32, 0x7f, 0x13, 0x94,
-        0xa7, 0x8d, 0xea, 0x8f, 0x5e, 0x26, 0x90, 0x39,
-        0xa1, 0xbe, 0xbb, 0xc1, 0xca, 0xf0, 0x9a, 0xae,
-        0xa2, 0x5a, 0xb2, 0x13, 0x48, 0xa6, 0xb4, 0x6c,
-        0x1b, 0x9d, 0x9b, 0xcb, 0x09, 0x2c, 0x5b, 0xe6,
-        0x54, 0x6c, 0xa6, 0x24, 0x1b, 0xec, 0x45, 0xd5,
-        0x87, 0xf4, 0x74, 0x73, 0x96, 0xf0, 0x99, 0x2e
-    };
-    unsigned char seed5[32] = {
-        0x32, 0x56, 0x56, 0xf4, 0x29, 0x02, 0xc2, 0xf8,
-        0xa3, 0x4b, 0x96, 0xf5, 0xa7, 0xf7, 0xe3, 0x6c,
-        0x92, 0xad, 0xa5, 0x18, 0x1c, 0xe3, 0x41, 0xae,
-        0xc3, 0xf3, 0x18, 0xd0, 0xfa, 0x5b, 0x72, 0x53
-    };
-    unsigned char expected5[64] = {
-        0xe7, 0x56, 0xd3, 0x28, 0xe9, 0xc6, 0x19, 0x5c,
-        0x6f, 0x17, 0x8e, 0x21, 0x8c, 0x1e, 0x72, 0x11,
-        0xe7, 0xbd, 0x17, 0x0d, 0xac, 0x14, 0xad, 0xe9,
-        0x3d, 0x9f, 0xb6, 0x92, 0xd6, 0x09, 0x20, 0xfb,
-        0x43, 0x8e, 0x3b, 0x6d, 0xe3, 0x33, 0xdc, 0xc7,
-        0x6c, 0x07, 0x6f, 0xbb, 0x1f, 0xb4, 0xc8, 0xb5,
-        0xe3, 0x6c, 0xe5, 0x12, 0xd9, 0xd7, 0x64, 0x0c,
-        0xf5, 0xa7, 0x0d, 0xab, 0x79, 0x03, 0xf1, 0x81
-    };
-
-    secp256k1_scalar exp_r1, exp_r2;
-    secp256k1_scalar r1, r2;
-    unsigned char seed0[32] = { 0 };
-
-    secp256k1_scalar_chacha20(&r1, &r2, seed0, 0);
-    secp256k1_scalar_set_b32(&exp_r1, &expected1[0], NULL);
-    secp256k1_scalar_set_b32(&exp_r2, &expected1[32], NULL);
-    CHECK(secp256k1_scalar_eq(&exp_r1, &r1));
-    CHECK(secp256k1_scalar_eq(&exp_r2, &r2));
-
-    secp256k1_scalar_chacha20(&r1, &r2, seed0, 1);
-    secp256k1_scalar_set_b32(&exp_r1, &expected2[0], NULL);
-    secp256k1_scalar_set_b32(&exp_r2, &expected2[32], NULL);
-    CHECK(secp256k1_scalar_eq(&exp_r1, &r1));
-    CHECK(secp256k1_scalar_eq(&exp_r2, &r2));
-
-    secp256k1_scalar_chacha20(&r1, &r2, seed3, 1);
-    secp256k1_scalar_set_b32(&exp_r1, &expected3[0], NULL);
-    secp256k1_scalar_set_b32(&exp_r2, &expected3[32], NULL);
-    CHECK(secp256k1_scalar_eq(&exp_r1, &r1));
-    CHECK(secp256k1_scalar_eq(&exp_r2, &r2));
-
-    secp256k1_scalar_chacha20(&r1, &r2, seed4, 2);
-    secp256k1_scalar_set_b32(&exp_r1, &expected4[0], NULL);
-    secp256k1_scalar_set_b32(&exp_r2, &expected4[32], NULL);
-    CHECK(secp256k1_scalar_eq(&exp_r1, &r1));
-    CHECK(secp256k1_scalar_eq(&exp_r2, &r2));
-
-    secp256k1_scalar_chacha20(&r1, &r2, seed5, 0x6ff8602a7a78e2f2ULL);
-    secp256k1_scalar_set_b32(&exp_r1, &expected5[0], NULL);
-    secp256k1_scalar_set_b32(&exp_r2, &expected5[32], NULL);
-    CHECK(secp256k1_scalar_eq(&exp_r1, &r1));
-    CHECK(secp256k1_scalar_eq(&exp_r2, &r2));
-}
-
 void run_scalar_tests(void) {
     int i;
     for (i = 0; i < 128 * count; i++) {
         scalar_test();
     }
-
-    scalar_chacha_tests();
 
     {
         /* (-1)+1 should be zero. */
@@ -2200,7 +2044,11 @@ void ge_equals_gej(const secp256k1_ge *a, const secp256k1_gej *b) {
 
 void test_ge(void) {
     int i, i1;
+#ifdef USE_ENDOMORPHISM
     int runs = 6;
+#else
+    int runs = 4;
+#endif
     /* Points: (infinity, p1, p1, -p1, -p1, p2, p2, -p2, -p2, p3, p3, -p3, -p3, p4, p4, -p4, -p4).
      * The second in each pair of identical points uses a random Z coordinate in the Jacobian form.
      * All magnitudes are randomized.
@@ -2221,12 +2069,14 @@ void test_ge(void) {
         int j;
         secp256k1_ge g;
         random_group_element_test(&g);
+#ifdef USE_ENDOMORPHISM
         if (i >= runs - 2) {
             secp256k1_ge_mul_lambda(&g, &ge[1]);
         }
         if (i >= runs - 1) {
             secp256k1_ge_mul_lambda(&g, &g);
         }
+#endif
         ge[1 + 4 * i] = g;
         ge[2 + 4 * i] = g;
         secp256k1_ge_neg(&ge[3 + 4 * i], &g);
@@ -2390,7 +2240,7 @@ void test_ge(void) {
     /* Test batch gej -> ge conversion with many infinities. */
     for (i = 0; i < 4 * runs + 1; i++) {
         random_group_element_test(&ge[i]);
-        /* randomly set half the points to infinitiy */
+        /* randomly set half the points to infinity */
         if(secp256k1_fe_is_odd(&ge[i].x)) {
             secp256k1_ge_set_infinity(&ge[i]);
         }
@@ -3096,10 +2946,12 @@ void test_secp256k1_pippenger_bucket_window_inv(void) {
 
     CHECK(secp256k1_pippenger_bucket_window_inv(0) == 0);
     for(i = 1; i <= PIPPENGER_MAX_BUCKET_WINDOW; i++) {
+#ifdef USE_ENDOMORPHISM
         /* Bucket_window of 8 is not used with endo */
         if (i == 8) {
             continue;
         }
+#endif
         CHECK(secp256k1_pippenger_bucket_window(secp256k1_pippenger_bucket_window_inv(i)) == i);
         if (i != PIPPENGER_MAX_BUCKET_WINDOW) {
             CHECK(secp256k1_pippenger_bucket_window(secp256k1_pippenger_bucket_window_inv(i)+1) > i);
@@ -3341,10 +3193,13 @@ void test_constant_wnaf(const secp256k1_scalar *number, int w) {
 
     secp256k1_scalar_set_int(&x, 0);
     secp256k1_scalar_set_int(&shift, 1 << w);
+    /* With USE_ENDOMORPHISM on we only consider 128-bit numbers */
+#ifdef USE_ENDOMORPHISM
     for (i = 0; i < 16; ++i) {
         secp256k1_scalar_shr_int(&num, 8);
     }
     bits = 128;
+#endif
     skew = secp256k1_wnaf_const(wnaf, &num, w, bits);
 
     for (i = WNAF_SIZE_BITS(bits, w); i >= 0; --i) {
@@ -3378,9 +3233,12 @@ void test_fixed_wnaf(const secp256k1_scalar *number, int w) {
 
     secp256k1_scalar_set_int(&x, 0);
     secp256k1_scalar_set_int(&shift, 1 << w);
+    /* With USE_ENDOMORPHISM on we only consider 128-bit numbers */
+#ifdef USE_ENDOMORPHISM
     for (i = 0; i < 16; ++i) {
         secp256k1_scalar_shr_int(&num, 8);
     }
+#endif
     skew = secp256k1_wnaf_fixed(wnaf, &num, w);
 
     for (i = WNAF_SIZE(w)-1; i >= 0; --i) {
@@ -3577,6 +3435,7 @@ void run_ecmult_gen_blind(void) {
     }
 }
 
+#ifdef USE_ENDOMORPHISM
 /***** ENDOMORPHISH TESTS *****/
 void test_scalar_split(void) {
     secp256k1_scalar full;
@@ -3604,6 +3463,7 @@ void test_scalar_split(void) {
 void run_endomorphism_tests(void) {
     test_scalar_split();
 }
+#endif
 
 void ec_pubkey_parse_pointtest(const unsigned char *input, int xvalid, int yvalid) {
     unsigned char pubkeyc[65];
@@ -5302,32 +5162,8 @@ void run_ecdsa_openssl(void) {
 # include "modules/ecdh/tests_impl.h"
 #endif
 
-#ifdef ENABLE_MODULE_SCHNORRSIG
-# include "modules/schnorrsig/tests_impl.h"
-#endif
-
-#ifdef ENABLE_MODULE_MUSIG
-# include "modules/musig/tests_impl.h"
-#endif
-
 #ifdef ENABLE_MODULE_RECOVERY
 # include "modules/recovery/tests_impl.h"
-#endif
-
-#ifdef ENABLE_MODULE_GENERATOR
-# include "modules/generator/tests_impl.h"
-#endif
-
-#ifdef ENABLE_MODULE_RANGEPROOF
-# include "modules/rangeproof/tests_impl.h"
-#endif
-
-#ifdef ENABLE_MODULE_WHITELIST
-# include "modules/whitelist/tests_impl.h"
-#endif
-
-#ifdef ENABLE_MODULE_SURJECTIONPROOF
-# include "modules/surjection/tests_impl.h"
 #endif
 
 int main(int argc, char **argv) {
@@ -5344,7 +5180,7 @@ int main(int argc, char **argv) {
         const char* ch = argv[2];
         while (pos < 16 && ch[0] != 0 && ch[1] != 0) {
             unsigned short sh;
-            if (sscanf(ch, "%2hx", &sh)) {
+            if ((sscanf(ch, "%2hx", &sh)) == 1) {
                 seed16[pos] = sh;
             } else {
                 break;
@@ -5387,7 +5223,6 @@ int main(int argc, char **argv) {
 
     run_rand_bits();
     run_rand_int();
-    run_util_tests();
 
     run_sha256_tests();
     run_hmac_sha256_tests();
@@ -5425,7 +5260,9 @@ int main(int argc, char **argv) {
     run_ec_combine();
 
     /* endomorphism tests */
+#ifdef USE_ENDOMORPHISM
     run_endomorphism_tests();
+#endif
 
     /* EC point parser test */
     run_ec_pubkey_parse_test();
@@ -5436,15 +5273,6 @@ int main(int argc, char **argv) {
 #ifdef ENABLE_MODULE_ECDH
     /* ecdh tests */
     run_ecdh_tests();
-#endif
-
-#ifdef ENABLE_MODULE_SCHNORRSIG
-    /* Schnorrsig tests */
-    run_schnorrsig_tests();
-#endif
-
-#ifdef ENABLE_MODULE_MUSIG
-    run_musig_tests();
 #endif
 
     /* ecdsa tests */
@@ -5460,23 +5288,6 @@ int main(int argc, char **argv) {
 #ifdef ENABLE_MODULE_RECOVERY
     /* ECDSA pubkey recovery tests */
     run_recovery_tests();
-#endif
-
-#ifdef ENABLE_MODULE_GENERATOR
-    run_generator_tests();
-#endif
-
-#ifdef ENABLE_MODULE_RANGEPROOF
-    run_rangeproof_tests();
-#endif
-
-#ifdef ENABLE_MODULE_WHITELIST
-    /* Key whitelisting tests */
-    run_whitelist_tests();
-#endif
-
-#ifdef ENABLE_MODULE_SURJECTIONPROOF
-    run_surjection_tests();
 #endif
 
     secp256k1_rand256(run32);
