@@ -217,7 +217,7 @@ object PaymentTable extends Table {
 
   val selectSummarySql = s"SELECT SUM($feeMsat), SUM($chainFeeMsat), SUM($receivedMsat), SUM($sentMsat), COUNT($id) FROM $table WHERE $status = $SUCCEEDED"
 
-  val searchSql = s"SELECT * FROM $table WHERE $hash IN (SELECT DISTINCT $hash FROM $fts$table WHERE $search MATCH ? LIMIT 50)"
+  val searchSql = s"SELECT * FROM $table WHERE $hash IN (SELECT DISTINCT $hash FROM $fts$table WHERE $search MATCH ? LIMIT 100)"
 
   // Select both incoming and outgoing payments because outgoing ones may be reflexive
   val selectPendingSql = s"SELECT * FROM $table WHERE ($updatedAt > ? AND $status = $PENDING)"
@@ -263,7 +263,7 @@ object TxTable extends Table {
 
   val selectSummarySql = s"SELECT SUM($feeSat), SUM($receivedSat), SUM($sentSat), COUNT($id) FROM $table WHERE $doubleSpent = 0"
 
-  val searchSql = s"SELECT * FROM $table WHERE $txid IN (SELECT DISTINCT $txid FROM $fts$table WHERE $search MATCH ? LIMIT 50)"
+  val searchSql = s"SELECT * FROM $table WHERE $txid IN (SELECT DISTINCT $txid FROM $fts$table WHERE $search MATCH ? LIMIT 100)"
 
   // Updating
 
@@ -341,7 +341,7 @@ object LNUrlPayTable extends Table {
 
   val selectRecentSql = s"SELECT * FROM $table ORDER BY $updatedAt DESC LIMIT ?"
 
-  val searchSql = s"SELECT * FROM $table WHERE $domain IN (SELECT DISTINCT $domain FROM $fts$table WHERE $search MATCH ?) LIMIT 50"
+  val searchSql = s"SELECT * FROM $table WHERE $domain IN (SELECT DISTINCT $domain FROM $fts$table WHERE $search MATCH ?) LIMIT 100"
 
   val updInfoSql = s"UPDATE $table SET $payMeta = ?, $updatedAt = ?, $description = ?, $lastNodeId = ?, $lastComment = ? WHERE $pay = ?"
 
