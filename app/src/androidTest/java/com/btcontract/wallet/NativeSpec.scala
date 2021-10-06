@@ -1,6 +1,5 @@
 package com.btcontract.wallet
 
-import scodec.bits._
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey, curve, one}
 import fr.acinq.bitcoin.{Base58, Base58Check, ByteVector64, Crypto}
 import org.bouncycastle.crypto.params.ECPublicKeyParameters
@@ -12,9 +11,6 @@ import org.junit.Assert.assertTrue
 import org.junit.runner.RunWith
 import scodec.bits.ByteVector
 import java.math.BigInteger
-
-import com.blockstream.libwally.Wally
-import immortan.crypto.Tools.Bytes
 import org.junit.Test
 
 
@@ -86,24 +82,6 @@ class NativeSpec {
     val address = Base58Check.encode(Prefix.PubkeyAddress, Crypto.hash160(publicKey.toUncompressedBin))
 
     assertTrue(address == "16UwLL9Risc3QfPqBUvKofHmBQ7wMtjvM")
-  }
-
-  def scryptDerive(email: String, pass: String): Bytes = {
-    // An intentionally expensive key-stretching method
-    // N = 2^20, r = 8, p = 2
-
-    val derived = new Array[Byte](64)
-    val emailBytes = ByteVector.view(email.getBytes)
-    val salt = Crypto.hash256(emailBytes).take(16).toArray
-    Wally.scrypt(pass.trim.getBytes, salt, Math.pow(2, 20).toLong, 8, 2, derived)
-    derived
-  }
-
-  @Test(timeout = 20000)
-  def nativeScryptWorksFast: Unit = {
-    val reference = hex"f8746f4eac848a9e6867d8b360449ee1c55cc4c2c590a717427f198b9f5af59ee2112294779afff27d6c0b9df19c1ed9c82801a986b29f1a1f796424b920363b"
-    val result = scryptDerive("hello@email.com", "password123")
-    assertTrue(ByteVector.view(result) == reference)
   }
 
   @Test
