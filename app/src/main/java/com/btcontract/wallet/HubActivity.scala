@@ -1273,7 +1273,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   def bringPayPopup(data: PayRequest, lnUrl: LNUrl): TimerTask = UITask {
-    new OffChainSender(maxSendable = LNParams.cm.maxSendable(LNParams.cm.all.values).min(data.maxSendable.msat), minSendable = Denomination.satCeil(data.minSendable.msat) max LNParams.minPayment) {
+    new OffChainSender(maxSendable = Denomination.satCeil(LNParams.cm.maxSendable(LNParams.cm.all.values) min data.maxSendable.msat), minSendable = Denomination.satCeil(data.minSendable.msat) max LNParams.minPayment) {
       override lazy val manager: RateManager = new RateManager(body, data.commentAllowed.map(_ => me getString dialog_add_comment), dialog_visibility_public, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
       val expectedIds: ExpectedIds = ExpectedIds(wantsAuth = None, wantsRandomKey = false)
       val maxCommentLength: Int = data.commentAllowed.getOrElse(0)

@@ -23,11 +23,9 @@ object Denomination {
 trait Denomination { me =>
   def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String
 
-  def fromMsat(amount: MilliSatoshi): BigDecimal =
-    BigDecimal(amount.toLong) / factor
+  def fromMsat(amount: MilliSatoshi): BigDecimal = BigDecimal(amount.toLong) / factor
 
-  def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
-    parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
+  def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
 
   def directedWithSign(incoming: MilliSatoshi, outgoing: MilliSatoshi,
                        inColor: String, outColor: String, zeroColor: String,
