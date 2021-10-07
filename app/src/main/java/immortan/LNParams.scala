@@ -61,7 +61,7 @@ object LNParams {
   val minForceClosableIncomingHtlcAmountToFeeRatio = 4 // When incoming HTLC gets (nearly) expired, how much higher than trim threshold should it be for us to force-close
   val minForceClosableOutgoingHtlcAmountToFeeRatio = 5 // When peer sends a suspiciously low feerate, how much higher than trim threshold should our outgoing HTLC be for us to force-close
   val minPayment: MilliSatoshi = MilliSatoshi(1000L) // We can neither send nor receive LN payments which are below this value
-  val minDustLimit: Satoshi = Satoshi(546L)
+  val minChanDustLimit: Satoshi = Satoshi(354L)
   val minDepthBlocks: Int = 3
 
   // Variables to be assigned at runtime
@@ -123,7 +123,7 @@ object LNParams {
 
   // Note: we set local maxHtlcValueInFlightMsat to channel capacity to simplify calculations
   def makeChannelParams(defFinalScriptPubkey: ByteVector, walletStaticPaymentBasepoint: PublicKey, isFunder: Boolean, keyPath: DeterministicWallet.KeyPath, fundingAmount: Satoshi): LocalParams =
-    LocalParams(ChannelKeys.fromPath(secret.keys.master, keyPath), minDustLimit, UInt64(fundingAmount.toMilliSatoshi.toLong), channelReserve = (fundingAmount * 0.001).max(minDustLimit),
+    LocalParams(ChannelKeys.fromPath(secret.keys.master, keyPath), minChanDustLimit, UInt64(fundingAmount.toMilliSatoshi.toLong), channelReserve = (fundingAmount * 0.001).max(minChanDustLimit),
       minPayment, maxToLocalDelay, maxInChannelHtlcs, isFunder, defFinalScriptPubkey, walletStaticPaymentBasepoint)
 
   def currentBlockDay: Long = blockCount.get / blocksPerDay

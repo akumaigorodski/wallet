@@ -195,7 +195,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       worker = new ThrottledWork[String, MakeFundingTxResponse] {
         def work(reason: String): Observable[MakeFundingTxResponse] = Rx fromFutureOnIo NCFunderOpenHandler.makeFunding(LNParams.chainWallets, manager.resultMsat.truncateToSatoshi, rate)
         def process(reason: String, result: MakeFundingTxResponse): Unit = update(feeOpt = result.fee.toMilliSatoshi.asSome, showIssue = false)
-        override def error(exc: Throwable): Unit = update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.minDustLimit)
+        override def error(exc: Throwable): Unit = update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.minChanDustLimit)
       }
 
       override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
@@ -224,7 +224,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       alert.dismiss
 
       // We only need local params to extract defaultFinalScriptPubKey
-      val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minDustLimit)
+      val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minChanDustLimit)
       new HCOpenHandler(hasInfo.remoteInfo, secret, localParams.defaultFinalScriptPubKey, LNParams.cm) {
         def onEstablished(cs: Commitments, channel: ChannelHosted): Unit = implant(cs, channel)
         def onFailure(reason: Throwable): Unit = revertAndInform(reason)

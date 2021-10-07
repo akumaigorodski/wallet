@@ -70,7 +70,7 @@ object HubActivity {
   var allInfos: Seq[TransactionDetails] = Nil
 
   def requestHostedChannel: Unit = {
-    val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minDustLimit)
+    val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minChanDustLimit)
     new HCOpenHandler(LNParams.syncParams.motherbase, randomBytes32, localParams.defaultFinalScriptPubKey, LNParams.cm) {
       // Stop automatic HC opening attempts on getting any kind of local/remote error, this won't be triggered on disconnect
       def onFailure(reason: Throwable): Unit = WalletApp.app.prefs.edit.putBoolean(WalletApp.OPEN_HC, false).commit
@@ -1221,10 +1221,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       addFlowChip(title.flow, getString(dialog_send_btc_from).format(fromWallet.info.label), R.drawable.border_yellow)
 
       val builder = titleBodyAsViewBuilder(title.asColoredView(backgroundRes), manager.content)
-      def useMax(alert: AlertDialog): Unit = {
-        println(s"-- ${fromWallet.info.lastBalance}")
-        manager.updateText(fromWallet.info.lastBalance.toMilliSatoshi)
-      }
+      def useMax(alert: AlertDialog): Unit = manager.updateText(fromWallet.info.lastBalance.toMilliSatoshi)
       if (uri.prExt.isEmpty) mkCheckFormNeutral(attempt, none, useMax, builder, dialog_ok, dialog_cancel, neutralRes)
       else mkCheckFormNeutral(attempt, none, switchToLn, builder, dialog_ok, dialog_cancel, lightning_wallet)
     }
@@ -1233,9 +1230,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget)
 
       worker = new ThrottledWork[String, TxAndFee] {
+        // This is a generic sending facility which may send to non-segwit, so always use a safer high dust threshold
+        override def error(exc: Throwable): Unit = update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.chainWallets.params.dustLimit)
         def work(reason: String): Observable[TxAndFee] = Rx fromFutureOnIo fromWallet.makeTx(manager.resultMsat.truncateToSatoshi, uri.address, rate)
         def process(reason: String, txAndFee: TxAndFee): Unit = update(feeOpt = txAndFee.fee.toMilliSatoshi.asSome, showIssue = false)
-        override def error(exc: Throwable): Unit = update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.minDustLimit)
       }
 
       override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {

@@ -26,13 +26,13 @@ object Helpers {
     if (open.maxAcceptedHtlcs < commits.localParams.maxAcceptedHtlcs) throw InvalidMinAcceptedHtlcs(open.temporaryChannelId, open.maxAcceptedHtlcs, commits.localParams.maxAcceptedHtlcs)
     if (open.maxAcceptedHtlcs > LNParams.maxAcceptedHtlcs) throw InvalidMaxAcceptedHtlcs(open.temporaryChannelId, open.maxAcceptedHtlcs, LNParams.maxAcceptedHtlcs)
     if (open.dustLimitSatoshis > open.channelReserveSatoshis) throw DustLimitTooLarge(open.temporaryChannelId, open.dustLimitSatoshis, open.channelReserveSatoshis)
-    if (open.dustLimitSatoshis < LNParams.minDustLimit) throw DustLimitTooSmall(open.temporaryChannelId, open.dustLimitSatoshis, LNParams.minDustLimit)
+    if (open.dustLimitSatoshis < LNParams.minChanDustLimit) throw DustLimitTooSmall(open.temporaryChannelId, open.dustLimitSatoshis, LNParams.minChanDustLimit)
     if (open.pushMsat > open.fundingSatoshis) throw InvalidPushAmount(open.temporaryChannelId, open.pushMsat, open.fundingSatoshis.toMilliSatoshi)
     if (open.toSelfDelay > LNParams.maxToLocalDelay) throw ToSelfDelayTooHigh(open.temporaryChannelId, open.toSelfDelay, LNParams.maxToLocalDelay)
     if (LNParams.chainHash != open.chainHash) throw InvalidChainHash(open.temporaryChannelId, local = LNParams.chainHash, remote = open.chainHash)
     if (open.feeratePerKw < FeeratePerKw.MinimumFeeratePerKw) throw FeerateTooSmall(open.temporaryChannelId, open.feeratePerKw)
 
-    val minFunding = LNParams.minDustLimit * 100
+    val minFunding = LNParams.minChanDustLimit * 100
     if (open.fundingSatoshis < minFunding || open.fundingSatoshis > LNParams.maxFundingSatoshis) {
       throw InvalidFundingAmount(open.temporaryChannelId, open.fundingSatoshis, minFunding, LNParams.maxFundingSatoshis)
     }
@@ -53,8 +53,8 @@ object Helpers {
     if (open.channelReserveSatoshis < accept.dustLimitSatoshis) throw DustLimitAboveOurChannelReserve(accept.temporaryChannelId, accept.dustLimitSatoshis, open.channelReserveSatoshis)
     if (accept.dustLimitSatoshis > accept.channelReserveSatoshis) throw DustLimitTooLarge(accept.temporaryChannelId, accept.dustLimitSatoshis, accept.channelReserveSatoshis)
     if (accept.maxAcceptedHtlcs > LNParams.maxAcceptedHtlcs) throw InvalidMaxAcceptedHtlcs(accept.temporaryChannelId, accept.maxAcceptedHtlcs, LNParams.maxAcceptedHtlcs)
+    if (accept.dustLimitSatoshis < LNParams.minChanDustLimit) throw DustLimitTooSmall(accept.temporaryChannelId, accept.dustLimitSatoshis, LNParams.minChanDustLimit)
     if (accept.maxAcceptedHtlcs < open.maxAcceptedHtlcs) throw InvalidMinAcceptedHtlcs(accept.temporaryChannelId, accept.maxAcceptedHtlcs, open.maxAcceptedHtlcs)
-    if (accept.dustLimitSatoshis < LNParams.minDustLimit) throw DustLimitTooSmall(accept.temporaryChannelId, accept.dustLimitSatoshis, LNParams.minDustLimit)
     if (accept.toSelfDelay > LNParams.maxToLocalDelay) throw ToSelfDelayTooHigh(accept.temporaryChannelId, accept.toSelfDelay, LNParams.maxToLocalDelay)
   }
 
@@ -170,10 +170,26 @@ object Helpers {
       if (remoteClosingFee > lastCommitFeeSatoshi) throw ChannelTransitionFail(commitments.channelId)
 
       val localFundingKey = commitments.localParams.keys.fundingKey.publicKey
-      val (closingTx, closingSigned) = makeClosingTx(commitments, localScriptPubkey, remoteScriptPubkey, closingFee = remoteClosingFee)
+      val (closingTx, closingSigned) = makeClosingTx(commitments, localScriptPubkey, remoteScriptPubkey, remoteClosingFee)
+
+      val isAllUtxosAboveDust = checkClosingDustAmounts(closingTx)
+      if (!isAllUtxosAboveDust) throw ChannelTransitionFail(commitments.channelId)
+
       val signedTx = Transactions.addSigs(closingTx, localFundingKey, commitments.remoteParams.fundingPubKey, closingSigned.signature, remoteClosingSig)
       if (Transactions.checkSpendable(signedTx).isFailure) throw ChannelTransitionFail(commitments.channelId)
       signedTx.tx
+    }
+
+    def checkClosingDustAmounts(closingTx: ClosingTx): Boolean = {
+      closingTx.tx.txOut.forall { txOut =>
+        Try(Script parse txOut.publicKeyScript).toOption.collectFirst {
+          case (OP_1 | OP_2 | OP_3 | OP_4 | OP_5 | OP_6 | OP_7 | OP_8 | OP_9 | OP_10 | OP_11 | OP_12 | OP_13 | OP_14 | OP_15 | OP_16) :: OP_PUSHDATA(exe, _) :: Nil if 2 <= exe.length && exe.length <= 40 => txOut.amount >= 354.sat
+          case OP_DUP :: OP_HASH160 :: OP_PUSHDATA(pubkeyHash, _) :: OP_EQUALVERIFY :: OP_CHECKSIG :: Nil if pubkeyHash.size == 20 => txOut.amount >= 546.sat
+          case OP_HASH160 :: OP_PUSHDATA(scriptHash, _) :: OP_EQUAL :: Nil if scriptHash.size == 20 => txOut.amount >= 540.sat
+          case OP_0 :: OP_PUSHDATA(pubkeyHash, _) :: Nil if pubkeyHash.size == 20 => txOut.amount >= 294.sat
+          case OP_0 :: OP_PUSHDATA(scriptHash, _) :: Nil if scriptHash.size == 32 => txOut.amount >= 330.sat
+        } getOrElse txOut.amount >= 546.sat
+      }
     }
 
     type SkippedOrTxInfo = Either[TxGenerationSkipped, TransactionWithInputInfo]
