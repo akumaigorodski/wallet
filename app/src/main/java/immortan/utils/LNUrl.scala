@@ -188,22 +188,6 @@ case class PayRequestMeta(records: PayRequest.TagAndContent) {
 
   val identities: Vector[String] = records.collect { case JsArray(JsString("text/identifier") +: JsString(identifier) +: _) => identifier }
 
-  val expectedIds: Option[ExpectedIds] = records.collectFirst {
-    case JsArray(JsString("application/payer-ids") +: allowedIds) =>
-      val base = ExpectedIds(wantsAuth = None, wantsRandomKey = false)
-
-      allowedIds.foldLeft(base) {
-        case base1 ~ JsArray(JsString("application/lnurl-auth") +: JsBoolean(isMandatory) +: JsString(k1) +: _) =>
-          base1.copy(wantsAuth = ExpectedAuth(ByteVector32.fromValidHex(k1), isMandatory).asSome)
-
-        case base1 ~ JsArray(JsString("application/pubkey") +: _) =>
-          base1.copy(wantsRandomKey = true)
-
-        case base1 ~ _ =>
-          base1
-      }
-  }
-
   val textPlain: String = trimmed(texts.head)
 
   val imageBase64s: Seq[String] = for {
