@@ -1254,8 +1254,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
   }
 
-  def bringReceivePopup: Unit = lnReceiveGuard(contentWindow) {
-    new OffChainReceiver(initMaxReceivable = Long.MaxValue.msat, initMinReceivable = 0L.msat) {
+  def bringReceivePopup: Unit = lnReceiveGuard(LNParams.cm.all.values, contentWindow) {
+    new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = Long.MaxValue.msat, initMinReceivable = 0L.msat) {
       override def getManager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_public, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
       override def getDescription: PaymentDescription = PlainDescription(split = None, label = None, semanticOrder = None, proofTxid = None, invoiceText = manager.resultExtraInput getOrElse new String)
       override def processInvoice(prExt: PaymentRequestExt): Unit = runAnd(InputParser.value = prExt)(me goTo ClassNames.qrInvoiceActivityClass)
@@ -1263,8 +1263,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
   }
 
-  def bringWithdrawPopup(data: WithdrawRequest): Unit = lnReceiveGuard(contentWindow) {
-    new OffChainReceiver(initMaxReceivable = data.maxWithdrawable.msat, initMinReceivable = data.minCanReceive) {
+  def bringWithdrawPopup(data: WithdrawRequest): Unit = lnReceiveGuard(LNParams.cm.all.values, contentWindow) {
+    new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = data.maxWithdrawable.msat, initMinReceivable = data.minCanReceive) {
       override def getManager: RateManager = new RateManager(body, getString(dialog_add_ln_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
       override def getDescription: PaymentDescription = PlainMetaDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, proofTxid = None, invoiceText = new String, meta = data.descriptionOrEmpty)
       override def getTitleText: String = getString(dialog_lnurl_withdraw).format(data.callbackUri.getHost, data.brDescription)

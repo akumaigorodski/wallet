@@ -476,9 +476,9 @@ trait BaseActivity extends AppCompatActivity { me =>
     case _ => onOK(prExt.pr.amount map Denomination.satCeil)
   }
 
-  def lnReceiveGuard(container: View)(onOk: => Unit): Unit = LNParams.cm.sortedReceivable(LNParams.cm.all.values).lastOption match {
-    case _ if !LNParams.cm.all.values.exists(Channel.isOperationalOrWaiting) => snack(container, getString(error_ln_no_chans).html, dialog_ok, _.dismiss)
-    case _ if !LNParams.cm.all.values.exists(Channel.isOperational) => snack(container, getString(error_ln_waiting).html, dialog_ok, _.dismiss)
+  def lnReceiveGuard(into: Iterable[Channel], container: View)(onOk: => Unit): Unit = LNParams.cm.sortedReceivable(into).lastOption match {
+    case _ if !into.exists(Channel.isOperationalOrWaiting) => snack(container, getString(error_ln_no_chans).html, dialog_ok, _.dismiss)
+    case _ if !into.exists(Channel.isOperational) => snack(container, getString(error_ln_waiting).html, dialog_ok, _.dismiss)
     case None => snack(container, getString(error_ln_receive_no_update).html, dialog_ok, _.dismiss)
 
     case Some(cnc) =>
@@ -528,9 +528,9 @@ trait BaseActivity extends AppCompatActivity { me =>
     }
   }
 
-  abstract class OffChainReceiver(initMaxReceivable: MilliSatoshi, initMinReceivable: MilliSatoshi) {
-    val CommitsAndMax(cs, maxReceivable) = LNParams.cm.maxReceivable(LNParams.cm sortedReceivable LNParams.cm.all.values).get
+  abstract class OffChainReceiver(into: Iterable[Channel], initMaxReceivable: MilliSatoshi, initMinReceivable: MilliSatoshi) {
     val body: ViewGroup = getLayoutInflater.inflate(R.layout.frag_input_off_chain, null).asInstanceOf[ViewGroup]
+    val CommitsAndMax(cs, maxReceivable) = LNParams.cm.maxReceivable(LNParams.cm sortedReceivable into).get
     val manager: RateManager = getManager
 
     // It's important to cut down any msat leftover here, otherwise payment may become undeliverable

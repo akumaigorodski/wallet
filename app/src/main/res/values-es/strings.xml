@@ -382,12 +382,14 @@
         <item><![CDATA[Compartir <b>Canal Lightning</b> detalles]]></item>
         <item><![CDATA[Cerrar canal a la billetera]]></item>
         <item><![CDATA[Cerrar canal a la direccion]]></item>
+        <item><![CDATA[Receive to this channel]]></item>
     </array>
 
     <array name="ln_hosted_chan_actions">
         <item><![CDATA[Compartir <b>Canal Hospedado</b> detalles]]></item>
         <item><![CDATA[Exportar detalles de canal]]></item>
         <item><![CDATA[Vaciar saldo del canal]]></item>
+        <item><![CDATA[Receive to this channel]]></item>
     </array>
 
     <string name="ln_hc_override">Propuesta de anulación</string>

@@ -225,6 +225,7 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
       }
 
     case Event(bump: RBFBump, data) => stay replying data.rbfBump(bump, params.dustLimit)
+    case Event(reroute: RBFReroute, data) => stay replying data.rbfReroute(reroute, params.dustLimit)
 
     case Event(ElectrumClient.BroadcastTransaction(tx), _) =>
       val notConnected = Error(code = -1, "wallet is not connected").asSome
@@ -434,8 +435,8 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
     } getOrElse RBFResponse(PARENTS_MISSING.asLeft)
   }
 
-  def rbfReroute(bump: RBFReroute, dustLimit: Satoshi): RBFResponse = computeTransactionDelta(bump.tx) map { delta =>
-    rbfReroute(bump.publicKeyScript, delta.spentUtxos, bump.feeRatePerKw, dustLimit, bump.sequenceFlag)
+  def rbfReroute(reroute: RBFReroute, dustLimit: Satoshi): RBFResponse = computeTransactionDelta(reroute.tx) map { delta =>
+    rbfReroute(reroute.publicKeyScript, delta.spentUtxos, reroute.feeRatePerKw, dustLimit, reroute.sequenceFlag)
   } getOrElse RBFResponse(PARENTS_MISSING.asLeft)
 
   type TxOutOption = Option[TxOut]
@@ -513,7 +514,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
   }
 
   def withOverridingTxids: ElectrumData = {
-    def changeKeyDepth(tx: Transaction) = tx.txOut.map(_.publicKeyScript).flatMap(publicScriptChangeMap.get).map(_.path.lastChildNumber) match { case Nil => Int.MinValue case changeNumbers => changeNumbers.max }
+    def changeKeyDepth(tx: Transaction) = tx.txOut.map(_.publicKeyScript).flatMap(publicScriptChangeMap.get).map(_.path.lastChildNumber) match { case Nil => Long.MinValue case changeNumbers => changeNumbers.max }
     def computeOverride(txs: Iterable[Transaction] = Nil) = Stream.continually(txs maxBy changeKeyDepth) zip txs collect { case (latterTx, formerTx) if latterTx != formerTx => formerTx.txid -> latterTx.txid }
     val overrides = transactions.values.map(Stream continually _).flatMap(txStream => txStream.head.txIn zip txStream).groupBy(_._1.outPoint).values.map(_.secondItems).flatMap(computeOverride)
     copy(overriddenPendingTxids = overrides.toMap)

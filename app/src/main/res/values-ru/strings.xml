@@ -386,12 +386,14 @@
         <item><![CDATA[Информация о <b>канале-Молнии</b>]]></item>
         <item><![CDATA[Закрыть канал в кошелек]]></item>
         <item><![CDATA[Закрыть канал на адрес]]></item>
+        <item><![CDATA[Получить в канал]]></item>
     </array>
 
     <array name="ln_hosted_chan_actions">
         <item><![CDATA[Информация о <b>Hosted-канале</b>]]></item>
         <item><![CDATA[Экспортировать состояние канала]]></item>
         <item><![CDATA[Переместить средства]]></item>
+        <item><![CDATA[Получить в канал]]></item>
     </array>
 
     <string name="ln_hc_override">Override proposal</string>

@@ -259,6 +259,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       mkCheckForm(alert => runAnd(alert.dismiss)(me drainHc hc), none, builder, dialog_ok, dialog_cancel)
 
     case (cs: NormalCommits, 2) => closeNcToAddress(cs)
+    case (cs: Commitments, 3) => receiveIntoChan(cs)
     case _ =>
   }
 
@@ -302,6 +303,17 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
         WalletApp.app.quickToast(getString(dialog_lnurl_processing).format(me getString tx_ln_label_reflexive).html)
         replaceOutgoingPayment(prExt, pd, action = None, sentAmount = prExt.pr.amount.get)
         LNParams.cm.localSend(cmd)
+    }
+  }
+
+  def receiveIntoChan(commits: Commitments): Unit = {
+    lnReceiveGuard(getChanByCommits(commits).toList, chanContainer) {
+      new OffChainReceiver(getChanByCommits(commits).toList, initMaxReceivable = Long.MaxValue.msat, initMinReceivable = 0L.msat) {
+        override def getManager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_public, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+        override def getDescription: PaymentDescription = PlainDescription(split = None, label = None, semanticOrder = None, proofTxid = None, invoiceText = manager.resultExtraInput getOrElse new String)
+        override def processInvoice(prExt: PaymentRequestExt): Unit = runAnd(InputParser.value = prExt)(me goTo ClassNames.qrInvoiceActivityClass)
+        override def getTitleText: String = getString(dialog_receive_ln)
+      }
     }
   }
 
