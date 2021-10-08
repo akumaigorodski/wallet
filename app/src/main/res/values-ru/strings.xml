@@ -58,6 +58,7 @@
     <string name="dialog_split">Разбить</string>
     <string name="dialog_share">Share</string>
     <string name="dialog_break">Прервать</string>
+    <string name="dialog_boost">Ускорить</string>
     <string name="dialog_open">Открыть</string>
     <string name="dialog_copy">Копия</string>
     <string name="dialog_scan">Скан</string>
@@ -419,10 +420,17 @@
 
     <!-- CPFP/RBF -->
 
-    <string name="tx_cpfp_after">После CPFP</string>
     <string name="tx_cpfp_current">Сумма сейчас</string>
-    <string name="dialog_boost"><![CDATA[<b>Ускорить</b>]]></string>
-    <string name="tc_cpfp_explain">Примените CPFP к входящей транзакции, чтобы увеличить ее комиссию и подтвердить транзакцию быстрее</string>
+    <string name="tx_cpfp_after">После ускорения</string>
+    <string name="tx_cpfp_explain">Примените CPFP к входящей транзакции, чтобы увеличить ее комиссию и подтвердить транзакцию быстрее</string>
+
+    <string name="tx_rbf_current">Текущий сбор</string>
+    <string name="tx_rbf_boost_explain"><![CDATA[Примените RBF к исходящей транзакции чтобы увеличить ее комиссию и <b>подтвердить ее быстрее</b>]]></string>
+    <string name="tx_rbf_cancel_explain"><![CDATA[Примените RBF к исходящей транзакции чтобы увеличить ее комиссию и <b>вернуть ее назад в кошелек</b>]]></string>
+
+    <string name="tx_rbf_err_rbf_disabled">Эту транзакцию нельзя ускорить потому что ее RBF-флаг отключен</string>
+    <string name="tx_rbf_err_foreign_inputs">Эту транзакцию нельзя ускорить потому что она содержит инпуты, не принадлежащие этому кошельку</string>
+    <string name="tx_rbf_err_parents_missing">Эту транзакцию нельзя ускорить потому что предшествующих ей транзакций нет в этом кошельке</string>
 
     <!-- /CPFP/RBF -->
 

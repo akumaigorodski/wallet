@@ -418,7 +418,15 @@
 
     <string name="tx_cpfp_after">After boost</string>
     <string name="tx_cpfp_current">Current sum</string>
-    <string name="tc_cpfp_explain">Apply CPFP to this incoming transaction to increase its fee and get it confirmed faster</string>
+    <string name="tx_cpfp_explain">Apply CPFP to this incoming transaction to increase its fee and get it confirmed faster</string>
+
+    <string name="tx_rbf_current">Current fee</string>
+    <string name="tx_rbf_boost_explain"><![CDATA[Apply RBF to this outgoing transaction to increase its fee and <b>get it confirmed faster</b>]]></string>
+    <string name="tx_rbf_cancel_explain"><![CDATA[Apply RBF to this outgoing transaction to increase its fee and <b>get it back to wallet</b>]]></string>
+
+    <string name="tx_rbf_err_rbf_disabled">Can not boost this transaction because its RBF flag is disabled</string>
+    <string name="tx_rbf_err_foreign_inputs">Can not boost this transaction because it contains inputs not belonging to this wallet</string>
+    <string name="tx_rbf_err_parents_missing">Can not boost this transaction because its parents are missing in this wallet</string>
 
     <!-- /CPFP/RBF -->
 

@@ -10,12 +10,12 @@ import fr.acinq.eclair.blockchain.electrum.ElectrumWallet._
 
 import scala.util.{Success, Try}
 import akka.actor.{ActorRef, FSM, PoisonPill}
+import fr.acinq.eclair.blockchain.{EclairWallet, TxAndFee}
 import fr.acinq.eclair.blockchain.electrum.db.{HeaderDb, WalletDb}
 import fr.acinq.eclair.blockchain.electrum.db.sqlite.SqliteWalletDb.persistentDataCodec
 import fr.acinq.eclair.blockchain.bitcoind.rpc.Error
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.transactions.Transactions
-import fr.acinq.eclair.blockchain.TxAndFee
 import Blockchain.RETARGETING_PERIOD
 import scala.collection.immutable
 import scala.annotation.tailrec
@@ -224,8 +224,11 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
         case _ => stay replying SendAllResponse(None)
       }
 
-    case Event(bump: RBFBump, data) => stay replying data.rbfBump(bump, params.dustLimit)
-    case Event(reroute: RBFReroute, data) => stay replying data.rbfReroute(reroute, params.dustLimit)
+    case Event(bump: RBFBump, data) if EclairWallet.isRBFEnabled(bump.tx) => stay replying data.rbfBump(bump, params.dustLimit)
+    case Event(reroute: RBFReroute, data) if EclairWallet.isRBFEnabled(reroute.tx) => stay replying data.rbfReroute(reroute, params.dustLimit)
+
+    case Event(_: RBFBump, _) => stay replying RBFResponse(RBF_DISABLED.asLeft)
+    case Event(_: RBFReroute, _) => stay replying RBFResponse(RBF_DISABLED.asLeft)
 
     case Event(ElectrumClient.BroadcastTransaction(tx), _) =>
       val notConnected = Error(code = -1, "wallet is not connected").asSome
@@ -264,6 +267,7 @@ object ElectrumWallet {
   final val GENERATION_FAIL = 0
   final val PARENTS_MISSING = 1
   final val FOREIGN_INPUTS = 2
+  final val RBF_DISABLED = 3
 
   sealed trait State
   case object DISCONNECTED extends State

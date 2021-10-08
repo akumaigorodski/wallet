@@ -397,7 +397,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
         override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
           val currentAmount = WalletApp.denom.directedWithSign(incoming = receivedMsat, outgoing = 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
-          val afterAmount = WalletApp.denom.directedWithSign(feeOpt.map(fee => receivedMsat - fee).getOrElse(receivedMsat), 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
+          val afterAmount = WalletApp.denom.directedWithSign(feeOpt.map(receivedMsat - _).getOrElse(receivedMsat), 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
           updatePopupButton(getPositiveButton(alert), feeOpt.isDefined)
           cpfpCurrent.setText(currentAmount.html)
           cpfpAfter.setText(afterAmount.html)
@@ -430,7 +430,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       lazy val alert = {
-        val builder = titleBodyAsViewBuilder(getString(tc_cpfp_explain).asDefView, body)
+        val builder = titleBodyAsViewBuilder(getString(tx_cpfp_explain).asDefView, body)
         mkCheckForm(attempt, none, builder, dialog_ok, dialog_cancel)
       }
 
@@ -514,6 +514,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         case info: TxInfo =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
           val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
+          val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.canBeCPFPd
+          val canRBF = !info.isIncoming && info.depth < 1 && info.description.rbf.isEmpty
 
           addFlowChip(extraInfo, getString(popup_txid) format info.txidString.short, R.drawable.border_green, info.txidString.asSome)
           for (address <- info.description.toAddress) addFlowChip(extraInfo, getString(popup_to_address) format address.short, R.drawable.border_yellow, address.asSome)
@@ -522,11 +524,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           addFlowChip(extraInfo, getString(popup_prior_chain_balance) format WalletApp.denom.parsedWithSign(info.balanceSnapshot, cardIn, cardZero), R.drawable.border_gray)
           addFlowChip(extraInfo, getString(popup_then) format WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise), R.drawable.border_gray)
           addFlowChip(extraInfo, getString(popup_now) format WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise), R.drawable.border_gray)
-          if (info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.canBeCPFPd) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
-
           if (!info.isIncoming && info.description.cpfpOf.isEmpty) addFlowChip(extraInfo, getString(popup_chain_fee) format fee, R.drawable.border_gray)
-          if (!info.isIncoming && info.depth < 1 && info.description.rbf.isEmpty) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
-          if (!info.isIncoming && info.depth < 1 && info.description.rbf.isEmpty) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
+
+          if (canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
+          if (canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
+          if (canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
 
         case info: RelayedPreimageInfo =>
           val relayedHuman = WalletApp.denom.parsedWithSign(info.relayed, cardIn, cardZero)

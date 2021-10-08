@@ -58,6 +58,7 @@
     <string name="dialog_split">Dividir</string>
     <string name="dialog_share">Share</string>
     <string name="dialog_break">Romper</string>
+    <string name="dialog_boost">Boost</string>
     <string name="dialog_open">Abrir</string>
     <string name="dialog_copy">Copiar</string>
     <string name="dialog_scan">Scan</string>
@@ -169,8 +170,8 @@
     <string name="tx_description_refunding">Reembolsar saldo de canal</string>
     <string name="tx_description_htlc_claiming">Reclamando pago Lightning</string>
     <string name="tx_description_penalty">Penalización por incumplimiento</string>
-    <string name="tx_description_rbf_cancel">RBF cancelling</string>
-    <string name="tx_description_rbf_boost">RBF boosting</string>
+    <string name="tx_description_rbf_cancel">RBF based cancelling</string>
+    <string name="tx_description_rbf_boost">RBF based boosting</string>
     <string name="tx_description_cpfp">CPFP boosting fee</string>
 
     <string name="tx_btc">Transacción Bitcoin</string>
@@ -417,8 +418,15 @@
 
     <string name="tx_cpfp_after">After boost</string>
     <string name="tx_cpfp_current">Current sum</string>
-    <string name="dialog_boost"><![CDATA[<b>Impulsar</b>]]></string>
-    <string name="tc_cpfp_explain">Apply CPFP to this incoming transaction to increase its fee and get it confirmed faster</string>
+    <string name="tx_cpfp_explain"><![CDATA[Apply CPFP to this incoming transaction to increase its fee and <b>get it confirmed faster</b>]]></string>
+
+    <string name="tx_rbf_current">Current fee</string>
+    <string name="tx_rbf_boost_explain"><![CDATA[Apply RBF to this outgoing transaction to increase its fee and <b>get it confirmed faster</b>]]></string>
+    <string name="tx_rbf_cancel_explain"><![CDATA[Apply RBF to this outgoing transaction to increase its fee and <b>get it back to wallet</b>]]></string>
+
+    <string name="tx_rbf_err_rbf_disabled">Can not boost this transaction because its RBF flag is disabled</string>
+    <string name="tx_rbf_err_foreign_inputs">Can not boost this transaction because it contains inputs not belonging to this wallet</string>
+    <string name="tx_rbf_err_parents_missing">Can not boost this transaction because its parents are missing in this wallet</string>
 
     <!-- /CPFP/RBF -->
 
