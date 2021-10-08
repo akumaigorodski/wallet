@@ -51,7 +51,7 @@ class QRChainActivity extends QRActivity { me =>
         layoutManager.setMaxVisibleItems(MAX_RECEIVE_ADDRESSES)
 
         // Allow MAX_RECEIVE_ADDRESSES - 6 to be seen to not make it crowded
-        allAddresses = response.address2PubKey.keys.dropRight(6).toList
+        allAddresses = response.accountToKey.keys.dropRight(6).toList
         addresses = allAddresses.take(1)
 
         chainQrMore setOnClickListener onButtonTap {

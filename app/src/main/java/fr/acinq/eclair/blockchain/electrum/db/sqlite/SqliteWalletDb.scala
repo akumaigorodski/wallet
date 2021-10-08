@@ -22,6 +22,11 @@ object SqliteWalletDb {
       (provide(anyOpt) withContext "contextOpt")
   }.as[GetMerkleResponse]
 
+  val overrideCodec: Codec[Map[ByteVector32, ByteVector32]] = Codec[Map[ByteVector32, ByteVector32]](
+    (runtimeMap: Map[ByteVector32, ByteVector32]) => listOfN(uint16, bytes32 ~ bytes32).encode(runtimeMap.toList),
+    (wire: BitVector) => listOfN(uint16, bytes32 ~ bytes32).decode(wire).map(_.map(_.toMap))
+  )
+
   val statusCodec: Codec[Map[ByteVector32, String]] = Codec[Map[ByteVector32, String]](
     (runtimeMap: Map[ByteVector32, String]) => listOfN(uint16, bytes32 ~ cstring).encode(runtimeMap.toList),
     (wire: BitVector) => listOfN(uint16, bytes32 ~ cstring).decode(wire).map(_.map(_.toMap))
@@ -57,7 +62,7 @@ object SqliteWalletDb {
       (int32 withContext "changeKeysCount") ::
       (statusCodec withContext "status") ::
       (transactionsCodec withContext "transactions") ::
-      (setCodec(bytes32) withContext "overriddenPendingTxids") ::
+      (overrideCodec withContext "overriddenPendingTxids") ::
       (historyCodec withContext "history") ::
       (proofsCodec withContext "proofs") ::
       (listOfN(uint16, txCodec) withContext "pendingTransactions")

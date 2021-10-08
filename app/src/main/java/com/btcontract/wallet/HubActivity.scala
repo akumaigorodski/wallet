@@ -293,7 +293,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       val myFulfills = dangerousHCRevealed(info.fullTag)
       val fromWallet = LNParams.chainWallets.mostFundedWallet
       val title = getString(error_hc_dangerous_state).asColoredView(R.color.buttonRed)
-      val chainAddress = Await.result(fromWallet.getReceiveAddresses, atMost = 40.seconds).address2PubKey.keys.head
+      val chainAddress = Await.result(fromWallet.getReceiveAddresses, atMost = 40.seconds).accountToKey.keys.head
       val paymentAmount = WalletApp.denom.parsedWithSign(myFulfills.map(_.theirAdd.amountMsat).sum, cardOut, cardZero)
       val closestExpiry = WalletApp.app.plurOrZero(inBlocks)(myFulfills.map(_.theirAdd.cltvExpiry).min.toLong - LNParams.blockCount.get)
       val rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget)
@@ -378,7 +378,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     def doBoostCPFP(fromWallet: ElectrumEclairWallet, info: TxInfo): Unit = {
       val fromOutPoints = for (outputIndex <- info.tx.txOut.indices) yield OutPoint(info.tx.hash, outputIndex)
-      val chainAddress = Await.result(LNParams.chainWallets.lnWallet.getReceiveAddresses, atMost = 40.seconds).address2PubKey.keys.head
+      val chainAddress = Await.result(LNParams.chainWallets.lnWallet.getReceiveAddresses, atMost = 40.seconds).accountToKey.keys.head
       val target = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget)
       val receivedMsat = info.receivedSat.toMilliSatoshi
 
@@ -1179,7 +1179,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def transferFromLegacyToModern(legacy: ElectrumEclairWallet): Unit = {
     runFutureProcessOnUI(LNParams.chainWallets.lnWallet.getReceiveAddresses, onFail) { addresses =>
       val labelAndMessage = s"?label=${me getString btc_transfer_label}&message=${me getString btc_transfer_message}"
-      val uri = BitcoinUri.fromRaw(s"bitcoin:${addresses.address2PubKey.keySet.head}$labelAndMessage")
+      val uri = BitcoinUri.fromRaw(s"bitcoin:${addresses.accountToKey.keySet.head}$labelAndMessage")
       bringSendBitcoinPopup(uri, legacy)
     }
   }

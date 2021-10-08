@@ -32,8 +32,6 @@ object Tools {
   type Fiat2Btc = Map[String, Double]
   final val SEPARATOR = " "
 
-  def stringToPubKey(xPub: String): PublicKey = PublicKey(ByteVector fromValidHex xPub)
-
   def trimmed(inputText: String): String = inputText.trim.take(144)
 
   def none: PartialFunction[Any, Unit] = { case _ => }
@@ -45,6 +43,11 @@ object Tools {
     def asRight: Right[Nothing, T] = Right(underlying)
     def asSome: Option[T] = Some(underlying)
     def asList: List[T] = List(underlying)
+  }
+
+  implicit class IterableOfTuple2[T, V](underlying: Iterable[ (T, V) ] = Nil) {
+    def secondItems: Iterable[V] = underlying.map { case (_, secondItem) => secondItem }
+    def firstItems: Iterable[T] = underlying.map { case (firstItem, _) => firstItem }
   }
 
   implicit class ThrowableOps(error: Throwable) {
@@ -128,7 +131,7 @@ trait CanBeRepliedTo {
 }
 
 object StateMachine {
-  var INTERVAL: Int = 90
+  var INTERVAL: Int = 60
 }
 
 abstract class StateMachine[T] { me =>
