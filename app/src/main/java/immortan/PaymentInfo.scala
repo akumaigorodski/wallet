@@ -81,7 +81,9 @@ case class LNUrlDescription(label: Option[String], semanticOrder: Option[Semanti
 case class LNUrlPayLink(domain: String, payString: String, payMetaString: String, updatedAt: Long, description: LNUrlDescription,
                         lastNodeIdString: String, lastCommentString: String) extends TransactionDetails {
 
-  override val seenAt: Long = updatedAt
+  override val seenAt: Long = System.currentTimeMillis + updatedAt // To make it always appear on top in lists on UI
+
+  override val date: Date = new Date(updatedAt) // To display real date of last usage in lists on UI
 
   override val identity: String = payString
 

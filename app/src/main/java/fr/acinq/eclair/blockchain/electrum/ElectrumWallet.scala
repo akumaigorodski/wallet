@@ -196,7 +196,7 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
       val doubleSpendTrials: Option[Boolean] = for {
         spendingTxid <- data.overriddenPendingTxids.get(tx.txid)
         spendingBlockHeight <- data.proofs.get(spendingTxid).map(_.blockHeight)
-      } yield data.computeDepth(spendingBlockHeight) > 0
+      } yield data.computeDepth(spendingBlockHeight) > 1
 
       val depth = data.computeTransactionDepth(tx.txid)
       val isDoubleSpent = doubleSpendTrials.contains(true)

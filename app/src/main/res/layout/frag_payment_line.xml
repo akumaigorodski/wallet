@@ -100,6 +100,12 @@
                     <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_upward_18"/>
                 </LinearLayout>
 
+                <!-- BTC out cancelled -->
+
+                <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/btcOutCancelled">
+                    <ImageView style="@style/BoundedView" android:background="@drawable/outline_shortcut_20" android:rotation="90"/>
+                </LinearLayout>
+
                 <!-- BTC outgoing -->
 
                 <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/btcOutgoing">

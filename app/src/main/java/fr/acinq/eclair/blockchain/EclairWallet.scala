@@ -34,7 +34,7 @@ trait EclairWallet {
 
   def makeRBFBump(tx: Transaction, feeRatePerKw: FeeratePerKw): Future[RBFResponse]
 
-  def makeRBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, publicKeyScript: ByteVector): Future[RBFResponse]
+  def makeRBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, address: String): Future[RBFResponse]
 
   def commit(tx: Transaction, tag: String): Future[Boolean]
 

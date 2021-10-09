@@ -98,7 +98,8 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
     (walletRef ? rbfBump).mapTo[RBFResponse]
   }
 
-  override def makeRBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, publicKeyScript: ByteVector): Future[RBFResponse] = {
+  override def makeRBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, address: String): Future[RBFResponse] = {
+    val publicKeyScript = Script write addressToPublicKeyScript(address, ewt.chainHash)
     val rbfReroute = RBFReroute(tx, feeRatePerKw, publicKeyScript, OPT_IN_FULL_RBF)
     (walletRef ? rbfReroute).mapTo[RBFResponse]
   }
