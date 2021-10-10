@@ -170,8 +170,8 @@
     <string name="tx_description_refunding">Возврат средств из канала</string>
     <string name="tx_description_htlc_claiming">Возврат платежа-Молнии</string>
     <string name="tx_description_penalty">Штраф за пролом канала</string>
-    <string name="tx_description_rbf_cancel">RBF-отмена</string>
-    <string name="tx_description_rbf_boost">RBF-ускорение</string>
+    <string name="tx_description_rbf_cancel">Комиссия за отмену</string>
+    <string name="tx_description_rbf_boost">Ускоряющая транзакция</string>
     <string name="tx_description_cpfp">Сбор за CPFP-ускорение</string>
 
     <string name="tx_btc">Биткойн-транзакция</string>

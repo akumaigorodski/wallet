@@ -172,7 +172,8 @@ trait BaseActivity extends AppCompatActivity { me =>
   def runInFutureProcessOnUI[T](fun: => T, no: Throwable => Unit)(ok: T => Unit): Unit = runFutureProcessOnUI[T](Future(fun), no)(ok)
 
   def runFutureProcessOnUI[T](fun: Future[T], no: Throwable => Unit)(ok: T => Unit): Unit = fun onComplete {
-    case Success(result) => UITask(ok apply result).run case Failure(error) => UITask(no apply error).run
+    case Success(result) => UITask(ok apply result).run
+    case Failure(error) => UITask(no apply error).run
   }
 
   def setVis(isVisible: Boolean, view: View): Unit = {
@@ -180,8 +181,9 @@ trait BaseActivity extends AppCompatActivity { me =>
     if (view.getVisibility != nextMode) view.setVisibility(nextMode)
   }
 
-  def setVisMany(items: (Boolean, View)*): Unit =
+  def setVisMany(items: (Boolean, View)*): Unit = {
     for (isVisible ~ view <- items) setVis(isVisible, view)
+  }
 
   def UITask(fun: => Any): java.util.TimerTask = {
     val runnableExec = new Runnable { override def run: Unit = fun }
@@ -238,8 +240,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     alert
   }
 
-  def mkCheckFormNeutral(ok: AlertDialog => Unit, no: => Unit, neutral: AlertDialog => Unit,
-                         bld: AlertDialog.Builder, okRes: Int, noRes: Int, neutralRes: Int): AlertDialog = {
+  def mkCheckFormNeutral(ok: AlertDialog => Unit, no: => Unit, neutral: AlertDialog => Unit, bld: AlertDialog.Builder, okRes: Int, noRes: Int, neutralRes: Int): AlertDialog = {
 
     if (-1 != neutralRes) bld.setNeutralButton(neutralRes, null)
     val alert = mkCheckForm(ok, no, bld, okRes, noRes)

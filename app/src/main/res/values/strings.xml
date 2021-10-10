@@ -170,8 +170,8 @@
     <string name="tx_description_refunding">Channel balance refunding</string>
     <string name="tx_description_htlc_claiming">Lightning payment claiming</string>
     <string name="tx_description_penalty">Channel breach penalty</string>
-    <string name="tx_description_rbf_cancel">RBF based cancelling</string>
-    <string name="tx_description_rbf_boost">RBF based boosting</string>
+    <string name="tx_description_rbf_cancel">Cancelling fee</string>
+    <string name="tx_description_rbf_boost">Boosting transaction</string>
     <string name="tx_description_cpfp">CPFP boosting fee</string>
 
     <string name="tx_btc">Bitcoin Transaction</string>

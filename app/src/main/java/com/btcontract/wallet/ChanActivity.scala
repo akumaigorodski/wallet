@@ -297,7 +297,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       case ncOpt if ncOpt.forall(_.maxReceivable < LNParams.minPayment) => snack(chanContainer, getString(ln_hosted_chan_drain_impossible_no_chans).html, R.string.dialog_ok, _.dismiss)
       case Some(csAndMax) =>
         val toSend = maxSendable.min(csAndMax.maxReceivable)
-        val pd = PlainDescription(split = None, getString(tx_ln_label_reflexive).asSome, semanticOrder = None, proofTxid = None, invoiceText = new String, preimage.asSome)
+        val pd = PlainDescription(split = None, label = getString(tx_ln_label_reflexive).asSome, semanticOrder = None, proofTxid = None, invoiceText = new String, holdParams = None, preimage.asSome)
         val prExt = LNParams.cm.makePrExt(toReceive = toSend, description = pd, allowedChans = csAndMax.commits, hash = Crypto.sha256(preimage), secret = randomBytes32)
         val cmd = LNParams.cm.makeSendCmd(prExt, toSend, allowedChans = relatedHc, typicalChainTxFee, capLNFeeToChain = false).modify(_.split.totalSum).setTo(toSend)
         WalletApp.app.quickToast(getString(dialog_lnurl_processing).format(me getString tx_ln_label_reflexive).html)
