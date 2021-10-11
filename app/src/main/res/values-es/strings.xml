@@ -30,8 +30,8 @@
     <string name="setup_backup_file">Respaldo + frase de recuperación</string>
 
     <string name="setup_create_new_hint">Una billetera completamente nueva con una nueva frase de recuperación será generada desde cero.</string>
-    <string name="share_ln_payment">Factura firmada\n%1$s\n\nHash del pago\n%2$s\n\nDescripcion del pago\n%3$s\n\nID del nodo receptor\n%4$s\n\nPrueba del pago\n%5$s\n\nInformacion de depuracion\n%6$s</string>
-    <string name="share_chain_tx">Hexadecimal de la transaccion Bitcoin\n\n%1$s</string>
+    <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string> <!-- DO NOT TRANSLATE -->
+    <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string> <!-- DO NOT TRANSLATE -->
 
     <string name="setup_backup_file_hint">
         Proporcione un archivo que contenga un respaldo de Lightning, luego proporcione
@@ -56,14 +56,14 @@
     <string name="dialog_receive">Recibir</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="dialog_split">Dividir</string>
-    <string name="dialog_share">Compartir</string>
+    <string name="dialog_share">Share</string>
     <string name="dialog_break">Romper</string>
     <string name="dialog_boost">Impulsar</string>
     <string name="dialog_open">Abrir</string>
     <string name="dialog_copy">Copiar</string>
-    <string name="dialog_scan">Escanear</string>
-    <string name="dialog_info">Informacion</string>
-    <string name="dialog_max">Maximo</string>
+    <string name="dialog_scan">Scan</string>
+    <string name="dialog_info">Info</string>
+    <string name="dialog_max">Max</string>
 
     <string name="dialog_visibility_public">visible para el remitente</string>
     <string name="dialog_visibility_private">visible solo para ti</string>
@@ -229,7 +229,7 @@
     <string name="settings_backup_where">El archivo se guarda en la carpeta Descargas</string>
     <string name="settings_backup_how">Permisos -> Almacenamiento</string>
 
-    <string name="settings_chain_wallets">Manejar billeteras onchain</string>
+    <string name="settings_chain_wallets">Manejar billeteras chain</string>
     <string name="settings_chain_legacy">Billetera antigua</string>
     <string name="settings_chain_modern">Billetera moderna</string>
 
@@ -308,10 +308,10 @@
 
     <!-- lnurl-auth -->
 
-    <string name="lnurl_auth_identity">Adjuntar identidad de billetera</string>
+    <string name="lnurl_auth_identity">Adjuntar identidad</string>
     <string name="lnurl_auth_register">Registrarse</string>
     <string name="lnurl_auth_login">Acceso</string>
-    <string name="lnurl_auth_auth">Autenticacion</string>
+    <string name="lnurl_auth_auth">Auth</string>
     <string name="lnurl_auth_link">Enlace</string>
 
     <string name="lnurl_auth_register_ok">Registrado exitosamente</string>
@@ -376,8 +376,8 @@
     <string name="ln_hosted_chan_drain_impossible_few_funds">Los fondos no se pueden mover del canal hospedado en este momento porque un monto que contiene es muy pequeño.</string>
     <string name="ln_hosted_chan_drain_impossible_no_chans">Los fondos no se pueden mover de este canal hospedado porque no existe un canal Lightning capaz de recibirlos actualmente.</string>
     <string name="ln_hosted_chan_remove_impossible">Este canal hospedado no se puede remover ahora porque tiene pagos en camino, por favor espere hasta que hayan sido completados.</string>
-    <string name="ln_chan_details">Detalles del canal\n\nID de nodo de par remoto\n%1$s\n\nID de nodo de billetera local\n%2$s\n\nID corto de canal\n%3$s\n\nCanal iniciado\n%4$s</string>
-    <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
+    <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string> <!-- DO NOT TRANSLATE -->
+    <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string> <!-- DO NOT TRANSLATE -->
 
     <array name="ln_normal_chan_actions">
         <item><![CDATA[Compartir detalles <b>Canal Lightning</b>]]></item>
