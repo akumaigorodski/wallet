@@ -1,20 +1,30 @@
 package com.btcontract.wallet
 
 import fr.acinq.eclair._
+import immortan.crypto.Tools._
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.Colors.{cardIn, cardOut, cardZero}
 import immortan.utils.{WalletEventsCatcher, WalletEventsListener}
+import immortan.{LNParams, PathFinder, PureRoutingData, SyncMaster}
 import fr.acinq.eclair.blockchain.CurrentBlockCount
+import immortan.crypto.CanBeRepliedTo
 import android.widget.LinearLayout
 import java.net.InetSocketAddress
 import android.os.Bundle
 import android.view.View
-import immortan.LNParams
 import java.util.Date
 
 
-class StatActivity extends BaseActivity { me =>
+class StatActivity extends BaseActivity with CanBeRepliedTo { me =>
+  def stampAsWhen(stamp: Long): String = if (stamp > 1000000L) WalletApp.app.when(new Date(stamp), WalletApp.app.dateFormat) else "n/a"
   lazy private[this] val statContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
+
+  private[this] var chainSync = Option.empty[PartAndTotal]
+  private[this] var graphSync = Option.empty[PartAndTotal]
+
+  case class PartAndTotal(part: Long, total: Long) {
+    val ratio: String = s"$part / $total"
+  }
 
   private[this] val chainListener = new WalletEventsListener {
     override def onChainMasterSelected(event: InetSocketAddress): Unit = UITask(updateView).run
@@ -22,21 +32,42 @@ class StatActivity extends BaseActivity { me =>
     override def onChainDisconnected: Unit = UITask(updateView).run
   }
 
-  override def onDestroy: Unit = {
-    val remove = WalletEventsCatcher.Remove(chainListener)
-    LNParams.chainWallets.catcher ! remove
-    super.onDestroy
+  override def process(reply: Any): Unit = {
+    // Record last seen sync progress and update view
+
+    reply match {
+      case finalChunk: PureRoutingData if finalChunk.totalAnnounces < 1 => graphSync = None
+      case chunk: PureRoutingData => graphSync = PartAndTotal(chunk.gotAnnounces, chunk.totalAnnounces).asSome
+      case _: SyncMaster => graphSync = None
+      case _ => // Do nothing
+    }
+
+    UITask(updateView).run
   }
 
   def INIT(state: Bundle): Unit = {
     if (WalletApp.isAlive && LNParams.isOperational) {
       LNParams.chainWallets.catcher ! chainListener
       setContentView(R.layout.activity_settings)
+      LNParams.cm.pf.listeners += me
       updateView
     } else {
       WalletApp.freePossiblyUsedResouces
       me exitTo ClassNames.mainActivityClass
     }
+  }
+
+  override def onResume: Unit = {
+    // Sync might already be happening when we get here
+    LNParams.cm.pf process PathFinder.CMDRequestSyncProgress
+    super.onResume
+  }
+
+  override def onDestroy: Unit = {
+    val remove = WalletEventsCatcher.Remove(chainListener)
+    LNParams.chainWallets.catcher ! remove
+    LNParams.cm.pf.listeners -= me
+    super.onDestroy
   }
 
   def updateView: Unit = {
@@ -61,8 +92,8 @@ class StatActivity extends BaseActivity { me =>
       addFlowChip(netTitle.flow, getString(stats_item_chain_tip).format(blockCount), R.drawable.border_gray)
 
       if (LNParams.cm.all.nonEmpty) {
-        val graphResync = WalletApp.app.when(new Date(LNParams.cm.pf.getLastNormalResyncStamp), WalletApp.app.dateFormat)
-        val phcResync = WalletApp.app.when(new Date(LNParams.cm.pf.getLastTotalResyncStamp), WalletApp.app.dateFormat)
+        val phcResync = stampAsWhen(LNParams.cm.pf.getLastTotalResyncStamp)
+        val graphResync = graphSync.map(_.ratio) getOrElse stampAsWhen(LNParams.cm.pf.getLastNormalResyncStamp)
         addFlowChip(netTitle.flow, getString(stats_item_graph).format(graphResync), R.drawable.border_gray)
         addFlowChip(netTitle.flow, getString(stats_item_phc).format(phcResync), R.drawable.border_gray)
       }

@@ -70,7 +70,8 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
           case _ if adds.exists(_.add.cltvExpiry.toLong < LNParams.blockCount.get + LNParams.cltvRejectThreshold) => becomeAborted(IncomingAborted(None, fullTag), adds) // Not enough time to react if stalls
           case _ if info.isIncoming && info.prExt.pr.amount.exists(askedAmt => lastAmountIn >= askedAmt) => becomeRevealed(info.preimage, info.description.queryText, adds) // Got enough parts to cover an amount
           case Some(selfPreimage) if !info.isIncoming && info.prExt.pr.amount.exists(askedAmt => lastAmountIn >= askedAmt) => becomeRevealed(selfPreimage, info.description.queryText, adds) // Got all self-payment parts
-          case _ if info.isIncoming && adds.size >= cm.all.values.count(Channel.isOperational) * LNParams.maxInChannelHtlcs => becomeAborted(IncomingAborted(None, fullTag), adds) // Ran out of slots
+          case _ if adds.size >= cm.all.values.count(Channel.isOperational) * LNParams.maxInChannelHtlcs => becomeAborted(IncomingAborted(None, fullTag), adds) // Ran out of slots
+          case None if !info.isIncoming => becomeAborted(IncomingAborted(None, fullTag), adds) // Not an explicit outgoing self-payment
           case _ => // Do nothing, wait for more parts or a timeout
         }
       }
