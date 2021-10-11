@@ -30,8 +30,8 @@
     <string name="setup_backup_file">Respaldo + frase de recuperación</string>
 
     <string name="setup_create_new_hint">Una billetera completamente nueva con una nueva frase de recuperación será generada desde cero.</string>
-    <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string> <!-- DO NOT TRANSLATE -->
-    <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string> <!-- DO NOT TRANSLATE -->
+    <!-- DO NOT TRANSLATE --> <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
+    <!-- DO NOT TRANSLATE --> <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
 
     <string name="setup_backup_file_hint">
         Proporcione un archivo que contenga un respaldo de Lightning, luego proporcione
@@ -73,8 +73,8 @@
     <string name="dialog_add_ln_label">Etiquetar pago&#8230;</string>
     <string name="dialog_add_comment">Agregar comentario&#8230;</string>
 
-    <string name="dialog_receive_btc"><![CDATA[Recibir a la dirección de <b>Bitcoin</b> ]]></string>
-    <string name="dialog_receive_ln"><![CDATA[Recibir a la factura de <b>Lightning</b> ]]></string>
+    <string name="dialog_receive_btc"><![CDATA[Recibir a la dirección de <b>Bitcoin</b>]]></string>
+    <string name="dialog_receive_ln"><![CDATA[Recibir a la factura de <b>Lightning</b>]]></string>
 
     <string name="dialog_legacy_transfer_btc">Mover fondos a una billetera moderna</string>
     <string name="dialog_legacy_send_btc">Enviar transacción a la dirección</string>
@@ -376,8 +376,8 @@
     <string name="ln_hosted_chan_drain_impossible_few_funds">Los fondos no se pueden mover del canal hospedado en este momento porque un monto que contiene es muy pequeño.</string>
     <string name="ln_hosted_chan_drain_impossible_no_chans">Los fondos no se pueden mover de este canal hospedado porque no existe un canal Lightning capaz de recibirlos actualmente.</string>
     <string name="ln_hosted_chan_remove_impossible">Este canal hospedado no se puede remover ahora porque tiene pagos en camino, por favor espere hasta que hayan sido completados.</string>
-    <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string> <!-- DO NOT TRANSLATE -->
-    <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string> <!-- DO NOT TRANSLATE -->
+    <!-- DO NOT TRANSLATE --> <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string>
+    <!-- DO NOT TRANSLATE --> <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
 
     <array name="ln_normal_chan_actions">
         <item><![CDATA[Compartir detalles <b>Canal Lightning</b>]]></item>

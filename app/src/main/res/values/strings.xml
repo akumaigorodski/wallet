@@ -30,8 +30,8 @@
     <string name="setup_backup_file">Backup + recovery phrase</string>
 
     <string name="setup_create_new_hint">A completely fresh Bitcoin wallet with a new recovery phrase will be generated from scratch.</string>
-    <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
-    <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
+    <!-- DO NOT TRANSLATE --> <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
+    <!-- DO NOT TRANSLATE --> <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
 
     <string name="setup_backup_file_hint">
         Provide a file containing Lightning backup, then provide a recovery
@@ -376,8 +376,8 @@
     <string name="ln_hosted_chan_drain_impossible_few_funds">Funds can not be drained from this hosted channel at the moment because an amount it contains is too small.</string>
     <string name="ln_hosted_chan_drain_impossible_no_chans">Funds can not be drained from this hosted channel at the moment because there are no normal channels capable of receiving.</string>
     <string name="ln_hosted_chan_remove_impossible">This hosted channel can not be removed right now because it contains in-flight payments, please wait until they are resolved.</string>
-    <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string>
-    <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
+    <!-- DO NOT TRANSLATE --> <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string>
+    <!-- DO NOT TRANSLATE --> <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
 
     <array name="ln_normal_chan_actions">
         <item><![CDATA[Share <b>Lightning Channel</b> details]]></item>

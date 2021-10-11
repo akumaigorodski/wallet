@@ -30,8 +30,8 @@
     <string name="setup_backup_file">Резервный файл + фраза</string>
 
     <string name="setup_create_new_hint">Создать свежий биткойн-кошелёк с новой фразой восстановления.</string>
-    <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
-    <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
+    <!-- DO NOT TRANSLATE --> <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
+    <!-- DO NOT TRANSLATE --> <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
 
     <string name="setup_backup_file_hint">
         Укажите резервный файл с каналами, затем укажите фразу
@@ -380,8 +380,8 @@
     <string name="ln_hosted_chan_drain_impossible_few_funds">На данный момент средства из этого hosted-канала не могут быть перемещены потому что в нем слишком мало денег.</string>
     <string name="ln_hosted_chan_drain_impossible_no_chans">На данный момент средства из этого hosted-канала не могут быть перемещены потому что в кошельке нет каналов, способных принимать деньги.</string>
     <string name="ln_hosted_chan_remove_impossible">Этот hosted-канал нельзя удалить прямо сейчас потому что в нём есть платежи в полете. Пожалуйста, подождите завершения платежей.</string>
-    <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string>
-    <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
+    <!-- DO NOT TRANSLATE --> <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string>
+    <!-- DO NOT TRANSLATE --> <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
 
     <array name="ln_normal_chan_actions">
         <item><![CDATA[Информация о <b>канале-Молнии</b>]]></item>
