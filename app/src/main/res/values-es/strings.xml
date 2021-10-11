@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="lang">esp</string>
-    <string name="app_name">Simple Bitcoin Wallet</string>
+    <string name="app_name">SBW</string>
 
     <string name="rate">&#9825; Califícanos</string>
     <string name="sources">Ver código fuente</string>
@@ -336,7 +336,7 @@
 
     <string name="stats_item_chain_node"><![CDATA[<b>cadena&#160;nodo</b>&#160;%1$s]]></string>
     <string name="stats_item_chain_tip"><![CDATA[<b>cadena&#160;tope</b>&#160;%1$s]]></string>
-    <string name="stats_item_graph"><![CDATA[<b>gráfico&#160;sync</b>&#160;%1$s]]></string>
+    <string name="stats_item_graph"><![CDATA[<b>grafo&#160;sync</b>&#160;%1$s]]></string>
     <string name="stats_item_phc"><![CDATA[<b>PHC&#160;sync</b>&#160;%1$s]]></string>
 
     <string name="stats_item_sent"><![CDATA[<b>enviado</b>&#160;%1$s]]></string>

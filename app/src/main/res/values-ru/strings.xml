@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="lang">rus</string>
-    <string name="app_name">Simple Bitcoin Wallet</string>
+    <string name="app_name">SBW</string>
 
     <string name="rate">&#9825; Оцените нас</string>
     <string name="sources">Исходный код</string>
