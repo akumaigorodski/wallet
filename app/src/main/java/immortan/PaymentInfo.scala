@@ -31,6 +31,14 @@ object PaymentStatus {
   final val INIT = 0
 }
 
+case class SemanticOrder(id: String, order: Long)
+
+case class RBFParams(ofTxid: ByteVector32, mode: Long)
+
+case class HoldParams(waitForMsec: Long, waitingSince: Option[Long] = None, isReleased: Boolean) {
+  def shouldRelease: Boolean = isReleased || waitingSince.exists(since => System.currentTimeMillis - since > waitForMsec)
+}
+
 case class SplitParams(prExt: PaymentRequestExt, action: Option[PaymentAction], description: PaymentDescription, cmd: SendMultiPart, chainFee: MilliSatoshi)
 
 object SemanticOrder {
@@ -51,8 +59,6 @@ object SemanticOrder {
       .mapValues(collapseChildren).values.toList.sortBy(_.head.seenAt)(Ordering[Long].reverse)
       .flatten
 }
-
-case class SemanticOrder(id: String, order: Long)
 
 sealed trait TransactionDescription {
   val semanticOrder: Option[SemanticOrder]
@@ -81,9 +87,7 @@ case class LNUrlDescription(label: Option[String], semanticOrder: Option[Semanti
 case class LNUrlPayLink(domain: String, payString: String, payMetaString: String, updatedAt: Long, description: LNUrlDescription,
                         lastNodeIdString: String, lastCommentString: String) extends TransactionDetails {
 
-  override val seenAt: Long = System.currentTimeMillis + updatedAt // To make it always appear on top in lists on UI
-
-  override val date: Date = new Date(updatedAt) // To display real date of last usage in lists on UI
+  override val seenAt: Long = updatedAt
 
   override val identity: String = payString
 
@@ -115,6 +119,7 @@ case class DelayedRefunds(txToParent: Map[Transaction, TxConfirmedAtOpt] = Map.e
 
 sealed trait PaymentDescription extends TransactionDescription {
   val toSelfPreimage: Option[ByteVector32] // Present for reflexive outgoing payments
+  val holdParams: Option[HoldParams] // How long to hold and for how long it has been held so far
   val externalInfo: Option[String] // The one which comes from invoice description, LNURL-PAY metadata, etc...
   val proofTxid: Option[String] // If this is an incoming HC-routed payment with revealed preimage and stalling Host
   val split: Option[SplitInfo]
@@ -122,8 +127,8 @@ sealed trait PaymentDescription extends TransactionDescription {
   val queryText: String
 }
 
-case class PlainDescription(split: Option[SplitInfo], label: Option[String],
-                            semanticOrder: Option[SemanticOrder], proofTxid: Option[String], invoiceText: String,
+case class PlainDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder],
+                            proofTxid: Option[String], invoiceText: String, holdParams: Option[HoldParams] = None,
                             toSelfPreimage: Option[ByteVector32] = None) extends PaymentDescription {
 
   val externalInfo: Option[String] = Some(invoiceText).find(_.nonEmpty)
@@ -131,18 +136,19 @@ case class PlainDescription(split: Option[SplitInfo], label: Option[String],
   val queryText: String = invoiceText + SEPARATOR + label.getOrElse(new String)
 }
 
-case class PlainMetaDescription(split: Option[SplitInfo], label: Option[String],
-                                semanticOrder: Option[SemanticOrder], proofTxid: Option[String], invoiceText: String,
-                                meta: String, toSelfPreimage: Option[ByteVector32] = None) extends PaymentDescription {
+case class PlainMetaDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder],
+                                proofTxid: Option[String], invoiceText: String, meta: String, holdParams: Option[HoldParams] = None,
+                                toSelfPreimage: Option[ByteVector32] = None) extends PaymentDescription {
 
   val externalInfo: Option[String] = List(meta, invoiceText).find(_.nonEmpty)
 
   val queryText: String = invoiceText + SEPARATOR + meta + SEPARATOR + label.getOrElse(new String)
 }
 
-case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, seenAt: Long, updatedAt: Long, description: PaymentDescription, actionString: String,
-                       paymentHash: ByteVector32, paymentSecret: ByteVector32, received: MilliSatoshi, sent: MilliSatoshi, fee: MilliSatoshi, balanceSnapshot: MilliSatoshi,
-                       fiatRatesString: String, chainFee: MilliSatoshi, incoming: Long) extends TransactionDetails {
+case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, seenAt: Long, updatedAt: Long, description: PaymentDescription,
+                       actionString: String, paymentHash: ByteVector32, paymentSecret: ByteVector32, received: MilliSatoshi, sent: MilliSatoshi,
+                       fee: MilliSatoshi, balanceSnapshot: MilliSatoshi, fiatRatesString: String, chainFee: MilliSatoshi,
+                       incoming: Long) extends TransactionDetails {
 
   override val identity: String = prString
 
@@ -235,8 +241,6 @@ sealed trait TxDescription extends TransactionDescription {
   def canBeCPFPd: Boolean = false
 }
 
-case class RBFParams(ofTxid: ByteVector32, mode: Long)
-
 case class PlainTxDescription(addresses: List[String],
                               label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
                               cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
@@ -244,9 +248,9 @@ case class PlainTxDescription(addresses: List[String],
 
   def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + addresses.mkString(SEPARATOR) + SEPARATOR + label.getOrElse(new String)
 
-  override def toAddress: Option[String] = addresses.headOption
-
   override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
+
+  override def toAddress: Option[String] = addresses.headOption
 }
 
 case class OpReturnTxDescription(preimages: List[ByteVector32],

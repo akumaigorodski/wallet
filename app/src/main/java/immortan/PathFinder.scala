@@ -24,6 +24,7 @@ object PathFinder {
   val NotifyRejected = "path-finder-notify-rejected"
   val NotifyOperational = "path-finder-notify-operational"
   val CMDStartPeriodicResync = "cmd-start-periodic-resync"
+  val CMDRequestSyncProgress = "smd-request-sync-progress"
   val CMDLoadGraph = "cmd-load-graph"
 
   val WAITING = 0
@@ -42,6 +43,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
 
   var listeners: Set[CanBeRepliedTo] = Set.empty
   var subscription: Option[Subscription] = None
+  var syncMaster: Option[SyncMaster] = None
   var debugMode: Boolean = false
 
   implicit val context: ExecutionContextExecutor = ExecutionContext fromExecutor Executors.newSingleThreadExecutor
@@ -104,28 +106,41 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       // Last normal sync has happened too long ago, start with normal sync, then proceed with PHC sync
       val setupData = SyncMasterShortIdData(LNParams.syncParams.syncNodes, getExtraNodes, Set.empty)
 
-      new SyncMaster(normalBag.listExcludedChannels, data) { self =>
+      val normalSync = new SyncMaster(normalBag.listExcludedChannels, data) { self =>
         def onChunkSyncComplete(pure: PureRoutingData): Unit = me process pure
         def onTotalSyncComplete: Unit = me process self
-      } process setupData
+      }
+
+      syncMaster = normalSync.asSome
+      normalSync process setupData
+
+    case (CMDRequestSyncProgress, OPERATIONAL) =>
+      syncMaster.map(_.data) collectFirst { case sync: SyncMasterGossipData =>
+        // One of listeners is interested in current sync progress if sync is happening at all: send progress only since we can't provide details
+        val pure = PureRoutingData(announces = Set.empty, updates = Set.empty, excluded = Set.empty, sync.totalAnnounces, sync.gotAnnounces)
+        listeners.foreach(_ process pure)
+      }
 
     case (CMDResync, OPERATIONAL) if System.currentTimeMillis - getLastTotalResyncStamp > RESYNC_PERIOD =>
       // Normal resync has happened recently, but PHC resync is outdated (PHC failed last time due to running out of attempts)
       // in this case we skip normal sync and start directly with PHC sync to save time and increase PHC sync success chances
       attemptPHCSync
 
-    case (pure: CompleteHostedRoutingData, OPERATIONAL) =>
+    case (phcPure: CompleteHostedRoutingData, OPERATIONAL) =>
       // First, completely replace PHC data with obtained one
-      hostedBag.processCompleteHostedData(pure)
+      hostedBag.processCompleteHostedData(phcPure)
 
       // Then reconstruct graph with new PHC data
       val hostedShortIdToPubChan = hostedBag.getRoutingData
       val searchGraph = DirectedGraph.makeGraph(data.channels ++ hostedShortIdToPubChan).addEdges(extraEdgesMap.values)
       become(Data(data.channels, hostedShortIdToPubChan, searchGraph), OPERATIONAL)
       updateLastTotalResyncStamp(System.currentTimeMillis)
+      listeners.foreach(_ process phcPure)
 
     case (pure: PureRoutingData, OPERATIONAL) =>
-      // Run in this thread to not overload SyncMaster
+      // Notify listener about graph sync progress here
+      // Update db here to not overload SyncMaster
+      listeners.foreach(_ process pure)
       normalBag.processPureData(pure)
 
     case (sync: SyncMaster, OPERATIONAL) =>
@@ -142,8 +157,10 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       // Perform database cleaning in a different thread since it's slow and we are operational
       Rx.ioQueue.foreach(_ => normalBag.removeGhostChannels(ghostIds, oneSideShortIds), none)
 
-      // Notify ASAP, then start PHC sync
+      // Notify that Pathfinder is operational
       listeners.foreach(_ process NotifyOperational)
+      // Notify that normal graph sync is complete
+      listeners.foreach(_ process sync)
       attemptPHCSync
 
     // We always accept and store disabled channels:

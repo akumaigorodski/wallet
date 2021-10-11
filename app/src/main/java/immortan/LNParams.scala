@@ -218,7 +218,7 @@ class SyncParams {
   val minCapacity: MilliSatoshi = MilliSatoshi(500000000L) // 500k sat
   val maxNodesToSyncFrom = 2 // How many disjoint peers to use for majority sync
   val acceptThreshold = 1 // ShortIds and updates are accepted if confirmed by more than this peers
-  val messagesToAsk = 500 // Ask for this many messages from peer before they say this chunk is done
+  val messagesToAsk = 100 // Ask for this many messages from peer before they say this chunk is done
   val chunksToWait = 4 // Wait for at least this much chunk iterations from any peer before recording results
 }
 

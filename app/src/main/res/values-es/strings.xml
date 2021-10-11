@@ -170,8 +170,8 @@
     <string name="tx_description_refunding">Reembolsar saldo de canal</string>
     <string name="tx_description_htlc_claiming">Reclamando pago Lightning</string>
     <string name="tx_description_penalty">Penalización por incumplimiento</string>
-    <string name="tx_description_rbf_cancel">Cancelar usando RBF</string>
     <string name="tx_description_rbf_boost">Impulsar usando RBF</string>
+    <string name="tx_description_rbf_cancel">Aumentar tarifa con RBF</string>
     <string name="tx_description_cpfp">Aumentar tarifa con CPFP</string>
 
     <string name="tx_btc">Transacción Bitcoin</string>

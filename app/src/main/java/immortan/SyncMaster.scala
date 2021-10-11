@@ -134,14 +134,17 @@ case class SyncWorker(master: CanBeRepliedTo, keyPair: KeyPair, remoteInfo: Remo
       // Remote peer is connected, (re-)start remaining gossip sync
       me process CMDGetGossip
 
-    case (CMDGetGossip, data1: SyncWorkerGossipData, GOSSIP_SYNC) if data1.queries.isEmpty =>
-      // We have no more queries left, inform master
-      master process CMDGossipComplete(me)
-      me process CMDShutdown
-
     case (CMDGetGossip, data1: SyncWorkerGossipData, GOSSIP_SYNC) =>
-      // We still have queries left, send another one to peer
-      CommsTower.sendMany(data1.queries.take(1), pair)
+
+      if (data1.queries.isEmpty) {
+        // We have no more queries left
+        master process CMDGossipComplete(me)
+        me process CMDShutdown
+      } else {
+        // Process the next batch
+        val nextBatch = data1.queries.take(1)
+        CommsTower.sendMany(nextBatch, pair)
+      }
 
     case (update: ChannelUpdate, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenButShouldBeExcluded(update) =>
       become(d1.copy(excluded = d1.excluded + update.core), GOSSIP_SYNC)
@@ -199,9 +202,9 @@ sealed trait SyncMasterData extends { me =>
   def activeSyncs: Set[SyncWorker]
 }
 
-case class PureRoutingData(announces: Set[ChannelAnnouncement], updates: Set[ChannelUpdate], excluded: Set[UpdateCore] = Set.empty)
+case class PureRoutingData(announces: Set[ChannelAnnouncement], updates: Set[ChannelUpdate], excluded: Set[UpdateCore], totalAnnounces: Long, gotAnnounces: Long)
 case class SyncMasterShortIdData(baseInfos: Set[RemoteNodeInfo], extInfos: Set[RemoteNodeInfo], activeSyncs: Set[SyncWorker], ranges: Map[PublicKey, SyncWorkerShortIdsData] = Map.empty) extends SyncMasterData
-case class SyncMasterGossipData(baseInfos: Set[RemoteNodeInfo], extInfos: Set[RemoteNodeInfo], activeSyncs: Set[SyncWorker], chunksLeft: Int) extends SyncMasterData
+case class SyncMasterGossipData(baseInfos: Set[RemoteNodeInfo], extInfos: Set[RemoteNodeInfo], activeSyncs: Set[SyncWorker], chunksLeft: Int, totalAnnounces: Long, gotAnnounces: Long = 0L) extends SyncMasterData
 
 case class UpdateConifrmState(liteUpdOpt: Option[ChannelUpdate], confirmedBy: ConfirmedBySet) {
   def add(cu: ChannelUpdate, from: PublicKey): UpdateConifrmState = copy(liteUpdOpt = Some(cu), confirmedBy = confirmedBy + from)
@@ -251,11 +254,13 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
         val goodRanges = data1.ranges.values.filter(_.isHolistic)
         val accum = mutable.Map.empty[ShortChannelId, Int] withDefaultValue 0
         goodRanges.flatMap(_.allShortIds).foreach(shortId => accum(shortId) += 1)
+        // IMPORTANT: provenShortIds variable MUST be set BEFORE filtering out queries because `reply2Query` uses this data
         provenShortIds = accum.collect { case (shortId, confs) if confs > LNParams.syncParams.acceptThreshold => shortId }.toSet
-        val queries: Seq[QueryShortChannelIds] = goodRanges.maxBy(_.allShortIds.size).ranges.par.flatMap(reply2Query).toList
+        val queries = goodRanges.maxBy(_.allShortIds.size).ranges.par.flatMap(reply2Query).toList
+        val totalAnnounces = queries.map(_.shortChannelIds.array.size).sum
 
         // Transfer every worker into gossip syncing state
-        become(SyncMasterGossipData(baseSyncs, extSyncs, activeSyncs, LNParams.syncParams.chunksToWait), GOSSIP_SYNC)
+        become(SyncMasterGossipData(baseSyncs, extSyncs, activeSyncs, LNParams.syncParams.chunksToWait, totalAnnounces), GOSSIP_SYNC)
         for (currentSync <- activeSyncs) currentSync process SyncWorkerGossipData(me, queries)
         for (currentSync <- activeSyncs) currentSync process CMDGetGossip
       }
@@ -284,9 +289,11 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
         val nextData = data1.copy(chunksLeft = data1.chunksLeft - 1)
         become(nextData, GOSSIP_SYNC)
       } else {
+        val pure = getPureNormalNetworkData
         // Current batch is ready, send it out and start a new one right away
-        become(data1.copy(chunksLeft = LNParams.syncParams.chunksToWait), GOSSIP_SYNC)
-        sendPureNormalNetworkData
+        val nextData = data1.copy(chunksLeft = LNParams.syncParams.chunksToWait, gotAnnounces = data1.gotAnnounces + pure.announces.size)
+        me onChunkSyncComplete pure.copy(totalAnnounces = nextData.totalAnnounces, gotAnnounces = nextData.gotAnnounces)
+        become(nextData, GOSSIP_SYNC)
       }
 
     case (CMDGossipComplete(sync), data1: SyncMasterGossipData, GOSSIP_SYNC) =>
@@ -296,7 +303,8 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
         become(nextData, GOSSIP_SYNC)
       } else {
         become(null, SHUT_DOWN)
-        sendPureNormalNetworkData
+        // This one will have zero total/got, should be fine
+        me onChunkSyncComplete getPureNormalNetworkData
         confirmedChanAnnounces.clear
         confirmedChanUpdates.clear
         onTotalSyncComplete
@@ -305,13 +313,15 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
     case _ =>
   }
 
-  def sendPureNormalNetworkData: Unit = {
+  def getPureNormalNetworkData: PureRoutingData = {
     val goodAnnounces = confirmedChanAnnounces.collect { case (announce, confirmedByNodes) if confirmedByNodes.size > LNParams.syncParams.acceptThreshold => announce }.toSet
     val goodUpdates = confirmedChanUpdates.values.collect { case UpdateConifrmState(Some(update), confs) if confs.size > LNParams.syncParams.acceptThreshold => update }.toSet
-    me onChunkSyncComplete PureRoutingData(goodAnnounces, goodUpdates, newExcludedChanUpdates)
+    val pureRoutingData = PureRoutingData(goodAnnounces, goodUpdates, newExcludedChanUpdates, totalAnnounces = 0L, gotAnnounces = 0L)
+    // Clear up useless items AFTER we have created PureRoutingData snapshot
     for (announce <- goodAnnounces) confirmedChanAnnounces -= announce
     for (update <- goodUpdates) confirmedChanUpdates -= update.core
     newExcludedChanUpdates = Set.empty
+    pureRoutingData
   }
 
   def reply2Query(reply: ReplyChannelRange): Iterator[QueryShortChannelIds] = {

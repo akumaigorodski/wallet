@@ -144,13 +144,15 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
 
   implicit val splitInfoFmt: JsonFormat[SplitInfo] = jsonFormat[MilliSatoshi, MilliSatoshi, SplitInfo](SplitInfo.apply, "totalSum", "myPart")
 
+  implicit val holdParamsFmt: JsonFormat[HoldParams] = jsonFormat[Long, Option[Long], Boolean, HoldParams](HoldParams.apply, "waitForMsec", "waitingSince", "isReleased")
+
   implicit val plainDescriptionFmt: JsonFormat[PlainDescription] =
-    taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String, Option[ByteVector32],
-      PlainDescription](PlainDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText", "toSelfPreimage"), tag = "PlainDescription")
+    taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String, Option[HoldParams], Option[ByteVector32],
+      PlainDescription](PlainDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText", "holdParams", "toSelfPreimage"), tag = "PlainDescription")
 
   implicit val plainMetaDescriptionFmt: JsonFormat[PlainMetaDescription] =
-    taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String, String, Option[ByteVector32],
-      PlainMetaDescription](PlainMetaDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText", "meta", "toSelfPreimage"), tag = "PlainMetaDescription")
+    taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String, String, Option[HoldParams], Option[ByteVector32],
+      PlainMetaDescription](PlainMetaDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText", "meta", "holdParams", "toSelfPreimage"), tag = "PlainMetaDescription")
 
   // Payment action
 
@@ -227,23 +229,19 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
   implicit val earnDotComFeeRateItemFmt: JsonFormat[EarnDotComFeeRateItem] =
     jsonFormat[Long, Long, Long, Long, Long, EarnDotComFeeRateItem](EarnDotComFeeRateItem.apply, "minFee", "maxFee", "memCount", "minDelay", "maxDelay")
 
-  implicit val earnDotComFeeRateStructureFmt: JsonFormat[EarnDotComFeeRateStructure] =
-    jsonFormat[List[EarnDotComFeeRateItem], EarnDotComFeeRateStructure](EarnDotComFeeRateStructure.apply, "fees")
+  implicit val earnDotComFeeRateStructureFmt: JsonFormat[EarnDotComFeeRateStructure] = jsonFormat[List[EarnDotComFeeRateItem], EarnDotComFeeRateStructure](EarnDotComFeeRateStructure.apply, "fees")
 
-  implicit val feeratePerKBFmt: JsonFormat[FeeratePerKB] =
-    jsonFormat[Satoshi, FeeratePerKB](FeeratePerKB.apply, "feerate")
+  implicit val feeratePerKBFmt: JsonFormat[FeeratePerKB] = jsonFormat[Satoshi, FeeratePerKB](FeeratePerKB.apply, "feerate")
 
   implicit val feeratesPerKBFmt: JsonFormat[FeeratesPerKB] =
     jsonFormat[FeeratePerKB, FeeratePerKB, FeeratePerKB, FeeratePerKB, FeeratePerKB, FeeratePerKB, FeeratePerKB, FeeratePerKB, FeeratePerKB,
       FeeratesPerKB](FeeratesPerKB.apply, "mempoolMinFee", "block_1", "blocks_2", "blocks_6", "blocks_12", "blocks_36", "blocks_72", "blocks_144", "blocks_1008")
 
-  implicit val feeratePerKwFmt: JsonFormat[FeeratePerKw] =
-    jsonFormat[Satoshi, FeeratePerKw](FeeratePerKw.apply, "feerate")
+  implicit val feeratePerKwFmt: JsonFormat[FeeratePerKw] = jsonFormat[Satoshi, FeeratePerKw](FeeratePerKw.apply, "feerate")
 
   implicit val feeratesPerKwFmt: JsonFormat[FeeratesPerKw] =
     jsonFormat[FeeratePerKw, FeeratePerKw, FeeratePerKw, FeeratePerKw, FeeratePerKw, FeeratePerKw, FeeratePerKw, FeeratePerKw, FeeratePerKw,
       FeeratesPerKw](FeeratesPerKw.apply, "mempoolMinFee", "block_1", "blocks_2", "blocks_6", "blocks_12", "blocks_36", "blocks_72", "blocks_144", "blocks_1008")
 
-  implicit val feeRatesInfoFmt: JsonFormat[FeeRatesInfo] =
-    jsonFormat[FeeratesPerKw, List[FeeratesPerKB], Long, FeeRatesInfo](FeeRatesInfo.apply, "smoothed", "history", "stamp")
+  implicit val feeRatesInfoFmt: JsonFormat[FeeRatesInfo] = jsonFormat[FeeratesPerKw, List[FeeratesPerKB], Long, FeeRatesInfo](FeeRatesInfo.apply, "smoothed", "history", "stamp")
 }
