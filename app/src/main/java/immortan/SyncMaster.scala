@@ -57,7 +57,8 @@ case class CMDGossipComplete(sync: SyncWorker)
 
 // This entirely relies on fact that peer sends ChannelAnnouncement messages first, then ChannelUpdate messages
 
-case class SyncWorkerPHCData(phcMaster: PHCSyncMaster, updates: Set[ChannelUpdate],
+case class SyncWorkerPHCData(phcMaster: PHCSyncMaster,
+                             updates: Set[ChannelUpdate],
                              nodeIdToShortIds: Map[PublicKey, ShortChanIdSet] = Map.empty,
                              expectedPositions: Map[ShortChannelId, PositionSet] = Map.empty,
                              announces: Map[ShortChannelId, ChannelAnnouncement] = Map.empty) extends SyncWorkerData {

@@ -129,7 +129,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def isImportantItem: PartialFunction[TransactionDetails, Boolean] = {
     case anyFreshInfo if anyFreshInfo.updatedAt > disaplyThreshold => true
     case info: PaymentInfo => info.status == PaymentStatus.PENDING
-    case info: TxInfo => !info.isConfirmed
+    case info: TxInfo => !info.isConfirmed && !info.isDoubleSpent
     case _ => false
   }
 
@@ -409,6 +409,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       def attempt(alert: AlertDialog): Unit = {
         val cpfpBumpOrder = SemanticOrder(info.txid.toHex, System.currentTimeMillis)
+        // Only update parent semantic order if it does not already have one, record it BEFORE sending CPFP
+        val parentOrder = info.description.semanticOrder getOrElse cpfpBumpOrder.copy(order = Long.MinValue)
+        val parentDescWithOrder = info.description.modify(_.semanticOrder).setTo(parentOrder.asSome)
+        WalletApp.txDataBag.updDescription(parentDescWithOrder, info.txid)
+
         // On success tx will be recorded in a top level chain events listener
         // on fail user will be notified right away and nothing will happen
         alert.dismiss
@@ -421,12 +426,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           _ = WalletApp.txDescriptions += Tuple2(txAndFee.tx.txid, bumpDescription)
           isCommitted <- fromWallet.commit(txAndFee.tx, "cpfp-bump-tx")
         } if (isCommitted) {
-          // Only update parent semantic order if it does not already have one
-          val parentOrder = info.description.semanticOrder getOrElse cpfpBumpOrder.copy(order = Long.MinValue)
-          val parentDesc = info.description.modify(_.semanticOrder).setTo(parentOrder.asSome).modify(_.cpfpBy).setTo(txAndFee.tx.txid.asSome)
-          WalletApp.txDataBag.updDescription(parentDesc, info.txid)
+          // Parent semantic order is already updated, now we also update CPFP parent info
+          val parentDescWithCpfp = parentDescWithOrder.modify(_.cpfpBy).setTo(txAndFee.tx.txid.asSome)
+          WalletApp.txDataBag.updDescription(parentDescWithCpfp, info.txid)
         } else {
-          // Details should be available in persistent log
+          // We revert the whole description back since CPFP has failed
+          WalletApp.txDataBag.updDescription(info.description, info.txid)
           onFail(me getString error_btc_broadcast_fail)
         }
       }
