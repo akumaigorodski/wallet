@@ -18,8 +18,6 @@ import java.util.Date
 class StatActivity extends BaseActivity with CanBeRepliedTo { me =>
   def stampAsWhen(stamp: Long): String = if (stamp > 1000000L) WalletApp.app.when(new Date(stamp), WalletApp.app.dateFormat) else "n/a"
   lazy private[this] val statContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
-
-  private[this] var chainSync = Option.empty[PartAndTotal]
   private[this] var graphSync = Option.empty[PartAndTotal]
 
   case class PartAndTotal(part: Long, total: Long) {
