@@ -422,7 +422,7 @@
 
     <string name="tx_rbf_current">Tarifa actual</string>
     <string name="tx_rbf_boost_explain"><![CDATA[Aplique RBF a esta transaccion saliente para incrementar su tarifa y <b>que se confirme mas rapido</b>]]></string>
-    <string name="tx_rbf_cancel_explain"><![CDATA[Aplique RBF a esta transaccion saliente para disminuir su tarifa y <b>que se devuelva a la billetera</b>]]></string>
+    <string name="tx_rbf_cancel_explain"><![CDATA[Aplique RBF a esta transaccion saliente para incrementar su tarifa y <b>que se devuelva a su billetera</b>]]></string>
 
     <string name="tx_rbf_err_rbf_disabled">No se puede impulsar esta transaccion porque RBF esta desactivado</string>
     <string name="tx_rbf_err_foreign_inputs">No se puede impulsar esta transaccion porque contiene entradas que no pertenecen a esta billetera</string>
