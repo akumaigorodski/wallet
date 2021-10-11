@@ -12,8 +12,8 @@ Everyone is welcome to provide a translation on [Transifex project site](https:/
 - [ ] Support watch-only Bitcoin wallets and import of xPub from hardware wallets.
 - [ ] Allow Lightning channels to be funded from imported hardware wallets.
 - [ ] Implement sweeping of funds into wallet from private keys.
-- [ ] Add RBF-based boosting and cancelling for outgoing transactions.
-- [ ] Add CPFP-based boosting for incoming transactions.
+- [x] Add RBF-based boosting and cancelling for outgoing transactions.
+- [x] Add CPFP-based boosting for incoming transactions.
 - [ ] Implement Taproot wallet type.
 - [ ] Implement Coin Control.
 
