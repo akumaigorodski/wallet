@@ -40,11 +40,11 @@ Everyone is welcome to provide a translation on [Transifex project site](https:/
 
 5. ```$ podman cp <running container id>:/home/appuser/app/simplebitcoinwallet/wallet/app/build/outputs/apk/release/SBW-2.2.14.apk SBW-2.2.14-unaligned.apk```.
 
-6. `$ ```<Android SDK dir>/build-tools/<version>/zipalign' -v 4 SBW-2.2.14-unaligned.apk SBW-2.2.14.apk```.
+6. ```$ <Android SDK dir>/build-tools/<version>/zipalign' -v 4 SBW-2.2.14-unaligned.apk SBW-2.2.14.apk```.
 
 7. Create a `keystore.jks` using `keytool`.
 
-8. `$ ```<Android SDK dir>/build-tools/<version>/apksigner' sign --ks <path to keystore.jks> --ks-key-alias <signing key alias> --v1-signing-enabled true --v2-signing-enabled true SBW-2.2.14.apk```.
+8. ```$ <Android SDK dir>/build-tools/<version>/apksigner' sign --ks <path to keystore.jks> --ks-key-alias <signing key alias> --v1-signing-enabled true --v2-signing-enabled true SBW-2.2.14.apk```.
 
 ## Verification with `apksigner`
 
