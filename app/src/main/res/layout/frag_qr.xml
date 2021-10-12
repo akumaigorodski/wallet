@@ -4,6 +4,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:background="@drawable/panel_qr_bg"
     android:orientation="vertical"
+    android:gravity="center"
     android:padding="15dp">
 
     <TextView
@@ -33,6 +34,17 @@
             style="@style/FillingView"
             android:id="@+id/qrShare"
             android:layout_weight="1"
+            android:textSize="14sp"
+            android:padding="10dp"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:drawableTop="@drawable/outline_edit_24"
+            android:background="?android:selectableItemBackground"
+            android:text="@string/dialog_edit"
+            android:drawablePadding="6dp"
+            style="@style/FillingView"
+            android:layout_weight="1"
+            android:id="@+id/qrEdit"
             android:textSize="14sp"
             android:padding="10dp"/>
 

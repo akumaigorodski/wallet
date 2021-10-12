@@ -629,6 +629,7 @@ trait QRActivity extends BaseActivity { me =>
     val qrCode: ImageView = itemView.findViewById(R.id.qrCode).asInstanceOf[ImageView]
     val qrLabel: TextView = itemView.findViewById(R.id.qrLabel).asInstanceOf[TextView]
     val qrShare: AppCompatButton = itemView.findViewById(R.id.qrShare).asInstanceOf[AppCompatButton]
+    val qrEdit: AppCompatButton = itemView.findViewById(R.id.qrEdit).asInstanceOf[AppCompatButton]
     val qrCopy: AppCompatButton = itemView.findViewById(R.id.qrCopy).asInstanceOf[AppCompatButton]
   }
 }

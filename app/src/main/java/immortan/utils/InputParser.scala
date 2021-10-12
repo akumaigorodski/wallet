@@ -65,6 +65,8 @@ object PaymentRequestExt {
     case _ => raw
   }
 
+  def withoutSlashes(prefix: String, uri: Uri): String = prefix + removePrefix(uri.toString)
+
   def fromUri(invoiceWithoutPrefix: String): PaymentRequestExt = {
     val lnPayReq(invoicePrefix, invoiceData) = invoiceWithoutPrefix
     val uri = Try(Uri parse s"$lightning//$invoiceWithoutPrefix")
@@ -103,10 +105,11 @@ object BitcoinUri {
 }
 
 case class BitcoinUri(uri: Try[Uri], address: String) {
+  def pubKeyScript: Seq[ScriptElt] = addressToPublicKeyScript(address, LNParams.chainHash)
   val isValid: Boolean = Try(pubKeyScript).toOption.exists(_.nonEmpty)
+
   val amount: Option[MilliSatoshi] = uri.map(_ getQueryParameter "amount").map(BigDecimal.apply).map(Denomination.btcBigDecimal2MSat).toOption
   val prExt: Option[PaymentRequestExt] = uri.map(_ getQueryParameter "lightning").map(PaymentRequestExt.fromRaw).toOption
   val message: Option[String] = uri.map(_ getQueryParameter "message").map(trimmed).filter(_.nonEmpty).toOption
   val label: Option[String] = uri.map(_ getQueryParameter "label").map(trimmed).filter(_.nonEmpty).toOption
-  def pubKeyScript: Seq[ScriptElt] = addressToPublicKeyScript(address, LNParams.chainHash)
 }

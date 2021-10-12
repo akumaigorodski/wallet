@@ -63,6 +63,7 @@
     <string name="dialog_copy">Copiar</string>
     <string name="dialog_scan">Scan</string>
     <string name="dialog_info">Info</string>
+    <string name="dialog_edit">Edit</string>
     <string name="dialog_max">Max</string>
 
     <string name="dialog_visibility_public">visible para el remitente</string>
@@ -89,7 +90,7 @@
     <string name="dialog_send_ln"><![CDATA[Enviar pago <b>Lightning</b> %1$s]]></string>
     <string name="dialog_split_ln"><![CDATA[Dividir pago <b>Lightning</b> %1$s]]></string>
     <string name="dialog_send_btc_from"><![CDATA[desde&#160;<b>%1$s</b>&#160;billetera]]></string>
-    <string name="dialog_send_btc"><![CDATA[Enviar transacción <b>Bitcoin</b> <br><b>a la dirección</b> %1$s%2$s]]></string>
+    <string name="dialog_send_btc"><![CDATA[Enviar transacción <b>Bitcoin</b><br><b>a la dirección</b> %1$s%2$s]]></string>
     <string name="dialog_split_ln_tip">Deja que alguien escanee una dividir,\nLuego pulsen en OK al mismo tiempo</string>
     <string name="dialog_ln_requested"><![CDATA[<b>solicitado</b>&#160;%1$s]]></string>
     <string name="dialog_ln_left"><![CDATA[<b>queda por pagar</b>&#160;%1$s]]></string>

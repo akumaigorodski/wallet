@@ -63,6 +63,7 @@
     <string name="dialog_copy">Copy</string>
     <string name="dialog_scan">Scan</string>
     <string name="dialog_info">Info</string>
+    <string name="dialog_edit">Edit</string>
     <string name="dialog_max">Max</string>
 
     <string name="dialog_visibility_public">visible to sender</string>

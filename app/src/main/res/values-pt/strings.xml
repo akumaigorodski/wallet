@@ -63,6 +63,7 @@
     <string name="dialog_copy">Copiar</string>
     <string name="dialog_scan">Scan</string>
     <string name="dialog_info">Info</string>
+    <string name="dialog_edit">Edit</string>
     <string name="dialog_max">Máx</string>
 
     <string name="dialog_visibility_public">visível ao pagador</string>
@@ -298,8 +299,8 @@
     <!-- lnurl -->
 
     <string name="dialog_lnurl_decrypt_fail">Falha ao decodificar a mensagem, por favor contate o fornecedor para resolver.</string>
-    <string name="dialog_lnurl_withdraw"><![CDATA[Link de saque<b>Lightning</b><br><br><b>%1$s</b>%2$s]]></string>
-    <string name="dialog_lnurl_pay"><![CDATA[Link de pagamento<b>Lightning</b><br><br><b>%1$s</b>%2$s]]></string>
+    <string name="dialog_lnurl_withdraw"><![CDATA[Link de saque <b>Lightning</b><br><br><b>%1$s</b>%2$s]]></string>
+    <string name="dialog_lnurl_pay"><![CDATA[Link de pagamento <b>Lightning</b><br><br><b>%1$s</b>%2$s]]></string>
 
     <string name="dialog_lnurl_processing"><![CDATA[Processando&#8230;<br><br><b>%1$s</b>]]></string>
     <string name="dialog_lnurl_splitting"><![CDATA[Solicitando invoice&#8230;<br><br><b>%1$s</b>]]></string>
