@@ -238,7 +238,8 @@
                     card_view:iconGravity="start"
                     card_view:iconPadding="0dp"
                     style="@style/ToggleButton"
-                    card_view:iconSize="18dp"/>
+                    card_view:iconSize="18dp"
+                    android:visibility="gone"/>
 
                 <com.google.android.material.button.MaterialButton
                     card_view:icon="@drawable/baseline_storefront_24"
@@ -246,7 +247,8 @@
                     card_view:iconGravity="start"
                     card_view:iconPadding="0dp"
                     style="@style/ToggleButton"
-                    card_view:iconSize="18dp"/>
+                    card_view:iconSize="18dp"
+                    android:visibility="gone"/>
 
             </com.google.android.material.button.MaterialButtonToggleGroup>
 
