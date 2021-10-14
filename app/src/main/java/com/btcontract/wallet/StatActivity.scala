@@ -5,11 +5,12 @@ import immortan.crypto.Tools._
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.Colors.{cardIn, cardOut, cardZero}
 import immortan.utils.{WalletEventsCatcher, WalletEventsListener}
-import immortan.{LNParams, PathFinder, PureRoutingData, SyncMaster}
+import immortan.{LNParams, PathFinder, PureRoutingData, SyncMaster, SyncMasterGossipData, SyncMasterShortIdData}
 import fr.acinq.eclair.blockchain.CurrentBlockCount
 import immortan.crypto.CanBeRepliedTo
 import android.widget.LinearLayout
 import java.net.InetSocketAddress
+
 import android.os.Bundle
 import android.view.View
 import java.util.Date
@@ -18,11 +19,7 @@ import java.util.Date
 class StatActivity extends BaseActivity with CanBeRepliedTo { me =>
   def stampAsWhen(stamp: Long): String = if (stamp > 1000000L) WalletApp.app.when(new Date(stamp), WalletApp.app.dateFormat) else "n/a"
   lazy private[this] val statContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
-  private[this] var graphSync = Option.empty[PartAndTotal]
-
-  case class PartAndTotal(part: Long, total: Long) {
-    val ratio: String = s"$part / $total"
-  }
+  private[this] var graphSync = Option.empty[String]
 
   private[this] val chainListener = new WalletEventsListener {
     override def onChainMasterSelected(event: InetSocketAddress): Unit = UITask(updateView).run
@@ -34,8 +31,9 @@ class StatActivity extends BaseActivity with CanBeRepliedTo { me =>
     // Record last seen sync progress and update view
 
     reply match {
-      case finalChunk: PureRoutingData if finalChunk.totalAnnounces < 1 => graphSync = None
-      case chunk: PureRoutingData => graphSync = PartAndTotal(chunk.gotAnnounces, chunk.totalAnnounces).asSome
+      case chunk: PureRoutingData => graphSync = chunk.queriesLeft.toString.asSome
+      case state: SyncMasterShortIdData => graphSync = s"${state.ranges.size} / ${state.totalRanges}".asSome
+      case state: SyncMasterGossipData => graphSync = state.totalQueriesLeft.toString.asSome
       case _: SyncMaster => graphSync = None
       case _ => // Do nothing
     }
@@ -91,7 +89,7 @@ class StatActivity extends BaseActivity with CanBeRepliedTo { me =>
 
       if (LNParams.cm.all.nonEmpty) {
         val phcResync = stampAsWhen(LNParams.cm.pf.getLastTotalResyncStamp)
-        val graphResync = graphSync.map(_.ratio) getOrElse stampAsWhen(LNParams.cm.pf.getLastNormalResyncStamp)
+        val graphResync = graphSync getOrElse stampAsWhen(LNParams.cm.pf.getLastNormalResyncStamp)
         addFlowChip(netTitle.flow, getString(stats_item_graph).format(graphResync), R.drawable.border_gray)
         addFlowChip(netTitle.flow, getString(stats_item_phc).format(phcResync), R.drawable.border_gray)
       }

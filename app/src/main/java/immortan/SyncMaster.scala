@@ -64,10 +64,11 @@ case class SyncWorkerPHCData(phcMaster: PHCSyncMaster,
                              announces: Map[ShortChannelId, ChannelAnnouncement] = Map.empty) extends SyncWorkerData {
 
   def withNewAnnounce(ann: ChannelAnnouncement): SyncWorkerPHCData = {
+    val expectedPositions1 = expectedPositions.updated(ann.shortChannelId, ChannelUpdate.fullSet)
     val nodeId1ToShortIds = nodeIdToShortIds.getOrElse(ann.nodeId1, Set.empty) + ann.shortChannelId
     val nodeId2ToShortIds = nodeIdToShortIds.getOrElse(ann.nodeId2, Set.empty) + ann.shortChannelId
     val nodeIdToShortIds1 = nodeIdToShortIds.updated(ann.nodeId1, nodeId1ToShortIds).updated(ann.nodeId2, nodeId2ToShortIds)
-    copy(expectedPositions = expectedPositions.updated(ann.shortChannelId, ChannelUpdate.fullSet), announces = announces.updated(ann.shortChannelId, ann), nodeIdToShortIds = nodeIdToShortIds1)
+    copy(expectedPositions = expectedPositions1, announces = announces.updated(ann.shortChannelId, ann), nodeIdToShortIds = nodeIdToShortIds1)
   }
 
   def withNewUpdate(cu: ChannelUpdate): SyncWorkerPHCData = {
@@ -187,8 +188,8 @@ case class SyncWorker(master: CanBeRepliedTo, keyPair: KeyPair, remoteInfo: Remo
 
 sealed trait SyncMasterData extends { me =>
   def getNewSync(master: CanBeRepliedTo): SyncWorker = {
-    // This relies on (1) baseSyncs items are never removed
-    // This relies on (2) size of baseSyncs is >= LNParams.maxNodesToSyncFrom
+    // This relies on (1) baseInfos items are never getting removed
+    // This relies on (2) size of baseInfos is >= LNParams.maxNodesToSyncFrom
     val unusedSyncs = activeSyncs.foldLeft(baseInfos ++ extInfos)(_ - _.remoteInfo)
     SyncWorker(master, randomKeyPair, shuffle(unusedSyncs.toList).head, LNParams.ourInit)
   }
@@ -202,9 +203,12 @@ sealed trait SyncMasterData extends { me =>
   def activeSyncs: Set[SyncWorker]
 }
 
-case class PureRoutingData(announces: Set[ChannelAnnouncement], updates: Set[ChannelUpdate], excluded: Set[UpdateCore], totalAnnounces: Long, gotAnnounces: Long)
-case class SyncMasterShortIdData(baseInfos: Set[RemoteNodeInfo], extInfos: Set[RemoteNodeInfo], activeSyncs: Set[SyncWorker], ranges: Map[PublicKey, SyncWorkerShortIdsData] = Map.empty) extends SyncMasterData
-case class SyncMasterGossipData(baseInfos: Set[RemoteNodeInfo], extInfos: Set[RemoteNodeInfo], activeSyncs: Set[SyncWorker], chunksLeft: Int, totalAnnounces: Long, gotAnnounces: Long = 0L) extends SyncMasterData
+case class PureRoutingData(announces: Set[ChannelAnnouncement], updates: Set[ChannelUpdate], excluded: Set[UpdateCore], queriesLeft: Long)
+case class SyncMasterShortIdData(baseInfos: Set[RemoteNodeInfo], extInfos: Set[RemoteNodeInfo], activeSyncs: Set[SyncWorker], ranges: Map[PublicKey, SyncWorkerShortIdsData], totalRanges: Int) extends SyncMasterData
+
+case class SyncMasterGossipData(baseInfos: Set[RemoteNodeInfo], extInfos: Set[RemoteNodeInfo], activeSyncs: Set[SyncWorker], chunksLeft: Int) extends SyncMasterData {
+  def totalQueriesLeft: Long = activeSyncs.map(_.data).collect { case data: SyncWorkerGossipData => data.queries.size }.sum
+}
 
 case class UpdateConifrmState(liteUpdOpt: Option[ChannelUpdate], confirmedBy: ConfirmedBySet) {
   def add(cu: ChannelUpdate, from: PublicKey): UpdateConifrmState = copy(liteUpdOpt = Some(cu), confirmedBy = confirmedBy + from)
@@ -216,6 +220,7 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
   private[this] var newExcludedChanUpdates = Set.empty[UpdateCore]
   var provenShortIds: ShortChanIdSet = Set.empty
 
+  def onShortIdsSyncComplete(state: SyncMasterShortIdData): Unit
   def onChunkSyncComplete(pure: PureRoutingData): Unit
   def onTotalSyncComplete: Unit
 
@@ -244,25 +249,24 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
       become(data1.copy(ranges = data1.ranges - sd.sync.pair.them).withoutSync(sd), SHORT_ID_SYNC)
       Rx.ioQueue.delay(5.seconds).foreach(_ => me process CMDAddSync)
 
-    case (CMDShortIdsComplete(sync, ranges1), SyncMasterShortIdData(baseSyncs, extSyncs, activeSyncs, ranges), SHORT_ID_SYNC) =>
-      val data1 = SyncMasterShortIdData(baseSyncs, extSyncs, ranges = ranges + (sync.pair.them -> ranges1), activeSyncs = activeSyncs)
-      val isEnoughEvidence = data1.ranges.size == LNParams.syncParams.maxNodesToSyncFrom
-      become(data1, SHORT_ID_SYNC)
+    case (CMDShortIdsComplete(sync, ranges1), data1: SyncMasterShortIdData, SHORT_ID_SYNC) =>
+      val data2 = data1.modify(_.ranges) setTo data1.ranges.updated(sync.pair.them, ranges1)
+      me onShortIdsSyncComplete data2
+      become(data2, SHORT_ID_SYNC)
 
-      if (isEnoughEvidence) {
+      if (data2.ranges.size == data2.totalRanges) {
         // Collected enough channel ranges to start gossip
-        val goodRanges = data1.ranges.values.filter(_.isHolistic)
+        val goodRanges = data2.ranges.values.filter(_.isHolistic)
         val accum = mutable.Map.empty[ShortChannelId, Int] withDefaultValue 0
         goodRanges.flatMap(_.allShortIds).foreach(shortId => accum(shortId) += 1)
         // IMPORTANT: provenShortIds variable MUST be set BEFORE filtering out queries because `reply2Query` uses this data
         provenShortIds = accum.collect { case (shortId, confs) if confs > LNParams.syncParams.acceptThreshold => shortId }.toSet
         val queries = goodRanges.maxBy(_.allShortIds.size).ranges.par.flatMap(reply2Query).toList
-        val totalAnnounces = queries.map(_.shortChannelIds.array.size).sum
 
         // Transfer every worker into gossip syncing state
-        become(SyncMasterGossipData(baseSyncs, extSyncs, activeSyncs, LNParams.syncParams.chunksToWait, totalAnnounces), GOSSIP_SYNC)
-        for (currentSync <- activeSyncs) currentSync process SyncWorkerGossipData(me, queries)
-        for (currentSync <- activeSyncs) currentSync process CMDGetGossip
+        become(SyncMasterGossipData(data2.baseInfos, data2.extInfos, data2.activeSyncs, LNParams.syncParams.chunksToWait), GOSSIP_SYNC)
+        for (currentActiveSync <- data2.activeSyncs) currentActiveSync process SyncWorkerGossipData(me, queries)
+        for (currentActiveSync <- data2.activeSyncs) currentActiveSync process CMDGetGossip
       }
 
     // GOSSIP_SYNC
@@ -291,8 +295,8 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
       } else {
         val pure = getPureNormalNetworkData
         // Current batch is ready, send it out and start a new one right away
-        val nextData = data1.copy(chunksLeft = LNParams.syncParams.chunksToWait, gotAnnounces = data1.gotAnnounces + pure.announces.size)
-        me onChunkSyncComplete pure.copy(totalAnnounces = nextData.totalAnnounces, gotAnnounces = nextData.gotAnnounces)
+        val nextData = data1.copy(chunksLeft = LNParams.syncParams.chunksToWait)
+        me onChunkSyncComplete pure.copy(queriesLeft = nextData.totalQueriesLeft)
         become(nextData, GOSSIP_SYNC)
       }
 
@@ -303,7 +307,7 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
         become(nextData, GOSSIP_SYNC)
       } else {
         become(null, SHUT_DOWN)
-        // This one will have zero total/got, should be fine
+        // This one will have zero queries left by default
         me onChunkSyncComplete getPureNormalNetworkData
         confirmedChanAnnounces.clear
         confirmedChanUpdates.clear
@@ -316,7 +320,7 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
   def getPureNormalNetworkData: PureRoutingData = {
     val goodAnnounces = confirmedChanAnnounces.collect { case (announce, confirmedByNodes) if confirmedByNodes.size > LNParams.syncParams.acceptThreshold => announce }.toSet
     val goodUpdates = confirmedChanUpdates.values.collect { case UpdateConifrmState(Some(update), confs) if confs.size > LNParams.syncParams.acceptThreshold => update }.toSet
-    val pureRoutingData = PureRoutingData(goodAnnounces, goodUpdates, newExcludedChanUpdates, totalAnnounces = 0L, gotAnnounces = 0L)
+    val pureRoutingData = PureRoutingData(goodAnnounces, goodUpdates, newExcludedChanUpdates, queriesLeft = 0L)
     // Clear up useless items AFTER we have created PureRoutingData snapshot
     for (announce <- goodAnnounces) confirmedChanAnnounces -= announce
     for (update <- goodUpdates) confirmedChanUpdates -= update.core

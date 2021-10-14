@@ -103,10 +103,10 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       if (data.channels.nonEmpty) listeners.foreach(_ process NotifyOperational)
 
     case (CMDResync, OPERATIONAL) if System.currentTimeMillis - getLastNormalResyncStamp > RESYNC_PERIOD =>
-      // Last normal sync has happened too long ago, start with normal sync, then proceed with PHC sync
-      val setupData = SyncMasterShortIdData(LNParams.syncParams.syncNodes, getExtraNodes, Set.empty)
+      val setupData = SyncMasterShortIdData(LNParams.syncParams.syncNodes, getExtraNodes, Set.empty, Map.empty, LNParams.syncParams.maxNodesToSyncFrom)
 
       val normalSync = new SyncMaster(normalBag.listExcludedChannels, data) { self =>
+        def onShortIdsSyncComplete(state: SyncMasterShortIdData): Unit = listeners.foreach(_ process state)
         def onChunkSyncComplete(pure: PureRoutingData): Unit = me process pure
         def onTotalSyncComplete: Unit = me process self
       }
@@ -115,11 +115,13 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       normalSync process setupData
 
     case (CMDRequestSyncProgress, OPERATIONAL) =>
-      syncMaster.map(_.data) collectFirst { case sync: SyncMasterGossipData =>
-        // One of listeners is interested in current sync progress if sync is happening at all: send progress only since we can't provide details
-        val pure = PureRoutingData(announces = Set.empty, updates = Set.empty, excluded = Set.empty, sync.totalAnnounces, sync.gotAnnounces)
-        listeners.foreach(_ process pure)
-      }
+      // One of listeners is interested in current sync progress
+      // Send back whatever sync stage data we happen to have
+
+      for {
+        sync <- syncMaster
+        listener <- listeners
+      } listener process sync.data
 
     case (CMDResync, OPERATIONAL) if System.currentTimeMillis - getLastTotalResyncStamp > RESYNC_PERIOD =>
       // Normal resync has happened recently, but PHC resync is outdated (PHC failed last time due to running out of attempts)
