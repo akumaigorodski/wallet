@@ -50,10 +50,12 @@
     <string name="action_recovery_phrase_hint">Escriba las palabras de recuperación</string>
     <string name="title_chans">Canales Lightning</string>
 
-    <string name="dialog_ok">OK</string>
     <string name="dialog_send">Enviar</string>
-    <string name="dialog_stamp">Sello</string>
     <string name="dialog_receive">Recibir</string>
+
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_stamp">Sello</string>
+    <string name="dialog_accept">Accept</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="dialog_split">Dividir</string>
     <string name="dialog_share">Share</string>
@@ -307,9 +309,11 @@
     <string name="dialog_lnurl_sending"><![CDATA[Enviando %1$s<br><br><b>%2$s</b>]]></string>
     <string name="dialog_lnurl_from_vendor"><![CDATA[Respuesta del vendedor%1$s]]></string>
 
+    <string name="popup_hold">Hold up to %1$s minutes</string>
+    <string name="popup_identity">Adjuntar identidad</string>
+
     <!-- lnurl-auth -->
 
-    <string name="lnurl_auth_identity">Adjuntar identidad</string>
     <string name="lnurl_auth_register">Registrarse</string>
     <string name="lnurl_auth_login">Acceso</string>
     <string name="lnurl_auth_auth">Auth</string>

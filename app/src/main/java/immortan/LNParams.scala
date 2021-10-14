@@ -46,6 +46,7 @@ object LNParams {
   val maxChainConnectionsCount: Int = 3
   val maxAcceptedHtlcs: Int = 483
   val maxInChannelHtlcs: Int = 10
+  val maxHoldSecs: Long = 600L
 
   val maxOffChainFeeRatio: Double = 0.01 // We are OK with paying up to this % of LN fee relative to payment amount
   val maxOffChainFeeAboveRatio: MilliSatoshi = MilliSatoshi(20000L) // For small amounts we always accept fee up to this

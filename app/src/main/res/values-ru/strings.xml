@@ -50,10 +50,12 @@
     <string name="action_recovery_phrase_hint">Введите слова из фразы</string>
     <string name="title_chans">Каналы Молнии</string>
 
-    <string name="dialog_ok">OK</string>
     <string name="dialog_send">Послать</string>
-    <string name="dialog_stamp">Печать</string>
     <string name="dialog_receive">Получить</string>
+
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_stamp">Печать</string>
+    <string name="dialog_accept">Принять</string>
     <string name="dialog_cancel">Отмена</string>
     <string name="dialog_split">Разбить</string>
     <string name="dialog_share">Share</string>
@@ -311,9 +313,11 @@
     <string name="dialog_lnurl_sending"><![CDATA[Отправка %1$s<br><br><b>%2$s</b>]]></string>
     <string name="dialog_lnurl_from_vendor"><![CDATA[Ответ от продавца%1$s]]></string>
 
+    <string name="popup_hold">Держать до %1$s минут</string>
+    <string name="popup_identity">Attach wallet identity</string>
+
     <!-- lnurl-auth -->
 
-    <string name="lnurl_auth_identity">Attach wallet identity</string>
     <string name="lnurl_auth_register">Регистрация</string>
     <string name="lnurl_auth_login">Логин</string>
     <string name="lnurl_auth_auth">Авторизация</string>

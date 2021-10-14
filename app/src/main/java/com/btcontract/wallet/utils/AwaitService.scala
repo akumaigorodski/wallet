@@ -44,7 +44,7 @@ class AwaitService extends Service { me =>
       val notification =
         new NotificationCompat.Builder(me, AwaitService.CHANNEL_ID).setContentTitle(awaitedTitleText).setContentText(awaitedBodyText)
           .addAction(android.R.drawable.ic_menu_close_clear_cancel, getResources.getString(R.string.dialog_cancel), cancelIntent)
-          .setSmallIcon(R.drawable.ic_history_black_24dp).setContentIntent(disaplyIntent).build
+          .setSmallIcon(R.drawable.ic_history_white_24dp).setContentIntent(disaplyIntent).build
 
       startForeground(AwaitService.NOTIFICATION_ID, notification)
     } else {

@@ -65,7 +65,7 @@ object HubActivity {
   // Run clear up method once on app start, do not re-run it every time this activity gets restarted
   lazy val markAsFailedOnce: Unit = LNParams.cm.markAsFailed(paymentInfos.lastItems, LNParams.cm.allInChannelOutgoing)
 
-  var lastHashToReveals: Map[ByteVector32, RevealedLocalFulfills] = Map.empty
+  var lastHostedReveals: Map[ByteVector32, RevealedLocalFulfills] = Map.empty
   var lastInChannelOutgoing: Map[FullPaymentTag, OutgoingAdds] = Map.empty
   var allInfos: Seq[TransactionDetails] = Nil
 
@@ -86,12 +86,13 @@ object HubActivity {
 
 class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener { me =>
   private def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(incoming = amount, outgoing = 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
-  private def dangerousHCRevealed(fullTag: FullPaymentTag): List[LocalFulfill] = ChannelMaster.dangerousHCRevealed(lastHashToReveals, LNParams.blockCount.get, fullTag.paymentHash).toList
+  private def dangerousHCRevealed(fullTag: FullPaymentTag): List[LocalFulfill] = ChannelMaster.dangerousHCRevealed(lastHostedReveals, LNParams.blockCount.get, fullTag.paymentHash).toList
   private def itemsToTags = Map(R.id.bitcoinPayments -> "bitcoinPayments", R.id.lightningPayments -> "lightningPayments", R.id.relayedPayments -> "relayedPayments", R.id.payMarketLinks -> "payMarketLinks")
   private def hasItems: Boolean = allItems.exists(_.lastItems.nonEmpty)
 
   private def updateLnCaches: Unit = {
-    lastHashToReveals = LNParams.cm.allIncomingRevealed(LNParams.cm.allHostedCommits)
+    // Calling these functions on each payment card would be too much computation
+    lastHostedReveals = LNParams.cm.allIncomingRevealed(LNParams.cm.allHostedCommits)
     lastInChannelOutgoing = LNParams.cm.allInChannelOutgoing
   }
 
@@ -274,8 +275,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     def ractOnTap: Unit = currentDetails match {
       case info: DelayedRefunds => showPending(info)
       case info: LNUrlPayLink => doCallPayLink(info)
-      case info: PaymentInfo if info.isIncoming && info.status == PaymentStatus.PENDING && !lastHashToReveals.contains(info.paymentHash) =>
-        // Intercept normal flow and show invoice if: this is an incoming, not yet fulfilled payment with no parts received
+      case info: PaymentInfo if info.isIncoming && PaymentStatus.PENDING == info.status && !LNParams.cm.inProcessors.get(info.fullTag).exists(info.isActivelyHolding) =>
+        // Intercept normal flow and show paymet request if this is an incoming payment which is still pending and not being actively held at the moment
         runAnd(InputParser.value = info.prExt)(me goTo ClassNames.qrInvoiceActivityClass)
       case info: TransactionDetails =>
         TransitionManager.beginDelayedTransition(contentWindow)
@@ -297,7 +298,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       val title = getString(error_hc_dangerous_state).asColoredView(R.color.buttonRed)
       val chainAddress = Await.result(fromWallet.getReceiveAddresses, atMost = 40.seconds).accountToKey.keys.head
       val paymentAmount = WalletApp.denom.parsedWithSign(myFulfills.map(_.theirAdd.amountMsat).sum, cardOut, cardZero)
-      val closestExpiry = WalletApp.app.plurOrZero(inBlocks)(myFulfills.map(_.theirAdd.cltvExpiry).min.toLong - LNParams.blockCount.get)
+      val closestExpiry = WalletApp.app.plurOrZero(myFulfills.map(_.theirAdd.cltvExpiry).min.toLong - LNParams.blockCount.get, inBlocks)
       val rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget)
       runFutureProcessOnUI(fromWallet.sendPreimageBroadcast(myFulfills.map(_.ourPreimage).toSet, chainAddress, rate), onCanNot)(onCan)
 
@@ -350,7 +351,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
               val blocksDone = LNParams.blockCount.get - at.blockHeight
               val csv = math.max(Scripts.csvTimeouts(tx).values.headOption.getOrElse(0L) - blocksDone, 0L)
               val cltv = math.max(Scripts.cltvTimeout(tx) - LNParams.blockCount.get, 0L)
-              text2.setText(WalletApp.app.plurOrZero(inBlocks)(cltv + csv).html)
+              text2.setText(WalletApp.app.plurOrZero(cltv + csv, inBlocks).html)
               text1.setText(incoming(tx.txOut.head.amount.toMilliSatoshi).html)
 
             case tx ~ None =>
@@ -451,7 +452,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     def doBoostRBF(fromWallet: ElectrumEclairWallet, info: TxInfo): Unit = {
-      val currentFee = WalletApp.denom.directedWithSign(incoming = 0L.msat, outgoing = info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
+      val currentFee = WalletApp.denom.parsedWithSign(info.feeSat.toMilliSatoshi, cardOut, cardIn)
       val target = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget)
 
       val body = getLayoutInflater.inflate(R.layout.frag_input_rbf, null).asInstanceOf[ScrollView]
@@ -530,7 +531,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     def doCancelRBF(fromWallet: ElectrumEclairWallet, info: TxInfo): Unit = {
-      val currentFee = WalletApp.denom.directedWithSign(incoming = 0L.msat, outgoing = info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
+      val currentFee = WalletApp.denom.parsedWithSign(info.feeSat.toMilliSatoshi, cardOut, cardIn)
       val target = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget)
       val changeAddress = Await.result(LNParams.chainWallets.lnWallet.getReceiveAddresses, atMost = 40.seconds).changeAddress
 
@@ -628,12 +629,13 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         case info: PaymentInfo =>
           val myFulfills = dangerousHCRevealed(info.fullTag)
           val amount = if (info.isIncoming) info.received else info.sent
-          val outgoingFSMSpec = LNParams.cm.opm.data.payments.get(info.fullTag).map(_.data)
+          val incomingFSMOpt = LNParams.cm.inProcessors.get(info.fullTag)
+          val outgoingFSMOpt = LNParams.cm.opm.data.payments.get(info.fullTag)
 
-          val liveFeePaid = outgoingFSMSpec.map(_.usedFee).getOrElse(info.fee)
+          val liveFeePaid = outgoingFSMOpt.map(_.data.usedFee).getOrElse(info.fee)
           val offChainFeePaid = WalletApp.denom.directedWithSign(0L.msat, liveFeePaid, cardOut, cardIn, cardZero, isIncoming = false)
           val onChainFeeSaved = WalletApp.denom.directedWithSign(info.chainFee - liveFeePaid, 0L.msat, cardOut, cardIn, cardZero, info.chainFee > liveFeePaid)
-          val shouldDisplayFee = liveFeePaid > 0L.msat && (info.status == PaymentStatus.SUCCEEDED || info.status != PaymentStatus.ABORTED && outgoingFSMSpec.isDefined)
+          val shouldDisplayFee = liveFeePaid > 0L.msat && (info.status == PaymentStatus.SUCCEEDED || info.status != PaymentStatus.ABORTED && outgoingFSMOpt.isDefined)
           val shouldRetry = info.status == PaymentStatus.ABORTED && !info.prExt.pr.isExpired && info.description.split.isEmpty && info.description.toSelfPreimage.isEmpty
 
           addFlowChip(extraInfo, getString(popup_hash) format info.paymentHash.toHex.short, R.drawable.border_green, info.paymentHash.toHex.asSome)
@@ -648,14 +650,19 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           if (!info.isIncoming && shouldDisplayFee) addFlowChip(extraInfo, getString(popup_ln_fee).format(offChainFeePaid, onChainFeeSaved), R.drawable.border_gray)
           if (shouldRetry) addFlowChip(extraInfo, getString(popup_retry), R.drawable.border_yellow, _ => self retry info)
 
+          incomingFSMOpt.filter(info.isActivelyHolding).foreach { fsm =>
+            addFlowChip(extraInfo, getString(dialog_accept), R.drawable.border_green, _ => fsm doProcess IncomingPaymentProcessor.CMDReleaseHold)
+            addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => fsm doProcess IncomingPaymentProcessor.CMDTimeout)
+          }
+
           for (action <- info.action if info.status == PaymentStatus.SUCCEEDED) {
             def run: Unit = resolveAction(theirPreimage = info.preimage, paymentAction = action)
             addFlowChip(extraInfo, getString(popup_run_action), R.drawable.border_green, _ => run)
           }
 
           lastInChannelOutgoing.get(info.fullTag).map(_.maxBy(_.cltvExpiry).cltvExpiry.toLong - LNParams.blockCount.get) match {
-            case Some(blocksLeft) if blocksLeft > 0 => addFlowChip(extraInfo, WalletApp.app.plurOrZero(expiresInBlocks)(blocksLeft), R.drawable.border_gray)
-            case Some(blocksLeft) if blocksLeft <= 0 => addFlowChip(extraInfo, expiresInBlocks.head, R.drawable.border_red)
+            case Some(left) if left > 0 => addFlowChip(extraInfo, WalletApp.app.plurOrZero(left, expiresInBlocks), R.drawable.border_gray)
+            case Some(left) if left <= 0 => addFlowChip(extraInfo, expiresInBlocks.head, R.drawable.border_red)
             case None => // Either incoming or not in channels
           }
 
@@ -807,33 +814,31 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     def setIncomingPaymentMeta(info: PaymentInfo): Unit = {
-      def receivedRatio(fsm: IncomingPaymentProcessor): Long = ratio(info.received, fsm.lastAmountIn)
-      val valueHuman = LNParams.cm.inProcessors.get(info.fullTag).map(receivedRatio).map(WalletApp.app plurOrZero pctCollected)
-      if (PaymentStatus.SUCCEEDED == info.status && valueHuman.isEmpty) meta setText WalletApp.app.when(info.date, WalletApp.app.dateFormat).html // Payment has been cleared
-      else if (PaymentStatus.SUCCEEDED == info.status && valueHuman.isDefined) meta setText pctCollected.last.html // Notify user that we are not exactly done yet
-      else meta setText valueHuman.getOrElse(pctCollected.head).html // Show either value collected so far or that we are still waiting
+      val fsmOpt = LNParams.cm.inProcessors.get(info.fullTag)
+      val fsmReceiving = fsmOpt.exists(_.state == IncomingPaymentProcessor.RECEIVING)
+      if (fsmOpt exists info.isActivelyHolding) meta setText s"<b>${fsmOpt.get.secondsLeft}</b> sec".html // Show how many seconds left until cancel
+      else if (fsmOpt.isDefined && PaymentStatus.SUCCEEDED == info.status) meta setText pctCollected.last.html // Preimage is revealed but we are not done yet
+      else if (fsmOpt.isEmpty && PaymentStatus.SUCCEEDED == info.status) meta setText WalletApp.app.when(info.date, WalletApp.app.dateFormat).html // Payment has been cleared
+      else if (fsmReceiving && PaymentStatus.PENDING == info.status) meta setText WalletApp.app.plurOrZero(info.ratio(fsmOpt.get), pctCollected).html // Actively collecting parts
+      else meta setText pctCollected.head
     }
 
     def setOutgoingPaymentMeta(info: PaymentInfo): Unit = {
       val activeParts = lastInChannelOutgoing.getOrElse(info.fullTag, Nil).size
       val isPendingOrBeingSent = PaymentStatus.PENDING == info.status || activeParts > 0
-      if (isPendingOrBeingSent) meta setText WalletApp.app.plurOrZero(partsInFlight)(activeParts).html
+      if (isPendingOrBeingSent) meta setText WalletApp.app.plurOrZero(activeParts, partsInFlight).html
       else meta setText WalletApp.app.when(info.date, WalletApp.app.dateFormat).html
     }
 
     def setPaymentTypeIcon(info: PaymentInfo): Unit = {
       if (info.isIncoming) setVisibleIcon(R.id.lnIncoming)
-      else setOutgoingPaymentIcons(info)
-    }
-
-    def setOutgoingPaymentIcons(info: PaymentInfo): Unit = {
-      setVis(view = iconMap(R.id.lnOutgoing), isVisible = true)
-      setVisibleIcon(R.id.lnOutgoing)
+      else setVisibleIcon(R.id.lnOutgoing)
     }
 
     def paymentStatusIcon(info: PaymentInfo): Int = {
       if (PaymentStatus.SUCCEEDED == info.status) R.drawable.baseline_done_24
       else if (PaymentStatus.ABORTED == info.status) R.drawable.baseline_block_24
+      else if (LNParams.cm.inProcessors.get(info.fullTag) exists info.isActivelyHolding) R.drawable.baseline_feedback_24
       else R.drawable.baseline_hourglass_empty_24
     }
 
@@ -1415,9 +1420,17 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def bringReceivePopup: Unit = lnReceiveGuard(LNParams.cm.all.values, contentWindow) {
     new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = Long.MaxValue.msat, initMinReceivable = 0L.msat) {
       override def getManager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_public, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-      override def getDescription: PaymentDescription = PlainDescription(split = None, label = None, semanticOrder = None, proofTxid = None, invoiceText = manager.resultExtraInput getOrElse new String)
       override def processInvoice(prExt: PaymentRequestExt): Unit = runAnd(InputParser.value = prExt)(me goTo ClassNames.qrInvoiceActivityClass)
       override def getTitleText: String = getString(dialog_receive_ln)
+
+      override def getDescription: PaymentDescription = {
+        val invoiceText = manager.resultExtraInput.getOrElse(new String)
+        val holdPeriodSec = if (manager.holdPayment.isChecked) Some(LNParams.maxHoldSecs) else None
+        PlainDescription(split = None, label = None, semanticOrder = None, proofTxid = None, invoiceText, holdPeriodSec)
+      }
+
+      manager.holdPayment.setText(getString(popup_hold).format(LNParams.maxHoldSecs / 60).html)
+      setVis(isVisible = true, manager.holdPayment)
     }
   }
 

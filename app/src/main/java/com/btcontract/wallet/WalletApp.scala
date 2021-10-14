@@ -396,7 +396,7 @@ class WalletApp extends Application { me =>
 
   def quickToast(code: Int): Unit = quickToast(me getString code)
   def quickToast(msg: CharSequence): Unit = Toast.makeText(me, msg, Toast.LENGTH_LONG).show
-  def plurOrZero(opts: Array[String] = Array.empty)(num: Long): String = if (num > 0) plur(opts, num).format(num) else opts(0)
+  def plurOrZero(num: Long, opts: Array[String] = Array.empty): String = if (num > 0) plur(opts, num).format(num) else opts(0)
   def clipboardManager: ClipboardManager = getSystemService(Context.CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
   def getBufferUnsafe: String = clipboardManager.getPrimaryClip.getItemAt(0).getText.toString
 

@@ -74,8 +74,15 @@
         style="@style/FillingView"
         android:layout_marginTop="25dp"
         android:layout_marginStart="8dp"
-        android:text="@string/lnurl_auth_identity"
+        android:text="@string/popup_identity"
         android:id="@+id/attachIdentity"
+        android:visibility="gone"/>
+
+    <CheckBox
+        style="@style/FillingView"
+        android:layout_marginTop="25dp"
+        android:layout_marginStart="8dp"
+        android:id="@+id/holdPayment"
         android:visibility="gone"/>
 
     <View

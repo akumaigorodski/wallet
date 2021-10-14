@@ -3,16 +3,17 @@ package immortan
 import spray.json._
 import fr.acinq.eclair._
 import immortan.utils.ImplicitJsonFormats._
+import immortan.fsm.{IncomingPaymentProcessor, SendMultiPart, SplitInfo}
 import immortan.crypto.Tools.{Any2Some, Bytes, Fiat2Btc, SEPARATOR}
 import fr.acinq.eclair.channel.{DATA_CLOSING, HasNormalCommitments}
 import immortan.utils.{LNUrl, PayRequestMeta, PaymentRequestExt}
 import fr.acinq.bitcoin.{ByteVector32, Satoshi, Transaction}
 import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv}
-import immortan.fsm.{SendMultiPart, SplitInfo}
 import immortan.ChannelMaster.TxConfirmedAtOpt
 import org.bouncycastle.util.encoders.Base64
 import fr.acinq.bitcoin.Crypto.PublicKey
 import scodec.bits.ByteVector
+import immortan.crypto.Tools
 import spray.json.JsArray
 import scala.util.Try
 import java.util.Date
@@ -97,6 +98,7 @@ case class LNUrlPayLink(domain: String, payString: String, payMetaString: String
 }
 
 case class DelayedRefunds(txToParent: Map[Transaction, TxConfirmedAtOpt] = Map.empty) extends TransactionDetails {
+
   val totalAmount: MilliSatoshi = txToParent.keys.flatMap(_.txOut).map(_.amount).sum.toMilliSatoshi
 
   override val updatedAt: Long = System.currentTimeMillis * 2
@@ -150,13 +152,17 @@ case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, se
 
   lazy val isIncoming: Boolean = 1 == incoming
 
-  lazy val fullTag: FullPaymentTag = FullPaymentTag(paymentHash, paymentSecret, if (isIncoming) PaymentTagTlv.FINAL_INCOMING else PaymentTagTlv.LOCALLY_SENT)
-
-  lazy val action: Option[PaymentAction] = if (actionString == PaymentInfo.NO_ACTION) None else to[PaymentAction](actionString).asSome
+  lazy val fiatRateSnapshot: Fiat2Btc = to[Fiat2Btc](fiatRatesString)
 
   lazy val prExt: PaymentRequestExt = PaymentRequestExt.fromRaw(prString)
 
-  lazy val fiatRateSnapshot: Fiat2Btc = to[Fiat2Btc](fiatRatesString)
+  lazy val action: Option[PaymentAction] = if (actionString == PaymentInfo.NO_ACTION) None else to[PaymentAction](actionString).asSome
+
+  lazy val fullTag: FullPaymentTag = FullPaymentTag(paymentHash, paymentSecret, if (isIncoming) PaymentTagTlv.FINAL_INCOMING else PaymentTagTlv.LOCALLY_SENT)
+
+  def isActivelyHolding(fsm: IncomingPaymentProcessor): Boolean = IncomingPaymentProcessor.RECEIVING == fsm.state && prExt.isEnough(fsm.lastAmountIn) && fsm.isHolding
+
+  def ratio(fsm: IncomingPaymentProcessor): Long = Tools.ratio(received, fsm.lastAmountIn)
 }
 
 // Payment actions

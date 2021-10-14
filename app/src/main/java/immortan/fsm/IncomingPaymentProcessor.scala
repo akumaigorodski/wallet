@@ -30,6 +30,7 @@ object IncomingPaymentProcessor {
 sealed trait IncomingPaymentProcessor extends StateMachine[IncomingProcessorData] with CanBeShutDown { me =>
   lazy val tuple: (FullPaymentTag, IncomingPaymentProcessor) = (fullTag, me)
   var lastAmountIn: MilliSatoshi = MilliSatoshi(0L)
+  var isHolding: Boolean = false
   val fullTag: FullPaymentTag
 }
 
@@ -45,8 +46,6 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
   require(fullTag.tag == PaymentTagTlv.FINAL_INCOMING)
   delayedCMDWorker.replaceWork(CMDTimeout)
   become(null, RECEIVING)
-
-  var isHolding: Boolean = false
 
   def doProcess(msg: Any): Unit = (msg, data, state) match {
     case (inFlight: InFlightPayments, _, RECEIVING | FINALIZING) if !inFlight.in.contains(fullTag) =>
