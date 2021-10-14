@@ -19,6 +19,7 @@ import scala.util.Success
 
 object IncomingPaymentProcessor {
   final val CMDTimeout = "cmd-timeout"
+  final val CMDReleaseHold = "cmd-release-hold"
 
   final val SHUTDOWN = 0
   final val FINALIZING = 1
@@ -45,6 +46,8 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
   delayedCMDWorker.replaceWork(CMDTimeout)
   become(null, RECEIVING)
 
+  var isHolding: Boolean = false
+
   def doProcess(msg: Any): Unit = (msg, data, state) match {
     case (inFlight: InFlightPayments, _, RECEIVING | FINALIZING) if !inFlight.in.contains(fullTag) =>
       // We have previously failed or fulfilled an incoming payment and all parts have been cleared
@@ -68,8 +71,14 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
           case _ if info.isIncoming && PaymentStatus.SUCCEEDED == info.status => becomeRevealed(info.preimage, info.description.queryText, adds) // Already revealed, but not finalized
           case Some(selfPreimage) if !info.isIncoming && PaymentStatus.SUCCEEDED == info.status => becomeRevealed(selfPreimage, info.description.queryText, adds) // Already revealed, but not finalized
           case _ if adds.exists(_.add.cltvExpiry.toLong < LNParams.blockCount.get + LNParams.cltvRejectThreshold) => becomeAborted(IncomingAborted(None, fullTag), adds) // Not enough time to react if stalls
-          case _ if info.isIncoming && info.prExt.pr.amount.exists(askedAmt => lastAmountIn >= askedAmt) => becomeRevealed(info.preimage, info.description.queryText, adds) // Got enough parts to cover an amount
-          case Some(selfPreimage) if !info.isIncoming && info.prExt.pr.amount.exists(askedAmt => lastAmountIn >= askedAmt) => becomeRevealed(selfPreimage, info.description.queryText, adds) // Got all self-payment parts
+
+          case _ if info.isIncoming && info.prExt.isEnough(lastAmountIn) => info.description.holdPeriodSec match {
+            case None => becomeRevealed(info.preimage, info.description.queryText, adds)
+            case Some(holdPeriodSeconds) if !isHolding => hold(holdPeriodSeconds)
+            case _ => // Do nothing, await for timeout or user action
+          }
+
+          case Some(selfPreimage) if !info.isIncoming &&info.prExt.isEnough(lastAmountIn) => becomeRevealed(selfPreimage, info.description.queryText, adds) // Got all self-parts
           case _ if adds.size >= cm.all.values.count(Channel.isOperational) * LNParams.maxInChannelHtlcs => becomeAborted(IncomingAborted(None, fullTag), adds) // Ran out of slots
           case None if !info.isIncoming => becomeAborted(IncomingAborted(None, fullTag), adds) // Not an explicit outgoing self-payment
           case _ => // Do nothing, wait for more parts or a timeout
@@ -81,8 +90,19 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
       delayedCMDWorker.replaceWork(CMDTimeout)
 
     case (CMDTimeout, null, RECEIVING) =>
-      // Too many time has passed since last seen incoming payment
-      become(IncomingAborted(PaymentTimeout.asSome, fullTag), FINALIZING)
+      // User is explicitly requesting failing of held payment
+      // Or too much time has elapsed since we seen another incoming part
+      becomeAborted(IncomingAborted(PaymentTimeout.asSome, fullTag), adds = Nil)
+      // Actually request adds
+      cm.notifyResolvers
+
+    case (CMDReleaseHold, null, RECEIVING) =>
+      cm.getPaymentInfoMemo.get(fullTag.paymentHash).toOption match {
+        case Some(info) if isHolding => becomeRevealed(info.preimage, info.description.queryText, adds = Nil)
+        case _ => becomeAborted(IncomingAborted(PaymentTimeout.asSome, fullTag), adds = Nil)
+      }
+
+      // Actually request adds
       cm.notifyResolvers
 
     case (inFlight: InFlightPayments, revealed: IncomingRevealed, FINALIZING) =>
@@ -104,6 +124,14 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
     case Some(specificLocalFail) => for (local <- adds) cm.sendTo(CMD_FAIL_HTLC(specificLocalFail.asRight, local.secret, local.add), local.add.channelId)
   }
 
+  def hold(holdPeriodSeconds: Long): Unit = {
+    // Extend timer to hold timeout instead of revealing
+    // actual revealing or failing will happen on user request
+    TOTAL_INTERVAL_SECONDS = holdPeriodSeconds
+    delayedCMDWorker.replaceWork(CMDTimeout)
+    isHolding = true
+  }
+
   def becomeAborted(data1: IncomingAborted, adds: ReasonableLocals): Unit = {
     // Fail parts and retain a failure message to maybe re-fail using the same error
     become(data1, FINALIZING)
@@ -111,8 +139,8 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
   }
 
   def becomeRevealed(preimage: ByteVector32, queryText: String, adds: ReasonableLocals): Unit = cm.chanBag.db txWrap {
-    // With final payment we ALREADY know a preimage (unless keySend), but also put it into storage once preimage gets revealed
-    // doing so makes it transferrable and fulfillable on a new device as storage db gets included in backup file, unlike payments db
+    // With final payment we ALREADY know a preimage, but also put it into storage once preimage gets revealed
+    // doing so makes it transferrable and fulfillable on a new device as storage db gets included in backup
     cm.payBag.addSearchablePayment(queryText, fullTag.paymentHash)
     cm.payBag.updOkIncoming(lastAmountIn, fullTag.paymentHash)
     cm.payBag.setPreimage(fullTag.paymentHash, preimage)
@@ -148,8 +176,8 @@ class TrampolinePaymentRelayer(val fullTag: FullPaymentTag, cm: ChannelMaster) e
   def validateRelay(params: TrampolineOn, adds: ReasonableTrampolines, blockHeight: Long): Option[FailureMessage] = firstOpt(adds) collectFirst {
     case pkt if pkt.innerPayload.invoiceFeatures.isDefined && pkt.innerPayload.paymentSecret.isEmpty => InvalidOnionPayload(UInt64(8), 0) // We do not serve legacy recepients
     case pkt if relayFee(pkt.innerPayload, params) > lastAmountIn - pkt.innerPayload.amountToForward => TrampolineFeeInsufficient // Proposed trampoline fee is less than required
-    case pkt if adds.map(_.packet.innerPayload.amountToForward).toSet.size != 1 => IncorrectOrUnknownPaymentDetails(pkt.add.amountMsat, LNParams.blockCount.get) // All incoming parts must have the same amount
-    case pkt if adds.map(_.packet.outerPayload.totalAmount).toSet.size != 1 => IncorrectOrUnknownPaymentDetails(pkt.add.amountMsat, LNParams.blockCount.get) // All incoming parts must have the same TotalAmount
+    case pkt if adds.map(_.packet.innerPayload.amountToForward).toSet.size != 1 => IncorrectOrUnknownPaymentDetails(pkt.add.amountMsat, LNParams.blockCount.get) // amountToForward divergence
+    case pkt if adds.map(_.packet.outerPayload.totalAmount).toSet.size != 1 => IncorrectOrUnknownPaymentDetails(pkt.add.amountMsat, LNParams.blockCount.get) // totalAmount divergence
     case pkt if expiryIn(adds) - pkt.innerPayload.outgoingCltv < params.cltvExpiryDelta => TrampolineExpiryTooSoon // Proposed delta is less than required by our node
     case _ if !adds.map(_.add.channelId).flatMap(cm.all.get).forall(Channel.isOperational) => TemporaryNodeFailure // Some channels got into error state, better stop
     case pkt if CltvExpiry(blockHeight) >= pkt.innerPayload.outgoingCltv => TrampolineExpiryTooSoon // Final recepient's CLTV expiry is below current chain height

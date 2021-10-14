@@ -35,10 +35,6 @@ case class SemanticOrder(id: String, order: Long)
 
 case class RBFParams(ofTxid: ByteVector32, mode: Long)
 
-case class HoldParams(waitForMsec: Long, waitingSince: Option[Long] = None, isReleased: Boolean) {
-  def shouldRelease: Boolean = isReleased || waitingSince.exists(since => System.currentTimeMillis - since > waitForMsec)
-}
-
 case class SplitParams(prExt: PaymentRequestExt, action: Option[PaymentAction], description: PaymentDescription, cmd: SendMultiPart, chainFee: MilliSatoshi)
 
 object SemanticOrder {
@@ -119,8 +115,8 @@ case class DelayedRefunds(txToParent: Map[Transaction, TxConfirmedAtOpt] = Map.e
 
 sealed trait PaymentDescription extends TransactionDescription {
   val toSelfPreimage: Option[ByteVector32] // Present for reflexive outgoing payments
-  val holdParams: Option[HoldParams] // How long to hold and for how long it has been held so far
   val externalInfo: Option[String] // The one which comes from invoice description, LNURL-PAY metadata, etc...
+  val holdPeriodSec: Option[Long] // Once enough incoming parts are collected, for how many seconds should it be held
   val proofTxid: Option[String] // If this is an incoming HC-routed payment with revealed preimage and stalling Host
   val split: Option[SplitInfo]
   val invoiceText: String
@@ -128,7 +124,7 @@ sealed trait PaymentDescription extends TransactionDescription {
 }
 
 case class PlainDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder],
-                            proofTxid: Option[String], invoiceText: String, holdParams: Option[HoldParams] = None,
+                            proofTxid: Option[String], invoiceText: String, holdPeriodSec: Option[Long] = None,
                             toSelfPreimage: Option[ByteVector32] = None) extends PaymentDescription {
 
   val externalInfo: Option[String] = Some(invoiceText).find(_.nonEmpty)
@@ -137,7 +133,7 @@ case class PlainDescription(split: Option[SplitInfo], label: Option[String], sem
 }
 
 case class PlainMetaDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder],
-                                proofTxid: Option[String], invoiceText: String, meta: String, holdParams: Option[HoldParams] = None,
+                                proofTxid: Option[String], invoiceText: String, meta: String, holdPeriodSec: Option[Long] = None,
                                 toSelfPreimage: Option[ByteVector32] = None) extends PaymentDescription {
 
   val externalInfo: Option[String] = List(meta, invoiceText).find(_.nonEmpty)

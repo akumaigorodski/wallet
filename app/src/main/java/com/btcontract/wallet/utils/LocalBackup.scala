@@ -35,7 +35,6 @@ object LocalBackup { me =>
   final val LOCAL_BACKUP_REQUEST_NUMBER = 105
   def askPermission(activity: AppCompatActivity): Unit = ActivityCompat.requestPermissions(activity, Array(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), LOCAL_BACKUP_REQUEST_NUMBER)
   def isAllowed(context: Context): Boolean = ContextCompat.checkSelfPermission(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-
   def downloadsDir: File = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS)
 
   // Prefixing by one byte to discern future backup types (full wallet backup / minimal channel backup etc)
@@ -44,23 +43,37 @@ object LocalBackup { me =>
 
   def encryptAndWritePlainBackup(context: Context, dbFileName: String, chainHash: ByteVector32, seed: ByteVector): Unit = {
     val dataBaseFile = new File(context.getDatabasePath(dbFileName).getPath)
-    val plainBytes = ByteVector.view(Files toByteArray dataBaseFile)
-    val backupFile = getBackupFileUnsafe(chainHash, seed)
-    val cipherBytes = encryptBackup(plainBytes, seed)
-    Files.write(cipherBytes.toArray, backupFile)
+    val cipherBytes = encryptBackup(ByteVector.view(Files toByteArray dataBaseFile), seed)
+    atomicWrite(getBackupFileUnsafe(chainHash, seed), cipherBytes)
   }
 
   // It is assumed that we try to decrypt a backup before running this and only proceed on success
   def copyPlainDataToDbLocation(context: Context, dbFileName: String, plainBytes: ByteVector): Unit = {
     val dataBaseFile = new File(context.getDatabasePath(dbFileName).getPath)
     if (!dataBaseFile.exists) dataBaseFile.getParentFile.mkdirs
-    Files.write(plainBytes.toArray, dataBaseFile)
+    atomicWrite(dataBaseFile, plainBytes)
   }
 
   // Graph implanting
 
   // Separate method because we save the same file both in Downloads and in local assets folders
   def getGraphResourceName(chainHash: ByteVector32): String = s"$GRAPH_NAME-${me getNetwork chainHash}$GRAPH_EXTENSION"
-
   def getGraphFileUnsafe(chainHash: ByteVector32): File = new File(downloadsDir, me getGraphResourceName chainHash)
+
+  // Utils
+
+  def atomicWrite(file: File, data: ByteVector): Unit = {
+    val atomicFile = new android.util.AtomicFile(file)
+    var fileOutputStream = atomicFile.startWrite
+
+    try {
+      fileOutputStream.write(data.toArray)
+      atomicFile.finishWrite(fileOutputStream)
+      fileOutputStream = null
+    } finally {
+      if (fileOutputStream != null) {
+        atomicFile.failWrite(fileOutputStream)
+      }
+    }
+  }
 }

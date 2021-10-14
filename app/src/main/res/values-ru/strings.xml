@@ -212,7 +212,7 @@
 
     <!-- Remote peer activity -->
 
-    <string name="rpa_title">Соединение с удалённой стороной</string>
+    <string name="rpa_title">Соединение с узлом</string>
     <string name="rpa_disconnected">Удалённый узел отключился</string>
     <string name="rpa_no_feature_support">Невозможно открыть канал с этим узлом потмоу что он не поддерживает важные особенности протокола</string>
     <string name="rpa_hc_warn"><![CDATA[<br><b>Внимание!</b><br><br>Ваши средства в hosted-канале будут храниться на стороне хоста: убедитесь, что вы доверяете этому ему!]]></string>

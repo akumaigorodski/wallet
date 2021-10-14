@@ -42,14 +42,16 @@ class QRInvoiceActivity extends QRActivity with ExternalDataChecker { me =>
     }
 
   def showInvoice(prExt: PaymentRequestExt): Unit =
-    runInFutureProcessOnUI(QRActivity.get(prExt.raw.toUpperCase, qrSize), onFail) { bitmap =>
+    runInFutureProcessOnUI(QRActivity.get(prExt.raw.toUpperCase, qrSize), onFail) { qrBitmap =>
       val amountHuman = WalletApp.denom.parsedWithSign(prExt.pr.amount.get, cardIn, totalZero)
-      def share: Unit = runInFutureProcessOnUI(shareData(bitmap, prExt.raw), onFail)(none)
+      def share: Unit = runInFutureProcessOnUI(shareData(qrBitmap, prExt.raw), onFail)(none)
+      setVis(isVisible = false, qrViewHolder.qrEdit)
+
       qrViewHolder.qrCopy setOnClickListener onButtonTap(WalletApp.app copy prExt.raw)
       qrViewHolder.qrCode setOnClickListener onButtonTap(WalletApp.app copy prExt.raw)
       qrViewHolder.qrShare setOnClickListener onButtonTap(share)
       qrViewHolder.qrLabel setText amountHuman.html
-      qrViewHolder.qrCode setImageBitmap bitmap
+      qrViewHolder.qrCode setImageBitmap qrBitmap
       hashOfInterest = prExt.pr.paymentHash
     }
 

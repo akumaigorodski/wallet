@@ -5,6 +5,7 @@ import scodec.bits.{BitVector, ByteVector}
 import immortan.crypto.Tools.{SEPARATOR, none}
 import android.widget.{ArrayAdapter, LinearLayout}
 import immortan.{LNParams, LightningNodeKeys, WalletSecret}
+import androidx.documentfile.provider.DocumentFile
 import com.btcontract.wallet.utils.LocalBackup
 import androidx.transition.TransitionManager
 import androidx.appcompat.app.AlertDialog
@@ -68,12 +69,15 @@ class SetupActivity extends BaseActivity { me =>
       val cipherBytes = ByteStreams.toByteArray(getContentResolver openInputStream resultData.getData)
 
       showMnemonicPopup(R.string.action_backup_present_title) { mnemonics =>
-        val walletSeeed = MnemonicCode.toSeed(mnemonics, passphrase = new String)
-        LocalBackup.decryptBackup(ByteVector.view(cipherBytes), walletSeeed) match {
+        val walletSeed = MnemonicCode.toSeed(mnemonics, passphrase = new String)
+        LocalBackup.decryptBackup(ByteVector.view(cipherBytes), walletSeed) match {
 
-          case Success(plainBytes) =>
+          case Success(plainEssentialBytes) =>
             // We were able to decrypt a file, implant it into db location and proceed
-            LocalBackup.copyPlainDataToDbLocation(me, WalletApp.dbFileNameEssential, plainBytes)
+            LocalBackup.copyPlainDataToDbLocation(me, WalletApp.dbFileNameEssential, plainEssentialBytes)
+            // Delete user-selected backup file while we can here and make an app-owned backup shortly
+            DocumentFile.fromSingleUri(me, resultData.getData).delete
+            WalletApp.backupSaveWorker.replaceWork(true)
             proceedWithMnemonics(mnemonics)
 
           case Failure(exception) =>

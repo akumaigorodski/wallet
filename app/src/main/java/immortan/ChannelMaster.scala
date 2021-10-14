@@ -143,6 +143,12 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     inFinalized.onNext(data)
   }
 
+  def updateDescriptionAndCache(description: PaymentDescription, paymentHash: ByteVector32): Unit = {
+    // This makes sure payment info cache is always updated every time a description is changed
+    payBag.updDescription(description, paymentHash)
+    getPaymentInfoMemo.invalidate(paymentHash)
+  }
+
   // CONNECTION LISTENER
 
   // Note that this may be sent multiple times after chain wallet reconnects
