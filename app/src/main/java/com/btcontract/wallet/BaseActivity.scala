@@ -278,8 +278,10 @@ trait BaseActivity extends AppCompatActivity { me =>
     else sheet.show(getSupportFragmentManager, "scanner-bottom-sheet-fragment")
   }
 
-  def addFlowChip(flow: FlowLayout, chipText: String, backgroundRes: Int, shareText: Option[String] = None): TextView =
-    addFlowChip(flow, chipText, backgroundRes, defText => shareText.orElse(defText.asSome) foreach share)
+  def addFlowChip(flow: FlowLayout, chipText: String, backgroundRes: Int, shareText: Option[String] = None): TextView = {
+    def copyText(defText: String): Unit = WalletApp.app.copy(shareText getOrElse defText)
+    addFlowChip(flow, chipText, backgroundRes, copyText _)
+  }
 
   def addFlowChip(flow: FlowLayout, chipText: String, backgroundRes: Int, onTap: String => Unit): TextView = {
     val text = getLayoutInflater.inflate(R.layout.frag_chip_text, flow, false).asInstanceOf[TextView]

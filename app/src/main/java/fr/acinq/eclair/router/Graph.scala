@@ -193,9 +193,9 @@ object Graph {
         val cltvFactor = normalize(edge.updExt.update.cltvExpiryDelta.toInt, CLTV_LOW, CLTV_HIGH)
         ageFactor + capFactor + cltvFactor + successFactor
       } else {
-        // Max out all heuristics except success rate on assisted and hosted channels
+        // Minimize all heuristics except success rate on assisted and hosted channels
         // this makes these channels less likely to be used for routing at first
-        1 + 1 + 1 + successFactor
+        successFactor
       }
 
       val totalCost = if (edge.desc.from == sender) prev.costs else addEdgeFees(edge, prev.costs.head) +: prev.costs
