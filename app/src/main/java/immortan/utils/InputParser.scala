@@ -1,17 +1,18 @@
 package immortan.utils
 
-import fr.acinq.eclair._
-import immortan.utils.InputParser._
-import scala.util.{Failure, Success, Try}
-import immortan.{LNParams, RemoteNodeInfo}
-import fr.acinq.eclair.payment.PaymentRequest
-import scala.util.matching.UnanchoredRegex
 import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.bitcoin.ScriptElt
+import fr.acinq.eclair._
+import fr.acinq.eclair.payment.PaymentRequest
 import fr.acinq.eclair.wire.NodeAddress
 import immortan.crypto.Tools.trimmed
-import fr.acinq.bitcoin.ScriptElt
-import scodec.bits.ByteVector
+import immortan.utils.InputParser._
 import immortan.utils.uri.Uri
+import immortan.{LNParams, RemoteNodeInfo}
+import scodec.bits.ByteVector
+
+import scala.util.matching.UnanchoredRegex
+import scala.util.{Failure, Success, Try}
 
 
 object InputParser {
@@ -95,7 +96,6 @@ case class PaymentRequestExt(uri: Try[Uri], pr: PaymentRequest, raw: String) {
 
   val descriptionOpt: Option[String] = pr.description.left.toOption.map(trimmed).filter(_.nonEmpty)
   val brDescription: String = descriptionOpt.map(desc => s"<br><br>$desc").getOrElse(new String)
-  val descriptionOrEmpty: String = descriptionOpt.getOrElse(new String)
 }
 
 object BitcoinUri {

@@ -1,23 +1,23 @@
 package fr.acinq.eclair.blockchain.electrum
 
-import fr.acinq.eclair.blockchain.EclairWallet._
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet._
-import fr.acinq.eclair.blockchain.{EclairWallet, MakeFundingTxResponse, TxAndFee}
-import fr.acinq.bitcoin.{ByteVector32, OP_PUSHDATA, OP_RETURN, OutPoint, Satoshi, Script, Transaction, TxIn, TxOut}
-import fr.acinq.eclair.blockchain.electrum.ElectrumClient.BroadcastTransaction
-import fr.acinq.eclair.blockchain.electrum.db.CompleteChainWalletInfo
-import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import fr.acinq.eclair.addressToPublicKeyScript
-
-import scala.concurrent.Future
-import scodec.bits.ByteVector
 import akka.actor.ActorRef
 import akka.pattern.ask
+import fr.acinq.bitcoin.{ByteVector32, OP_PUSHDATA, OP_RETURN, OutPoint, Satoshi, Script, Transaction, TxIn, TxOut}
+import fr.acinq.eclair.addressToPublicKeyScript
+import fr.acinq.eclair.blockchain.EclairWallet._
+import fr.acinq.eclair.blockchain.electrum.ElectrumClient.BroadcastTransaction
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet._
+import fr.acinq.eclair.blockchain.electrum.db.CompleteChainWalletInfo
+import fr.acinq.eclair.blockchain.fee.FeeratePerKw
+import fr.acinq.eclair.blockchain.{EclairWallet, MakeFundingTxResponse, TxAndFee}
+import scodec.bits.ByteVector
+
+import scala.concurrent.Future
 
 
 case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, info: CompleteChainWalletInfo) extends EclairWallet {
 
-  import immortan.LNParams.{ec, timeout, logBag}
+  import immortan.LNParams.{ec, logBag, timeout}
 
   override def getReceiveAddresses: Future[GetCurrentReceiveAddressesResponse] = (walletRef ? GetCurrentReceiveAddresses).mapTo[GetCurrentReceiveAddressesResponse]
 

@@ -242,9 +242,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         val optionalInput = Option(extraInput.getText.toString).map(trimmed).filter(_.nonEmpty)
 
         currentDetails match {
-          case info: LNUrlPayLink => WalletApp.lnUrlPayBag.updDescription(info.description.modify(_.label).setTo(optionalInput), info.domain, info.payString)
-          case info: PaymentInfo => LNParams.cm.updateDescriptionAndCache(info.description.modify(_.label).setTo(optionalInput), info.paymentHash)
-          case info: TxInfo => WalletApp.txDataBag.updDescription(info.description.modify(_.label).setTo(optionalInput), info.txid)
+          case info: LNUrlPayLink => WalletApp.lnUrlPayBag.updDescription(info.description.copy(label = optionalInput), info.domain, info.payString)
+          case info: PaymentInfo => LNParams.cm.updateDescriptionAndCache(info.description.copy(label = optionalInput), info.paymentHash)
+          case info: TxInfo => WalletApp.txDataBag.updDescription(info.description.withNewLabel(optionalInput), info.txid)
           case _ =>
         }
       }
@@ -254,12 +254,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       def proceed: Unit = currentDetails match {
         case info: LNUrlPayLink => WalletApp.lnUrlPayBag.remove(info.payString)
         case info: PaymentInfo => LNParams.cm.payBag.removePaymentInfo(info.paymentHash)
-        case _ =>
+        case _ => // Other items are not removable currently
       }
 
-      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none,
-        new AlertDialog.Builder(me).setMessage(confirm_remove_item),
-        dialog_ok, dialog_cancel)
+      val builder = new AlertDialog.Builder(me).setMessage(confirm_remove_item)
+      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
     }
 
     def doShareItem: Unit = currentDetails match {
@@ -412,8 +411,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       def attempt(alert: AlertDialog): Unit = {
         val cpfpBumpOrder = SemanticOrder(info.txid.toHex, System.currentTimeMillis)
         // Only update parent semantic order if it does not already have one, record it BEFORE sending CPFP
-        val parentOrder = info.description.semanticOrder getOrElse cpfpBumpOrder.copy(order = Long.MinValue)
-        val parentDescWithOrder = info.description.modify(_.semanticOrder).setTo(parentOrder.asSome)
+        val parentDescWithOrder = info.description.withNewOrderCond(cpfpBumpOrder.copy(order = Long.MinValue).asSome)
         WalletApp.txDataBag.updDescription(parentDescWithOrder, info.txid)
 
         // On success tx will be recorded in a top level chain events listener
@@ -429,8 +427,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           isCommitted <- fromWallet.commit(txAndFee.tx, "cpfp-bump-tx")
         } if (isCommitted) {
           // Parent semantic order is already updated, now we also update CPFP parent info
-          val parentDescWithCpfp = parentDescWithOrder.modify(_.cpfpBy).setTo(txAndFee.tx.txid.asSome)
-          WalletApp.txDataBag.updDescription(parentDescWithCpfp, info.txid)
+          WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCpfpBy(txAndFee.tx.txid), info.txid)
         } else {
           // We revert the whole description back since CPFP has failed
           WalletApp.txDataBag.updDescription(info.description, info.txid)
@@ -505,9 +502,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           _ = WalletApp.txDescriptions += Tuple2(txAndFee.tx.txid, bumpDescription)
           isCommitted <- fromWallet.commit(txAndFee.tx, "rbf-bump-tx")
         } if (isCommitted) {
-          // Only update parent semantic order if it does not already have one
-          val parentOrder = info.description.semanticOrder getOrElse rbfBumpOrder.copy(order = Long.MaxValue)
-          val parentDesc = info.description.modify(_.semanticOrder).setTo(parentOrder.asSome)
+          val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
+          val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
           WalletApp.txDataBag.updDescription(parentDesc, info.txid)
         } else {
           // Details should be available in persistent log
@@ -585,9 +581,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           _ = WalletApp.txDescriptions += Tuple2(txAndFee.tx.txid, bumpDescription)
           isCommitted <- fromWallet.commit(txAndFee.tx, "rbf-cancel-tx")
         } if (isCommitted) {
-          // Only update parent semantic order if it does not already have one
-          val parentOrder = info.description.semanticOrder getOrElse rbfBumpOrder.copy(order = Long.MaxValue)
-          val parentDesc = info.description.modify(_.semanticOrder).setTo(parentOrder.asSome)
+          val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
+          val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
           WalletApp.txDataBag.updDescription(parentDesc, info.txid)
         } else {
           // Details should be available in persistent log
@@ -770,32 +765,30 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     // TX helpers
 
-    def txDescription(transactionInfo: TxInfo): String = getString(tx_description_penalty)
-//      transactionInfo.description match {
-//      case _ if transactionInfo.description.cpfpOf.isDefined => getString(tx_description_cpfp)
-//      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => getString(tx_description_rbf_boost)
-//      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => getString(tx_description_rbf_cancel)
-//      case plain: PlainTxDescription => plain.toAddress.map(_.short) getOrElse getString(tx_btc)
-//      case _: ChanRefundingTxDescription => getString(tx_description_refunding)
-//      case _: HtlcClaimTxDescription => getString(tx_description_htlc_claiming)
-//      case _: ChanFundingTxDescription => getString(tx_description_funding)
-//      case _: OpReturnTxDescription => getString(tx_description_op_return)
-//      case _: PenaltyTxDescription => getString(tx_description_penalty)
-//    }
+    def txDescription(transactionInfo: TxInfo): String = transactionInfo.description match {
+      case _ if transactionInfo.description.cpfpOf.isDefined => getString(tx_description_cpfp)
+      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => getString(tx_description_rbf_boost)
+      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => getString(tx_description_rbf_cancel)
+      case plain: PlainTxDescription => plain.toAddress.map(_.short) getOrElse getString(tx_btc)
+      case _: ChanRefundingTxDescription => getString(tx_description_refunding)
+      case _: HtlcClaimTxDescription => getString(tx_description_htlc_claiming)
+      case _: ChanFundingTxDescription => getString(tx_description_funding)
+      case _: OpReturnTxDescription => getString(tx_description_op_return)
+      case _: PenaltyTxDescription => getString(tx_description_penalty)
+    }
 
-    def setTxTypeIcon(info: TxInfo): Unit = setVisibleIcon(id = R.id.btcOutgoing)
-//      info.description match {
-//      case _ if info.description.cpfpOf.isDefined => setVisibleIcon(id = R.id.btcInBoosted)
-//      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => setVisibleIcon(id = R.id.btcOutBoosted)
-//      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => setVisibleIcon(id = R.id.btcOutCancelled)
-//      case _: PlainTxDescription if info.isIncoming => setVisibleIcon(id = R.id.btcIncoming)
-//      case _: OpReturnTxDescription => setVisibleIcon(id = R.id.btcOutgoing)
-//      case _: ChanRefundingTxDescription => setVisibleIcon(id = R.id.lnBtc)
-//      case _: ChanFundingTxDescription => setVisibleIcon(id = R.id.btcLn)
-//      case _: HtlcClaimTxDescription => setVisibleIcon(id = R.id.lnBtc)
-//      case _: PenaltyTxDescription => setVisibleIcon(id = R.id.lnBtc)
-//      case _ => setVisibleIcon(id = R.id.btcOutgoing)
-//    }
+    def setTxTypeIcon(info: TxInfo): Unit = info.description match {
+      case _ if info.description.cpfpOf.isDefined => setVisibleIcon(id = R.id.btcInBoosted)
+      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => setVisibleIcon(id = R.id.btcOutBoosted)
+      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => setVisibleIcon(id = R.id.btcOutCancelled)
+      case _: PlainTxDescription if info.isIncoming => setVisibleIcon(id = R.id.btcIncoming)
+      case _: OpReturnTxDescription => setVisibleIcon(id = R.id.btcOutgoing)
+      case _: ChanRefundingTxDescription => setVisibleIcon(id = R.id.lnBtc)
+      case _: ChanFundingTxDescription => setVisibleIcon(id = R.id.btcLn)
+      case _: HtlcClaimTxDescription => setVisibleIcon(id = R.id.lnBtc)
+      case _: PenaltyTxDescription => setVisibleIcon(id = R.id.lnBtc)
+      case _ => setVisibleIcon(id = R.id.btcOutgoing)
+    }
 
     def txStatusIcon(info: TxInfo): Int = {
       if (info.isConfirmed) R.drawable.baseline_done_24
@@ -1058,7 +1051,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
             override def send(alert: AlertDialog): Unit = {
               val cmd = LNParams.cm.makeSendCmd(prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(origAmount)
-              val pd = PlainDescription(split = cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, proofTxid = None, invoiceText = prExt.descriptionOrEmpty)
+              val pd = PaymentDescription(split = cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
               replaceOutgoingPayment(prExt, pd, action = None, sentAmount = cmd.split.myPart)
               LNParams.cm.localSend(cmd)
               alert.dismiss
@@ -1431,8 +1424,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       override def getDescription: PaymentDescription = {
         val invoiceText = manager.resultExtraInput.getOrElse(new String)
-        val holdPeriodSec = if (manager.holdPayment.isChecked) Some(LNParams.maxHoldSecs) else None
-        PlainDescription(split = None, label = None, semanticOrder = None, proofTxid = None, invoiceText, holdPeriodSec)
+        val hold = if (manager.holdPayment.isChecked) Some(LNParams.maxHoldSecs) else None
+        PaymentDescription(split = None, label = None, semanticOrder = None, invoiceText, holdPeriodSec = hold)
       }
 
       manager.holdPayment.setText(getString(popup_hold).format(LNParams.maxHoldSecs / 60).html)
@@ -1443,8 +1436,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def bringWithdrawPopup(data: WithdrawRequest): Unit = lnReceiveGuard(LNParams.cm.all.values, contentWindow) {
     new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = data.maxWithdrawable.msat, initMinReceivable = data.minCanReceive) {
       override def getManager: RateManager = new RateManager(body, getString(dialog_add_ln_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-      override def getDescription: PaymentDescription = PlainMetaDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, proofTxid = None, invoiceText = new String, meta = data.descriptionOrEmpty)
-      override def getTitleText: String = getString(dialog_lnurl_withdraw).format(data.callbackUri.getHost, data.brDescription)
+      override def getDescription: PaymentDescription = PaymentDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, invoiceText = new String, meta = data.descriptionOpt)
+      override def getTitleText: String = getString(dialog_lnurl_withdraw).format(data.callbackUri.getHost, data.descriptionOpt.map(desc => s"<br><br>$desc") getOrElse new String)
       override def processInvoice(prExt: PaymentRequestExt): Unit = data.requestWithdraw(prExt).foreach(none, onFail)
     }
   }
@@ -1472,7 +1465,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
             val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
             val cmd = LNParams.cm.makeSendCmd(pf.prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(minSendable)
-            val pd = PlainMetaDescription(cmd.split.asSome, label = None, semanticOrder = paymentOrder.asSome, proofTxid = None, invoiceText = new String, meta = data.meta.textPlain)
+            val pd = PaymentDescription(cmd.split.asSome, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, meta = data.meta.textPlain.asSome)
             InputParser.value = SplitParams(pf.prExt, pf.successAction, pd, cmd, typicalChainTxFee)
             me goTo ClassNames.qrSplitActivityClass
           }
@@ -1493,7 +1486,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
             val linkOrder = SemanticOrder(id = lnUrl.request, order = Long.MinValue)
             val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
             val cmd = LNParams.cm.makeSendCmd(pf.prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(manager.resultMsat)
-            val pd = PlainMetaDescription(split = None, label = None, semanticOrder = paymentOrder.asSome, proofTxid = None, invoiceText = new String, meta = data.meta.textPlain)
+            val pd = PaymentDescription(split = None, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, meta = data.meta.textPlain.asSome)
             replaceOutgoingPayment(pf.prExt, pd, pf.successAction, sentAmount = cmd.split.myPart)
             LNParams.cm.localSend(cmd)
 

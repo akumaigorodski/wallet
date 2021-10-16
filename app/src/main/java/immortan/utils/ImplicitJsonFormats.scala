@@ -1,22 +1,21 @@
 package immortan.utils
 
-import immortan._
-import spray.json._
+import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
+import fr.acinq.bitcoin.{ByteVector32, Satoshi}
+import fr.acinq.eclair.MilliSatoshi
+import fr.acinq.eclair.blockchain.electrum.db.{ChainWalletInfo, SigningWallet, WatchingWallet}
 import fr.acinq.eclair.blockchain.fee._
+import fr.acinq.eclair.wire.ChannelCodecs.extendedPublicKeyCodec
+import fr.acinq.eclair.wire.ChannelUpdate
 import fr.acinq.eclair.wire.CommonCodecs._
 import fr.acinq.eclair.wire.LightningMessageCodecs._
-
-import fr.acinq.bitcoin.{ByteVector32, Satoshi}
-import immortan.utils.FiatRates.{BitpayItemList, CoinGeckoItemMap}
-import fr.acinq.eclair.blockchain.electrum.db.{ChainWalletInfo, SigningWallet, WatchingWallet}
-import fr.acinq.eclair.wire.ChannelCodecs.extendedPublicKeyCodec
-import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
-import fr.acinq.eclair.wire.ChannelUpdate
-import fr.acinq.bitcoin.Crypto.PublicKey
+import immortan._
 import immortan.crypto.Tools.Fiat2Btc
-import fr.acinq.eclair.MilliSatoshi
 import immortan.fsm.SplitInfo
+import immortan.utils.FiatRates.{BitpayItemList, CoinGeckoItemMap}
 import scodec.bits.BitVector
+import spray.json._
 
 
 object ImplicitJsonFormats extends DefaultJsonProtocol {
@@ -128,29 +127,11 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
     taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
       PenaltyTxDescription](PenaltyTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "PenaltyTxDescription")
 
-  implicit object PaymentDescriptionFmt extends JsonFormat[PaymentDescription] {
-    def read(raw: JsValue): PaymentDescription = raw.asJsObject.fields(TAG) match {
-      case JsString("PlainMetaDescription") => raw.convertTo[PlainMetaDescription]
-      case JsString("PlainDescription") => raw.convertTo[PlainDescription]
-      case _ => throw new Exception
-    }
-
-    def write(internal: PaymentDescription): JsValue = internal match {
-      case paymentDescription: PlainMetaDescription => paymentDescription.toJson
-      case paymentDescription: PlainDescription => paymentDescription.toJson
-      case _ => throw new Exception
-    }
-  }
-
   implicit val splitInfoFmt: JsonFormat[SplitInfo] = jsonFormat[MilliSatoshi, MilliSatoshi, SplitInfo](SplitInfo.apply, "totalSum", "myPart")
 
-  implicit val plainDescriptionFmt: JsonFormat[PlainDescription] =
-    taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String, Option[Long], Option[ByteVector32],
-      PlainDescription](PlainDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText", "holdPeriodSec", "toSelfPreimage"), tag = "PlainDescription")
-
-  implicit val plainMetaDescriptionFmt: JsonFormat[PlainMetaDescription] =
-    taggedJsonFmt(jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], Option[String], String, String, Option[Long], Option[ByteVector32],
-      PlainMetaDescription](PlainMetaDescription.apply, "split", "label", "semanticOrder", "proofTxid", "invoiceText", "meta", "holdPeriodSec", "toSelfPreimage"), tag = "PlainMetaDescription")
+  implicit val paymentDescriptionFmt: JsonFormat[PaymentDescription] =
+    jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], String, Option[String], Option[String], Option[Long], Option[ByteVector32],
+      PaymentDescription](PaymentDescription.apply, "split", "label", "semanticOrder", "invoiceText", "proofTxid", "meta", "holdPeriodSec", "toSelfPreimage")
 
   // Payment action
 

@@ -1,28 +1,29 @@
 package immortan.crypto
 
-import fr.acinq.eclair._
-import fr.acinq.bitcoin._
-import scala.concurrent.duration._
-import immortan.utils.{FeeRatesInfo, ThrottledWork}
-import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
-import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi, ShortChannelId}
-import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
-import fr.acinq.eclair.router.Graph.GraphStructure.GraphEdge
-import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
-import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import fr.acinq.eclair.transactions.CommitmentSpec
-import fr.acinq.eclair.router.Router.ChannelDesc
-import fr.acinq.eclair.router.RouteCalculation
-import fr.acinq.eclair.crypto.ChaCha20Poly1305
-import immortan.crypto.Noise.KeyPair
-import java.util.concurrent.TimeUnit
 import java.io.ByteArrayInputStream
-import language.implicitConversions
+import java.nio.ByteOrder
+import java.util.concurrent.TimeUnit
+
+import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
+import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
+import fr.acinq.bitcoin._
+import fr.acinq.eclair.blockchain.fee.FeeratePerKw
+import fr.acinq.eclair.crypto.ChaCha20Poly1305
+import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
+import fr.acinq.eclair.router.Graph.GraphStructure.GraphEdge
+import fr.acinq.eclair.router.RouteCalculation
+import fr.acinq.eclair.router.Router.ChannelDesc
+import fr.acinq.eclair.transactions.CommitmentSpec
+import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi, ShortChannelId, _}
+import immortan.crypto.Noise.KeyPair
 import immortan.crypto.Tools.runAnd
-import scala.collection.mutable
+import immortan.utils.{FeeRatesInfo, ThrottledWork}
 import rx.lang.scala.Observable
 import scodec.bits.ByteVector
-import java.nio.ByteOrder
+
+import scala.collection.mutable
+import scala.concurrent.duration._
+import scala.language.implicitConversions
 import scala.util.Try
 
 

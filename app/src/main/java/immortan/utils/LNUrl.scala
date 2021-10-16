@@ -1,18 +1,19 @@
 package immortan.utils
 
-import spray.json._
-import fr.acinq.eclair._
-import immortan.crypto.Tools._
-import immortan.utils.ImplicitJsonFormats._
-import immortan.{LNParams, PaymentAction, RemoteNodeInfo}
-import fr.acinq.bitcoin.{Bech32, ByteVector32, ByteVector64, Crypto}
 import com.github.kevinsawicki.http.HttpRequest
 import com.google.common.base.CharMatcher
 import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.bitcoin.{Bech32, ByteVector32, ByteVector64, Crypto}
+import fr.acinq.eclair._
 import fr.acinq.eclair.wire.NodeAddress
+import immortan.crypto.Tools._
+import immortan.utils.ImplicitJsonFormats._
+import immortan.utils.uri.Uri
+import immortan.{LNParams, PaymentAction, RemoteNodeInfo}
 import rx.lang.scala.Observable
 import scodec.bits.ByteVector
-import immortan.utils.uri.Uri
+import spray.json._
+
 import scala.util.Try
 
 
@@ -150,10 +151,6 @@ case class WithdrawRequest(callback: String, k1: String, maxWithdrawable: Long, 
   val relatedPayLinkOpt: Option[LNUrl] = payLink.map(LNUrl.apply)
 
   val descriptionOpt: Option[String] = Some(defaultDescription).map(trimmed).filter(_.nonEmpty)
-
-  val brDescription: String = descriptionOpt.map(desc => s"<br><br>$desc").getOrElse(new String)
-
-  val descriptionOrEmpty: String = descriptionOpt.getOrElse(new String)
 
   require(minCanReceive <= maxWithdrawable.msat, s"$maxWithdrawable is less than min $minCanReceive")
 }

@@ -1,60 +1,55 @@
 package com.btcontract.wallet
 
-import immortan._
-import R.string._
-import android.widget._
-import fr.acinq.eclair._
-import fr.acinq.bitcoin._
-import immortan.crypto.Tools._
-import com.softwaremill.quicklens._
-import com.btcontract.wallet.Colors._
-import java.lang.{Integer => JInt}
-
-import android.view.{View, ViewGroup}
 import java.io.{File, FileOutputStream}
-
-import android.graphics.{Bitmap, Color}
-
-import scala.util.{Failure, Success, Try}
-import android.content.{DialogInterface, Intent}
-import android.text.{Editable, Spanned, TextWatcher}
-import com.google.common.cache.{Cache, CacheBuilder}
-import com.google.zxing.{BarcodeFormat, EncodeHintType}
-import androidx.core.content.{ContextCompat, FileProvider}
-import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
-import com.google.android.material.snackbar.{BaseTransientBottomBar, Snackbar}
-import immortan.utils.{Denomination, InputParser, PaymentRequestExt, ThrottledWork}
-import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
-import com.cottacush.android.currencyedittext.CurrencyEditText
-import com.google.android.material.textfield.TextInputLayout
-import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
-import com.btcontract.wallet.BaseActivity.StringOps
-
-import concurrent.ExecutionContext.Implicits.global
-import fr.acinq.eclair.transactions.Transactions
-import androidx.appcompat.widget.AppCompatButton
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.slider.Slider
-import android.graphics.Bitmap.Config.ARGB_8888
-import androidx.appcompat.app.AppCompatActivity
-import fr.acinq.eclair.wire.ChannelReestablish
-import android.text.method.LinkMovementMethod
-import fr.acinq.eclair.payment.PaymentRequest
-import com.google.zxing.qrcode.QRCodeWriter
-import androidx.appcompat.app.AlertDialog
-import org.apmem.tools.layouts.FlowLayout
-
-import scala.language.implicitConversions
-import android.content.pm.PackageManager
-import android.view.View.OnClickListener
-import androidx.core.app.ActivityCompat
+import java.lang.{Integer => JInt}
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.Future
-import android.os.Bundle
+import android.content.pm.PackageManager
+import android.content.{DialogInterface, Intent}
+import android.graphics.Bitmap.Config.ARGB_8888
+import android.graphics.{Bitmap, Color}
 import android.net.Uri
+import android.os.Bundle
+import android.text.method.LinkMovementMethod
+import android.text.{Editable, Spanned, TextWatcher}
+import android.view.View.OnClickListener
+import android.view.{View, ViewGroup}
+import android.widget._
+import androidx.appcompat.app.{AlertDialog, AppCompatActivity}
+import androidx.appcompat.widget.AppCompatButton
+import androidx.core.app.ActivityCompat
+import androidx.core.content.{ContextCompat, FileProvider}
+import androidx.recyclerview.widget.RecyclerView
+import com.btcontract.wallet.BaseActivity.StringOps
+import com.btcontract.wallet.Colors._
+import com.btcontract.wallet.R.string._
+import com.cottacush.android.currencyedittext.CurrencyEditText
+import com.google.android.material.slider.Slider
+import com.google.android.material.snackbar.{BaseTransientBottomBar, Snackbar}
+import com.google.android.material.textfield.TextInputLayout
+import com.google.common.cache.{Cache, CacheBuilder}
+import com.google.zxing.qrcode.QRCodeWriter
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
+import com.google.zxing.{BarcodeFormat, EncodeHintType}
 import com.ornach.nobobutton.NoboButton
+import com.softwaremill.quicklens._
+import fr.acinq.bitcoin._
+import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.TxAndFee
+import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
+import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
+import fr.acinq.eclair.payment.PaymentRequest
+import fr.acinq.eclair.transactions.Transactions
+import fr.acinq.eclair.wire.ChannelReestablish
+import immortan._
+import immortan.crypto.Tools._
+import immortan.utils.{Denomination, InputParser, PaymentRequestExt, ThrottledWork}
+import org.apmem.tools.layouts.FlowLayout
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.language.implicitConversions
+import scala.util.{Failure, Success, Try}
 
 
 object BaseActivity {
@@ -555,7 +550,7 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     def baseSendNow(prExt: PaymentRequestExt, alert: AlertDialog): Unit = {
       val cmd = LNParams.cm.makeSendCmd(prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(manager.resultMsat)
-      val pd = PlainDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, proofTxid = None, invoiceText = prExt.descriptionOrEmpty)
+      val pd = PaymentDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
       replaceOutgoingPayment(prExt, pd, action = None, sentAmount = cmd.split.myPart)
       LNParams.cm.localSend(cmd)
       alert.dismiss
@@ -563,7 +558,7 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     def proceedSplit(prExt: PaymentRequestExt, origAmount: MilliSatoshi, alert: AlertDialog): Unit = {
       val cmd = LNParams.cm.makeSendCmd(prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(origAmount)
-      val pd = PlainDescription(split = cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, proofTxid = None, invoiceText = prExt.descriptionOrEmpty)
+      val pd = PaymentDescription(split = cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
       InputParser.value = SplitParams(prExt, action = None, pd, cmd, typicalChainTxFee)
       me goTo ClassNames.qrSplitActivityClass
       alert.dismiss

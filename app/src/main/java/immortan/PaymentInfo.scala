@@ -1,22 +1,23 @@
 package immortan
 
-import spray.json._
-import fr.acinq.eclair._
-import immortan.utils.ImplicitJsonFormats._
-import immortan.fsm.{IncomingPaymentProcessor, SendMultiPart, SplitInfo}
-import immortan.crypto.Tools.{Any2Some, Bytes, Fiat2Btc, SEPARATOR}
-import fr.acinq.eclair.channel.{DATA_CLOSING, HasNormalCommitments}
-import immortan.utils.{LNUrl, PayRequestMeta, PaymentRequestExt}
+import java.util.Date
+
+import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.{ByteVector32, Satoshi, Transaction}
+import fr.acinq.eclair._
+import fr.acinq.eclair.channel.{DATA_CLOSING, HasNormalCommitments}
 import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv}
 import immortan.ChannelMaster.TxConfirmedAtOpt
-import org.bouncycastle.util.encoders.Base64
-import fr.acinq.bitcoin.Crypto.PublicKey
-import scodec.bits.ByteVector
 import immortan.crypto.Tools
-import spray.json.JsArray
+import immortan.crypto.Tools.{Any2Some, Bytes, Fiat2Btc, SEPARATOR}
+import immortan.fsm.{IncomingPaymentProcessor, SendMultiPart, SplitInfo}
+import immortan.utils.ImplicitJsonFormats._
+import immortan.utils.{LNUrl, PayRequestMeta, PaymentRequestExt}
+import org.bouncycastle.util.encoders.Base64
+import scodec.bits.ByteVector
+import spray.json.{JsArray, _}
+
 import scala.util.Try
-import java.util.Date
 
 
 object PaymentInfo {
@@ -41,9 +42,9 @@ case class SplitParams(prExt: PaymentRequestExt, action: Option[PaymentAction], 
 object SemanticOrder {
   type SemanticGroup = Seq[TransactionDetails]
 
-  private def orderIdOrBaseId(details: TransactionDetails) = details.description.semanticOrder match { case Some(ord) => ord.id case None => details.identity }
+  private def orderIdOrBaseId(details: TransactionDetails) = details.description.semanticOrder.map(_.id).getOrElse(details.identity)
 
-  private def orderOrMax(details: TransactionDetails) = details.description.semanticOrder match { case Some(ord) => ord.order case None => Long.MaxValue }
+  private def orderOrMaxValue(details: TransactionDetails) = details.description.semanticOrder.map(_.order).getOrElse(Long.MaxValue)
 
   private def collapseChildren(items: SemanticGroup) = {
     items.tail.foreach(_.isExpandedItem = false)
@@ -52,7 +53,7 @@ object SemanticOrder {
   }
 
   def makeSemanticOrder(items: SemanticGroup): SemanticGroup =
-    items.distinct.groupBy(orderIdOrBaseId).mapValues(_ sortBy orderOrMax)
+    items.distinct.groupBy(orderIdOrBaseId).mapValues(_ sortBy orderOrMaxValue)
       .mapValues(collapseChildren).values.toList.sortBy(_.head.seenAt)(Ordering[Long].reverse)
       .flatten
 }
@@ -60,6 +61,11 @@ object SemanticOrder {
 sealed trait TransactionDescription {
   val semanticOrder: Option[SemanticOrder]
   val label: Option[String]
+}
+
+object EmptyTransactionDescription extends TransactionDescription {
+  val semanticOrder: Option[SemanticOrder] = None
+  val label: Option[String] = None
 }
 
 sealed trait TransactionDetails {
@@ -101,46 +107,24 @@ case class DelayedRefunds(txToParent: Map[Transaction, TxConfirmedAtOpt] = Map.e
 
   val totalAmount: MilliSatoshi = txToParent.keys.flatMap(_.txOut).map(_.amount).sum.toMilliSatoshi
 
+  override val description: TransactionDescription = EmptyTransactionDescription
+
   override val updatedAt: Long = System.currentTimeMillis * 2
 
   override val seenAt: Long = System.currentTimeMillis * 2
 
   override val identity: String = "DelayedRefunds"
-
-  override val description: TransactionDescription = new TransactionDescription {
-    val semanticOrder: Option[SemanticOrder] = None
-    val label: Option[String] = None
-  }
 }
 
 // Payment descriptions
 
-sealed trait PaymentDescription extends TransactionDescription {
-  val toSelfPreimage: Option[ByteVector32] // Present for reflexive outgoing payments
-  val externalInfo: Option[String] // The one which comes from invoice description, LNURL-PAY metadata, etc...
-  val holdPeriodSec: Option[Long] // Once enough incoming parts are collected, for how many seconds should it be held
-  val proofTxid: Option[String] // If this is an incoming HC-routed payment with revealed preimage and stalling Host
-  val split: Option[SplitInfo]
-  val invoiceText: String
-  val queryText: String
-}
+case class PaymentDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder], invoiceText: String,
+                              proofTxid: Option[String] = None, meta: Option[String] = None, holdPeriodSec: Option[Long] = None,
+                              toSelfPreimage: Option[ByteVector32] = None) extends TransactionDescription {
 
-case class PlainDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder],
-                            proofTxid: Option[String], invoiceText: String, holdPeriodSec: Option[Long] = None,
-                            toSelfPreimage: Option[ByteVector32] = None) extends PaymentDescription {
+  val queryText: String = invoiceText + SEPARATOR + label.getOrElse(new String) + SEPARATOR + meta.getOrElse(new String)
 
-  val externalInfo: Option[String] = Some(invoiceText).find(_.nonEmpty)
-
-  val queryText: String = invoiceText + SEPARATOR + label.getOrElse(new String)
-}
-
-case class PlainMetaDescription(split: Option[SplitInfo], label: Option[String], semanticOrder: Option[SemanticOrder],
-                                proofTxid: Option[String], invoiceText: String, meta: String, holdPeriodSec: Option[Long] = None,
-                                toSelfPreimage: Option[ByteVector32] = None) extends PaymentDescription {
-
-  val externalInfo: Option[String] = List(meta, invoiceText).find(_.nonEmpty)
-
-  val queryText: String = invoiceText + SEPARATOR + meta + SEPARATOR + label.getOrElse(new String)
+  val externalInfo: Option[String] = meta.getOrElse(invoiceText).asSome.find(_.nonEmpty)
 }
 
 case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, seenAt: Long, updatedAt: Long, description: PaymentDescription,
@@ -195,6 +179,8 @@ case class RelayedPreimageInfo(paymentHashString: String, paymentSecretString: S
 
   override val identity: String = paymentHashString + paymentSecretString
 
+  override val description: TransactionDescription = EmptyTransactionDescription
+
   lazy val preimage: ByteVector32 = ByteVector32.fromValidHex(preimageString)
 
   lazy val paymentHash: ByteVector32 = ByteVector32.fromValidHex(paymentHashString)
@@ -202,11 +188,6 @@ case class RelayedPreimageInfo(paymentHashString: String, paymentSecretString: S
   lazy val paymentSecret: ByteVector32 = ByteVector32.fromValidHex(paymentSecretString)
 
   lazy val fullTag: FullPaymentTag = FullPaymentTag(paymentHash, paymentSecret, PaymentTagTlv.TRAMPLOINE_ROUTED)
-
-  override val description: TransactionDescription = new TransactionDescription {
-    val semanticOrder: Option[SemanticOrder] = None
-    val label: Option[String] = None
-  }
 }
 
 // Tx descriptions
@@ -233,34 +214,42 @@ case class TxInfo(txString: String, txidString: String, pubKeyString: String, de
 }
 
 sealed trait TxDescription extends TransactionDescription {
+  def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription
+  def withNewLabel(label1: Option[String] = None): TxDescription
+  def withNewCpfpBy(txid: ByteVector32): TxDescription
+
   def queryText(txid: ByteVector32): String
   def withNodeId: Option[PublicKey] = None
   def toAddress: Option[String] = None
+  def canBeCPFPd: Boolean = false
 
   val rbf: Option[RBFParams]
   val cpfpBy: Option[ByteVector32]
   val cpfpOf: Option[ByteVector32]
-  def canBeCPFPd: Boolean = false
 }
 
 case class PlainTxDescription(addresses: List[String],
                               label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
                               cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
-                              rbf: Option[RBFParams] = None) extends TxDescription {
+                              rbf: Option[RBFParams] = None) extends TxDescription { me =>
 
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + addresses.mkString(SEPARATOR) + SEPARATOR + label.getOrElse(new String)
-
+  override def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + addresses.mkString(SEPARATOR) + SEPARATOR + label.getOrElse(new String)
+  override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
+  override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
+  override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
   override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
-
   override def toAddress: Option[String] = addresses.headOption
 }
 
 case class OpReturnTxDescription(preimages: List[ByteVector32],
                                  label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
                                  cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
-                                 rbf: Option[RBFParams] = None) extends TxDescription {
+                                 rbf: Option[RBFParams] = None) extends TxDescription { me =>
 
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + preimages.map(_.toHex).mkString(SEPARATOR) + SEPARATOR + label.getOrElse(new String)
+  override def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + preimages.map(_.toHex).mkString(SEPARATOR) + SEPARATOR + label.getOrElse(new String)
+  override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
+  override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
+  override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
 }
 
 sealed trait ChanTxDescription extends TxDescription {
@@ -271,38 +260,47 @@ sealed trait ChanTxDescription extends TxDescription {
 case class ChanFundingTxDescription(nodeId: PublicKey,
                                     label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
                                     cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
-                                    rbf: Option[RBFParams] = None) extends ChanTxDescription {
+                                    rbf: Option[RBFParams] = None) extends ChanTxDescription { me =>
 
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
+  override def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
+  override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
+  override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
+  override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
 }
 
 case class ChanRefundingTxDescription(nodeId: PublicKey,
                                       label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
                                       cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
-                                      rbf: Option[RBFParams] = None) extends ChanTxDescription {
+                                      rbf: Option[RBFParams] = None) extends ChanTxDescription { me =>
 
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
-
+  override def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
+  override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
+  override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
+  override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
   override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
 }
 
 case class HtlcClaimTxDescription(nodeId: PublicKey,
                                   label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
                                   cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
-                                  rbf: Option[RBFParams] = None) extends ChanTxDescription {
+                                  rbf: Option[RBFParams] = None) extends ChanTxDescription { me =>
 
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
-
+  override def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
+  override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
+  override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
+  override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
   override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
 }
 
 case class PenaltyTxDescription(nodeId: PublicKey,
                                 label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
                                 cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
-                                rbf: Option[RBFParams] = None) extends ChanTxDescription {
+                                rbf: Option[RBFParams] = None) extends ChanTxDescription { me =>
 
-  def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
-
+  override def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + nodeId.toString + SEPARATOR + label.getOrElse(new String)
+  override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
+  override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
+  override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
   override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
 }
 
