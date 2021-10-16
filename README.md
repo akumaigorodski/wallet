@@ -28,7 +28,7 @@ Everyone is welcome to provide a translation on [Transifex project site](https:/
 
 ## Building from source
 
-1. Install `podman`, get [container file](https://github.com/btcontract/wallet/blob/master/containerfile).
+1. Install `podman`, get [container file](https://github.com/btcontract/wallet/blob/master/Containerfile).
 
 2. ```$ podman build --pull --rm -t simplebitcoinwallet_build_apk -f <path to container file>```.
 
