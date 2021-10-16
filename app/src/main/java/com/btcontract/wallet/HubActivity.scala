@@ -1,57 +1,58 @@
 package com.btcontract.wallet
 
-import immortan._
-import spray.json._
-import immortan.fsm._
-import immortan.utils._
-import android.widget._
-import fr.acinq.eclair._
-import fr.acinq.bitcoin._
-import immortan.crypto.Tools._
-import fr.acinq.eclair.channel._
-import scala.concurrent.duration._
-import com.softwaremill.quicklens._
-import com.btcontract.wallet.Colors._
-import com.btcontract.wallet.R.string._
-import scala.collection.JavaConverters._
-import com.btcontract.wallet.HubActivity._
-import immortan.utils.ImplicitJsonFormats._
+import java.util.TimerTask
 
-import scala.util.{Success, Try}
-import android.view.{View, ViewGroup}
+import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.graphics.{Bitmap, BitmapFactory}
-import rx.lang.scala.{Observable, Subject, Subscription}
+import android.os.Bundle
+import android.view.{View, ViewGroup}
+import android.widget._
+import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.RecyclerView
+import androidx.transition.TransitionManager
 import com.androidstudy.networkmanager.{Monitor, Tovuti}
-import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv}
-import fr.acinq.eclair.blockchain.{CurrentBlockCount, TxAndFee}
-import immortan.ChannelMaster.{OutgoingAdds, RevealedLocalFulfills}
-import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, Scripts}
+import com.btcontract.wallet.BaseActivity.StringOps
+import com.btcontract.wallet.Colors._
+import com.btcontract.wallet.HubActivity._
+import com.btcontract.wallet.R.string._
+import com.btcontract.wallet.utils.LocalBackup
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
-import com.google.android.material.button.{MaterialButton, MaterialButtonToggleGroup}
+import com.github.mmin18.widget.RealtimeBlurView
 import com.google.android.material.button.MaterialButtonToggleGroup.OnButtonCheckedListener
+import com.google.android.material.button.{MaterialButton, MaterialButtonToggleGroup}
+import com.google.common.cache.LoadingCache
+import com.indicator.ChannelIndicatorLine
+import com.ornach.nobobutton.NoboButton
+import com.softwaremill.quicklens._
+import fr.acinq.bitcoin._
+import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{RBFResponse, WalletReady}
 import fr.acinq.eclair.blockchain.electrum.{ElectrumEclairWallet, ElectrumWallet}
 import fr.acinq.eclair.blockchain.fee.FeeratePerByte
-import org.ndeftools.util.activity.NfcReaderActivity
-import concurrent.ExecutionContext.Implicits.global
-import com.btcontract.wallet.BaseActivity.StringOps
-import com.github.mmin18.widget.RealtimeBlurView
-import androidx.recyclerview.widget.RecyclerView
-import com.btcontract.wallet.utils.LocalBackup
-import androidx.transition.TransitionManager
+import fr.acinq.eclair.blockchain.{CurrentBlockCount, TxAndFee}
+import fr.acinq.eclair.channel._
+import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, Scripts}
+import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv}
 import immortan.ChannelListener.Malfunction
-import com.google.common.cache.LoadingCache
-import com.indicator.ChannelIndicatorLine
-import androidx.appcompat.app.AlertDialog
-import org.apmem.tools.layouts.FlowLayout
-import android.graphics.drawable.Drawable
-import android.content.pm.PackageManager
-import com.ornach.nobobutton.NoboButton
+import immortan.ChannelMaster.{OutgoingAdds, RevealedLocalFulfills}
+import immortan._
+import immortan.crypto.Tools._
+import immortan.fsm._
 import immortan.sqlite.SQLiteData
-import scala.concurrent.Await
+import immortan.utils.ImplicitJsonFormats._
+import immortan.utils._
+import org.apmem.tools.layouts.FlowLayout
 import org.ndeftools.Message
-import java.util.TimerTask
-import android.os.Bundle
+import org.ndeftools.util.activity.NfcReaderActivity
+import rx.lang.scala.{Observable, Subject, Subscription}
+import spray.json._
+
+import scala.collection.JavaConverters._
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.util.{Success, Try}
 
 
 object HubActivity {
@@ -769,30 +770,32 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     // TX helpers
 
-    def txDescription(transactionInfo: TxInfo): String = transactionInfo.description match {
-      case _ if transactionInfo.description.cpfpOf.isDefined => getString(tx_description_cpfp)
-      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => getString(tx_description_rbf_boost)
-      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => getString(tx_description_rbf_cancel)
-      case plain: PlainTxDescription => plain.toAddress.map(_.short) getOrElse getString(tx_btc)
-      case _: ChanRefundingTxDescription => getString(tx_description_refunding)
-      case _: HtlcClaimTxDescription => getString(tx_description_htlc_claiming)
-      case _: ChanFundingTxDescription => getString(tx_description_funding)
-      case _: OpReturnTxDescription => getString(tx_description_op_return)
-      case _: PenaltyTxDescription => getString(tx_description_penalty)
-    }
+    def txDescription(transactionInfo: TxInfo): String = getString(tx_description_penalty)
+//      transactionInfo.description match {
+//      case _ if transactionInfo.description.cpfpOf.isDefined => getString(tx_description_cpfp)
+//      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => getString(tx_description_rbf_boost)
+//      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => getString(tx_description_rbf_cancel)
+//      case plain: PlainTxDescription => plain.toAddress.map(_.short) getOrElse getString(tx_btc)
+//      case _: ChanRefundingTxDescription => getString(tx_description_refunding)
+//      case _: HtlcClaimTxDescription => getString(tx_description_htlc_claiming)
+//      case _: ChanFundingTxDescription => getString(tx_description_funding)
+//      case _: OpReturnTxDescription => getString(tx_description_op_return)
+//      case _: PenaltyTxDescription => getString(tx_description_penalty)
+//    }
 
-    def setTxTypeIcon(info: TxInfo): Unit = info.description match {
-      case _ if info.description.cpfpOf.isDefined => setVisibleIcon(id = R.id.btcInBoosted)
-      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => setVisibleIcon(id = R.id.btcOutBoosted)
-      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => setVisibleIcon(id = R.id.btcOutCancelled)
-      case _: PlainTxDescription if info.isIncoming => setVisibleIcon(id = R.id.btcIncoming)
-      case _: OpReturnTxDescription => setVisibleIcon(id = R.id.btcOutgoing)
-      case _: ChanRefundingTxDescription => setVisibleIcon(id = R.id.lnBtc)
-      case _: ChanFundingTxDescription => setVisibleIcon(id = R.id.btcLn)
-      case _: HtlcClaimTxDescription => setVisibleIcon(id = R.id.lnBtc)
-      case _: PenaltyTxDescription => setVisibleIcon(id = R.id.lnBtc)
-      case _ => setVisibleIcon(id = R.id.btcOutgoing)
-    }
+    def setTxTypeIcon(info: TxInfo): Unit = setVisibleIcon(id = R.id.btcOutgoing)
+//      info.description match {
+//      case _ if info.description.cpfpOf.isDefined => setVisibleIcon(id = R.id.btcInBoosted)
+//      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => setVisibleIcon(id = R.id.btcOutBoosted)
+//      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => setVisibleIcon(id = R.id.btcOutCancelled)
+//      case _: PlainTxDescription if info.isIncoming => setVisibleIcon(id = R.id.btcIncoming)
+//      case _: OpReturnTxDescription => setVisibleIcon(id = R.id.btcOutgoing)
+//      case _: ChanRefundingTxDescription => setVisibleIcon(id = R.id.lnBtc)
+//      case _: ChanFundingTxDescription => setVisibleIcon(id = R.id.btcLn)
+//      case _: HtlcClaimTxDescription => setVisibleIcon(id = R.id.lnBtc)
+//      case _: PenaltyTxDescription => setVisibleIcon(id = R.id.lnBtc)
+//      case _ => setVisibleIcon(id = R.id.btcOutgoing)
+//    }
 
     def txStatusIcon(info: TxInfo): Int = {
       if (info.isConfirmed) R.drawable.baseline_done_24

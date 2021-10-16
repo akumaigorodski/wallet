@@ -39,8 +39,8 @@ class QRChainActivity extends QRActivity { me =>
     }
 
     private def updateView(bu: BitcoinUri, holder: QRViewHolder): Unit = bu.uri foreach { uri =>
-      val humanAmountOpt = for (amount <- bu.amount) yield WalletApp.denom.parsedWithSign(amount, cardIn, totalZero)
-      val withoutSlashes = PaymentRequestExt.withoutSlashes(InputParser.bitcoin, uri)
+      val humanAmountOpt = for (requestedAmount <- bu.amount) yield WalletApp.denom.parsedWithSign(requestedAmount, cardIn, totalZero)
+      val contentToShare = if (bu.amount.isDefined || bu.label.isDefined) PaymentRequestExt.withoutSlashes(InputParser.bitcoin, uri) else bu.address
 
       val visibleText = (bu.label, humanAmountOpt) match {
         case Some(label) ~ Some(amount) => s"${bu.address.short}<br><br>$label<br><br>$amount"
@@ -51,9 +51,9 @@ class QRChainActivity extends QRActivity { me =>
 
       holder.qrLabel setText visibleText.html
       runInFutureProcessOnUI(QRActivity.get(bu.address.toUpperCase, qrSize), onFail) { qrBitmap =>
-        def share: Unit = runInFutureProcessOnUI(shareData(qrBitmap, withoutSlashes), onFail)(none)
-        holder.qrCopy setOnClickListener onButtonTap(WalletApp.app copy withoutSlashes)
-        holder.qrCode setOnClickListener onButtonTap(WalletApp.app copy withoutSlashes)
+        def share: Unit = runInFutureProcessOnUI(shareData(qrBitmap, contentToShare), onFail)(none)
+        holder.qrCopy setOnClickListener onButtonTap(WalletApp.app copy contentToShare)
+        holder.qrCode setOnClickListener onButtonTap(WalletApp.app copy contentToShare)
         holder.qrEdit setOnClickListener onButtonTap(me editAddress bu)
         holder.qrShare setOnClickListener onButtonTap(share)
         holder.qrCode setImageBitmap qrBitmap

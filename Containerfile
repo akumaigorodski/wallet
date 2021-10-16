@@ -25,7 +25,7 @@ RUN set -ex; \
     cd /home/appuser/app/simplebitcoinwallet/; \
     git clone https://github.com/btcontract/wallet; \
     cd /home/appuser/app/simplebitcoinwallet/wallet/; \
-    git checkout 2.2.14; \
+    git checkout master; \
     cd /home/appuser/app/simplebitcoinwallet/wallet/app/src/main/assets/; \
     wget https://github.com/btcontract/wallet/releases/download/2.2.14/graph.snapshot-mainnet.zlib; \
     cd /home/appuser/app/simplebitcoinwallet/wallet/;
