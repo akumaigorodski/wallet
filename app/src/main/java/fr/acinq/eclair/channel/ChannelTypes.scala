@@ -106,6 +106,7 @@ trait PersistentChannelData extends ChannelData {
 
 sealed trait HasNormalCommitments extends PersistentChannelData {
   override def channelId: ByteVector32 = commitments.channelId
+  def withNewCommits(cs: NormalCommits): HasNormalCommitments
   def commitments: NormalCommits
 }
 
@@ -158,12 +159,18 @@ final case class DATA_WAIT_FOR_FUNDING_CONFIRMED(commitments: NormalCommits, fun
 
   // Remote peer may send a tx which is unrelated to our agreed upon channel funding, that is, we won't be able to spend our commit tx, check this right away!
   def checkSpend(tx: Transaction): Unit = Transaction.correctlySpends(commitments.localCommit.publishableTxs.commitTx.tx, Seq(tx), ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS)
+  override def withNewCommits(cs: NormalCommits): HasNormalCommitments = copy(commitments = cs)
 }
 
-final case class DATA_WAIT_FOR_FUNDING_LOCKED(commitments: NormalCommits, shortChannelId: ShortChannelId, lastSent: FundingLocked) extends ChannelData with HasNormalCommitments
+final case class DATA_WAIT_FOR_FUNDING_LOCKED(commitments: NormalCommits, shortChannelId: ShortChannelId, lastSent: FundingLocked) extends ChannelData with HasNormalCommitments {
+  override def withNewCommits(cs: NormalCommits): HasNormalCommitments = copy(commitments = cs)
+}
 
 final case class DATA_NORMAL(commitments: NormalCommits, shortChannelId: ShortChannelId, feeUpdateRequired: Boolean = false, extParams: List[ByteVector] = Nil,
-                             localShutdown: Option[Shutdown] = None, remoteShutdown: Option[Shutdown] = None) extends ChannelData with HasNormalCommitments
+                             localShutdown: Option[Shutdown] = None, remoteShutdown: Option[Shutdown] = None) extends ChannelData with HasNormalCommitments {
+
+  override def withNewCommits(cs: NormalCommits): HasNormalCommitments = copy(commitments = cs)
+}
 
 object DATA_NEGOTIATING {
   type ClosingProposed = List[ClosingTxProposed]
@@ -174,6 +181,7 @@ final case class DATA_NEGOTIATING(commitments: NormalCommits, localShutdown: Shu
                                   bestUnpublishedClosingTxOpt: Option[Transaction] = None) extends ChannelData with HasNormalCommitments {
 
   def toClosed: DATA_CLOSING = DATA_CLOSING(commitments, System.currentTimeMillis, closingTxProposed.flatten.map(_.unsignedTx), bestUnpublishedClosingTxOpt.toList)
+  override def withNewCommits(cs: NormalCommits): HasNormalCommitments = copy(commitments = cs)
 }
 
 final case class DATA_CLOSING(commitments: NormalCommits, waitingSince: Long, mutualCloseProposed: List[Transaction] = Nil, mutualClosePublished: List[Transaction] = Nil,
@@ -200,9 +208,13 @@ final case class DATA_CLOSING(commitments: NormalCommits, waitingSince: Long, mu
     val candidates = localCommitPublished ++ remoteCommitPublished ++ nextRemoteCommitPublished ++ futureRemoteCommitPublished ++ revokedCommitPublished
     candidates.find(_.isCommitConfirmed).orElse(candidates.headOption)
   }
+
+  override def withNewCommits(cs: NormalCommits): HasNormalCommitments = copy(commitments = cs)
 }
 
-final case class DATA_WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT(commitments: NormalCommits, remoteChannelReestablish: ChannelReestablish) extends ChannelData with HasNormalCommitments
+final case class DATA_WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT(commitments: NormalCommits, remoteChannelReestablish: ChannelReestablish) extends ChannelData with HasNormalCommitments {
+  override def withNewCommits(cs: NormalCommits): HasNormalCommitments = copy(commitments = cs)
+}
 
 object ChannelKeys {
   def fromPath(master: ExtendedPrivateKey, path: KeyPath): ChannelKeys = {

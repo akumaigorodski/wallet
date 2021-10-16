@@ -400,7 +400,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
         override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
           val currentAmount = WalletApp.denom.directedWithSign(incoming = receivedMsat, outgoing = 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
-          val afterAmount = WalletApp.denom.directedWithSign(feeOpt.map(receivedMsat - _).getOrElse(receivedMsat), 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
+          val afterAmount = WalletApp.denom.directedWithSign(feeOpt.map(receivedMsat.-).getOrElse(receivedMsat), 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
           updatePopupButton(getPositiveButton(alert), feeOpt.isDefined)
           cpfpCurrent.setText(currentAmount.html)
           cpfpAfter.setText(afterAmount.html)

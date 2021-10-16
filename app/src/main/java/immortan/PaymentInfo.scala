@@ -214,6 +214,7 @@ case class TxInfo(txString: String, txidString: String, pubKeyString: String, de
 }
 
 sealed trait TxDescription extends TransactionDescription {
+  def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
   def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription
   def withNewLabel(label1: Option[String] = None): TxDescription
   def withNewCpfpBy(txid: ByteVector32): TxDescription
@@ -221,11 +222,10 @@ sealed trait TxDescription extends TransactionDescription {
   def queryText(txid: ByteVector32): String
   def withNodeId: Option[PublicKey] = None
   def toAddress: Option[String] = None
-  def canBeCPFPd: Boolean = false
 
-  val rbf: Option[RBFParams]
   val cpfpBy: Option[ByteVector32]
   val cpfpOf: Option[ByteVector32]
+  val rbf: Option[RBFParams]
 }
 
 case class PlainTxDescription(addresses: List[String],
@@ -237,7 +237,6 @@ case class PlainTxDescription(addresses: List[String],
   override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
   override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
   override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
-  override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
   override def toAddress: Option[String] = addresses.headOption
 }
 
@@ -250,6 +249,7 @@ case class OpReturnTxDescription(preimages: List[ByteVector32],
   override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
   override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
   override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
+  override def canBeCPFPd: Boolean = false
 }
 
 sealed trait ChanTxDescription extends TxDescription {
@@ -266,6 +266,7 @@ case class ChanFundingTxDescription(nodeId: PublicKey,
   override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
   override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
   override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
+  override def canBeCPFPd: Boolean = false
 }
 
 case class ChanRefundingTxDescription(nodeId: PublicKey,
@@ -277,7 +278,6 @@ case class ChanRefundingTxDescription(nodeId: PublicKey,
   override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
   override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
   override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
-  override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
 }
 
 case class HtlcClaimTxDescription(nodeId: PublicKey,
@@ -289,7 +289,6 @@ case class HtlcClaimTxDescription(nodeId: PublicKey,
   override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
   override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
   override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
-  override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
 }
 
 case class PenaltyTxDescription(nodeId: PublicKey,
@@ -301,7 +300,6 @@ case class PenaltyTxDescription(nodeId: PublicKey,
   override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
   override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
   override def withNewCpfpBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
-  override def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
 }
 
 object TxDescription {

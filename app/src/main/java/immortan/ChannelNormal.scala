@@ -166,7 +166,7 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
 
 
       case (wait: DATA_WAIT_FOR_FUNDING_LOCKED, locked: FundingLocked, WAIT_FUNDING_DONE) =>
-        val commits1 = wait.commitments.modify(_.remoteNextCommitInfo) setTo Right(locked.nextPerCommitmentPoint)
+        val commits1 = wait.commitments.copy(remoteNextCommitInfo = locked.nextPerCommitmentPoint.asRight)
         StoreBecomeSend(DATA_NORMAL(commits1, wait.shortChannelId), OPEN)
 
       // MAIN LOOP
@@ -199,11 +199,11 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
 
 
       case (some: HasNormalCommitments, remoteInfo: RemoteNodeInfo, SLEEPING) if some.commitments.remoteInfo.nodeId == remoteInfo.nodeId =>
-        StoreBecomeSend(some.modify(_.commitments.remoteInfo).setTo(remoteInfo.safeAlias), SLEEPING)
+        StoreBecomeSend(some withNewCommits some.commitments.copy(remoteInfo = remoteInfo.safeAlias), SLEEPING)
 
 
       case (norm: DATA_NORMAL, update: ChannelUpdate, OPEN | SLEEPING) if update.shortChannelId == norm.shortChannelId && norm.commitments.updateOpt.forall(_.core != update.core) =>
-        StoreBecomeSend(norm.modify(_.commitments.updateOpt).setTo(update.asSome), state)
+        StoreBecomeSend(norm withNewCommits norm.commitments.copy(updateOpt = update.asSome), state)
 
 
       // It is assumed that LNParams.feeRates.info is updated at this point
@@ -648,14 +648,16 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
   def nextFeerate(norm: DATA_NORMAL, threshold: Double): Option[FeeratePerKw] =
     newFeerate(LNParams.feeRates.info, norm.commitments.localCommit.spec, threshold)
 
-  private def maybeRevertUnsignedOutgoing(data1: HasNormalCommitments): (HasNormalCommitments, List[UpdateAddHtlc], Boolean) = {
+  private def maybeRevertUnsignedOutgoing(data1: HasNormalCommitments) = {
     val hadProposed = data1.commitments.remoteChanges.proposed.nonEmpty || data1.commitments.localChanges.proposed.nonEmpty
-    val data2 = data1.modifyAll(_.commitments.remoteChanges.proposed, _.commitments.localChanges.proposed).setTo(Nil)
-    val remoteProposed = data1.commitments.remoteChanges.proposed.collect { case add: UpdateAddHtlc => add }
-    val localProposed = data1.commitments.localChanges.proposed.collect { case add: UpdateAddHtlc => add }
-    val data3 = data2.modify(_.commitments.remoteNextHtlcId).using(_ - remoteProposed.size)
-    val data4 = data3.modify(_.commitments.localNextHtlcId).using(_ - localProposed.size)
-    (data4, localProposed, hadProposed)
+    val remoteProposed = data1.commitments.remoteChanges.proposed.collect { case updateAddHtlc: UpdateAddHtlc => updateAddHtlc }
+    val localProposed = data1.commitments.localChanges.proposed.collect { case updateAddHtlc: UpdateAddHtlc => updateAddHtlc }
+
+    val commitsNoChanges = data1.commitments.modifyAll(_.remoteChanges.proposed, _.localChanges.proposed).setTo(Nil)
+    val commitsNoRemoteUpdates = commitsNoChanges.modify(_.remoteNextHtlcId).using(_ - remoteProposed.size)
+    val commits = commitsNoRemoteUpdates.modify(_.localNextHtlcId).using(_ - localProposed.size)
+
+    (data1 withNewCommits commits, localProposed, hadProposed)
   }
 
   private def handleChannelForceClosing(prev: HasNormalCommitments)(turnIntoClosing: HasNormalCommitments => DATA_CLOSING): Unit = {
