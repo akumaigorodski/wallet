@@ -1,7 +1,7 @@
 package fr.acinq.eclair.wire
 
 import fr.acinq.eclair.UInt64
-import fr.acinq.eclair.wire.CommonCodecs.{shortchannelid, varint, varintoverflow}
+import fr.acinq.eclair.wire.CommonCodecs.{varint, varintoverflow}
 import scodec.Codec
 import scodec.codecs._
 

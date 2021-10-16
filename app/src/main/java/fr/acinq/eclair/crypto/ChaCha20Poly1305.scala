@@ -24,10 +24,7 @@ import org.bouncycastle.crypto.engines.ChaCha7539Engine
 import org.bouncycastle.crypto.params.{KeyParameter, ParametersWithIV}
 import scodec.bits.ByteVector
 
-/**
-  * Poly1305 authenticator
-  * see https://tools.ietf.org/html/rfc7539#section-2.5
-  */
+
 object Poly1305 {
   /**
     *

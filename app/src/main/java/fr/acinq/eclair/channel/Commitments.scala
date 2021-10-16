@@ -1,20 +1,20 @@
 package fr.acinq.eclair.channel
 
-import fr.acinq.eclair._
-import fr.acinq.bitcoin._
-import fr.acinq.eclair.wire._
 import com.softwaremill.quicklens._
-import fr.acinq.eclair.transactions._
+import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.bitcoin._
+import fr.acinq.eclair._
+import fr.acinq.eclair.blockchain.fee.FeeratePerKw
+import fr.acinq.eclair.channel.Helpers.HashToPreimage
+import fr.acinq.eclair.crypto.{Generators, ShaChain}
 import fr.acinq.eclair.transactions.DirectedHtlc._
 import fr.acinq.eclair.transactions.Transactions._
-import fr.acinq.eclair.crypto.{Generators, ShaChain}
+import fr.acinq.eclair.transactions._
+import fr.acinq.eclair.wire._
 import immortan.crypto.Tools.{Any2Some, newFeerate, none}
-import immortan.{LNParams, RemoteNodeInfo, UpdateAddHtlcExt}
-import fr.acinq.eclair.channel.Helpers.HashToPreimage
-import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import fr.acinq.bitcoin.Crypto.PublicKey
-import scodec.bits.ByteVector
 import immortan.utils.Rx
+import immortan.{LNParams, RemoteNodeInfo, UpdateAddHtlcExt}
+import scodec.bits.ByteVector
 
 
 case class LocalChanges(proposed: List[UpdateMessage], signed: List[UpdateMessage], acked: List[UpdateMessage] = Nil) {

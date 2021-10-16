@@ -1,20 +1,20 @@
 package immortan
 
-import immortan.crypto.Tools._
-import fr.acinq.eclair.channel._
-import scala.concurrent.duration._
-import akka.actor.{Actor, ActorRef, Props}
-import immortan.crypto.{CanBeRepliedTo, StateMachine}
-import fr.acinq.eclair.transactions.{RemoteFulfill, RemoteReject}
-import fr.acinq.eclair.blockchain.CurrentBlockCount
-import scala.concurrent.ExecutionContextExecutor
-import fr.acinq.eclair.wire.LightningMessage
-import immortan.Channel.channelContext
 import java.util.concurrent.Executors
+
+import akka.actor.{Actor, ActorRef, Props}
 import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.eclair.MilliSatoshi
-import immortan.crypto.Tools.none
-import scala.concurrent.Future
+import fr.acinq.eclair.blockchain.CurrentBlockCount
+import fr.acinq.eclair.channel._
+import fr.acinq.eclair.transactions.{RemoteFulfill, RemoteReject}
+import fr.acinq.eclair.wire.LightningMessage
+import immortan.Channel.channelContext
+import immortan.crypto.Tools.{none, _}
+import immortan.crypto.{CanBeRepliedTo, StateMachine}
+
+import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.duration._
 import scala.util.Failure
 
 

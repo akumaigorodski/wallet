@@ -16,6 +16,8 @@
 
 package fr.acinq.eclair.transactions
 
+import java.nio.ByteOrder
+
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey, ripemd160}
 import fr.acinq.bitcoin.Script._
 import fr.acinq.bitcoin.SigVersion._
@@ -27,7 +29,6 @@ import fr.acinq.eclair.transactions.Scripts._
 import fr.acinq.eclair.wire.UpdateAddHtlc
 import scodec.bits.ByteVector
 
-import java.nio.ByteOrder
 import scala.util.Try
 
 /**

@@ -1,16 +1,18 @@
 package immortan.fsm
 
-import immortan.crypto.Tools._
-import scala.concurrent.duration._
-import immortan.crypto.StateMachine
-import immortan.fsm.SwapOutFeeratesHandler._
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
-import fr.acinq.eclair.wire.{Init, SwapOut, SwapOutFeerates, SwapOutRequest}
-import immortan.{ChanAndCommits, CommsTower, ConnectionListener, LNParams, RemoteNodeInfo}
 import java.util.concurrent.Executors
+
 import fr.acinq.bitcoin.Satoshi
 import fr.acinq.eclair.Features
+import fr.acinq.eclair.wire.{Init, SwapOut, SwapOutFeerates, SwapOutRequest}
+import immortan.crypto.StateMachine
+import immortan.crypto.Tools._
+import immortan.fsm.SwapOutFeeratesHandler._
 import immortan.utils.Rx
+import immortan._
+
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 
 object SwapOutFeeratesHandler {

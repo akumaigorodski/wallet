@@ -18,8 +18,8 @@ package fr.acinq.eclair.transactions
 
 import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.eclair._
-import fr.acinq.eclair.wire._
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
+import fr.acinq.eclair.wire._
 
 /**
  * Created by PM on 07/12/2016.

@@ -20,9 +20,7 @@ import fr.acinq.bitcoin.{Satoshi, SatoshiLong}
 
 import scala.concurrent.Future
 
-/**
- * Created by PM on 09/07/2017.
- */
+
 trait FeeProvider {
   def getFeerates: Future[FeeratesPerKB]
 }

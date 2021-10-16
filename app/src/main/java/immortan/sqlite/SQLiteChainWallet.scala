@@ -1,13 +1,13 @@
 package immortan.sqlite
 
-import spray.json._
-import immortan.utils.ImplicitJsonFormats._
-import fr.acinq.eclair.blockchain.electrum.db.{ChainWalletInfo, CompleteChainWalletInfo, WalletDb}
-import fr.acinq.eclair.blockchain.electrum.db.sqlite.SqliteWalletDb.persistentDataCodec
-import fr.acinq.eclair.blockchain.electrum.PersistentData
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.Satoshi
+import fr.acinq.eclair.blockchain.electrum.PersistentData
+import fr.acinq.eclair.blockchain.electrum.db.sqlite.SqliteWalletDb.persistentDataCodec
+import fr.acinq.eclair.blockchain.electrum.db.{ChainWalletInfo, CompleteChainWalletInfo, WalletDb}
+import immortan.utils.ImplicitJsonFormats._
 import scodec.bits.ByteVector
+import spray.json._
 
 
 class SQLiteChainWallet(val db: DBInterface) extends WalletDb {

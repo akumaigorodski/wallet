@@ -16,11 +16,12 @@
 
 package fr.acinq.eclair.router
 
-import fr.acinq.eclair._
-import fr.acinq.eclair.router.Router._
-import scala.collection.JavaConversions._
-import fr.acinq.eclair.router.Graph.GraphStructure.{DirectedGraph, GraphEdge}
 import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.eclair._
+import fr.acinq.eclair.router.Graph.GraphStructure.{DirectedGraph, GraphEdge}
+import fr.acinq.eclair.router.Router._
+
+import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 

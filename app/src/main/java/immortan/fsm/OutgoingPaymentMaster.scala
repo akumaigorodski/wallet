@@ -1,26 +1,27 @@
 package immortan.fsm
 
-import immortan._
-import fr.acinq.eclair._
-import fr.acinq.eclair.wire._
-import immortan.crypto.Tools._
-import immortan.PaymentStatus._
-import immortan.fsm.PaymentFailure._
-import fr.acinq.eclair.router.Router._
-import immortan.fsm.OutgoingPaymentMaster._
-import immortan.crypto.{CanBeRepliedTo, StateMachine}
+import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
-import fr.acinq.eclair.router.{Announcements, ChannelUpdateExt}
-import fr.acinq.eclair.router.Graph.GraphStructure.{DescAndCapacity, GraphEdge}
+import fr.acinq.eclair._
 import fr.acinq.eclair.channel.{CMD_ADD_HTLC, ChannelOffline, InPrincipleNotSendable, LocalReject}
-import fr.acinq.eclair.transactions.{RemoteFulfill, RemoteReject, RemoteUpdateFail, RemoteUpdateMalform}
+import fr.acinq.eclair.crypto.Sphinx
 import fr.acinq.eclair.crypto.Sphinx.PacketAndSecrets
 import fr.acinq.eclair.payment.OutgoingPacket
-import fr.acinq.bitcoin.ByteVector32
-import fr.acinq.eclair.crypto.Sphinx
-import scala.util.Random.shuffle
-import scala.collection.mutable
+import fr.acinq.eclair.router.Graph.GraphStructure.{DescAndCapacity, GraphEdge}
+import fr.acinq.eclair.router.Router._
+import fr.acinq.eclair.router.{Announcements, ChannelUpdateExt}
+import fr.acinq.eclair.transactions.{RemoteFulfill, RemoteReject, RemoteUpdateFail, RemoteUpdateMalform}
+import fr.acinq.eclair.wire._
+import immortan.PaymentStatus._
+import immortan._
+import immortan.crypto.Tools._
+import immortan.crypto.{CanBeRepliedTo, StateMachine}
+import immortan.fsm.OutgoingPaymentMaster._
+import immortan.fsm.PaymentFailure._
 import scodec.bits.ByteVector
+
+import scala.collection.mutable
+import scala.util.Random.shuffle
 
 
 object PaymentFailure {

@@ -1,13 +1,14 @@
 package immortan
 
-import fr.acinq.bitcoin.DeterministicWallet._
+import java.io.ByteArrayInputStream
+import java.nio.ByteOrder
+
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
+import fr.acinq.bitcoin.DeterministicWallet._
 import fr.acinq.bitcoin.{ByteVector32, Protocol}
 import fr.acinq.eclair.crypto.Mac32
-import java.io.ByteArrayInputStream
 import immortan.crypto.Tools.Bytes
 import scodec.bits.ByteVector
-import java.nio.ByteOrder
 
 
 object LightningNodeKeys {

@@ -1,19 +1,20 @@
 package immortan.fsm
 
-import immortan._
-import fr.acinq.eclair._
-import fr.acinq.eclair.wire._
-import fr.acinq.eclair.channel._
-import scala.util.{Failure, Success}
-import fr.acinq.bitcoin.{ByteVector32, Satoshi, Script}
-import immortan.ChannelListener.{Malfunction, Transition}
-import immortan.Channel.{WAIT_FOR_ACCEPT, WAIT_FUNDING_DONE}
-import fr.acinq.eclair.blockchain.MakeFundingTxResponse
-import concurrent.ExecutionContext.Implicits.global
-import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import fr.acinq.eclair.transactions.Scripts
 import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.bitcoin.{ByteVector32, Satoshi, Script}
+import fr.acinq.eclair._
+import fr.acinq.eclair.blockchain.MakeFundingTxResponse
+import fr.acinq.eclair.blockchain.fee.FeeratePerKw
+import fr.acinq.eclair.channel._
+import fr.acinq.eclair.transactions.Scripts
+import fr.acinq.eclair.wire._
+import immortan.Channel.{WAIT_FOR_ACCEPT, WAIT_FUNDING_DONE}
+import immortan.ChannelListener.{Malfunction, Transition}
+import immortan._
+
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 
 object NCFunderOpenHandler {

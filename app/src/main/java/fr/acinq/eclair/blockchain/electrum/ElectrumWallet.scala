@@ -1,25 +1,25 @@
 package fr.acinq.eclair.blockchain.electrum
 
-import fr.acinq.bitcoin._
-import immortan.crypto.Tools._
-import scala.concurrent.duration._
+import akka.actor.{ActorRef, FSM, PoisonPill}
 import fr.acinq.bitcoin.DeterministicWallet._
+import fr.acinq.bitcoin._
 import fr.acinq.eclair.blockchain.EclairWallet._
+import fr.acinq.eclair.blockchain.bitcoind.rpc.Error
+import fr.acinq.eclair.blockchain.electrum.Blockchain.RETARGETING_PERIOD
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient._
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet._
-
-import scala.util.{Success, Try}
-import akka.actor.{ActorRef, FSM, PoisonPill}
-import fr.acinq.eclair.blockchain.{EclairWallet, TxAndFee}
-import fr.acinq.eclair.blockchain.electrum.db.{HeaderDb, WalletDb}
 import fr.acinq.eclair.blockchain.electrum.db.sqlite.SqliteWalletDb.persistentDataCodec
-import fr.acinq.eclair.blockchain.bitcoind.rpc.Error
+import fr.acinq.eclair.blockchain.electrum.db.{HeaderDb, WalletDb}
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
+import fr.acinq.eclair.blockchain.{EclairWallet, TxAndFee}
 import fr.acinq.eclair.transactions.Transactions
-import Blockchain.RETARGETING_PERIOD
-import scala.collection.immutable
-import scala.annotation.tailrec
+import immortan.crypto.Tools._
 import scodec.bits.ByteVector
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.util.{Success, Try}
 
 
 class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParameters, ewt: ElectrumWalletType) extends FSM[State, ElectrumData] {

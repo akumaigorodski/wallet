@@ -1,9 +1,9 @@
 package fr.acinq.eclair.blockchain.electrum.db
 
-import fr.acinq.bitcoin.{BlockHeader, ByteVector32, Satoshi}
-import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
-import fr.acinq.eclair.blockchain.electrum.PersistentData
 import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
+import fr.acinq.bitcoin.{BlockHeader, ByteVector32, Satoshi}
+import fr.acinq.eclair.blockchain.electrum.PersistentData
 import scodec.bits.ByteVector
 
 

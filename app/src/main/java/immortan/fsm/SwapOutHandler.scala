@@ -1,12 +1,13 @@
 package immortan.fsm
 
+import fr.acinq.bitcoin.{ByteVector32, Satoshi}
 import fr.acinq.eclair.wire._
 import immortan.crypto.Tools._
-import scala.concurrent.duration._
-import fr.acinq.bitcoin.{ByteVector32, Satoshi}
+import immortan.utils.Rx
 import immortan.{ChanAndCommits, CommsTower, ConnectionListener}
 import rx.lang.scala.Subscription
-import immortan.utils.Rx
+
+import scala.concurrent.duration._
 
 
 abstract class SwapOutHandler(cnc: ChanAndCommits, amount: Satoshi, btcAddress: String, blockTarget: Int, feerateKey: ByteVector32) { me =>

@@ -1,11 +1,12 @@
 package fr.acinq.eclair.blockchain.electrum
 
-import fr.acinq.bitcoin._
-import fr.acinq.bitcoin.DeterministicWallet._
-import fr.acinq.eclair.blockchain.EclairWallet
 import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.bitcoin.DeterministicWallet._
+import fr.acinq.bitcoin._
+import fr.acinq.eclair.blockchain.EclairWallet
 import immortan.crypto.Tools.Any2Some
 import scodec.bits.ByteVector
+
 import scala.util.Try
 
 

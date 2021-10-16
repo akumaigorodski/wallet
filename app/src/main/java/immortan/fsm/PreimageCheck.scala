@@ -1,16 +1,18 @@
 package immortan.fsm
 
-import scala.concurrent.duration._
-import fr.acinq.bitcoin.{ByteVector32, Crypto}
-import immortan.fsm.PreimageCheck.{FINALIZED, OPERATIONAL}
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
-import immortan.{CommsTower, ConnectionListener, KeyPairAndPubKey, RemoteNodeInfo}
-import fr.acinq.eclair.wire.{HostedChannelMessage, Init, QueryPreimages, ReplyPreimages}
-import fr.acinq.eclair.channel.Helpers.HashToPreimage
-import immortan.crypto.Tools.randomKeyPair
 import java.util.concurrent.Executors
+
+import fr.acinq.bitcoin.{ByteVector32, Crypto}
+import fr.acinq.eclair.channel.Helpers.HashToPreimage
+import fr.acinq.eclair.wire.{HostedChannelMessage, Init, QueryPreimages, ReplyPreimages}
 import immortan.crypto.StateMachine
+import immortan.crypto.Tools.randomKeyPair
+import immortan.fsm.PreimageCheck.{FINALIZED, OPERATIONAL}
 import immortan.utils.Rx
+import immortan.{CommsTower, ConnectionListener, KeyPairAndPubKey, RemoteNodeInfo}
+
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 
 object PreimageCheck {

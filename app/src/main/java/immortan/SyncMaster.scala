@@ -1,23 +1,25 @@
 package immortan
 
-import immortan.SyncMaster._
-import fr.acinq.eclair.wire._
-import immortan.crypto.Tools._
-import scala.concurrent.duration._
-import com.softwaremill.quicklens._
-import QueryShortChannelIdsTlv.QueryFlagType._
-import fr.acinq.eclair.router.{Announcements, Sync}
-import immortan.crypto.{CanBeRepliedTo, StateMachine, Tools}
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
-import fr.acinq.eclair.Features.ChannelRangeQueriesExtended
-import fr.acinq.eclair.router.Router.Data
-import fr.acinq.bitcoin.Crypto.PublicKey
 import java.util.concurrent.Executors
+
+import com.softwaremill.quicklens._
+import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.eclair.Features.ChannelRangeQueriesExtended
 import fr.acinq.eclair.ShortChannelId
+import fr.acinq.eclair.router.Router.Data
+import fr.acinq.eclair.router.{Announcements, Sync}
+import fr.acinq.eclair.wire.QueryShortChannelIdsTlv.QueryFlagType._
+import fr.acinq.eclair.wire._
+import immortan.SyncMaster._
 import immortan.crypto.Noise.KeyPair
-import scala.util.Random.shuffle
-import scala.collection.mutable
+import immortan.crypto.Tools._
+import immortan.crypto.{CanBeRepliedTo, StateMachine, Tools}
 import immortan.utils.Rx
+
+import scala.collection.mutable
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
+import scala.util.Random.shuffle
 
 
 object SyncMaster {

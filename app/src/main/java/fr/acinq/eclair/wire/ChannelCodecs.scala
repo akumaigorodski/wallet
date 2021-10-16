@@ -1,18 +1,18 @@
 package fr.acinq.eclair.wire
 
-import scodec.codecs._
-import fr.acinq.eclair.channel._
-import fr.acinq.eclair.transactions._
-import fr.acinq.eclair.wire.CommonCodecs._
-import fr.acinq.eclair.transactions.Transactions._
-import fr.acinq.eclair.wire.LightningMessageCodecs._
-import fr.acinq.eclair.blockchain.TxConfirmedAt
-import fr.acinq.eclair.crypto.ShaChain
 import fr.acinq.bitcoin.DeterministicWallet.{ExtendedPrivateKey, ExtendedPublicKey, KeyPath}
 import fr.acinq.bitcoin.{OutPoint, Transaction, TxOut}
+import fr.acinq.eclair.blockchain.TxConfirmedAt
+import fr.acinq.eclair.channel._
+import fr.acinq.eclair.crypto.ShaChain
+import fr.acinq.eclair.transactions.Transactions._
+import fr.acinq.eclair.transactions._
+import fr.acinq.eclair.wire.CommonCodecs._
+import fr.acinq.eclair.wire.LightningMessageCodecs._
 import fr.acinq.eclair.{FeatureSupport, Features}
 import immortan.{HostedCommits, RemoteNodeInfo}
 import scodec.bits.ByteVector
+import scodec.codecs._
 import scodec.{Attempt, Codec}
 
 

@@ -1,11 +1,11 @@
 package immortan
 
-import fr.acinq.eclair._
-import fr.acinq.eclair.wire._
-import fr.acinq.eclair.channel._
 import com.softwaremill.quicklens._
-import fr.acinq.eclair.transactions._
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64}
+import fr.acinq.eclair._
+import fr.acinq.eclair.channel._
+import fr.acinq.eclair.transactions._
+import fr.acinq.eclair.wire._
 import immortan.crypto.Tools.{Any2Some, hostedChanId}
 import scodec.bits.ByteVector
 

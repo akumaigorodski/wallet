@@ -1,9 +1,9 @@
 package immortan.utils
 
-import javax.crypto.spec.{IvParameterSpec, SecretKeySpec}
 import immortan.crypto.Tools.Bytes
-import scodec.bits.ByteVector
 import javax.crypto.Cipher
+import javax.crypto.spec.{IvParameterSpec, SecretKeySpec}
+import scodec.bits.ByteVector
 
 
 object AES {

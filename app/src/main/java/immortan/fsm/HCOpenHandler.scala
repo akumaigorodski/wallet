@@ -1,13 +1,13 @@
 package immortan.fsm
 
-import immortan.{ChannelHosted, ChannelListener, ChannelMaster, CommsTower, ConnectionListener, HostedCommits, RemoteNodeInfo, WaitRemoteHostedReply}
-import fr.acinq.eclair.wire.{ChannelUpdate, HasChannelId, HostedChannelMessage, Init, LightningMessage, LightningMessageCodecs}
-import fr.acinq.eclair.channel.{CMD_SOCKET_ONLINE, Commitments, PersistentChannelData}
-import immortan.ChannelListener.{Malfunction, Transition}
-import immortan.Channel.{OPEN, WAIT_FOR_ACCEPT}
 import fr.acinq.bitcoin.ByteVector32
-import scodec.bits.ByteVector
+import fr.acinq.eclair.channel.{CMD_SOCKET_ONLINE, Commitments, PersistentChannelData}
+import fr.acinq.eclair.wire._
+import immortan.Channel.{OPEN, WAIT_FOR_ACCEPT}
+import immortan.ChannelListener.{Malfunction, Transition}
 import immortan.crypto.Tools
+import immortan._
+import scodec.bits.ByteVector
 
 
 // Secret and refund pubKey are supplied externally because they may be different depending if we have a chain wallet or not

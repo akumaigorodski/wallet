@@ -16,24 +16,21 @@
 
 package fr.acinq.eclair.payment
 
-import fr.acinq.eclair.wire._
-import scodec.{Attempt, DecodeResult}
+import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
-import fr.acinq.eclair.router.Router.{ChannelHop, Hop, NodeHop}
-import fr.acinq.eclair.{CltvExpiry, CltvExpiryDelta, MilliSatoshi, UInt64}
 import fr.acinq.eclair.channel.CMD_FAIL_HTLC
 import fr.acinq.eclair.crypto.Sphinx
-import fr.acinq.bitcoin.ByteVector32
+import fr.acinq.eclair.router.Router.{ChannelHop, Hop, NodeHop}
+import fr.acinq.eclair.wire._
+import fr.acinq.eclair.{CltvExpiry, CltvExpiryDelta, MilliSatoshi, UInt64}
 import scodec.bits.ByteVector
+import scodec.{Attempt, DecodeResult}
+
 import scala.reflect.ClassTag
 
-/**
- * Created by t-bast on 08/10/2019.
- */
 
 sealed trait IncomingPacket
 
-/** Helpers to handle incoming payment packets. */
 object IncomingPacket {
 
   // @formatter:off

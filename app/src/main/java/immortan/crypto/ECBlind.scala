@@ -1,12 +1,13 @@
 package immortan.crypto
 
-import fr.acinq.eclair._
-import fr.acinq.bitcoin.Crypto.curve.{getCurve, getG, getN}
-import fr.acinq.bitcoin.Crypto.PrivateKey
-import org.bouncycastle.math.ec.ECPoint
-import immortan.crypto.Tools.Bytes
-import scodec.bits.ByteVector
 import java.math.BigInteger
+
+import fr.acinq.bitcoin.Crypto.PrivateKey
+import fr.acinq.bitcoin.Crypto.curve.{getCurve, getG, getN}
+import fr.acinq.eclair._
+import immortan.crypto.Tools.Bytes
+import org.bouncycastle.math.ec.ECPoint
+import scodec.bits.ByteVector
 
 
 case class BlindMemo(params: List[BlindParam], clearTokens: List[BigInteger], key: String) {

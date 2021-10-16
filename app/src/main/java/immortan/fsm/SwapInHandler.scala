@@ -1,12 +1,13 @@
 package immortan.fsm
 
-import fr.acinq.eclair.wire._
-import scala.concurrent.duration._
-import immortan.{ChanAndCommits, CommsTower, ConnectionListener}
 import fr.acinq.eclair.payment.PaymentRequest
+import fr.acinq.eclair.wire._
 import immortan.crypto.Tools.runAnd
-import rx.lang.scala.Subscription
 import immortan.utils.Rx
+import immortan.{ChanAndCommits, CommsTower, ConnectionListener}
+import rx.lang.scala.Subscription
+
+import scala.concurrent.duration._
 
 
 abstract class SwapInHandler(cnc: ChanAndCommits, paymentRequest: PaymentRequest, id: Long) { me =>

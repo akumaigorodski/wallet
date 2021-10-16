@@ -1,10 +1,10 @@
 package fr.acinq.eclair.wire
 
-import scodec._
-import scodec.codecs._
-import fr.acinq.eclair.wire.CommonCodecs._
 import fr.acinq.bitcoin.ByteVector32
+import fr.acinq.eclair.wire.CommonCodecs._
+import scodec._
 import scodec.bits.ByteVector
+import scodec.codecs._
 
 
 case class FullPaymentTag(paymentHash: ByteVector32, paymentSecret: ByteVector32, tag: Int)

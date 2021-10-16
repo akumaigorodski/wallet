@@ -16,18 +16,16 @@
 
 package fr.acinq.eclair.router
 
-
-import fr.acinq.eclair.wire._
-import scala.concurrent.duration._
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey, sha256, verifySignature}
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, LexicographicalOrdering}
+import fr.acinq.eclair.wire._
 import fr.acinq.eclair.{CltvExpiryDelta, Features, MilliSatoshi, ShortChannelId, serializationResult}
 import scodec.bits.{BitVector, ByteVector}
 import shapeless.HNil
 
-/**
- * Created by PM on 03/02/2017.
- */
+import scala.concurrent.duration._
+
+
 object Announcements {
 
   def channelAnnouncementWitnessEncode(chainHash: ByteVector32, shortChannelId: ShortChannelId, nodeId1: PublicKey, nodeId2: PublicKey, bitcoinKey1: PublicKey, bitcoinKey2: PublicKey, features: Features, unknownFields: ByteVector): ByteVector =

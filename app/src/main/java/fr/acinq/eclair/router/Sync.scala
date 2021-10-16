@@ -16,11 +16,10 @@
 
 package fr.acinq.eclair.router
 
+import com.google.common.hash.Hashing
+import fr.acinq.eclair._
 import fr.acinq.eclair.router.Router._
 import fr.acinq.eclair.wire._
-import fr.acinq.eclair._
-import fr.acinq.eclair.ShortChannelId
-import com.google.common.hash.Hashing
 import scodec.bits.ByteVector
 import shapeless.HNil
 

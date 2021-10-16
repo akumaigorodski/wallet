@@ -1,18 +1,18 @@
 package immortan
 
-import fr.acinq.eclair._
-import immortan.Channel._
-import immortan.ErrorCodes._
-import fr.acinq.eclair.wire._
-import immortan.crypto.Tools._
-import fr.acinq.eclair.channel._
 import com.softwaremill.quicklens._
-import fr.acinq.eclair.transactions._
 import fr.acinq.bitcoin.{ByteVector64, SatoshiLong}
-import fr.acinq.eclair.channel.Helpers.HashToPreimage
+import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.CurrentBlockCount
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
+import fr.acinq.eclair.channel.Helpers.HashToPreimage
+import fr.acinq.eclair.channel._
 import fr.acinq.eclair.payment.OutgoingPacket
+import fr.acinq.eclair.transactions._
+import fr.acinq.eclair.wire._
+import immortan.Channel._
+import immortan.ErrorCodes._
+import immortan.crypto.Tools._
 import immortan.fsm.PreimageCheck
 import scodec.bits.ByteVector
 

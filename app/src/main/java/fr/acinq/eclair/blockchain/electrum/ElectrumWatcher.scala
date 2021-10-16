@@ -16,14 +16,16 @@
 
 package fr.acinq.eclair.blockchain.electrum
 
-import fr.acinq.eclair.blockchain._
-import scala.collection.immutable.{Queue, SortedMap}
-import fr.acinq.bitcoin.{BlockHeader, ByteVector32, Transaction}
-import akka.actor.{Actor, ActorLogging, ActorRef, Stash, Terminated}
-import fr.acinq.eclair.channel.{BITCOIN_FUNDING_DEPTHOK, BITCOIN_PARENT_TX_CONFIRMED}
-import fr.acinq.eclair.blockchain.electrum.ElectrumClient.computeScriptHash
 import java.util.concurrent.atomic.AtomicLong
+
+import akka.actor.{Actor, ActorLogging, ActorRef, Stash, Terminated}
+import fr.acinq.bitcoin.{BlockHeader, ByteVector32, Transaction}
+import fr.acinq.eclair.blockchain._
+import fr.acinq.eclair.blockchain.electrum.ElectrumClient.computeScriptHash
+import fr.acinq.eclair.channel.{BITCOIN_FUNDING_DEPTHOK, BITCOIN_PARENT_TX_CONFIRMED}
 import fr.acinq.eclair.transactions.Scripts
+
+import scala.collection.immutable.{Queue, SortedMap}
 
 
 class ElectrumWatcher(blockCount: AtomicLong, client: ActorRef) extends Actor with Stash with ActorLogging {

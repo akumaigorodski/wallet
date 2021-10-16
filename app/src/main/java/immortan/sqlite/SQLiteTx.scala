@@ -1,14 +1,15 @@
 package immortan.sqlite
 
-import spray.json._
-import immortan.utils.ImplicitJsonFormats._
-import fr.acinq.bitcoin.{ByteVector32, Satoshi, Transaction}
-import immortan.{ChannelMaster, TxDescription, TxInfo}
 import java.lang.{Long => JLong}
 
 import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
-import immortan.crypto.Tools.Fiat2Btc
+import fr.acinq.bitcoin.{ByteVector32, Satoshi, Transaction}
 import fr.acinq.eclair.MilliSatoshi
+import immortan.crypto.Tools.Fiat2Btc
+import immortan.utils.ImplicitJsonFormats._
+import immortan.{ChannelMaster, TxDescription, TxInfo}
+import spray.json._
+
 import scala.util.Try
 
 

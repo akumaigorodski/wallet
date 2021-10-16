@@ -1,21 +1,22 @@
 package immortan
 
-import fr.acinq.eclair._
-import scala.concurrent._
+import java.net.Socket
+import java.util.concurrent.{ConcurrentHashMap, Executors}
+
+import fr.acinq.bitcoin.ByteVector32
+import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.eclair.{Features, _}
+import fr.acinq.eclair.wire.LightningMessageCodecs.lightningMessageCodecWithFallback
 import fr.acinq.eclair.wire._
-import scala.concurrent.duration._
-import scala.collection.JavaConverters._
+import immortan.crypto.Noise.KeyPair
 import immortan.crypto.Tools.{Bytes, none}
 import rx.lang.scala.{Observable, Subscription}
-import java.util.concurrent.{ConcurrentHashMap, Executors}
-import fr.acinq.eclair.wire.LightningMessageCodecs.lightningMessageCodecWithFallback
-import fr.acinq.bitcoin.Crypto.PublicKey
-import fr.acinq.bitcoin.ByteVector32
-import immortan.crypto.Noise.KeyPair
-import fr.acinq.eclair.Features
-import scala.collection.mutable
 import scodec.bits.ByteVector
-import java.net.Socket
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.concurrent._
+import scala.concurrent.duration._
 
 
 case class KeyPairAndPubKey(keyPair: KeyPair, them: PublicKey)

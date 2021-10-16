@@ -1,11 +1,11 @@
 package immortan.utils
 
+import com.github.kevinsawicki.http.HttpRequest.get
+import immortan.DataBag
+import immortan.crypto.CanBeShutDown
 import immortan.crypto.Tools._
 import immortan.utils.ImplicitJsonFormats._
 import rx.lang.scala.{Observable, Subscription}
-import com.github.kevinsawicki.http.HttpRequest.get
-import immortan.crypto.CanBeShutDown
-import immortan.DataBag
 
 
 object FiatRates {

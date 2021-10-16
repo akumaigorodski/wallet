@@ -1,9 +1,10 @@
 package immortan.sqlite
 
-import spray.json._
+import java.lang.{Long => JLong}
+
 import immortan.utils.ImplicitJsonFormats._
 import immortan.{ChannelMaster, LNUrlDescription, LNUrlPayLink}
-import java.lang.{Long => JLong}
+import spray.json._
 
 
 class SQLiteLNUrlPay(db: DBInterface) {

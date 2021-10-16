@@ -18,6 +18,7 @@ package fr.acinq.eclair.wire
 
 import fr.acinq.eclair.UInt64
 import scodec.bits.ByteVector
+
 import scala.reflect.ClassTag
 
 /**

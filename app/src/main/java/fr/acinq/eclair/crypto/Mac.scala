@@ -22,19 +22,12 @@ import org.bouncycastle.crypto.macs.HMac
 import org.bouncycastle.crypto.params.KeyParameter
 import scodec.bits.ByteVector
 
-/**
-  * Created by t-bast on 04/07/19.
-  */
 
-/**
-  * Create and verify message authentication codes.
-  */
 trait Mac32 {
 
   def mac(message: ByteVector): ByteVector32
 
   def verify(mac: ByteVector32, message: ByteVector): Boolean
-
 }
 
 case class Hmac256(key: ByteVector) extends Mac32 {
@@ -42,11 +35,9 @@ case class Hmac256(key: ByteVector) extends Mac32 {
   override def mac(message: ByteVector): ByteVector32 = Mac32.hmac256(key, message)
 
   override def verify(mac: ByteVector32, message: ByteVector): Boolean = this.mac(message) === mac
-
 }
 
 object Mac32 {
-
   def hmac256(key: ByteVector, message: ByteVector): ByteVector32 = {
     val mac = new HMac(new SHA256Digest())
     mac.init(new KeyParameter(key.toArray))
@@ -55,5 +46,4 @@ object Mac32 {
     mac.doFinal(output, 0)
     ByteVector32(ByteVector.view(output))
   }
-
 }

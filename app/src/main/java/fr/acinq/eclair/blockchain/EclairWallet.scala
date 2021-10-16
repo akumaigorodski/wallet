@@ -1,11 +1,12 @@
 package fr.acinq.eclair.blockchain
 
-import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.bitcoin.{ByteVector32, OutPoint, Satoshi, Transaction, TxIn}
+import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GetCurrentReceiveAddressesResponse, RBFResponse}
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import scala.concurrent.Future
 import scodec.bits.ByteVector
+
+import scala.concurrent.Future
 
 
 object EclairWallet {

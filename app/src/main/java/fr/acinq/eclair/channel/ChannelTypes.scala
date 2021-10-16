@@ -1,22 +1,21 @@
 package fr.acinq.eclair.channel
 
-import fr.acinq.eclair._
-import fr.acinq.bitcoin._
-import fr.acinq.eclair.wire._
-import fr.acinq.bitcoin.DeterministicWallet._
-import fr.acinq.eclair.transactions.Transactions._
-import fr.acinq.eclair.blockchain.{MakeFundingTxResponse, TxConfirmedAt}
-import fr.acinq.eclair.transactions.{CommitmentSpec, Transactions}
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
-import immortan.{LNParams, RemoteNodeInfo}
-
-import fr.acinq.eclair.crypto.Sphinx.PacketAndSecrets
+import fr.acinq.bitcoin.DeterministicWallet._
+import fr.acinq.bitcoin._
+import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import fr.acinq.eclair.wire.Onion.FinalPayload
-import fr.acinq.eclair.payment.IncomingPacket
+import fr.acinq.eclair.blockchain.{MakeFundingTxResponse, TxConfirmedAt}
 import fr.acinq.eclair.crypto.Generators
-import scodec.bits.ByteVector
+import fr.acinq.eclair.crypto.Sphinx.PacketAndSecrets
+import fr.acinq.eclair.payment.IncomingPacket
+import fr.acinq.eclair.transactions.Transactions._
+import fr.acinq.eclair.transactions.{CommitmentSpec, Transactions}
+import fr.acinq.eclair.wire.Onion.FinalPayload
+import fr.acinq.eclair.wire._
 import immortan.crypto.Tools
+import immortan.{LNParams, RemoteNodeInfo}
+import scodec.bits.ByteVector
 
 
 sealed trait LocalReject {

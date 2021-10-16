@@ -17,11 +17,7 @@
 package fr.acinq.eclair.blockchain
 
 import fr.acinq.bitcoin.{Block, Transaction}
-import fr.acinq.eclair.blockchain.fee.FeeratesPerKw
 
-/**
- * Created by PM on 24/08/2016.
- */
 
 sealed trait BlockchainEvent
 

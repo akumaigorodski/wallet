@@ -1,13 +1,14 @@
 package immortan.crypto
 
-import fr.acinq.eclair.crypto.{ChaCha20Poly1305, Mac32}
-import fr.acinq.bitcoin.Protocol.writeUInt64
-import fr.acinq.bitcoin.Crypto.PrivateKey
-import java.nio.ByteOrder.LITTLE_ENDIAN
-import fr.acinq.eclair.randomBytes
-import fr.acinq.bitcoin.Crypto
-import scodec.bits.ByteVector
 import java.math.BigInteger
+import java.nio.ByteOrder.LITTLE_ENDIAN
+
+import fr.acinq.bitcoin.Crypto
+import fr.acinq.bitcoin.Crypto.PrivateKey
+import fr.acinq.bitcoin.Protocol.writeUInt64
+import fr.acinq.eclair.crypto.{ChaCha20Poly1305, Mac32}
+import fr.acinq.eclair.randomBytes
+import scodec.bits.ByteVector
 
 
 object Noise {

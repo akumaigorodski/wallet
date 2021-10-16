@@ -1,19 +1,20 @@
 package immortan.fsm
 
-import fr.acinq.eclair._
-import fr.acinq.eclair.wire._
-import immortan.crypto.Tools._
-import immortan.fsm.IncomingPaymentProcessor._
-import fr.acinq.eclair.channel.{CMD_FAIL_HTLC, CMD_FULFILL_HTLC, ReasonableLocal, ReasonableTrampoline}
-import immortan.{Channel, ChannelMaster, InFlightPayments, LNParams, PaymentStatus}
-import immortan.ChannelMaster.{ReasonableLocals, ReasonableTrampolines}
-import immortan.crypto.{CanBeShutDown, StateMachine}
-import fr.acinq.eclair.transactions.RemoteFulfill
-import fr.acinq.eclair.router.RouteCalculation
-import fr.acinq.eclair.payment.IncomingPacket
-import immortan.fsm.PaymentFailure.Failures
-import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.ByteVector32
+import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.eclair._
+import fr.acinq.eclair.channel.{CMD_FAIL_HTLC, CMD_FULFILL_HTLC, ReasonableLocal, ReasonableTrampoline}
+import fr.acinq.eclair.payment.IncomingPacket
+import fr.acinq.eclair.router.RouteCalculation
+import fr.acinq.eclair.transactions.RemoteFulfill
+import fr.acinq.eclair.wire._
+import immortan.ChannelMaster.{ReasonableLocals, ReasonableTrampolines}
+import immortan.crypto.Tools._
+import immortan.crypto.{CanBeShutDown, StateMachine}
+import immortan.fsm.IncomingPaymentProcessor._
+import immortan.fsm.PaymentFailure.Failures
+import immortan._
+
 import scala.util.Success
 
 

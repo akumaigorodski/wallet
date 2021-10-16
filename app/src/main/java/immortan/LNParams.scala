@@ -1,31 +1,33 @@
 package immortan
 
-import immortan.utils._
-import fr.acinq.eclair._
-import immortan.sqlite._
-import fr.acinq.bitcoin._
-import fr.acinq.eclair.wire._
-import immortan.crypto.Tools._
-import fr.acinq.eclair.Features._
-import scala.concurrent.duration._
-import com.softwaremill.quicklens._
-import fr.acinq.eclair.blockchain.electrum._
-import scodec.bits.{ByteVector, HexStringSyntax}
-import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
-import scala.concurrent.{Await, ExecutionContextExecutor}
+import java.util.concurrent.atomic.AtomicLong
+
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
+import akka.util.Timeout
+import com.softwaremill.quicklens._
+import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
+import fr.acinq.bitcoin._
+import fr.acinq.eclair.Features._
+import fr.acinq.eclair._
+import fr.acinq.eclair.blockchain.EclairWallet
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.WalletReady
+import fr.acinq.eclair.blockchain.electrum._
+import fr.acinq.eclair.blockchain.electrum.db.{CompleteChainWalletInfo, SigningWallet, WatchingWallet}
+import fr.acinq.eclair.channel.{ChannelKeys, LocalParams, PersistentChannelData}
+import fr.acinq.eclair.router.ChannelUpdateExt
 import fr.acinq.eclair.router.Router.{PublicChannel, RouterConf}
 import fr.acinq.eclair.transactions.{DirectedHtlc, RemoteFulfill}
-import fr.acinq.eclair.channel.{ChannelKeys, LocalParams, PersistentChannelData}
-import fr.acinq.eclair.blockchain.electrum.db.{CompleteChainWalletInfo, SigningWallet, WatchingWallet}
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.WalletReady
-import fr.acinq.eclair.router.ChannelUpdateExt
-import fr.acinq.eclair.blockchain.EclairWallet
-import java.util.concurrent.atomic.AtomicLong
+import fr.acinq.eclair.wire._
 import immortan.SyncMaster.ShortChanIdSet
-import immortan.crypto.Noise.KeyPair
 import immortan.crypto.CanBeShutDown
-import akka.util.Timeout
+import immortan.crypto.Noise.KeyPair
+import immortan.crypto.Tools._
+import immortan.sqlite._
+import immortan.utils._
+import scodec.bits.{ByteVector, HexStringSyntax}
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.util.Try
 
 

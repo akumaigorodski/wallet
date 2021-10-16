@@ -1,8 +1,9 @@
 package immortan
 
-import immortan.crypto.Tools._
-import scala.concurrent.duration._
 import akka.actor.{Actor, OneForOneStrategy, Props, SupervisorStrategy}
+import immortan.crypto.Tools._
+
+import scala.concurrent.duration._
 
 
 class LoggingSupervisor(childProps: Props, childName: String) extends Actor {

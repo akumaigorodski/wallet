@@ -1,11 +1,11 @@
 package fr.acinq.eclair.wire
 
-import scodec.codecs._
 import fr.acinq.eclair._
-import fr.acinq.eclair.wire.CommonCodecs._
 import fr.acinq.eclair.wire.ChannelCodecs._
-import scodec.bits.ByteVector
+import fr.acinq.eclair.wire.CommonCodecs._
 import scodec.Codec
+import scodec.bits.ByteVector
+import scodec.codecs._
 
 
 object LightningMessageCodecs {

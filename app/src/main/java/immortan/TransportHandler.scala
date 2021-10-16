@@ -1,15 +1,16 @@
 package immortan
 
-import TransportHandler._
-import immortan.crypto.Noise._
-import scala.concurrent.{ExecutionContext, Future}
-import fr.acinq.eclair.wire.{LightningMessageCodecs, LightningMessage}
-import scala.concurrent.ExecutionContextExecutor
-import java.util.concurrent.Executors
-import immortan.crypto.StateMachine
-import fr.acinq.bitcoin.Protocol
-import scodec.bits.ByteVector
 import java.nio.ByteOrder
+import java.util.concurrent.Executors
+
+import fr.acinq.bitcoin.Protocol
+import fr.acinq.eclair.wire.{LightningMessage, LightningMessageCodecs}
+import immortan.TransportHandler._
+import immortan.crypto.Noise._
+import immortan.crypto.StateMachine
+import scodec.bits.ByteVector
+
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 
 // Used to decrypt remote messages -> send to channel as well as encrypt outgoing messages -> send to socket

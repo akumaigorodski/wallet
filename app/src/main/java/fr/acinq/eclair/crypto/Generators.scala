@@ -20,9 +20,7 @@ import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{ByteVector32, Crypto}
 import scodec.bits.ByteVector
 
-/**
-  * Created by PM on 07/12/2016.
-  */
+
 object Generators {
 
   def fixSize(data: ByteVector): ByteVector32 = data.length match {

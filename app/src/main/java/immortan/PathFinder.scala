@@ -1,23 +1,24 @@
 package immortan
 
+import java.util.concurrent.{Executors, TimeUnit}
+
+import com.google.common.cache.CacheBuilder
+import fr.acinq.bitcoin.Crypto
+import fr.acinq.eclair.router.Graph.GraphStructure.{DirectedGraph, GraphEdge}
+import fr.acinq.eclair.router.RouteCalculation.handleRouteRequest
+import fr.acinq.eclair.router.Router.{Data, PublicChannel, RouteRequest}
+import fr.acinq.eclair.router.{ChannelUpdateExt, Router}
+import fr.acinq.eclair.wire.ChannelUpdate
+import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi, ShortChannelId, nodeFee}
 import immortan.PathFinder._
 import immortan.crypto.Tools._
-import scala.collection.JavaConverters._
-
-import immortan.utils.{Rx, Statistics}
-import java.util.concurrent.{Executors, TimeUnit}
 import immortan.crypto.{CanBeRepliedTo, StateMachine}
-import fr.acinq.eclair.router.{ChannelUpdateExt, Router}
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
-import fr.acinq.eclair.router.Router.{Data, PublicChannel, RouteRequest}
-import fr.acinq.eclair.router.Graph.GraphStructure.{DirectedGraph, GraphEdge}
-import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi, ShortChannelId, nodeFee}
-import fr.acinq.eclair.router.RouteCalculation.handleRouteRequest
-import com.google.common.cache.CacheBuilder
-import fr.acinq.eclair.wire.ChannelUpdate
+import immortan.utils.{Rx, Statistics}
 import rx.lang.scala.Subscription
+
+import scala.collection.JavaConverters._
 import scala.collection.mutable
-import fr.acinq.bitcoin.Crypto
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 
 object PathFinder {

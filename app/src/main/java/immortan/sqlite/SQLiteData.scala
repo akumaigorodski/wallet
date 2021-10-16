@@ -1,20 +1,21 @@
 package immortan.sqlite
 
-import spray.json._
+import java.lang.{Integer => JInt}
+
+import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.bitcoin.{BlockHeader, ByteVector32}
+import fr.acinq.eclair.blockchain.electrum.db.HeaderDb
+import fr.acinq.eclair.wire.LightningMessageCodecs.{hostedChannelBrandingCodec, swapInStateCodec, trampolineOnCodec}
+import fr.acinq.eclair.wire.{HostedChannelBranding, SwapInState, TrampolineOn}
+import immortan.crypto.Tools.Bytes
 import immortan.sqlite.SQLiteData._
 import immortan.utils.ImplicitJsonFormats._
-
-import java.lang.{Integer => JInt}
 import immortan.utils.{FeeRatesInfo, FiatRatesInfo}
-import fr.acinq.bitcoin.{BlockHeader, ByteVector32}
-import immortan.{DataBag, SwapInStateExt, WalletSecret}
-import fr.acinq.eclair.wire.{HostedChannelBranding, SwapInState, TrampolineOn}
-import fr.acinq.eclair.wire.LightningMessageCodecs.{hostedChannelBrandingCodec, swapInStateCodec, trampolineOnCodec}
-import fr.acinq.eclair.blockchain.electrum.db.HeaderDb
 import immortan.wire.ExtCodecs.walletSecretCodec
-import fr.acinq.bitcoin.Crypto.PublicKey
-import immortan.crypto.Tools.Bytes
+import immortan.{DataBag, SwapInStateExt, WalletSecret}
 import scodec.bits.ByteVector
+import spray.json._
+
 import scala.util.Try
 
 

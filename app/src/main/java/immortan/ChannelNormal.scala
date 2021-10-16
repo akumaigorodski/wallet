@@ -1,25 +1,26 @@
 package immortan
 
-import fr.acinq.eclair._
-import immortan.Channel._
-import fr.acinq.eclair.wire._
-import immortan.crypto.Tools._
-import fr.acinq.eclair.channel._
-import scala.concurrent.duration._
-import fr.acinq.eclair.blockchain._
 import com.softwaremill.quicklens._
-import fr.acinq.eclair.transactions._
+import fr.acinq.bitcoin.Crypto.PrivateKey
 import fr.acinq.bitcoin.{ByteVector32, Transaction}
-import fr.acinq.eclair.transactions.Transactions.TxOwner
+import fr.acinq.eclair._
+import fr.acinq.eclair.blockchain._
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.channel.Helpers.Closing
-import fr.acinq.eclair.payment.OutgoingPacket
-import fr.acinq.bitcoin.Crypto.PrivateKey
-import immortan.sqlite.ChannelTxFeesTable
-import scala.collection.immutable.Queue
+import fr.acinq.eclair.channel._
 import fr.acinq.eclair.crypto.ShaChain
-import scodec.bits.ByteVector
+import fr.acinq.eclair.payment.OutgoingPacket
+import fr.acinq.eclair.transactions.Transactions.TxOwner
+import fr.acinq.eclair.transactions._
+import fr.acinq.eclair.wire._
+import immortan.Channel._
+import immortan.crypto.Tools._
+import immortan.sqlite.ChannelTxFeesTable
 import immortan.utils.Rx
+import scodec.bits.ByteVector
+
+import scala.collection.immutable.Queue
+import scala.concurrent.duration._
 import scala.util.Try
 
 

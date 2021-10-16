@@ -1,14 +1,14 @@
 package immortan.utils
 
-import fr.acinq.bitcoin._
-import immortan.utils.FeeRates._
-import fr.acinq.eclair.blockchain.fee._
-import immortan.utils.ImplicitJsonFormats._
 import com.github.kevinsawicki.http.HttpRequest.get
-import immortan.crypto.CanBeShutDown
-import rx.lang.scala.Subscription
-import immortan.crypto.Tools.none
+import fr.acinq.bitcoin._
+import fr.acinq.eclair.blockchain.fee._
 import immortan.DataBag
+import immortan.crypto.CanBeShutDown
+import immortan.crypto.Tools.none
+import immortan.utils.FeeRates._
+import immortan.utils.ImplicitJsonFormats._
+import rx.lang.scala.Subscription
 
 
 object FeeRates {

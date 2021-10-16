@@ -1,14 +1,15 @@
 package immortan.sqlite
 
-import immortan._
+import java.lang.{Integer => JInt, Long => JLong}
+
+import fr.acinq.bitcoin.ByteVector64
+import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.eclair._
-import java.lang.{Long => JLong, Integer => JInt}
+import fr.acinq.eclair.router.Router.PublicChannel
 import fr.acinq.eclair.router.{ChannelUpdateExt, Sync}
 import fr.acinq.eclair.wire.{ChannelAnnouncement, ChannelUpdate}
-import fr.acinq.eclair.router.Router.PublicChannel
 import immortan.SyncMaster.ShortChanIdSet
-import fr.acinq.bitcoin.Crypto.PublicKey
-import fr.acinq.bitcoin.ByteVector64
+import immortan._
 import scodec.bits.ByteVector
 
 

@@ -1,20 +1,20 @@
 package fr.acinq.eclair.wire
 
-import fr.acinq.eclair._
-import immortan.{ChannelMaster, LNParams}
-import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
-import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, Protocol, Satoshi}
-import fr.acinq.eclair.{CltvExpiry, CltvExpiryDelta, Features, MilliSatoshi, ShortChannelId, UInt64}
-import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
-import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import fr.acinq.eclair.router.Announcements
-import java.nio.charset.StandardCharsets
-import com.google.common.base.Charsets
-import scodec.bits.ByteVector
-import immortan.crypto.Tools
-import scodec.DecodeResult
 import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
+
+import com.google.common.base.Charsets
+import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
+import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, Protocol, Satoshi}
+import fr.acinq.eclair.blockchain.fee.FeeratePerKw
+import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
+import fr.acinq.eclair.router.Announcements
+import fr.acinq.eclair.{CltvExpiry, CltvExpiryDelta, Features, MilliSatoshi, ShortChannelId, UInt64, _}
+import immortan.crypto.Tools
+import immortan.{ChannelMaster, LNParams}
+import scodec.DecodeResult
+import scodec.bits.ByteVector
 
 
 sealed trait LightningMessage extends Serializable

@@ -23,23 +23,12 @@ import fr.acinq.eclair.blockchain.electrum.db.HeaderDb
 import org.json4s.JsonAST.{JArray, JInt, JString}
 import org.json4s.native.JsonMethods
 
-/**
-  *
-  * @param hash block hash
-  * @param nextBits difficulty target for the next block
-  */
+
 case class CheckPoint(hash: ByteVector32, nextBits: Long)
 
 object CheckPoint {
-
   import Blockchain.RETARGETING_PERIOD
 
-  /**
-    * Load checkpoints.
-    * There is one checkpoint every 2016 blocks (which is the difficulty adjustment period). They are used to check that
-    * we're on the right chain and to validate proof-of-work by checking the difficulty target
-    * @return an ordered list of checkpoints, with one checkpoint every 2016 blocks
-    */
   var loadFromChainHash: ByteVector32 => Vector[CheckPoint] = {
     case Block.LivenetGenesisBlock.hash => load(classOf[CheckPoint].getResourceAsStream("/electrum/checkpoints_mainnet.json"))
     case Block.TestnetGenesisBlock.hash => load(classOf[CheckPoint].getResourceAsStream("/electrum/checkpoints_testnet.json"))
@@ -55,13 +44,6 @@ object CheckPoint {
     checkpoints.toVector
   }
 
-  /**
-    * load checkpoints from our resources and header database
-    *
-    * @param chainHash chaim hash
-    * @param headerDb  header db
-    * @return a series of checkpoints
-    */
   def load(chainHash: ByteVector32, headerDb: HeaderDb): Vector[CheckPoint] = {
     val checkpoints = CheckPoint.loadFromChainHash(chainHash)
     val checkpoints1 = headerDb.getTip match {

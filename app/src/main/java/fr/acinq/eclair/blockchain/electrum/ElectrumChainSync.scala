@@ -1,12 +1,13 @@
 package fr.acinq.eclair.blockchain.electrum
 
-import scala.util.{Failure, Success, Try}
 import akka.actor.{ActorRef, FSM, PoisonPill}
 import fr.acinq.bitcoin.{Block, ByteVector32}
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{DISCONNECTED, RUNNING, SYNCING, WAITING_FOR_TIP}
 import fr.acinq.eclair.blockchain.electrum.Blockchain.RETARGETING_PERIOD
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.GetHeaders
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{DISCONNECTED, RUNNING, SYNCING, WAITING_FOR_TIP}
 import fr.acinq.eclair.blockchain.electrum.db.HeaderDb
+
+import scala.util.{Failure, Success, Try}
 
 
 object ElectrumChainSync {

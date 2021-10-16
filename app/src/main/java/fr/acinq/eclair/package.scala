@@ -16,12 +16,14 @@
 
 package fr.acinq
 
-import fr.acinq.bitcoin._
-import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
-import scodec.bits.{BitVector, ByteVector}
-import scala.util.{Failure, Success, Try}
 import java.security.SecureRandom
+
+import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
+import fr.acinq.bitcoin._
 import scodec.Attempt
+import scodec.bits.{BitVector, ByteVector}
+
+import scala.util.{Failure, Success, Try}
 
 
 package object eclair {

@@ -1,6 +1,6 @@
 package immortan.sqlite
 
-import immortan.PaymentStatus.{SUCCEEDED, PENDING, ABORTED}
+import immortan.PaymentStatus.{ABORTED, PENDING, SUCCEEDED}
 
 
 trait Table {

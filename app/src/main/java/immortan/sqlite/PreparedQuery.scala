@@ -1,8 +1,9 @@
 package immortan.sqlite
 
 import java.lang.{Double => JDouble, Integer => JInt, Long => JLong}
-import immortan.crypto.Tools.Bytes
 import java.sql.PreparedStatement
+
+import immortan.crypto.Tools.Bytes
 
 
 trait PreparedQuery {

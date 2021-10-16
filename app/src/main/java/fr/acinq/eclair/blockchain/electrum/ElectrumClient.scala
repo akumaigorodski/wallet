@@ -45,9 +45,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
-/**
-  * For later optimizations, see http://normanmaurer.me/presentations/2014-facebook-eng-netty/slides.html
-  */
+
 class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec: ExecutionContext) extends Actor with Stash with ActorLogging {
 
   import ElectrumClient._

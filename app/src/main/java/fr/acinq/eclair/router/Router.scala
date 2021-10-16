@@ -1,10 +1,10 @@
 package fr.acinq.eclair.router
 
+import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.eclair._
-import fr.acinq.eclair.wire._
 import fr.acinq.eclair.router.Graph.GraphStructure._
 import fr.acinq.eclair.router.Graph.RichWeight
-import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.eclair.wire._
 import scodec.bits.ByteVector
 
 

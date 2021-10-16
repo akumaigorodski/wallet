@@ -1,15 +1,17 @@
 package immortan.fsm
 
-import immortan.crypto.Tools._
-import scala.concurrent.duration._
-import immortan.fsm.SwapInAddressHandler._
-import immortan.{ChanAndCommits, CommsTower, ConnectionListener, LNParams, RemoteNodeInfo}
-import fr.acinq.eclair.wire.{Init, SwapIn, SwapInRequest, SwapInResponse}
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import java.util.concurrent.Executors
-import immortan.crypto.StateMachine
+
 import fr.acinq.eclair.Features
+import fr.acinq.eclair.wire.{Init, SwapIn, SwapInRequest, SwapInResponse}
+import immortan.crypto.StateMachine
+import immortan.crypto.Tools._
+import immortan.fsm.SwapInAddressHandler._
 import immortan.utils.Rx
+import immortan._
+
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 
 object SwapInAddressHandler {

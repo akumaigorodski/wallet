@@ -1,9 +1,9 @@
 package immortan.fsm
 
-import immortan.{ChannelHosted, ChannelListener, HostedCommits}
+import fr.acinq.bitcoin.Satoshi
 import fr.acinq.eclair.channel.HC_CMD_RESIZE
 import immortan.ChannelListener.Transition
-import fr.acinq.bitcoin.Satoshi
+import immortan.{ChannelHosted, ChannelListener, HostedCommits}
 
 
 // Successful resize may come from a different handler, client should always re-check if new capacity is OK

@@ -1,14 +1,13 @@
 package fr.acinq.eclair.blockchain.electrum.db.sqlite
 
-import scodec.codecs._
-import fr.acinq.eclair.wire.CommonCodecs._
-import fr.acinq.eclair.wire.ChannelCodecs._
 import fr.acinq.bitcoin.{ByteVector32, Transaction}
-import fr.acinq.eclair.blockchain.electrum.{ElectrumClient, ElectrumWallet}
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.{GetMerkleResponse, TransactionHistoryItem}
-import fr.acinq.eclair.blockchain.electrum.PersistentData
-import scodec.bits.BitVector
+import fr.acinq.eclair.blockchain.electrum.{ElectrumClient, ElectrumWallet, PersistentData}
+import fr.acinq.eclair.wire.ChannelCodecs._
+import fr.acinq.eclair.wire.CommonCodecs._
 import scodec.Codec
+import scodec.bits.BitVector
+import scodec.codecs._
 
 
 object SqliteWalletDb {

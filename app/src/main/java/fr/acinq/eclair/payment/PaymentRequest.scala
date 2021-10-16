@@ -19,7 +19,7 @@ package fr.acinq.eclair.payment
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{Base58, Base58Check, Bech32, Block, ByteVector32, ByteVector64, Crypto}
 import fr.acinq.eclair.payment.PaymentRequest._
-import fr.acinq.eclair.{CltvExpiryDelta, FeatureSupport, Features, MilliSatoshi, MilliSatoshiLong, ShortChannelId, randomBytes32}
+import fr.acinq.eclair.{CltvExpiryDelta, FeatureSupport, Features, MilliSatoshi, MilliSatoshiLong, ShortChannelId}
 import scodec.bits.{BitVector, ByteOrdering, ByteVector}
 import scodec.codecs.{list, ubyte}
 import scodec.{Codec, Err}
@@ -27,17 +27,7 @@ import scodec.{Codec, Err}
 import scala.concurrent.duration._
 import scala.util.Try
 
-/**
- * Lightning Payment Request
- * see https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md
- *
- * @param prefix    currency prefix; lnbc for bitcoin, lntb for bitcoin testnet
- * @param amount    amount to pay (empty string means no amount is specified)
- * @param timestamp request timestamp (UNIX format)
- * @param nodeId    id of the node emitting the payment request
- * @param tags      payment tags; must include a single PaymentHash tag and a single PaymentSecret tag.
- * @param signature request signature that will be checked against node id
- */
+
 case class PaymentRequest(prefix: String, amount: Option[MilliSatoshi], timestamp: Long, nodeId: PublicKey, tags: List[PaymentRequest.TaggedField], signature: ByteVector) {
 
   amount.foreach(a => require(a > 0.msat, s"amount is not valid"))
