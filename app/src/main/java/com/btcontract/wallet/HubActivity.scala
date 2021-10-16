@@ -234,32 +234,32 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     def doSetItemLabel: Unit = {
       val (container, extraInputLayout, extraInput) = singleInputPopup
       val builder = titleBodyAsViewBuilder(title = null, body = container)
-      mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
+//      mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
       extraInputLayout.setHint(dialog_set_record_label)
       showKeys(extraInput)
 
-      def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-        val optionalInput = Option(extraInput.getText.toString).map(trimmed).filter(_.nonEmpty)
-
-        currentDetails match {
-          case info: LNUrlPayLink => WalletApp.lnUrlPayBag.updDescription(info.description.modify(_.label).setTo(optionalInput), info.domain, info.payString)
-          case info: PaymentInfo => LNParams.cm.updateDescriptionAndCache(info.description.modify(_.label).setTo(optionalInput), info.paymentHash)
-          case info: TxInfo => WalletApp.txDataBag.updDescription(info.description.modify(_.label).setTo(optionalInput), info.txid)
-          case _ =>
-        }
-      }
+//      def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
+//        val optionalInput = Option(extraInput.getText.toString).map(trimmed).filter(_.nonEmpty)
+//
+//        currentDetails match {
+//          case info: LNUrlPayLink => WalletApp.lnUrlPayBag.updDescription(info.description.modify(_.label).setTo(optionalInput), info.domain, info.payString)
+//          case info: PaymentInfo => LNParams.cm.updateDescriptionAndCache(info.description.modify(_.label).setTo(optionalInput), info.paymentHash)
+//          case info: TxInfo => WalletApp.txDataBag.updDescription(info.description.modify(_.label).setTo(optionalInput), info.txid)
+//          case _ =>
+//        }
+//      }
     }
 
     def doRemoveItem: Unit = {
-      def proceed: Unit = currentDetails match {
-        case info: LNUrlPayLink => WalletApp.lnUrlPayBag.remove(info.payString)
-        case info: PaymentInfo => LNParams.cm.payBag.removePaymentInfo(info.paymentHash)
-        case _ =>
-      }
-
-      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none,
-        new AlertDialog.Builder(me).setMessage(confirm_remove_item),
-        dialog_ok, dialog_cancel)
+//      def proceed: Unit = currentDetails match {
+//        case info: LNUrlPayLink => WalletApp.lnUrlPayBag.remove(info.payString)
+//        case info: PaymentInfo => LNParams.cm.payBag.removePaymentInfo(info.paymentHash)
+//        case _ =>
+//      }
+//
+//      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none,
+//        new AlertDialog.Builder(me).setMessage(confirm_remove_item),
+//        dialog_ok, dialog_cancel)
     }
 
     def doShareItem: Unit = currentDetails match {
@@ -410,32 +410,32 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       def attempt(alert: AlertDialog): Unit = {
-        val cpfpBumpOrder = SemanticOrder(info.txid.toHex, System.currentTimeMillis)
-        // Only update parent semantic order if it does not already have one, record it BEFORE sending CPFP
-        val parentOrder = info.description.semanticOrder getOrElse cpfpBumpOrder.copy(order = Long.MinValue)
-        val parentDescWithOrder = info.description.modify(_.semanticOrder).setTo(parentOrder.asSome)
-        WalletApp.txDataBag.updDescription(parentDescWithOrder, info.txid)
-
-        // On success tx will be recorded in a top level chain events listener
-        // on fail user will be notified right away and nothing will happen
-        alert.dismiss
-
-        for {
-          (depth, false) <- fromWallet.doubleSpent(info.tx) if depth < 1
-          txAndFee <- fromWallet.makeCPFP(fromOutPoints.toSet, chainAddress, feeView.rate)
-          bumpDescription = PlainTxDescription(chainAddress :: Nil, None, cpfpBumpOrder.asSome, None, cpfpOf = info.txid.asSome)
-          // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions += Tuple2(txAndFee.tx.txid, bumpDescription)
-          isCommitted <- fromWallet.commit(txAndFee.tx, "cpfp-bump-tx")
-        } if (isCommitted) {
-          // Parent semantic order is already updated, now we also update CPFP parent info
-          val parentDescWithCpfp = parentDescWithOrder.modify(_.cpfpBy).setTo(txAndFee.tx.txid.asSome)
-          WalletApp.txDataBag.updDescription(parentDescWithCpfp, info.txid)
-        } else {
-          // We revert the whole description back since CPFP has failed
-          WalletApp.txDataBag.updDescription(info.description, info.txid)
-          onFail(me getString error_btc_broadcast_fail)
-        }
+//        val cpfpBumpOrder = SemanticOrder(info.txid.toHex, System.currentTimeMillis)
+//        // Only update parent semantic order if it does not already have one, record it BEFORE sending CPFP
+//        val parentOrder = info.description.semanticOrder getOrElse cpfpBumpOrder.copy(order = Long.MinValue)
+//        val parentDescWithOrder = info.description.modify(_.semanticOrder).setTo(parentOrder.asSome)
+//        WalletApp.txDataBag.updDescription(parentDescWithOrder, info.txid)
+//
+//        // On success tx will be recorded in a top level chain events listener
+//        // on fail user will be notified right away and nothing will happen
+//        alert.dismiss
+//
+//        for {
+//          (depth, false) <- fromWallet.doubleSpent(info.tx) if depth < 1
+//          txAndFee <- fromWallet.makeCPFP(fromOutPoints.toSet, chainAddress, feeView.rate)
+//          bumpDescription = PlainTxDescription(chainAddress :: Nil, None, cpfpBumpOrder.asSome, None, cpfpOf = info.txid.asSome)
+//          // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
+//          _ = WalletApp.txDescriptions += Tuple2(txAndFee.tx.txid, bumpDescription)
+//          isCommitted <- fromWallet.commit(txAndFee.tx, "cpfp-bump-tx")
+//        } if (isCommitted) {
+//          // Parent semantic order is already updated, now we also update CPFP parent info
+//          val parentDescWithCpfp = parentDescWithOrder.modify(_.cpfpBy).setTo(txAndFee.tx.txid.asSome)
+//          WalletApp.txDataBag.updDescription(parentDescWithCpfp, info.txid)
+//        } else {
+//          // We revert the whole description back since CPFP has failed
+//          WalletApp.txDataBag.updDescription(info.description, info.txid)
+//          onFail(me getString error_btc_broadcast_fail)
+//        }
       }
 
       lazy val alert = {
@@ -491,28 +491,28 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       def attempt(alert: AlertDialog): Unit = {
-        val rbfParams = RBFParams(info.txid, TxDescription.RBF_BOOST)
-        val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
-        // On success tx will be recorded in a top level chain events listener
-        // on fail user will be notified right away and nothing will happen
-        alert.dismiss
-
-        for {
-          (depth, false) <- fromWallet.doubleSpent(info.tx) if depth < 1
-          txAndFee <- fromWallet.makeRBFBump(info.tx, feeView.rate).map(_.result.right.get)
-          bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
-          // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions += Tuple2(txAndFee.tx.txid, bumpDescription)
-          isCommitted <- fromWallet.commit(txAndFee.tx, "rbf-bump-tx")
-        } if (isCommitted) {
-          // Only update parent semantic order if it does not already have one
-          val parentOrder = info.description.semanticOrder getOrElse rbfBumpOrder.copy(order = Long.MaxValue)
-          val parentDesc = info.description.modify(_.semanticOrder).setTo(parentOrder.asSome)
-          WalletApp.txDataBag.updDescription(parentDesc, info.txid)
-        } else {
-          // Details should be available in persistent log
-          onFail(me getString error_btc_broadcast_fail)
-        }
+//        val rbfParams = RBFParams(info.txid, TxDescription.RBF_BOOST)
+//        val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
+//        // On success tx will be recorded in a top level chain events listener
+//        // on fail user will be notified right away and nothing will happen
+//        alert.dismiss
+//
+//        for {
+//          (depth, false) <- fromWallet.doubleSpent(info.tx) if depth < 1
+//          txAndFee <- fromWallet.makeRBFBump(info.tx, feeView.rate).map(_.result.right.get)
+//          bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
+//          // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
+//          _ = WalletApp.txDescriptions += Tuple2(txAndFee.tx.txid, bumpDescription)
+//          isCommitted <- fromWallet.commit(txAndFee.tx, "rbf-bump-tx")
+//        } if (isCommitted) {
+//          // Only update parent semantic order if it does not already have one
+//          val parentOrder = info.description.semanticOrder getOrElse rbfBumpOrder.copy(order = Long.MaxValue)
+//          val parentDesc = info.description.modify(_.semanticOrder).setTo(parentOrder.asSome)
+//          WalletApp.txDataBag.updDescription(parentDesc, info.txid)
+//        } else {
+//          // Details should be available in persistent log
+//          onFail(me getString error_btc_broadcast_fail)
+//        }
       }
 
       lazy val alert = {
@@ -571,28 +571,28 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       def attempt(alert: AlertDialog): Unit = {
-        val rbfParams = RBFParams(info.txid, TxDescription.RBF_CANCEL)
-        val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
-        // On success tx will be recorded in a top level chain events listener
-        // on fail user will be notified right away and nothing will happen
-        alert.dismiss
-
-        for {
-          (depth, false) <- fromWallet.doubleSpent(info.tx) if depth < 1
-          txAndFee <- fromWallet.makeRBFReroute(info.tx, feeView.rate, changeAddress).map(_.result.right.get)
-          bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
-          // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions += Tuple2(txAndFee.tx.txid, bumpDescription)
-          isCommitted <- fromWallet.commit(txAndFee.tx, "rbf-cancel-tx")
-        } if (isCommitted) {
-          // Only update parent semantic order if it does not already have one
-          val parentOrder = info.description.semanticOrder getOrElse rbfBumpOrder.copy(order = Long.MaxValue)
-          val parentDesc = info.description.modify(_.semanticOrder).setTo(parentOrder.asSome)
-          WalletApp.txDataBag.updDescription(parentDesc, info.txid)
-        } else {
-          // Details should be available in persistent log
-          onFail(me getString error_btc_broadcast_fail)
-        }
+//        val rbfParams = RBFParams(info.txid, TxDescription.RBF_CANCEL)
+//        val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
+//        // On success tx will be recorded in a top level chain events listener
+//        // on fail user will be notified right away and nothing will happen
+//        alert.dismiss
+//
+//        for {
+//          (depth, false) <- fromWallet.doubleSpent(info.tx) if depth < 1
+//          txAndFee <- fromWallet.makeRBFReroute(info.tx, feeView.rate, changeAddress).map(_.result.right.get)
+//          bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
+//          // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
+//          _ = WalletApp.txDescriptions += Tuple2(txAndFee.tx.txid, bumpDescription)
+//          isCommitted <- fromWallet.commit(txAndFee.tx, "rbf-cancel-tx")
+//        } if (isCommitted) {
+//          // Only update parent semantic order if it does not already have one
+//          val parentOrder = info.description.semanticOrder getOrElse rbfBumpOrder.copy(order = Long.MaxValue)
+//          val parentDesc = info.description.modify(_.semanticOrder).setTo(parentOrder.asSome)
+//          WalletApp.txDataBag.updDescription(parentDesc, info.txid)
+//        } else {
+//          // Details should be available in persistent log
+//          onFail(me getString error_btc_broadcast_fail)
+//        }
       }
 
       lazy val alert = {
@@ -770,32 +770,30 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     // TX helpers
 
-    def txDescription(transactionInfo: TxInfo): String = getString(tx_description_penalty)
-//      transactionInfo.description match {
-//      case _ if transactionInfo.description.cpfpOf.isDefined => getString(tx_description_cpfp)
-//      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => getString(tx_description_rbf_boost)
-//      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => getString(tx_description_rbf_cancel)
-//      case plain: PlainTxDescription => plain.toAddress.map(_.short) getOrElse getString(tx_btc)
-//      case _: ChanRefundingTxDescription => getString(tx_description_refunding)
-//      case _: HtlcClaimTxDescription => getString(tx_description_htlc_claiming)
-//      case _: ChanFundingTxDescription => getString(tx_description_funding)
-//      case _: OpReturnTxDescription => getString(tx_description_op_return)
-//      case _: PenaltyTxDescription => getString(tx_description_penalty)
-//    }
+    def txDescription(transactionInfo: TxInfo): String = transactionInfo.description match {
+      case _ if transactionInfo.description.cpfpOf.isDefined => getString(tx_description_cpfp)
+      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => getString(tx_description_rbf_boost)
+      case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => getString(tx_description_rbf_cancel)
+      case plain: PlainTxDescription => plain.toAddress.map(_.short) getOrElse getString(tx_btc)
+      case _: ChanRefundingTxDescription => getString(tx_description_refunding)
+      case _: HtlcClaimTxDescription => getString(tx_description_htlc_claiming)
+      case _: ChanFundingTxDescription => getString(tx_description_funding)
+      case _: OpReturnTxDescription => getString(tx_description_op_return)
+      case _: PenaltyTxDescription => getString(tx_description_penalty)
+    }
 
-    def setTxTypeIcon(info: TxInfo): Unit = setVisibleIcon(id = R.id.btcOutgoing)
-//      info.description match {
-//      case _ if info.description.cpfpOf.isDefined => setVisibleIcon(id = R.id.btcInBoosted)
-//      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => setVisibleIcon(id = R.id.btcOutBoosted)
-//      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => setVisibleIcon(id = R.id.btcOutCancelled)
-//      case _: PlainTxDescription if info.isIncoming => setVisibleIcon(id = R.id.btcIncoming)
-//      case _: OpReturnTxDescription => setVisibleIcon(id = R.id.btcOutgoing)
-//      case _: ChanRefundingTxDescription => setVisibleIcon(id = R.id.lnBtc)
-//      case _: ChanFundingTxDescription => setVisibleIcon(id = R.id.btcLn)
-//      case _: HtlcClaimTxDescription => setVisibleIcon(id = R.id.lnBtc)
-//      case _: PenaltyTxDescription => setVisibleIcon(id = R.id.lnBtc)
-//      case _ => setVisibleIcon(id = R.id.btcOutgoing)
-//    }
+    def setTxTypeIcon(info: TxInfo): Unit = info.description match {
+      case _ if info.description.cpfpOf.isDefined => setVisibleIcon(id = R.id.btcInBoosted)
+      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => setVisibleIcon(id = R.id.btcOutBoosted)
+      case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => setVisibleIcon(id = R.id.btcOutCancelled)
+      case _: PlainTxDescription if info.isIncoming => setVisibleIcon(id = R.id.btcIncoming)
+      case _: OpReturnTxDescription => setVisibleIcon(id = R.id.btcOutgoing)
+      case _: ChanRefundingTxDescription => setVisibleIcon(id = R.id.lnBtc)
+      case _: ChanFundingTxDescription => setVisibleIcon(id = R.id.btcLn)
+      case _: HtlcClaimTxDescription => setVisibleIcon(id = R.id.lnBtc)
+      case _: PenaltyTxDescription => setVisibleIcon(id = R.id.lnBtc)
+      case _ => setVisibleIcon(id = R.id.btcOutgoing)
+    }
 
     def txStatusIcon(info: TxInfo): Int = {
       if (info.isConfirmed) R.drawable.baseline_done_24
