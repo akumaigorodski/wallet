@@ -671,12 +671,18 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
 
   private def maybeStartNegotiations(data1: DATA_NORMAL, remote: Shutdown): Unit = {
     val local = data1.localShutdown getOrElse Shutdown(data1.channelId, data1.commitments.localParams.defaultFinalScriptPubKey)
-    if (data1.commitments.hasPendingHtlcsOrFeeUpdate) StoreBecomeSend(data1.copy(localShutdown = local.asSome, remoteShutdown = remote.asSome), OPEN, local)
-    else if (!data1.commitments.localParams.isFunder) StoreBecomeSend(DATA_NEGOTIATING(data1.commitments, local, remote), OPEN, local)
-    else {
+
+    if (data1.commitments.hasPendingHtlcsOrFeeUpdate) {
+      StoreBecomeSend(data1.copy(localShutdown = local.asSome, remoteShutdown = remote.asSome), OPEN, local)
+    } else if (data1.commitments.localParams.isFunder) {
       val (closingTx, closingSigned) = Closing.makeFirstClosingTx(data1.commitments, local.scriptPubKey, remote.scriptPubKey, LNParams.feeRates.info.onChainFeeConf)
       val data2 = DATA_NEGOTIATING(data1.commitments, local, remote, List(ClosingTxProposed(closingTx.tx, closingSigned) :: Nil), bestUnpublishedClosingTxOpt = None)
-      if (data1.localShutdown.isDefined) StoreBecomeSend(data2, OPEN, closingSigned) else StoreBecomeSend(data2, OPEN, local, closingSigned)
+      if (data1.localShutdown.isDefined) StoreBecomeSend(data2, OPEN, closingSigned)
+      else StoreBecomeSend(data2, OPEN, local, closingSigned)
+    } else {
+      val data2 = DATA_NEGOTIATING(data1.commitments, local, remote)
+      if (data1.localShutdown.isDefined) StoreBecomeSend(data2, OPEN)
+      else StoreBecomeSend(data2, OPEN, local)
     }
   }
 

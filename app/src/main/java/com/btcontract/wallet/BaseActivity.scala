@@ -8,11 +8,13 @@ import fr.acinq.bitcoin._
 import immortan.crypto.Tools._
 import com.softwaremill.quicklens._
 import com.btcontract.wallet.Colors._
-
 import java.lang.{Integer => JInt}
+
 import android.view.{View, ViewGroup}
 import java.io.{File, FileOutputStream}
+
 import android.graphics.{Bitmap, Color}
+
 import scala.util.{Failure, Success, Try}
 import android.content.{DialogInterface, Intent}
 import android.text.{Editable, Spanned, TextWatcher}
@@ -27,6 +29,7 @@ import com.cottacush.android.currencyedittext.CurrencyEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.btcontract.wallet.BaseActivity.StringOps
+
 import concurrent.ExecutionContext.Implicits.global
 import fr.acinq.eclair.transactions.Transactions
 import androidx.appcompat.widget.AppCompatButton
@@ -40,14 +43,18 @@ import fr.acinq.eclair.payment.PaymentRequest
 import com.google.zxing.qrcode.QRCodeWriter
 import androidx.appcompat.app.AlertDialog
 import org.apmem.tools.layouts.FlowLayout
+
 import scala.language.implicitConversions
 import android.content.pm.PackageManager
 import android.view.View.OnClickListener
 import androidx.core.app.ActivityCompat
 import java.util.concurrent.TimeUnit
+
 import scala.concurrent.Future
 import android.os.Bundle
 import android.net.Uri
+import com.ornach.nobobutton.NoboButton
+import fr.acinq.eclair.blockchain.TxAndFee
 
 
 object BaseActivity {
@@ -450,6 +457,37 @@ trait BaseActivity extends AppCompatActivity { me =>
         rate = FeeratePerKw(feeratePerByte)
         worker addWork "SLIDER-CHANGE"
       }
+    }
+  }
+
+  class ChainSendView {
+    val body: ScrollView = getLayoutInflater.inflate(R.layout.frag_input_on_chain, null).asInstanceOf[ScrollView]
+
+    val editChain: LinearLayout = body.findViewById(R.id.editChain).asInstanceOf[LinearLayout]
+    val confirmChain: LinearLayout = body.findViewById(R.id.confirmChain).asInstanceOf[LinearLayout]
+
+    val confirmFiat: TextView = body.findViewById(R.id.confirmFiat).asInstanceOf[TextView]
+    val confirmAmount: TextView = body.findViewById(R.id.confirmAmount).asInstanceOf[TextView]
+    val confirmFee: TextView = body.findViewById(R.id.confirmFee).asInstanceOf[TextView]
+
+    val confirmSend: NoboButton = body.findViewById(R.id.confirmSend).asInstanceOf[NoboButton]
+    val confirmEdit: NoboButton = body.findViewById(R.id.confirmEdit).asInstanceOf[NoboButton]
+
+    def switchToConfirm(alert: AlertDialog, manager: RateManager, txAndFee: TxAndFee): Unit = {
+      confirmAmount.setText(WalletApp.denom.parsedWithSign(manager.resultMsat, cardIn, cardZero).html)
+      confirmFee.setText(WalletApp.denom.parsedWithSign(txAndFee.fee.toMilliSatoshi, cardIn, cardZero).html)
+      confirmFiat.setText(WalletApp.currentMsatInFiatHuman(txAndFee.fee.toMilliSatoshi).html)
+      setVisMany(false -> editChain, true -> confirmChain)
+      getPositiveButton(alert).setVisibility(View.GONE)
+      getNegativeButton(alert).setVisibility(View.GONE)
+      getNeutralButton(alert).setVisibility(View.GONE)
+    }
+
+    def switchToEdit(alert: AlertDialog): Unit = {
+      setVisMany(true -> editChain, false -> confirmChain)
+      getPositiveButton(alert).setVisibility(View.VISIBLE)
+      getNegativeButton(alert).setVisibility(View.VISIBLE)
+      getNeutralButton(alert).setVisibility(View.VISIBLE)
     }
   }
 

@@ -1038,7 +1038,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       bringScanner(null)
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
-    case bitcoinUri: BitcoinUri if bitcoinUri.isValid => bringSendBitcoinPopup(bitcoinUri, LNParams.chainWallets.mostFundedWallet)
+    case bu: BitcoinUri if bu.isValid => bringSendBitcoinPopup(bu, LNParams.chainWallets.mostFundedWallet, new ChainSendView)
 
     case info: RemoteNodeInfo =>
       // In case if IP address has changed
@@ -1315,7 +1315,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   def bringLegacyAddressScanner(legacy: ElectrumEclairWallet): Unit = {
     def resolveLegacyWalletBtcAddressQr: Unit = InputParser.checkAndMaybeErase {
-      case bitcoinUri: BitcoinUri if bitcoinUri.isValid => bringSendBitcoinPopup(bitcoinUri, legacy)
+      case bu: BitcoinUri if bu.isValid => bringSendBitcoinPopup(bu, legacy, new ChainSendView)
       case _ => nothingUsefulTask.run
     }
 
@@ -1344,13 +1344,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     runFutureProcessOnUI(LNParams.chainWallets.lnWallet.getReceiveAddresses, onFail) { addresses =>
       val labelAndMessage = s"?label=${me getString btc_transfer_label}&message=${me getString btc_transfer_message}"
       val uri = BitcoinUri.fromRaw(s"bitcoin:${addresses.accountToKey.keySet.head}$labelAndMessage")
-      bringSendBitcoinPopup(uri, legacy)
+      bringSendBitcoinPopup(uri, legacy, new ChainSendView)
     }
   }
 
-  def bringSendBitcoinPopup(uri: BitcoinUri, fromWallet: ElectrumEclairWallet): Unit = {
-    val body = getLayoutInflater.inflate(R.layout.frag_input_on_chain, null).asInstanceOf[ScrollView]
-    val manager = new RateManager(body, getString(dialog_add_btc_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+  def bringSendBitcoinPopup(uri: BitcoinUri, fromWallet: ElectrumEclairWallet, sendView: ChainSendView): Unit = {
+    val manager = new RateManager(sendView.body, getString(dialog_add_btc_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
     val canSend = WalletApp.denom.parsedWithSign(fromWallet.info.lastBalance.toMilliSatoshi, cardIn, cardZero)
     val canSendFiat = WalletApp.currentMsatInFiatHuman(fromWallet.info.lastBalance.toMilliSatoshi)
 
@@ -1361,8 +1360,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     def attempt(alert: AlertDialog): Unit = {
-      // On success tx will be recorded in a listener
-      // on failure user will be notified right away
+//      runFutureProcessOnUI(fromWallet.makeTx(manager.resultMsat.truncateToSatoshi, uri.address, feeView.rate), onFail) { txAndFee =>
+//        sendView.confirmEdit setOnClickListener onButtonTap(sendView switchToEdit alert)
+//        sendView.switchToConfirm(alert, manager, txAndFee)
+//      }
+
       alert.dismiss
 
       for {
@@ -1390,7 +1392,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       else mkCheckFormNeutral(attempt, none, switchToLn, builder, dialog_ok, dialog_cancel, lightning_wallet)
     }
 
-    lazy val feeView: FeeView[TxAndFee] = new FeeView[TxAndFee](FeeratePerByte(1L.sat), body) {
+    lazy val feeView: FeeView[TxAndFee] = new FeeView[TxAndFee](FeeratePerByte(1L.sat), sendView.editChain) {
       rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget)
 
       worker = new ThrottledWork[String, TxAndFee] {

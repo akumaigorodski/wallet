@@ -89,10 +89,14 @@
     <string name="dialog_insufficient_funds">missing funds</string>
     <string name="dialog_sat_vbyte">sat/vB</string>
 
-    <string name="dialog_send_ln"><![CDATA[Send <b>Lightning</b> payment%1$s]]></string>
-    <string name="dialog_split_ln"><![CDATA[Split <b>Lightning</b> payment%1$s]]></string>
     <string name="dialog_send_btc_from"><![CDATA[from&#160;<b>%1$s</b>&#160;wallet]]></string>
     <string name="dialog_send_btc"><![CDATA[Send <b>Bitcoin</b> transaction<br><b>to address</b> %1$s%2$s]]></string>
+    <string name="dialog_send_btc_confirm_fiat">Fiat value</string>
+    <string name="dialog_send_btc_confirm_amount">Amount</string>
+    <string name="dialog_send_btc_confirm_fee">Chain fee</string>
+
+    <string name="dialog_send_ln"><![CDATA[Send <b>Lightning</b> payment%1$s]]></string>
+    <string name="dialog_split_ln"><![CDATA[Split <b>Lightning</b> payment%1$s]]></string>
     <string name="dialog_split_ln_tip">Let someone scan a split invoice,\nThen tap OK at about the same time</string>
     <string name="dialog_ln_requested"><![CDATA[<b>requested</b>&#160;%1$s]]></string>
     <string name="dialog_ln_left"><![CDATA[<b>left to pay</b>&#160;%1$s]]></string>
