@@ -438,7 +438,7 @@ trait BaseActivity extends AppCompatActivity { me =>
       }
     }
 
-    customFeerateOption setOnClickListener onButtonTap {
+    private val revealSlider = onButtonTap {
       val currentFeerate = FeeratePerByte(rate).feerate.toLong
       customFeerate.setValueFrom(from.feerate.toLong)
       customFeerate.setValueTo(currentFeerate * 10)
@@ -447,6 +447,9 @@ trait BaseActivity extends AppCompatActivity { me =>
       customFeerateOption setVisibility View.GONE
       customFeerate setVisibility View.VISIBLE
     }
+
+    customFeerateOption.setOnClickListener(revealSlider)
+    feeRate.setOnClickListener(revealSlider)
 
     customFeerate addOnChangeListener new Slider.OnChangeListener {
       override def onValueChange(slider: Slider, value: Float, fromUser: Boolean): Unit = {
