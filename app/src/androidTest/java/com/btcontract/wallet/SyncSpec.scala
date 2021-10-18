@@ -36,9 +36,11 @@ class SyncSpec {
 
     val channelMap0 = normalStore.getRoutingData
     val data0 = Data(channelMap0, hostedChannels = Map.empty, graph = DirectedGraph makeGraph channelMap0)
-    val setupData = SyncMasterShortIdData(LNParams.syncParams.syncNodes, extInfos = Set.empty, activeSyncs = Set.empty)
+    val setupData = SyncMasterShortIdData(LNParams.syncParams.syncNodes, extInfos = Set.empty, activeSyncs = Set.empty, ranges = Map.empty, LNParams.syncParams.maxNodesToSyncFrom)
 
     val syncMaster = new SyncMaster(normalStore.listExcludedChannels, data0) {
+      def onShortIdsSyncComplete(state: SyncMasterShortIdData): Unit = println("onShortIdsSyncComplete")
+
       def onChunkSyncComplete(pure: PureRoutingData): Unit = {
         println(s"Chunk complete, announces=${pure.announces.size}, updates=${pure.updates.size}, excluded=${pure.excluded.size}")
         val a = System.currentTimeMillis
