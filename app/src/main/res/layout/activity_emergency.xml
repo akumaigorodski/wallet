@@ -12,8 +12,8 @@
 
     <com.ornach.nobobutton.NoboButton
         android:layout_marginTop="@dimen/large_button_margin"
-        app:nb_text="@string/error_log"
         android:onClick="shareErrorReport"
+        app:nb_text="@string/error_log"
         style="@style/GrayButton"/>
 
 </LinearLayout>

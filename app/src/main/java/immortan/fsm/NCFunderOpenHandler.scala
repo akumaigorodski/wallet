@@ -3,7 +3,7 @@ package immortan.fsm
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.{ByteVector32, Satoshi, Script}
 import fr.acinq.eclair._
-import fr.acinq.eclair.blockchain.MakeFundingTxResponse
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.channel._
 import fr.acinq.eclair.transactions.Scripts
@@ -21,11 +21,11 @@ object NCFunderOpenHandler {
   val dummyLocal: PublicKey = randomKey.publicKey
   val dummyRemote: PublicKey = randomKey.publicKey
 
-  def makeFunding(chainWallet: WalletExt, fundingAmount: Satoshi, feeratePerKw: FeeratePerKw, local: PublicKey = dummyLocal, remote: PublicKey = dummyRemote): Future[MakeFundingTxResponse] =
+  def makeFunding(chainWallet: WalletExt, fundingAmount: Satoshi, feeratePerKw: FeeratePerKw, local: PublicKey = dummyLocal, remote: PublicKey = dummyRemote): Future[GenerateTxResponse] =
     chainWallet.lnWallet.makeFundingTx(Script.write(Script pay2wsh Scripts.multiSig2of2(local, remote).toList), fundingAmount, feeratePerKw)
 }
 
-abstract class NCFunderOpenHandler(info: RemoteNodeInfo, fakeFunding: MakeFundingTxResponse, fundingFeeratePerKw: FeeratePerKw, cw: WalletExt, cm: ChannelMaster) {
+abstract class NCFunderOpenHandler(info: RemoteNodeInfo, fakeFunding: GenerateTxResponse, fundingFeeratePerKw: FeeratePerKw, cw: WalletExt, cm: ChannelMaster) {
   // Important: this must be initiated when chain tip is actually known
   def onEstablished(cs: Commitments, channel: ChannelNormal): Unit
   def onFailure(err: Throwable): Unit
@@ -50,7 +50,7 @@ abstract class NCFunderOpenHandler(info: RemoteNodeInfo, fakeFunding: MakeFundin
 
     override def onOperational(worker: CommsTower.Worker, theirInit: Init): Unit = {
       val stickyChannelFeatures = ChannelFeatures.pickChannelFeatures(LNParams.ourInit.features, theirInit.features)
-      val localParams = LNParams.makeChannelParams(freshChannel.chainWallet, isFunder = true, fakeFunding.fundingAmount)
+      val localParams = LNParams.makeChannelParams(freshChannel.chainWallet, isFunder = true, fakeFunding.toTxOut.amount)
       val initialFeeratePerKw = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.commitmentBlockTarget)
       val cmd = INPUT_INIT_FUNDER(info.safeAlias, tempChannelId, fakeFunding, 0L.msat, fundingFeeratePerKw, initialFeeratePerKw, localParams, theirInit, 0.toByte, stickyChannelFeatures)
       freshChannel process cmd
@@ -58,7 +58,7 @@ abstract class NCFunderOpenHandler(info: RemoteNodeInfo, fakeFunding: MakeFundin
 
     override def onBecome: PartialFunction[Transition, Unit] = {
       case (_, _: DATA_WAIT_FOR_ACCEPT_CHANNEL, data: DATA_WAIT_FOR_FUNDING_INTERNAL, WAIT_FOR_ACCEPT, WAIT_FOR_ACCEPT) =>
-        val future = NCFunderOpenHandler.makeFunding(cw, data.initFunder.fakeFunding.fundingAmount, data.initFunder.fundingFeeratePerKw, data.lastSent.fundingPubkey, data.remoteParams.fundingPubKey)
+        val future = NCFunderOpenHandler.makeFunding(cw, data.initFunder.fakeFunding.toTxOut.amount, data.initFunder.fundingFeeratePerKw, data.lastSent.fundingPubkey, data.remoteParams.fundingPubKey)
         future onComplete { case Failure(failureReason) => onException(failureReason, freshChannel, data) case Success(realFundingTx) => freshChannel process realFundingTx }
 
       case (_, _: DATA_WAIT_FOR_FUNDING_INTERNAL, data: DATA_WAIT_FOR_FUNDING_SIGNED, WAIT_FOR_ACCEPT, WAIT_FOR_ACCEPT) =>

@@ -79,14 +79,20 @@
 
                 <com.ornach.nobobutton.NoboButton
                     app:nb_text="@string/dialog_send"
-                    android:layout_width="wrap_content"
                     android:id="@+id/confirmSend"
                     style="@style/GreenButton"/>
 
                 <com.ornach.nobobutton.NoboButton
-                    android:layout_alignParentEnd="true"
                     app:nb_drawableResource="@drawable/outline_edit_24"
+                    android:layout_toStartOf="@id/cancelSend"
                     android:id="@+id/confirmEdit"
+                    style="@style/GrayButton"/>
+
+                <com.ornach.nobobutton.NoboButton
+                    android:layout_marginStart="5dp"
+                    android:layout_alignParentEnd="true"
+                    app:nb_text="@string/dialog_cancel"
+                    android:id="@+id/cancelSend"
                     style="@style/GrayButton"/>
 
             </RelativeLayout>

@@ -1,27 +1,27 @@
 package com.btcontract.wallet
 
-import immortan._
-import immortan.utils._
-import fr.acinq.eclair._
-import fr.acinq.bitcoin._
-import fr.acinq.eclair.wire._
-import immortan.crypto.Tools._
-import fr.acinq.eclair.Features._
+import android.os.Bundle
+import android.view.View
+import android.widget.{LinearLayout, ProgressBar, TextView}
+import androidx.appcompat.app.AlertDialog
+import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
-
-import android.view.{View, ViewGroup}
-import android.widget.{LinearLayout, ProgressBar, TextView}
-import immortan.fsm.{HCOpenHandler, NCFundeeOpenHandler, NCFunderOpenHandler}
-import fr.acinq.eclair.blockchain.MakeFundingTxResponse
-import fr.acinq.eclair.blockchain.fee.FeeratePerByte
-import concurrent.ExecutionContext.Implicits.global
-import com.btcontract.wallet.BaseActivity.StringOps
-import fr.acinq.eclair.channel.Commitments
-import androidx.appcompat.app.AlertDialog
 import com.ornach.nobobutton.NoboButton
+import fr.acinq.bitcoin._
+import fr.acinq.eclair.Features._
+import fr.acinq.eclair._
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
+import fr.acinq.eclair.blockchain.fee.FeeratePerByte
+import fr.acinq.eclair.channel.Commitments
+import fr.acinq.eclair.wire._
+import immortan._
+import immortan.crypto.Tools._
+import immortan.fsm.{HCOpenHandler, NCFundeeOpenHandler, NCFunderOpenHandler}
+import immortan.utils._
 import rx.lang.scala.Observable
-import android.os.Bundle
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 
 object RemotePeerActivity {
@@ -165,22 +165,31 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
   }
 
   def fundNewChannel(view: View): Unit = {
-    val body = getLayoutInflater.inflate(R.layout.frag_input_on_chain, null).asInstanceOf[ViewGroup]
-    val manager = new RateManager(body, extraText = None, visHintRes = -1, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+    val sendView = new ChainSendView
+    val manager = new RateManager(sendView.body, extraText = None, visHintRes = -1, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
     val canSend = WalletApp.denom.parsedWithSign(LNParams.chainWallets.lnWallet.info.lastBalance.toMilliSatoshi, cardIn, cardZero)
     val canSendFiat = WalletApp.currentMsatInFiatHuman(LNParams.chainWallets.lnWallet.info.lastBalance.toMilliSatoshi)
 
     def attempt(alert: AlertDialog): Unit = {
-      NCFunderOpenHandler.makeFunding(LNParams.chainWallets, manager.resultMsat.truncateToSatoshi, feeView.rate) foreach { fakeFunding =>
-        new NCFunderOpenHandler(hasInfo.remoteInfo, fakeFunding, feeView.rate, LNParams.chainWallets, LNParams.cm) {
-          override def onEstablished(cs: Commitments, chan: ChannelNormal): Unit = implant(cs, chan)
-          override def onFailure(reason: Throwable): Unit = revertAndInform(reason)
-        }
+      runFutureProcessOnUI(NCFunderOpenHandler.makeFunding(LNParams.chainWallets, manager.resultMsat.truncateToSatoshi, feeView.rate), onFail) { response =>
+        sendView.switchToConfirm(alert, response.toTxOut.amount.toMilliSatoshi, response.fee.toMilliSatoshi)
+        sendView.confirmEdit setOnClickListener onButtonTap(sendView switchToEdit alert)
+        sendView.cancelSend setOnClickListener onButtonTap(alert.dismiss)
+        sendView.confirmSend setOnClickListener onButtonTap(proceed)
       }
 
-      switchView(showProgress = true)
-      stopAcceptingIncomingOffers
-      alert.dismiss
+      def proceed: Unit = {
+        NCFunderOpenHandler.makeFunding(LNParams.chainWallets, manager.resultMsat.truncateToSatoshi, feeView.rate) foreach { fakeFunding =>
+          new NCFunderOpenHandler(hasInfo.remoteInfo, fakeFunding, feeView.rate, LNParams.chainWallets, LNParams.cm) {
+            override def onEstablished(cs: Commitments, chan: ChannelNormal): Unit = implant(cs, chan)
+            override def onFailure(reason: Throwable): Unit = revertAndInform(reason)
+          }
+        }
+
+        switchView(showProgress = true)
+        stopAcceptingIncomingOffers
+        alert.dismiss
+      }
     }
 
     lazy val alert = {
@@ -189,12 +198,12 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       mkCheckFormNeutral(attempt, none, setMax, builder, dialog_ok, dialog_cancel, dialog_max)
     }
 
-    lazy val feeView: FeeView[MakeFundingTxResponse] = new FeeView[MakeFundingTxResponse](FeeratePerByte(1L.sat), body) {
+    lazy val feeView: FeeView[GenerateTxResponse] = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.body) {
       rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget)
 
-      worker = new ThrottledWork[String, MakeFundingTxResponse] {
-        def work(reason: String): Observable[MakeFundingTxResponse] = Rx fromFutureOnIo NCFunderOpenHandler.makeFunding(LNParams.chainWallets, manager.resultMsat.truncateToSatoshi, rate)
-        def process(reason: String, result: MakeFundingTxResponse): Unit = update(feeOpt = result.fee.toMilliSatoshi.asSome, showIssue = false)
+      worker = new ThrottledWork[String, GenerateTxResponse] {
+        def work(reason: String): Observable[GenerateTxResponse] = Rx fromFutureOnIo NCFunderOpenHandler.makeFunding(LNParams.chainWallets, manager.resultMsat.truncateToSatoshi, rate)
+        def process(reason: String, result: GenerateTxResponse): Unit = update(feeOpt = result.fee.toMilliSatoshi.asSome, showIssue = false)
         override def error(exc: Throwable): Unit = update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.minChanDustLimit)
       }
 

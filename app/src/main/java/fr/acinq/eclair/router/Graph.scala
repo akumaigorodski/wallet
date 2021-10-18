@@ -195,14 +195,14 @@ object Graph {
         ageFactor + capFactor + cltvFactor + successFactor
       } else {
         // Minimize all heuristics except success rate on assisted and hosted channels
-        // this makes these channels less likely to be used for routing at first
+        // this makes these channels more likely to be used for routing at first
         successFactor
       }
 
       val totalCost = if (edge.desc.from == sender) prev.costs else addEdgeFees(edge, prev.costs.head) +: prev.costs
       val totalCltv = if (edge.desc.from == sender) prev.cltv else prev.cltv + edge.updExt.update.cltvExpiryDelta
 
-      // Every heuristic adds 0 - 100 imgainary SAT to edge weight (which is based on fee cost in msat), the better heuristic is the less SAT it adds
+      // Every heuristic adds 0 - 100 imgainary SAT to edge weight (which is based on fee cost in msat), the smaller heuristic is the less SAT it adds
       val totalWeight = if (edge.desc.from == sender) prev.weight else prev.weight + totalCost.head.toLong + factor * 100000L
       RichWeight(totalCost, prev.length + 1, totalCltv, totalWeight)
     }

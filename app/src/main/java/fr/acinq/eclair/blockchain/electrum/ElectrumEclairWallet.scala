@@ -4,20 +4,23 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import fr.acinq.bitcoin.{ByteVector32, OP_PUSHDATA, OP_RETURN, OutPoint, Satoshi, Script, Transaction, TxIn, TxOut}
 import fr.acinq.eclair.addressToPublicKeyScript
+import fr.acinq.eclair.blockchain.EclairWallet
 import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.BroadcastTransaction
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet._
 import fr.acinq.eclair.blockchain.electrum.db.CompleteChainWalletInfo
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import fr.acinq.eclair.blockchain.{EclairWallet, MakeFundingTxResponse, TxAndFee}
 import scodec.bits.ByteVector
 
 import scala.concurrent.Future
+import scala.util.Try
 
 
 case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, info: CompleteChainWalletInfo) extends EclairWallet {
 
   import immortan.LNParams.{ec, logBag, timeout}
+
+  type GenerateTxResponseTry = Try[GenerateTxResponse]
 
   override def getReceiveAddresses: Future[GetCurrentReceiveAddressesResponse] = (walletRef ? GetCurrentReceiveAddresses).mapTo[GetCurrentReceiveAddressesResponse]
 
@@ -25,24 +28,15 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
 
   private def emptyUtxo(pubKeyScript: ByteVector): TxOut = TxOut(Satoshi(0L), pubKeyScript)
 
-  override def makeFundingTx(pubkeyScript: ByteVector, amount: Satoshi, feeRatePerKw: FeeratePerKw): Future[MakeFundingTxResponse] =
-    (walletRef ? GetBalance).mapTo[GetBalanceResponse].flatMap {
-      case chainBalance if chainBalance.totalBalance == amount =>
-        val sendAllCommand = SendAll(pubkeyScript, feeRatePerKw, TxIn.SEQUENCE_FINAL)
-        (walletRef ? sendAllCommand).mapTo[SendAllResponse].map(_.result).map {
-          case Some(res) => MakeFundingTxResponse(res.tx, 0, res.fee)
-          case None => throw new RuntimeException
-        }
+  override def makeFundingTx(pubkeyScript: ByteVector, amount: Satoshi, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
+    val completeTx = CompleteTransaction(pubkeyScript, amount, feeRatePerKw, sequenceFlag = TxIn.SEQUENCE_FINAL)
+    val sendAll = SendAll(pubkeyScript, feeRatePerKw, sequenceFlag = TxIn.SEQUENCE_FINAL)
 
-      case _ =>
-        val txOut = TxOut(amount, pubkeyScript)
-        val tx = Transaction(version = 2, txIn = Nil, txOut = txOut :: Nil, lockTime = 0)
-        val completeTxCommand = CompleteTransaction(tx, feeRatePerKw, TxIn.SEQUENCE_FINAL)
-        (walletRef ? completeTxCommand).mapTo[CompleteTransactionResponse].map(_.result).map {
-          case Some(res) => MakeFundingTxResponse(res.tx, 0, res.fee)
-          case None => throw new RuntimeException
-        }
+    (walletRef ? GetBalance).mapTo[GetBalanceResponse] flatMap { chainBalance =>
+      val command = if (chainBalance.totalBalance == amount) sendAll else completeTx
+      (walletRef ? command).mapTo[GenerateTxResponseTry].map(_.get)
     }
+  }
 
   override def commit(tx: Transaction, tag: String): Future[Boolean] = {
     val broadcast = BroadcastTransaction(tx)
@@ -65,32 +59,26 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
     }
   }
 
-  override def sendPreimageBroadcast(preimages: Set[ByteVector32], address: String, feeRatePerKw: FeeratePerKw): Future[TxAndFee] = {
+  override def sendPreimageBroadcast(preimages: Set[ByteVector32], address: String, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
     val preimageTxOuts = preimages.toList.map(_.bytes).map(OP_PUSHDATA.apply).grouped(2).map(OP_RETURN :: _).map(Script.write).map(emptyUtxo).toList
     val sendAll = SendAll(Script write addressToPublicKeyScript(address, ewt.chainHash), feeRatePerKw, OPT_IN_FULL_RBF, fromOutpoints = Set.empty, preimageTxOuts)
-    (walletRef ? sendAll).mapTo[SendAllResponse].map(_.result.get)
+    (walletRef ? sendAll).mapTo[GenerateTxResponseTry].map(_.get)
   }
 
-  override def makeTx(amount: Satoshi, address: String, feeRatePerKw: FeeratePerKw): Future[TxAndFee] = {
-    val publicKeyScript = Script write addressToPublicKeyScript(address, ewt.chainHash)
+  override def makeTx(amount: Satoshi, address: String, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
+    val sendAll = SendAll(Script write addressToPublicKeyScript(address, ewt.chainHash), feeRatePerKw, OPT_IN_FULL_RBF)
+    val completeTx = CompleteTransaction(sendAll.publicKeyScript, amount, feeRatePerKw, OPT_IN_FULL_RBF)
 
-    (walletRef ? GetBalance).mapTo[GetBalanceResponse].flatMap {
-      case chainBalance if chainBalance.totalBalance == amount =>
-        val sendAll = SendAll(publicKeyScript, feeRatePerKw, OPT_IN_FULL_RBF)
-        (walletRef ? sendAll).mapTo[SendAllResponse].map(_.result.get)
-
-      case _ =>
-        val txOut = TxOut(amount, publicKeyScript)
-        val tx = Transaction(version = 2, txIn = Nil, txOut = txOut :: Nil, lockTime = 0)
-        val completeTx = CompleteTransaction(tx, feeRatePerKw, sequenceFlag = OPT_IN_FULL_RBF)
-        (walletRef ? completeTx).mapTo[CompleteTransactionResponse].map(_.result.get)
+    (walletRef ? GetBalance).mapTo[GetBalanceResponse] flatMap { chainBalance =>
+      val command = if (chainBalance.totalBalance == amount) sendAll else completeTx
+      (walletRef ? command).mapTo[GenerateTxResponseTry].map(_.get)
     }
   }
 
-  override def makeCPFP(fromOutpoints: Set[OutPoint], address: String, feeRatePerKw: FeeratePerKw): Future[TxAndFee] = {
+  override def makeCPFP(fromOutpoints: Set[OutPoint], address: String, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
     val publicKeyScript = Script write addressToPublicKeyScript(address, ewt.chainHash)
     val cpfp = SendAll(publicKeyScript, feeRatePerKw, OPT_IN_FULL_RBF, fromOutpoints)
-    (walletRef ? cpfp).mapTo[SendAllResponse].map(_.result.get)
+    (walletRef ? cpfp).mapTo[GenerateTxResponseTry].map(_.get)
   }
 
   override def makeRBFBump(tx: Transaction, feeRatePerKw: FeeratePerKw): Future[RBFResponse] = {

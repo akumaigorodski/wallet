@@ -4,8 +4,9 @@ import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.DeterministicWallet._
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
+import fr.acinq.eclair.blockchain.TxConfirmedAt
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import fr.acinq.eclair.blockchain.{MakeFundingTxResponse, TxConfirmedAt}
 import fr.acinq.eclair.crypto.Generators
 import fr.acinq.eclair.crypto.Sphinx.PacketAndSecrets
 import fr.acinq.eclair.payment.IncomingPacket
@@ -28,7 +29,7 @@ case class InPrincipleNotSendable(localAdd: UpdateAddHtlc) extends LocalReject
 
 
 case class INPUT_INIT_FUNDEE(remoteInfo: RemoteNodeInfo, localParams: LocalParams, remoteInit: Init, channelFeatures: ChannelFeatures, theirOpen: OpenChannel)
-case class INPUT_INIT_FUNDER(remoteInfo: RemoteNodeInfo, temporaryChannelId: ByteVector32, fakeFunding: MakeFundingTxResponse, pushAmount: MilliSatoshi,
+case class INPUT_INIT_FUNDER(remoteInfo: RemoteNodeInfo, temporaryChannelId: ByteVector32, fakeFunding: GenerateTxResponse, pushAmount: MilliSatoshi,
                              fundingFeeratePerKw: FeeratePerKw, initialFeeratePerKw: FeeratePerKw, localParams: LocalParams, remoteInit: Init,
                              channelFlags: Byte, channelFeatures: ChannelFeatures)
 

@@ -13,7 +13,7 @@ import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.text.{Editable, Spanned, TextWatcher}
 import android.view.View.OnClickListener
-import android.view.{View, ViewGroup}
+import android.view.{View, ViewGroup, WindowManager}
 import android.widget._
 import androidx.appcompat.app.{AlertDialog, AppCompatActivity}
 import androidx.appcompat.widget.AppCompatButton
@@ -35,7 +35,6 @@ import com.ornach.nobobutton.NoboButton
 import com.softwaremill.quicklens._
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
-import fr.acinq.eclair.blockchain.TxAndFee
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import fr.acinq.eclair.payment.PaymentRequest
@@ -137,7 +136,10 @@ trait BaseActivity extends AppCompatActivity { me =>
   
   def viewRecoveryCode: Unit = {
     val content = new TitleView(me getString settings_view_revocery_phrase_ext)
-    new AlertDialog.Builder(me).setView(content.asDefView).show
+    getWindow.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+    new AlertDialog.Builder(me).setView(content.asDefView).show setOnDismissListener new DialogInterface.OnDismissListener {
+      override def onDismiss(dialog: DialogInterface): Unit = getWindow.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+    }
 
     for (mnemonicWord ~ mnemonicIndex <- LNParams.secret.mnemonic.zipWithIndex) {
       val item = s"<font color=$cardZero>${mnemonicIndex + 1}</font> $mnemonicWord"
@@ -467,11 +469,12 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     val confirmSend: NoboButton = body.findViewById(R.id.confirmSend).asInstanceOf[NoboButton]
     val confirmEdit: NoboButton = body.findViewById(R.id.confirmEdit).asInstanceOf[NoboButton]
+    val cancelSend: NoboButton = body.findViewById(R.id.cancelSend).asInstanceOf[NoboButton]
 
-    def switchToConfirm(alert: AlertDialog, manager: RateManager, txAndFee: TxAndFee): Unit = {
-      confirmAmount.setText(WalletApp.denom.parsedWithSign(manager.resultMsat, cardIn, cardZero).html)
-      confirmFee.setText(WalletApp.denom.parsedWithSign(txAndFee.fee.toMilliSatoshi, cardIn, cardZero).html)
-      confirmFiat.setText(WalletApp.currentMsatInFiatHuman(txAndFee.fee.toMilliSatoshi).html)
+    def switchToConfirm(alert: AlertDialog, amount: MilliSatoshi, fee: MilliSatoshi): Unit = {
+      confirmAmount.setText(WalletApp.denom.parsedWithSign(amount, cardIn, cardZero).html)
+      confirmFee.setText(WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html)
+      confirmFiat.setText(WalletApp.currentMsatInFiatHuman(amount).html)
       setVisMany(false -> editChain, true -> confirmChain)
       getPositiveButton(alert).setVisibility(View.GONE)
       getNegativeButton(alert).setVisibility(View.GONE)
