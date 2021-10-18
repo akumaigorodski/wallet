@@ -24,4 +24,4 @@ RUN set -ex; \
     mv android-ndk-r22b "/home/appuser/app/sdk/ndk/22.1.7171670/"; \
     cd /home/appuser/app/simplebitcoinwallet/; \
 
-WORKDIR /home/appuser/app/simplebitcoinwallet/wallet/
+WORKDIR /home/appuser/app/simplebitcoinwallet/
