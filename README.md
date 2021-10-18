@@ -38,17 +38,17 @@ Everyone is welcome to provide a translation on [Transifex project site](https:/
 
 ### Signing with your self-signed certificate
 
-5. ```$ podman cp <running container id>:/home/appuser/app/simplebitcoinwallet/wallet/app/build/outputs/apk/release/SBW-2.2.14.apk SBW-2.2.14-unaligned.apk```.
+5. ```$ podman cp <running container id>:/home/appuser/app/simplebitcoinwallet/wallet/app/build/outputs/apk/release/SBW-2.2.15.apk SBW-2.2.15-unaligned.apk```.
 
-6. ```$ <Android SDK dir>/build-tools/<version>/zipalign' -v 4 SBW-2.2.14-unaligned.apk SBW-2.2.14.apk```.
+6. ```$ <Android SDK dir>/build-tools/<version>/zipalign' -v 4 SBW-2.2.15-unaligned.apk SBW-2.2.15.apk```.
 
 7. Create a `keystore.jks` using `keytool`.
 
-8. ```$ <Android SDK dir>/build-tools/<version>/apksigner' sign --ks <path to keystore.jks> --ks-key-alias <signing key alias> --v1-signing-enabled true --v2-signing-enabled true SBW-2.2.14.apk```.
+8. ```$ <Android SDK dir>/build-tools/<version>/apksigner' sign --ks <path to keystore.jks> --ks-key-alias <signing key alias> --v1-signing-enabled true --v2-signing-enabled true SBW-2.2.15.apk```.
 
 ## Verification with `apksigner`
 
-```$ '<Android SDK dir>/build-tools/<version>/apksigner' verify --print-certs --verbose SBW-<version>.apk```
+```$ '<Android SDK dir>/build-tools/<version>/apksigner' verify --print-certs --verbose SBW-2.2.15.apk```
 
 Output should contain the following info:
 
@@ -66,18 +66,4 @@ Signer #1 key size (bits): 2048
 Signer #1 public key SHA-256 digest: dc97f0f2e34167015914600d8fa748f908d578bcedb79664d010de3c9bdebf13
 Signer #1 public key SHA-1 digest: c4400469d5ad807dd9394785f1fa95003588a091
 Signer #1 public key MD5 digest: e4e1f847e0cb0a9703dc4f9323fd6d87
-```
-
-## Verification with `gpg`
-
-Install `gpg` and obtain a release signing key 15780F46E10485AB.  
-It can be downloaded at https://api.github.com/users/btcontract/gpg_keys.  
-Or at https://lightning-wallet.com/akumaigorodski.asc.
-
-Verify release APK checksums and signatures:
-
-```
-$ gpg --import akumaigorodski.asc
-$ gpg -d SHA256SUMS.asc > SHA256SUMS.stripped
-$ sha256sum -c SHA256SUMS.stripped
 ```

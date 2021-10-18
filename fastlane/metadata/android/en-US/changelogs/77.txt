@@ -1,0 +1,3 @@
+* HODL payments.
+* Confirmation popup when sending a chain transaction.
+* Minor bugfixes and UI improvements.
