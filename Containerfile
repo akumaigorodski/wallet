@@ -23,11 +23,5 @@ RUN set -ex; \
     rm android-ndk-r22b-linux-x86_64.zip; \
     mv android-ndk-r22b "/home/appuser/app/sdk/ndk/22.1.7171670/"; \
     cd /home/appuser/app/simplebitcoinwallet/; \
-    git clone https://github.com/btcontract/wallet; \
-    cd /home/appuser/app/simplebitcoinwallet/wallet/; \
-    git checkout 2.2.15; \
-    cd /home/appuser/app/simplebitcoinwallet/wallet/app/src/main/assets/; \
-    wget https://github.com/btcontract/wallet/releases/download/2.2.15/graph.snapshot-mainnet.zlib; \
-    cd /home/appuser/app/simplebitcoinwallet/wallet/;
-   
+
 WORKDIR /home/appuser/app/simplebitcoinwallet/wallet/
