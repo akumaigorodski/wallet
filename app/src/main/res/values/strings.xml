@@ -91,8 +91,8 @@
 
     <string name="dialog_send_btc_from"><![CDATA[from&#160;<b>%1$s</b>&#160;wallet]]></string>
     <string name="dialog_send_btc"><![CDATA[Send <b>Bitcoin</b> transaction<br><b>to address</b> %1$s%2$s]]></string>
+    <string name="dialog_send_btc_confirm_amount">Send amount</string>
     <string name="dialog_send_btc_confirm_fiat">Fiat value</string>
-    <string name="dialog_send_btc_confirm_amount">Amount</string>
     <string name="dialog_send_btc_confirm_fee">Chain fee</string>
 
     <string name="dialog_send_ln"><![CDATA[Send <b>Lightning</b> payment%1$s]]></string>
