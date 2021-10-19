@@ -28,23 +28,24 @@ Everyone is welcome to provide a translation on [Transifex project site](https:/
 
 ## Building from source
 
-1. Install `podman`, get [container file](https://github.com/btcontract/wallet/blob/master/Containerfile).
-
-2. ```$ podman build --pull --rm -t simplebitcoinwallet_build_apk -f <path to container file>```.
-
-3. ```$ podman run --rm --name simplebitcoinwallet_build_apk -ti simplebitcoinwallet_build_apk```.
-
-4. ```<running container id>$ ./gradlew assembleRelease```.
+```
+git clone https://github.com/btcontract/wallet.git
+cd wallet
+git checkout 2.2.15
+wget -P app/src/main/assets/ https://github.com/btcontract/wallet/releases/download/2.2.15/graph.snapshot-mainnet.zlib
+podman build -t sbw .
+podman run -v $PWD:/app/simplebitcoinwallet/wallet:z sbw
+```
 
 ### Signing with your self-signed certificate
 
-5. ```$ podman cp <running container id>:/home/appuser/app/simplebitcoinwallet/wallet/app/build/outputs/apk/release/SBW-2.2.15.apk SBW-2.2.15-unaligned.apk```.
+Install Android SDK, create a `keystore.jks` using `keytool`.
 
-6. ```$ <Android SDK dir>/build-tools/<version>/zipalign' -v 4 SBW-2.2.15-unaligned.apk SBW-2.2.15.apk```.
+```
+$ <Android SDK dir>/build-tools/<version>/zipalign' -v 4 app/build/outputs/apk/release/SBW-2.2.15.apk app/build/outputs/apk/release/SBW-2.2.15-aligned.apk
 
-7. Create a `keystore.jks` using `keytool`.
-
-8. ```$ <Android SDK dir>/build-tools/<version>/apksigner' sign --ks <path to keystore.jks> --ks-key-alias <signing key alias> --v1-signing-enabled true --v2-signing-enabled true SBW-2.2.15.apk```.
+$ '<Android SDK dir>/build-tools/<version>/apksigner' sign --ks <path to keystore.jks> --ks-key-alias <signing key alias> --v1-signing-enabled true --v2-signing-enabled true app/build/outputs/apk/release/SBW-2.2.15-aligned.apk
+```
 
 ## Verification with `apksigner`
 

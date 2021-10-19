@@ -4,7 +4,7 @@ RUN set -ex; \
     mkdir -p /usr/share/man/man1/; \
     apt-get update; \
     apt-get install --yes --no-install-recommends openjdk-11-jdk git wget unzip; \
-    rm -rf /var/lib/apt/lists/*;
+    rm -rf /var/lib/apt/lists/*; 
 
 ENV ANDROID_SDK_ROOT="/app/sdk" \
     ANDROID_HOME="/app/sdk" \
@@ -19,7 +19,7 @@ RUN set -ex; \
     unzip android-ndk-r22b-linux-x86_64.zip; \
     rm android-ndk-r22b-linux-x86_64.zip; \
     mv android-ndk-r22b "/app/sdk/ndk/22.1.7171670/";
-
+   
 WORKDIR /app/simplebitcoinwallet/wallet/
 
 CMD ./gradlew assembleRelease
