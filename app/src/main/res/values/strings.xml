@@ -162,8 +162,8 @@
     <string name="delayed_notify_wt_title">Watchtower notification</string>
     <string name="delayed_notify_wt_body">Open a wallet to check channels</string>
 
-    <string name="delayed_notify_pending_payment_title">Pending Lightning payment</string>
-    <string name="delayed_notify_pending_payment_body">Open a wallet to get it resolved</string>
+    <string name="delayed_notify_pending_payment_title">Lightning payment is still pending</string>
+    <string name="delayed_notify_pending_payment_body">Open a wallet to check its condition</string>
 
     <!-- /Notifications -->
 

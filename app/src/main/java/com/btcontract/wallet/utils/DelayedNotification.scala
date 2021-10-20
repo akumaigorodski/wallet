@@ -14,8 +14,8 @@ object DelayedNotification {
   final val IN_FLIGHT_HTLC_TAG = "inFlightHtlc"
   final val CHANNEL_ID = "delayedNotificationChannelId1"
 
-  final val WATCH_TOWER_PERIOD_MSEC = 12 * 24 * 3600 * 1000L
-  final val IN_FLIGHT_HTLC_PERIOD_MSEC = 10 * 60 * 1000L
+  final val WATCH_TOWER_PERIOD_MSEC = 12 * 24 * 3600 * 1000L // Every 12 days
+  final val IN_FLIGHT_HTLC_PERIOD_MSEC = 6 * 3600 * 1000L // Every 6 hours
 
   def schedule(context: Context, tag: String, title: String, body: String, delayMsecs: Long): Operation = {
     val constraintBuilder = (new Constraints.Builder).setTriggerContentMaxDelay(1, TimeUnit.MILLISECONDS).build

@@ -12,6 +12,7 @@ import fr.acinq.eclair.blockchain.electrum.db.SigningWallet
 import info.guardianproject.netcipher.proxy.OrbotHelper
 import org.ndeftools.util.activity.NfcReaderActivity
 import com.btcontract.wallet.BaseActivity.StringOps
+import androidx.core.app.NotificationManagerCompat
 import androidx.appcompat.app.AlertDialog
 import com.ornach.nobobutton.NoboButton
 import immortan.utils.InputParser
@@ -38,7 +39,12 @@ object ClassNames {
 
 class MainActivity extends NfcReaderActivity with BaseActivity { me =>
   lazy val legacyWalletFile = new File(getFilesDir, "Bitcoin.wallet")
-  def INIT(state: Bundle): Unit = initNfc(state)
+
+  def INIT(state: Bundle): Unit = {
+    // We may enter an app by tapping a notification
+    NotificationManagerCompat.from(me).cancelAll
+    initNfc(state)
+  }
 
   lazy val (skipOrbotCheck, takeOrbotAction, mainOrbotMessage, mainOrbotIssues) = {
     // This saves some time by not drawing a view in case if we can proceed to wallet

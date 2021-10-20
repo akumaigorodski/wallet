@@ -197,11 +197,9 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
 
   def allInChannelOutgoing: Map[FullPaymentTag, OutgoingAdds] = all.values.flatMap(Channel.chanAndCommitsOpt).flatMap(_.commits.allOutgoing).groupBy(_.fullTag)
 
-  def allIncomingRevealed(cs: Iterable[Commitments] = Nil): Map[ByteVector32, RevealedLocalFulfills] = cs.flatMap(_.revealedFulfills).groupBy(_.theirAdd.paymentHash)
+  def allHostedCommits: Iterable[HostedCommits] = all.values.flatMap(Channel.chanAndCommitsOpt).collect { case ChanAndCommits(_, commits: HostedCommits) => commits }
 
   def allFromNode(nodeId: PublicKey): Iterable[ChanAndCommits] = all.values.flatMap(Channel.chanAndCommitsOpt).filter(_.commits.remoteInfo.nodeId == nodeId)
-
-  def allHostedCommits: Iterable[HostedCommits] = all.values.flatMap(Channel.chanAndCommitsOpt).collect { case ChanAndCommits(_, commits: HostedCommits) => commits }
 
   def hostedFromNode(nodeId: PublicKey): Option[ChannelHosted] = allFromNode(nodeId).collectFirst { case ChanAndCommits(chan: ChannelHosted, _) => chan }
 
@@ -226,6 +224,8 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
   // - in HC case we don't have local HC.maxHtlcValueInFlightMsat at all and only look at HC.availableForReceive
 
   def operationalCncs(chans: Iterable[Channel] = Nil): Seq[ChanAndCommits] = chans.filter(Channel.isOperational).flatMap(Channel.chanAndCommitsOpt).toList
+
+  def channelsContainHtlc: Boolean = operationalCncs(all.values).exists(cnc => cnc.commits.allOutgoing.nonEmpty || cnc.commits.crossSignedIncoming.nonEmpty)
 
   def sortedReceivable(chans: Iterable[Channel] = Nil): Seq[ChanAndCommits] = operationalCncs(chans).filter(_.commits.updateOpt.isDefined).sortBy(_.commits.availableForReceive)
 
@@ -349,7 +349,7 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
 
     // First, fail invalid and malformed incoming HTLCs right away
     allIns.foreach { case finalResolve: FinalResolution => sendTo(finalResolve, finalResolve.theirAdd.channelId) case _ => }
-    // FSM exists because there were related HTLCs, none may be left now: this change is used by existing FSMs to finalize themselves
+    // FSM exists because there were related HTLCs, none may be left now: this change is used by existing FSMs to finalize
     for (incomingFSM <- inProcessors.values) incomingFSM doProcess inFlightsBag
     // Sign all fails and fulfills that could have been sent from FSMs above
     for (chan <- all.values) chan process CMD_SIGN

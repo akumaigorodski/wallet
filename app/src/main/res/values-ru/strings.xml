@@ -163,7 +163,7 @@
     <string name="delayed_notify_wt_body">Откройте кошелёк для проверки каналов</string>
 
     <string name="delayed_notify_pending_payment_title">Платеж-Молния все еще в полете</string>
-    <string name="delayed_notify_pending_payment_body">Откройте кошелек, чтобы завершить платеж</string>
+    <string name="delayed_notify_pending_payment_body">Откройте кошелек, чтобы проверить его состояние</string>
 
     <!-- /Notifications -->
 

@@ -92,8 +92,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   private def hasItems: Boolean = allItems.exists(_.lastItems.nonEmpty)
 
   private def updateLnCaches: Unit = {
-    // Calling these functions on each payment card would be too much computation
-    lastHostedReveals = LNParams.cm.allIncomingRevealed(LNParams.cm.allHostedCommits)
+    // Calling these functions on each payment card would be too much computation, hence they are cached
+    lastHostedReveals = LNParams.cm.allHostedCommits.flatMap(_.revealedFulfills).groupBy(_.theirAdd.paymentHash)
     lastInChannelOutgoing = LNParams.cm.allInChannelOutgoing
   }
 

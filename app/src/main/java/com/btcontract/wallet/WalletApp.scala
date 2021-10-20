@@ -268,18 +268,19 @@ object WalletApp {
     // This inital notification will create all in/routed/out FSMs
     LNParams.cm.notifyResolvers
 
-    Rx.repeat(Rx.ioQueue.delay(1.second), Rx.incMinute, 2 to Int.MaxValue by 2).foreach { _ =>
+    Rx.repeat(Rx.ioQueue.delay(1.second), Rx.incHour, 1 to Int.MaxValue).foreach { _ =>
+      // We need this in case if in/out HTLC is pending for a long time and app is still open
       DelayedNotification.cancel(app, DelayedNotification.IN_FLIGHT_HTLC_TAG)
-      if (LNParams.cm.inProcessors.nonEmpty) reScheduleInFlight
+      if (LNParams.cm.channelsContainHtlc) reScheduleInFlight
     }
 
-    Rx.repeat(Rx.ioQueue.delay(2.seconds), Rx.incHour, 1 to Int.MaxValue by 1).foreach { _ =>
+    Rx.repeat(Rx.ioQueue.delay(2.seconds), Rx.incHour, 1 to Int.MaxValue).foreach { _ =>
       DelayedNotification.cancel(app, DelayedNotification.WATCH_TOWER_TAG)
-      if (receivingChannelsExist) reScheduleWatchtower
+      if (vulnerableChannelsExist) reScheduleWatchtower
     }
   }
 
-  def receivingChannelsExist: Boolean = LNParams.cm.allNormal.flatMap(Channel.chanAndCommitsOpt).exists {
+  def vulnerableChannelsExist: Boolean = LNParams.cm.allNormal.flatMap(Channel.chanAndCommitsOpt).exists {
     case ChanAndCommits(_, normalCommits: NormalCommits) => normalCommits.remoteNextHtlcId > 0
     case _ => false
   }
@@ -371,14 +372,15 @@ class WalletApp extends Application { me =>
       manager.createNotificationChannel(chan2)
     }
 
-    ChannelMaster.inFinalized.filter(_ => LNParams.cm.inProcessors.isEmpty).foreach { _ =>
-      DelayedNotification.cancel(me, DelayedNotification.IN_FLIGHT_HTLC_TAG)
-      stopService(foregroundServiceIntent)
+    ChannelMaster.inFinalized.foreach { _ =>
+      // Delayed notification is removed when payment gets either failed or fulfilled
+      if (LNParams.cm.inProcessors.isEmpty) stopService(foregroundServiceIntent)
     }
 
-    ChannelMaster.stateUpdateStream.filter(_ => LNParams.cm.inProcessors.nonEmpty).foreach { _ =>
+    Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.stateUpdateStream, 500.millis).foreach { _ =>
+      // This might be the last channel state update which clears all in-flight HTLCs
       DelayedNotification.cancel(me, DelayedNotification.IN_FLIGHT_HTLC_TAG)
-      WalletApp.reScheduleInFlight
+      if (LNParams.cm.channelsContainHtlc) WalletApp.reScheduleInFlight
     }
   }
 
