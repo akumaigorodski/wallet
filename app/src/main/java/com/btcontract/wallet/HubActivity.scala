@@ -337,7 +337,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     // PENDING CHANNEL REFUNDS
 
     def showPending(info: DelayedRefunds): Unit = {
-      val adapter = new ArrayAdapter(me, R.layout.simple_list_item_2, R.id.text1, info.txToParent.toArray) {
+      val adapter = new ArrayAdapter(me, R.layout.frag_delayed_refunds, R.id.text1, info.txToParent.toArray) {
         override def getView(position: Int, convertView: View, parentViewGroup: ViewGroup): View = {
           val view: View = super.getView(position, convertView, parentViewGroup)
           val text1 = view.findViewById(R.id.text1).asInstanceOf[TextView]
@@ -387,8 +387,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       val receivedMsat = info.receivedSat.toMilliSatoshi
 
       val body = getLayoutInflater.inflate(R.layout.frag_input_cpfp, null).asInstanceOf[ScrollView]
-      val cpfpCurrent = body.findViewById(R.id.cpfpCurrent).asInstanceOf[TextView]
-      val cpfpAfter = body.findViewById(R.id.cpfpAfter).asInstanceOf[TextView]
+      val cpfpCurrent = new TwoSidedItem(body.findViewById(R.id.cpfpCurrent), tx_cpfp_current)
+      val cpfpAfter = new TwoSidedItem(body.findViewById(R.id.cpfpAfter), tx_cpfp_after)
 
       val blockTarget = LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
       val target = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
@@ -405,8 +405,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           val currentAmount = WalletApp.denom.directedWithSign(incoming = receivedMsat, outgoing = 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
           val afterAmount = WalletApp.denom.directedWithSign(feeOpt.map(receivedMsat.-).getOrElse(receivedMsat), 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
           updatePopupButton(getPositiveButton(alert), feeOpt.isDefined)
-          cpfpCurrent.setText(currentAmount.html)
-          cpfpAfter.setText(afterAmount.html)
+          cpfpCurrent.secondItem.setText(currentAmount.html)
+          cpfpAfter.secondItem.setText(afterAmount.html)
           super.update(feeOpt, showIssue)
         }.run
       }
@@ -455,7 +455,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     def doBoostRBF(fromWallet: ElectrumEclairWallet, info: TxInfo): Unit = {
       val currentFee = WalletApp.denom.parsedWithSign(info.feeSat.toMilliSatoshi, cardOut, cardIn)
       val body = getLayoutInflater.inflate(R.layout.frag_input_rbf, null).asInstanceOf[ScrollView]
-      val rbfCurrent = body.findViewById(R.id.rbfCurrent).asInstanceOf[TextView]
+      val rbfCurrent = new TwoSidedItem(body.findViewById(R.id.rbfCurrent), tx_rbf_current)
       val rbfIssue = body.findViewById(R.id.rbfIssue).asInstanceOf[TextView]
 
       val blockTarget = LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
@@ -519,7 +519,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         mkCheckForm(attempt, none, builder, dialog_ok, dialog_cancel)
       }
 
-      rbfCurrent.setText(currentFee.html)
+      rbfCurrent.secondItem.setText(currentFee.html)
       feeView.update(feeOpt = None, showIssue = false)
       feeView.customFeerateOption.performClick
       feeView.worker addWork "RBF-INIT-CALL"
@@ -533,7 +533,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     def doCancelRBF(fromWallet: ElectrumEclairWallet, info: TxInfo): Unit = {
       val currentFee = WalletApp.denom.parsedWithSign(info.feeSat.toMilliSatoshi, cardOut, cardIn)
       val body = getLayoutInflater.inflate(R.layout.frag_input_rbf, null).asInstanceOf[ScrollView]
-      val rbfCurrent = body.findViewById(R.id.rbfCurrent).asInstanceOf[TextView]
+      val rbfCurrent = new TwoSidedItem(body.findViewById(R.id.rbfCurrent), tx_rbf_current)
       val rbfIssue = body.findViewById(R.id.rbfIssue).asInstanceOf[TextView]
 
       val changeAddress = Await.result(LNParams.chainWallets.lnWallet.getReceiveAddresses, atMost = 40.seconds).changeAddress
@@ -600,7 +600,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         mkCheckForm(attempt, none, builder, dialog_ok, dialog_cancel)
       }
 
-      rbfCurrent.setText(currentFee.html)
+      rbfCurrent.secondItem.setText(currentFee.html)
       feeView.update(feeOpt = None, showIssue = false)
       feeView.customFeerateOption.performClick
       feeView.worker addWork "RBF-INIT-CALL"

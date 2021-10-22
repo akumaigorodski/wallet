@@ -11,7 +11,7 @@ import immortan.utils.uri.Uri
 import immortan.{LNParams, RemoteNodeInfo}
 import scodec.bits.ByteVector
 
-import scala.util.matching.UnanchoredRegex
+import scala.util.matching.{Regex, UnanchoredRegex}
 import scala.util.parsing.combinator.RegexParsers
 import scala.util.{Failure, Success, Try}
 
@@ -36,7 +36,7 @@ object InputParser {
 
   val lnPayReq: UnanchoredRegex = s"(?im).*?($prefixes)([0-9]{1,}[a-z0-9]+){1}".r.unanchored
 
-  val identifier: UnanchoredRegex = "^([a-zA-Z0-9][a-zA-Z0-9\\-_.]*)?[a-zA-Z0-9]@([a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9]\\.)+[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9]$".r.unanchored
+  val identifier: Regex = "^([a-zA-Z0-9][a-zA-Z0-9\\-_.]*)?[a-zA-Z0-9]@([a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9]\\.)+[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9]$".r
 
   val lightning: String = "lightning:"
 
@@ -121,9 +121,9 @@ object MultiAddressParser extends RegexParsers {
 
   val address: Parser[String] = "(bc1|[123mn]|tb1)[a-zA-HJ-NP-Z0-9]{25,39}".r
 
-  val decimalSat: Parser[Satoshi] = "[0-9]*\\.[0-9]+".r ^^ (raw => (BigDecimal(raw) * BtcAmount.Coin).toLong.sat)
-
   val longSat: Parser[Satoshi] = "[0-9,]+".r ^^ (_.replace(",", "").toLong.sat)
+
+  val decimalSat: Parser[Satoshi] = "[0-9]*\\.[0-9]+".r ^^ (raw => (BigDecimal(raw) * BtcAmount.Coin).toLong.sat)
 
   val parse: Parser[AddressToAmount] = repsep(address ~ (decimalSat | longSat) ^^ { case addr ~ sat => addr -> sat }, ";").map(_.toMap).map(AddressToAmount)
 }

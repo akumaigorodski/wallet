@@ -150,16 +150,15 @@ trait BaseActivity extends AppCompatActivity { me =>
   // Snackbar
 
   def snack(parent: View, msg: CharSequence, res: Int): Try[Snackbar] = Try {
-    val snack: Snackbar = Snackbar.make(parent, msg, BaseTransientBottomBar.LENGTH_INDEFINITE)
-    snack.getView.findViewById(com.google.android.material.R.id.snackbar_text).asInstanceOf[TextView].setMaxLines(15)
-    snack
+    Snackbar.make(parent, msg, BaseTransientBottomBar.LENGTH_INDEFINITE)
   }
 
-  def snack(parent: View, msg: CharSequence, res: Int, fun: Snackbar => Unit): Try[Snackbar] = snack(parent, msg, res).map { snack =>
-    val listener = onButtonTap(fun apply snack)
-    snack.setAction(res, listener).show
-    snack
-  }
+  def snack(parent: View, msg: CharSequence, res: Int, fun: Snackbar => Unit): Try[Snackbar] =
+    snack(parent, msg, res) map { snack =>
+      val listener = onButtonTap(fun apply snack)
+      snack.setAction(res, listener).show
+      snack
+    }
 
   // Listener helpers
 
@@ -466,18 +465,18 @@ trait BaseActivity extends AppCompatActivity { me =>
     val editChain: LinearLayout = body.findViewById(R.id.editChain).asInstanceOf[LinearLayout]
     val confirmChain: LinearLayout = body.findViewById(R.id.confirmChain).asInstanceOf[LinearLayout]
 
-    val confirmFiat: TextView = body.findViewById(R.id.confirmFiat).asInstanceOf[TextView]
-    val confirmAmount: TextView = body.findViewById(R.id.confirmAmount).asInstanceOf[TextView]
-    val confirmFee: TextView = body.findViewById(R.id.confirmFee).asInstanceOf[TextView]
+    val confirmFiat = new TwoSidedItem(body.findViewById(R.id.confirmFiat), dialog_send_btc_confirm_fiat)
+    val confirmAmount = new TwoSidedItem(body.findViewById(R.id.confirmAmount), dialog_send_btc_confirm_amount)
+    val confirmFee = new TwoSidedItem(body.findViewById(R.id.confirmFee), dialog_send_btc_confirm_fee)
 
     val confirmSend: NoboButton = body.findViewById(R.id.confirmSend).asInstanceOf[NoboButton]
     val confirmEdit: NoboButton = body.findViewById(R.id.confirmEdit).asInstanceOf[NoboButton]
     val cancelSend: NoboButton = body.findViewById(R.id.cancelSend).asInstanceOf[NoboButton]
 
     def switchToConfirm(alert: AlertDialog, amount: MilliSatoshi, fee: MilliSatoshi): Unit = {
-      confirmAmount.setText(WalletApp.denom.parsedWithSign(amount, cardIn, cardZero).html)
-      confirmFee.setText(WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html)
-      confirmFiat.setText(WalletApp.currentMsatInFiatHuman(amount).html)
+      confirmAmount.secondItem.setText(WalletApp.denom.parsedWithSign(amount, cardIn, cardZero).html)
+      confirmFee.secondItem.setText(WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html)
+      confirmFiat.secondItem.setText(WalletApp.currentMsatInFiatHuman(amount).html)
       setVisMany(false -> editChain, true -> confirmChain)
       getPositiveButton(alert).setVisibility(View.GONE)
       getNegativeButton(alert).setVisibility(View.GONE)
@@ -490,6 +489,11 @@ trait BaseActivity extends AppCompatActivity { me =>
       getNegativeButton(alert).setVisibility(View.VISIBLE)
       getNeutralButton(alert).setVisibility(View.VISIBLE)
     }
+  }
+
+  class TwoSidedItem(parent: View, firstItemRes: Int) {
+    parent.findViewById(R.id.firstItem).asInstanceOf[TextView].setText(firstItemRes)
+    val secondItem: TextView = parent.findViewById(R.id.secondItem).asInstanceOf[TextView]
   }
 
   // Guards and send/receive helpers
