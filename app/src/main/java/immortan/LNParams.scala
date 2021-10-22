@@ -78,9 +78,12 @@ object LNParams {
   var ourInit: Init = _
   var routerConf: RouterConf = _
   var syncParams: SyncParams = _
-  var trampoline: TrampolineOn = _
   var fiatRates: FiatRates = _
   var feeRates: FeeRates = _
+
+  var trampoline =
+    TrampolineOn(minPayment, maximumMsat = 1000000000L.msat, feeBaseMsat = 10000L.msat,
+      feeProportionalMillionths = 1000L, exponent = 0.0, logExponent = 0.0, minRoutingCltvExpiryDelta)
 
   // Last known chain tip (zero is unknown)
   val blockCount: AtomicLong = new AtomicLong(0L)
@@ -133,9 +136,9 @@ object LNParams {
 
   def isPeerSupports(theirInit: Init)(feature: Feature): Boolean = Features.canUseFeature(ourInit.features, theirInit.features, feature)
 
-  def defaultTrampolineOn = TrampolineOn(minPayment, maximumMsat = 1000000000L.msat, feeBaseMsat = 10000L.msat, feeProportionalMillionths = 1000L, exponent = 0.0, logExponent = 0.0, minRoutingCltvExpiryDelta)
-
   def loggedActor(childProps: Props, childName: String): ActorRef = system actorOf Props(classOf[LoggingSupervisor], childProps, childName)
+
+  def addressToPubKeyScript(address: String): ByteVector = Script write addressToPublicKeyScript(address, chainHash)
 
   def updateChainWallet(walletExt: WalletExt): Unit = synchronized(chainWallets = walletExt)
 

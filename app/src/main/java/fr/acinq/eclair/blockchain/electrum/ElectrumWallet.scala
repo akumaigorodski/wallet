@@ -187,7 +187,7 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
   }
 
   whenUnhandled {
-    case Event(IsDoubleSpent(tx), data) =>
+    case Event(tx: Transaction, data) =>
       val doubleSpendTrials: Option[Boolean] = for {
         spendingTxid <- data.overriddenPendingTxids.get(tx.txid)
         spendingBlockHeight <- data.proofs.get(spendingTxid).map(_.blockHeight)
@@ -206,15 +206,17 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
 
     case Event(GetBalance, data) => stay replying data.balance
 
-    case Event(CompleteTransaction(publicKeyScript, amount, feeRatePerKw, sequenceFlag), data) =>
-      val tx = Transaction(version = 2, txIn = Nil, txOut = TxOut(amount, publicKeyScript) :: Nil, lockTime = 0)
+    case Event(CompleteTransaction(pubKeyScriptToAmount, feeRatePerKw, sequenceFlag), data) =>
+      val txOuts = for (Tuple2(pubKeyScript, amount) <- pubKeyScriptToAmount) yield TxOut(amount, pubKeyScript)
+      val tx = Transaction(version = 2, txIn = Nil, txOut = txOuts.toList, lockTime = 0)
+
       val resultTry = data.completeTransaction(tx, feeRatePerKw, params.dustLimit, sequenceFlag, data.utxos)
-      val resultTryComplete = for (res <- resultTry) yield res.copy(toPublicKeyScript = publicKeyScript)
+      val resultTryComplete = for (res <- resultTry) yield res.copy(pubKeyScriptToAmount = pubKeyScriptToAmount)
       stay replying resultTryComplete
 
-    case Event(SendAll(publicKeyScript, feeRatePerKw, sequenceFlag, fromOutpoints, extraOutUtxos), data) =>
-      val inUtxos = if (fromOutpoints.nonEmpty) data.utxos.filter(fromOutpoints contains _.item.outPoint) else data.utxos
-      stay replying data.spendAll(publicKeyScript, inUtxos, extraOutUtxos, feeRatePerKw, params.dustLimit, sequenceFlag)
+    case Event(SendAll(publicKeyScript, pubKeyScriptToAmount, feeRatePerKw, sequenceFlag, fromOutpoints, extraOutUtxos), data) =>
+      val inUtxos = if (fromOutpoints.nonEmpty) data.utxos.filter(utxo => fromOutpoints contains utxo.item.outPoint) else data.utxos
+      stay replying data.spendAll(publicKeyScript, pubKeyScriptToAmount, inUtxos, extraOutUtxos, feeRatePerKw, params.dustLimit, sequenceFlag)
 
     case Event(bump: RBFBump, data) if bump.tx.txIn.forall(_.sequence <= OPT_IN_FULL_RBF) => stay replying data.rbfBump(bump, params.dustLimit)
     case Event(reroute: RBFReroute, data) if reroute.tx.txIn.forall(_.sequence <= OPT_IN_FULL_RBF) => stay replying data.rbfReroute(reroute, params.dustLimit)
@@ -271,9 +273,7 @@ object ElectrumWallet {
   sealed trait Response
 
   sealed trait GenerateTxResponse extends Response {
-    // We explicitly want this method to throw if we try to find a single utxo while having none
-    def toTxOut: TxOut = tx.txOut.find(_.publicKeyScript == toPublicKeyScript).get
-    val toPublicKeyScript: ByteVector
+    val pubKeyScriptToAmount: Map[ByteVector, Satoshi]
     val tx: Transaction
     val fee: Satoshi
   }
@@ -284,11 +284,11 @@ object ElectrumWallet {
   case object GetCurrentReceiveAddresses extends Request
   case class GetCurrentReceiveAddressesResponse(accountToKey: Map[String, ExtendedPublicKey], changeAddress: String, changeKey: ExtendedPublicKey) extends Response
 
-  case class CompleteTransaction(publicKeyScript: ByteVector, amount: Satoshi, feeRatePerKw: FeeratePerKw, sequenceFlag: Long) extends Request
-  case class CompleteTransactionResponse(tx: Transaction, fee: Satoshi, toPublicKeyScript: ByteVector) extends GenerateTxResponse
+  case class CompleteTransaction(pubKeyScriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw, sequenceFlag: Long) extends Request
+  case class CompleteTransactionResponse(pubKeyScriptToAmount: Map[ByteVector, Satoshi], tx: Transaction, fee: Satoshi) extends GenerateTxResponse
 
-  case class SendAll(publicKeyScript: ByteVector, feeRatePerKw: FeeratePerKw, sequenceFlag: Long, fromOutpoints: Set[OutPoint] = Set.empty, extraUtxos: List[TxOut] = Nil) extends Request
-  case class SendAllResponse(tx: Transaction, fee: Satoshi, toPublicKeyScript: ByteVector) extends GenerateTxResponse
+  case class SendAll(publicKeyScript: ByteVector, pubKeyScriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw, sequenceFlag: Long, fromOutpoints: Set[OutPoint], extraUtxos: List[TxOut] = Nil) extends Request
+  case class SendAllResponse(pubKeyScriptToAmount: Map[ByteVector, Satoshi], tx: Transaction, fee: Satoshi) extends GenerateTxResponse
 
   case class RBFBump(tx: Transaction, feeRatePerKw: FeeratePerKw, sequenceFlag: Long) extends Request
   case class RBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, publicKeyScript: ByteVector, sequenceFlag: Long) extends Request
@@ -298,7 +298,6 @@ object ElectrumWallet {
 
   case class CommitTransaction(tx: Transaction) extends Request
 
-  case class IsDoubleSpent(tx: Transaction) extends Request
   case class IsDoubleSpentResponse(tx: Transaction, depth: Long, isDoubleSpent: Boolean) extends Response
 
   sealed trait WalletEvent { val xPub: ExtendedPublicKey }
@@ -332,7 +331,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
 
   lazy val firstUnusedChangeKey: Option[ExtendedPublicKey] = {
     val usedChangeNumbers = transactions.values.flatMap(_.txOut).map(_.publicKeyScript).flatMap(publicScriptChangeMap.get).map(_.path.lastChildNumber).toSet
-    changeKeys.collectFirst { case key if !usedChangeNumbers.contains(key.path.lastChildNumber) => key }
+    changeKeys.collectFirst { case changeKey if !usedChangeNumbers.contains(changeKey.path.lastChildNumber) => changeKey }
   }
 
   lazy val publicScriptAccountMap: Map[ByteVector, ExtendedPublicKey] = accountKeys.map(key => Script.write(ewt computePublicKeyScript key.publicKey) -> key).toMap
@@ -424,7 +423,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
 
       case delta if delta.feeOpt.isDefined =>
         val leftUtxos = utxos.filterNot(_.item.txHash == bump.tx.txid)
-        // Result here will explicitly have empty toPublicKeyScript because we may have many outputs
+        // Result here will explicitly have empty CompleteTransactionResponse.pubKeyScriptToAmount
         completeTransaction(tx1, bump.feeRatePerKw, dustLimit, bump.sequenceFlag, leftUtxos, delta.spentUtxos) match {
           case Success(response) => RBFResponse(response.asRight)
           case _ => RBFResponse(GENERATION_FAIL.asLeft)
@@ -439,7 +438,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
   } getOrElse RBFResponse(PARENTS_MISSING.asLeft)
 
   private def rbfReroute(publicKeyScript: ByteVector, spentUtxos: Seq[Utxo], feeRatePerKw: FeeratePerKw, dustLimit: Satoshi, sequenceFlag: Long) = {
-    spendAll(publicKeyScript, spentUtxos, Nil, feeRatePerKw, dustLimit, sequenceFlag) match {
+    spendAll(publicKeyScript, strictPubKeyScriptsToAmount = Map.empty, usableInUtxos = spentUtxos, extraOutUtxos = Nil, feeRatePerKw, dustLimit, sequenceFlag) match {
       case Success(response) => RBFResponse(response.asRight)
       case _ => RBFResponse(GENERATION_FAIL.asLeft)
     }
@@ -447,7 +446,9 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
 
   type TxOutOption = Option[TxOut]
 
-  def completeTransaction(tx: Transaction, feeRatePerKw: FeeratePerKw, dustLimit: Satoshi, sequenceFlag: Long, leftUtxos: Seq[Utxo], mustUseUtxos: Seq[Utxo] = Nil): Try[CompleteTransactionResponse] = Try {
+  def completeTransaction(tx: Transaction, feeRatePerKw: FeeratePerKw,
+                          dustLimit: Satoshi, sequenceFlag: Long, usableInUtxos: Seq[Utxo],
+                          mustUseUtxos: Seq[Utxo] = Nil): Try[CompleteTransactionResponse] = Try {
 
     def computeFee(candidates: Seq[Utxo], change: TxOutOption) = {
       val tx1 = ewt.setUtxosWithDummySig(usableUtxos = candidates, tx, sequenceFlag)
@@ -455,7 +456,6 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
       Transactions.weight2fee(feeRatePerKw, weight)
     }
 
-    val usable = leftUtxos.sortBy(_.item.value)
     val amountToSend = tx.txOut.map(_.amount).sum
     val changeKey = firstUnusedChangeKey.getOrElse(changeKeys.head)
     val changeScript = ewt.computePublicKeyScript(changeKey.publicKey)
@@ -475,23 +475,31 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
       case total => (current, changeTxOut.copy(amount = total - computeFee(current, changeTxOut.asSome) - amountToSend).asSome)
     }
 
+    val usable = usableInUtxos.sortBy(_.item.value)
     val (selected, changeOpt) = loop(current = mustUseUtxos, usable)
     val txWithInputs = ewt.setUtxosWithDummySig(selected, tx, sequenceFlag)
     val txWithChange = changeOpt.map(txWithInputs.addOutput).getOrElse(txWithInputs)
 
-    val tx3 = ewt.signTransaction(leftUtxos ++ mustUseUtxos, txWithChange)
+    val tx3 = ewt.signTransaction(usableInUtxos ++ mustUseUtxos, txWithChange)
     val fee = selected.map(_.item.value).sum.sat - tx3.txOut.map(_.amount).sum
-    CompleteTransactionResponse(tx3, fee, toPublicKeyScript = ByteVector.empty)
+    CompleteTransactionResponse(pubKeyScriptToAmount = Map.empty, tx3, fee)
   }
 
-  def spendAll(publicKeyScript: ByteVector, usableInUtxos: Seq[Utxo], extraOutUtxos: List[TxOut], feeRatePerKw: FeeratePerKw, dustLimit: Satoshi, sequenceFlag: Long): Try[SendAllResponse] = Try {
+  def spendAll(restPubKeyScript: ByteVector, strictPubKeyScriptsToAmount: Map[ByteVector, Satoshi],
+               usableInUtxos: Seq[Utxo], extraOutUtxos: List[TxOut], feeRatePerKw: FeeratePerKw,
+               dustLimit: Satoshi, sequenceFlag: Long): Try[SendAllResponse] = Try {
 
-    val txOut = TxOut(amount = usableInUtxos.map(_.item.value.sat).sum, publicKeyScript)
-    val tx1 = ewt.setUtxosWithDummySig(usableInUtxos, Transaction(version = 2, Nil, txOut :: extraOutUtxos, lockTime = 0), sequenceFlag)
+    val strictTxOuts = for (Tuple2(pubKeyScript, amount) <- strictPubKeyScriptsToAmount) yield TxOut(amount, pubKeyScript)
+    val restTxOut = TxOut(amount = usableInUtxos.map(_.item.value.sat).sum - strictTxOuts.map(_.amount).sum - extraOutUtxos.map(_.amount).sum, restPubKeyScript)
+    val tx1 = ewt.setUtxosWithDummySig(usableInUtxos, Transaction(version = 2, Nil, restTxOut :: strictTxOuts.toList ::: extraOutUtxos, lockTime = 0), sequenceFlag)
+
     val fee = Transactions.weight2fee(weight = tx1.weight(Protocol.PROTOCOL_VERSION), feeratePerKw = feeRatePerKw)
-    require(txOut.amount - fee > dustLimit, "Resulting tx amount to send is below dust limit")
-    val tx2 = tx1.copy(txOut = TxOut(txOut.amount - fee, publicKeyScript) :: extraOutUtxos)
-    SendAllResponse(ewt.signTransaction(usableInUtxos, tx2), fee, publicKeyScript)
+    require(restTxOut.amount - fee > dustLimit, "Resulting tx amount to send is below dust limit")
+
+    val restTxOut1 = TxOut(restTxOut.amount - fee, restPubKeyScript)
+    val tx2 = tx1.copy(txOut = restTxOut1 :: strictTxOuts.toList ::: extraOutUtxos)
+    val allPubKeyScriptsToAmount = strictPubKeyScriptsToAmount.updated(restPubKeyScript, restTxOut1.amount)
+    SendAllResponse(allPubKeyScriptsToAmount, ewt.signTransaction(usableInUtxos, tx2), fee)
   }
 
   def commitTransaction(tx: Transaction): ElectrumData = {

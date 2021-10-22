@@ -30,6 +30,7 @@ import immortan.wire.HostedState
 import rx.lang.scala.Subscription
 
 import scala.concurrent.duration._
+import scala.util.Try
 
 
 object ChanActivity {
@@ -271,14 +272,15 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
 
   def closeNcToAddress(cs: NormalCommits): Unit = {
     def confirmResolve(bitcoinUri: BitcoinUri): Unit = {
-      def proceed: Unit = for (chan <- me getChanByCommits cs) chan process CMD_CLOSE(Script.write(bitcoinUri.pubKeyScript).asSome, force = false)
+      val pubKeyScript = LNParams.addressToPubKeyScript(bitcoinUri.address)
       val builder = confirmationBuilder(cs, getString(confirm_ln_normal_chan_close_address).format(bitcoinUri.address.humanFour).html)
+      def proceed: Unit = for (chan <- me getChanByCommits cs) chan process CMD_CLOSE(pubKeyScript.asSome, force = false)
       mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
     }
 
     def resolveClosingAddress: Unit = InputParser.checkAndMaybeErase {
       case ext: PaymentRequestExt if ext.pr.fallbackAddress.isDefined => ext.pr.fallbackAddress.map(BitcoinUri.fromRaw).foreach(confirmResolve)
-      case closingBitcoinUri: BitcoinUri if closingBitcoinUri.isValid => confirmResolve(closingBitcoinUri)
+      case bitcoinUri: BitcoinUri if Try(LNParams addressToPubKeyScript bitcoinUri.address).isSuccess => confirmResolve(bitcoinUri)
       case _ => nothingUsefulTask.run
     }
 

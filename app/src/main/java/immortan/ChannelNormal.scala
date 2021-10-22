@@ -52,7 +52,7 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
         val ChannelKeys(_, _, fundingKey, revocationKey, _, delayedPaymentKey, htlcKey) = init.localParams.keys
         val emptyUpfrontShutdown: TlvStream[OpenChannelTlv] = TlvStream(ChannelTlv UpfrontShutdownScript ByteVector.empty)
 
-        val open = OpenChannel(LNParams.chainHash, init.temporaryChannelId, init.fakeFunding.toTxOut.amount, init.pushAmount, init.localParams.dustLimit, init.localParams.maxHtlcValueInFlightMsat,
+        val open = OpenChannel(LNParams.chainHash, init.temporaryChannelId, init.fakeFunding.pubKeyScriptToAmount.values.head, init.pushAmount, init.localParams.dustLimit, init.localParams.maxHtlcValueInFlightMsat,
           init.localParams.channelReserve, init.localParams.htlcMinimum, init.initialFeeratePerKw, init.localParams.toSelfDelay, init.localParams.maxAcceptedHtlcs, fundingPubkey = fundingKey.publicKey,
           revocationBasepoint = revocationKey.publicKey, paymentBasepoint = init.localParams.walletStaticPaymentBasepoint, delayedPaymentBasepoint = delayedPaymentKey.publicKey,
           htlcBasepoint = htlcKey.publicKey, init.localParams.keys.commitmentPoint(index = 0L), init.channelFlags, emptyUpfrontShutdown)
@@ -73,16 +73,17 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
 
 
       case (wait: DATA_WAIT_FOR_FUNDING_INTERNAL, realFunding: GenerateTxResponse, WAIT_FOR_ACCEPT) =>
-        val fundingOutputIndex = realFunding.tx.txOut.indexOf(realFunding.toTxOut)
+        val fundingOutputIndex = realFunding.tx.txOut.indexWhere(_.publicKeyScript == wait.initFunder.fakeFunding.pubKeyScriptToAmount.keys.head)
 
         val (localSpec, localCommitTx, remoteSpec, remoteCommitTx) = Helpers.Funding.makeFirstCommitTxs(wait.initFunder.channelFeatures,
-          wait.initFunder.localParams, wait.remoteParams, realFunding.toTxOut.amount, wait.initFunder.pushAmount, wait.initFunder.initialFeeratePerKw,
-          realFunding.tx.hash, fundingOutputIndex, wait.remoteFirstPerCommitmentPoint)
+          wait.initFunder.localParams, wait.remoteParams, realFunding.pubKeyScriptToAmount.values.head, wait.initFunder.pushAmount,
+          wait.initFunder.initialFeeratePerKw, realFunding.tx.hash, fundingOutputIndex, wait.remoteFirstPerCommitmentPoint)
 
         require(fundingOutputIndex >= 0)
         require(realFunding.fee == wait.initFunder.fakeFunding.fee)
-        require(realFunding.toTxOut.amount == wait.initFunder.fakeFunding.toTxOut.amount)
-        require(realFunding.toPublicKeyScript == localCommitTx.input.txOut.publicKeyScript)
+        require(realFunding.pubKeyScriptToAmount.keys.head == localCommitTx.input.txOut.publicKeyScript)
+        require(realFunding.pubKeyScriptToAmount.values.head == wait.initFunder.fakeFunding.pubKeyScriptToAmount.values.head)
+        require(realFunding.pubKeyScriptToAmount.size == 1 && wait.initFunder.fakeFunding.pubKeyScriptToAmount.size == 1)
 
         val localSigOfRemoteTx = Transactions.sign(remoteCommitTx, wait.initFunder.localParams.keys.fundingKey.privateKey, TxOwner.Remote, wait.initFunder.channelFeatures.commitmentFormat)
         val fundingCreated = FundingCreated(wait.initFunder.temporaryChannelId, realFunding.tx.hash, fundingOutputIndex, localSigOfRemoteTx)

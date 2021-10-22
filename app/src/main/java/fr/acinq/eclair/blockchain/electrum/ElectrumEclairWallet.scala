@@ -3,7 +3,6 @@ package fr.acinq.eclair.blockchain.electrum
 import akka.actor.ActorRef
 import akka.pattern.ask
 import fr.acinq.bitcoin.{ByteVector32, OP_PUSHDATA, OP_RETURN, OutPoint, Satoshi, Script, Transaction, TxIn, TxOut}
-import fr.acinq.eclair.addressToPublicKeyScript
 import fr.acinq.eclair.blockchain.EclairWallet
 import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.BroadcastTransaction
@@ -22,15 +21,15 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
 
   type GenerateTxResponseTry = Try[GenerateTxResponse]
 
-  override def getReceiveAddresses: Future[GetCurrentReceiveAddressesResponse] = (walletRef ? GetCurrentReceiveAddresses).mapTo[GetCurrentReceiveAddressesResponse]
+  private def emptyUtxo(pubKeyScript: ByteVector): TxOut = TxOut(Satoshi(0L), pubKeyScript)
 
   private def isInChain(error: fr.acinq.eclair.blockchain.bitcoind.rpc.Error): Boolean = error.message.toLowerCase.contains("already in block chain")
 
-  private def emptyUtxo(pubKeyScript: ByteVector): TxOut = TxOut(Satoshi(0L), pubKeyScript)
+  override def getReceiveAddresses: Future[GetCurrentReceiveAddressesResponse] = (walletRef ? GetCurrentReceiveAddresses).mapTo[GetCurrentReceiveAddressesResponse]
 
   override def makeFundingTx(pubkeyScript: ByteVector, amount: Satoshi, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
-    val completeTx = CompleteTransaction(pubkeyScript, amount, feeRatePerKw, sequenceFlag = TxIn.SEQUENCE_FINAL)
-    val sendAll = SendAll(pubkeyScript, feeRatePerKw, sequenceFlag = TxIn.SEQUENCE_FINAL)
+    val completeTx = CompleteTransaction(pubKeyScriptToAmount = Map(pubkeyScript -> amount), feeRatePerKw, sequenceFlag = TxIn.SEQUENCE_FINAL)
+    val sendAll = SendAll(pubkeyScript, pubKeyScriptToAmount = Map.empty, feeRatePerKw, sequenceFlag = TxIn.SEQUENCE_FINAL, fromOutpoints = Set.empty)
 
     (walletRef ? GetBalance).mapTo[GetBalanceResponse] flatMap { chainBalance =>
       val command = if (chainBalance.totalBalance == amount) sendAll else completeTx
@@ -59,25 +58,28 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
     }
   }
 
-  override def sendPreimageBroadcast(preimages: Set[ByteVector32], address: String, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
+  override def sendPreimageBroadcast(preimages: Set[ByteVector32], pubKeyScript: ByteVector, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
     val preimageTxOuts = preimages.toList.map(_.bytes).map(OP_PUSHDATA.apply).grouped(2).map(OP_RETURN :: _).map(Script.write).map(emptyUtxo).toList
-    val sendAll = SendAll(Script write addressToPublicKeyScript(address, ewt.chainHash), feeRatePerKw, OPT_IN_FULL_RBF, fromOutpoints = Set.empty, preimageTxOuts)
+    val sendAll = SendAll(pubKeyScript, pubKeyScriptToAmount = Map.empty, feeRatePerKw, OPT_IN_FULL_RBF, fromOutpoints = Set.empty, preimageTxOuts)
     (walletRef ? sendAll).mapTo[GenerateTxResponseTry].map(_.get)
   }
 
-  override def makeTx(amount: Satoshi, address: String, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
-    val sendAll = SendAll(Script write addressToPublicKeyScript(address, ewt.chainHash), feeRatePerKw, OPT_IN_FULL_RBF)
-    val completeTx = CompleteTransaction(sendAll.publicKeyScript, amount, feeRatePerKw, OPT_IN_FULL_RBF)
+  override def makeBatchTx(scriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
+    val completeTx = CompleteTransaction(scriptToAmount, feeRatePerKw, OPT_IN_FULL_RBF)
+    (walletRef ? completeTx).mapTo[GenerateTxResponseTry].map(_.get)
+  }
 
-    (walletRef ? GetBalance).mapTo[GetBalanceResponse] flatMap { chainBalance =>
-      val command = if (chainBalance.totalBalance == amount) sendAll else completeTx
-      (walletRef ? command).mapTo[GenerateTxResponseTry].map(_.get)
+  override def makeTx(pubKeyScript: ByteVector, amount: Satoshi, prevScriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
+    val sendAll = SendAll(pubKeyScript, prevScriptToAmount, feeRatePerKw, OPT_IN_FULL_RBF, fromOutpoints = Set.empty)
+
+    (walletRef ? GetBalance).mapTo[GetBalanceResponse].map(_.totalBalance == prevScriptToAmount.values.sum + amount) flatMap {
+      case false => makeBatchTx(scriptToAmount = prevScriptToAmount.updated(pubKeyScript, amount), feeRatePerKw)
+      case true => (walletRef ? sendAll).mapTo[GenerateTxResponseTry].map(_.get)
     }
   }
 
-  override def makeCPFP(fromOutpoints: Set[OutPoint], address: String, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
-    val publicKeyScript = Script write addressToPublicKeyScript(address, ewt.chainHash)
-    val cpfp = SendAll(publicKeyScript, feeRatePerKw, OPT_IN_FULL_RBF, fromOutpoints)
+  override def makeCPFP(fromOutpoints: Set[OutPoint], pubKeyScript: ByteVector, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
+    val cpfp = SendAll(pubKeyScript, pubKeyScriptToAmount = Map.empty, feeRatePerKw, OPT_IN_FULL_RBF, fromOutpoints)
     (walletRef ? cpfp).mapTo[GenerateTxResponseTry].map(_.get)
   }
 
@@ -86,13 +88,12 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
     (walletRef ? rbfBump).mapTo[RBFResponse]
   }
 
-  override def makeRBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, address: String): Future[RBFResponse] = {
-    val publicKeyScript = Script write addressToPublicKeyScript(address, ewt.chainHash)
-    val rbfReroute = RBFReroute(tx, feeRatePerKw, publicKeyScript, OPT_IN_FULL_RBF)
+  override def makeRBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, pubKeyScript: ByteVector): Future[RBFResponse] = {
+    val rbfReroute = RBFReroute(tx, feeRatePerKw, pubKeyScript, OPT_IN_FULL_RBF)
     (walletRef ? rbfReroute).mapTo[RBFResponse]
   }
 
   override def doubleSpent(tx: Transaction): Future[DepthAndDoubleSpent] = for {
-    response <- (walletRef ? IsDoubleSpent(tx)).mapTo[IsDoubleSpentResponse]
+    response <- (walletRef ? tx).mapTo[IsDoubleSpentResponse]
   } yield (response.depth, response.isDoubleSpent)
 }

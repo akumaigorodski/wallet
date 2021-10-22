@@ -80,6 +80,7 @@ dependencies {
 
     // Immortan
     implementation 'org.scala-lang:scala-library:2.11.12'
+    implementation 'org.scala-lang.modules:scala-parser-combinators_2.11:2.1.0'
     implementation 'com.softwaremill.quicklens:quicklens_2.11:1.7.5'
     implementation 'com.typesafe.akka:akka-actor_2.11:2.3.14'
     implementation 'org.scodec:scodec-core_2.11:1.11.3'

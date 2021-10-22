@@ -1,27 +1,28 @@
 package com.btcontract.wallet
 
-import org.bitcoinj.wallet._
-import com.btcontract.wallet.R.string._
-import scala.collection.JavaConverters._
-import fr.acinq.eclair.blockchain.EclairWallet._
-
 import java.io.{File, FileInputStream}
-import scala.util.{Failure, Success, Try}
-import immortan.crypto.Tools.{none, runAnd}
-import fr.acinq.eclair.blockchain.electrum.db.SigningWallet
-import info.guardianproject.netcipher.proxy.OrbotHelper
-import org.ndeftools.util.activity.NfcReaderActivity
-import com.btcontract.wallet.BaseActivity.StringOps
-import androidx.core.app.NotificationManagerCompat
-import androidx.appcompat.app.AlertDialog
-import com.ornach.nobobutton.NoboButton
-import immortan.utils.InputParser
-import android.widget.TextView
+
 import android.content.Intent
-import org.ndeftools.Message
 import android.os.Bundle
 import android.view.View
+import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
+import androidx.core.app.NotificationManagerCompat
+import com.btcontract.wallet.BaseActivity.StringOps
+import com.btcontract.wallet.R.string._
+import com.ornach.nobobutton.NoboButton
+import fr.acinq.eclair.blockchain.EclairWallet._
+import fr.acinq.eclair.blockchain.electrum.db.SigningWallet
 import immortan.LNParams
+import immortan.crypto.Tools.{none, runAnd}
+import immortan.utils.InputParser
+import info.guardianproject.netcipher.proxy.OrbotHelper
+import org.bitcoinj.wallet._
+import org.ndeftools.Message
+import org.ndeftools.util.activity.NfcReaderActivity
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 
 object ClassNames {

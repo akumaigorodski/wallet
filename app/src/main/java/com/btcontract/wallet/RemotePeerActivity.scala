@@ -172,7 +172,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
 
     def attempt(alert: AlertDialog): Unit = {
       runFutureProcessOnUI(NCFunderOpenHandler.makeFunding(LNParams.chainWallets, manager.resultMsat.truncateToSatoshi, feeView.rate), onFail) { response =>
-        sendView.switchToConfirm(alert, response.toTxOut.amount.toMilliSatoshi, response.fee.toMilliSatoshi)
+        sendView.switchToConfirm(alert, response.pubKeyScriptToAmount.values.head.toMilliSatoshi, response.fee.toMilliSatoshi)
         sendView.confirmEdit setOnClickListener onButtonTap(sendView switchToEdit alert)
         sendView.cancelSend setOnClickListener onButtonTap(alert.dismiss)
         sendView.confirmSend setOnClickListener onButtonTap(proceed)
