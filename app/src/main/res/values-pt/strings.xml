@@ -91,6 +91,7 @@
 
     <string name="dialog_send_btc_from"><![CDATA[da&#160;carteira&#160;<b>%1$s</b>]]></string>
     <string name="dialog_send_btc"><![CDATA[Enviar <b>Bitcoin</b><br><b>para endereço</b> %1$s%2$s]]></string>
+    <string name="dialog_send_btc_many"><![CDATA[Send <b>Bitcoin</b> transaction<br><b>to many addresses</b>]]></string>
     <string name="dialog_send_btc_confirm_amount">Send amount</string>
     <string name="dialog_send_btc_confirm_fiat">Fiat value</string>
     <string name="dialog_send_btc_confirm_fee">Chain fee</string>

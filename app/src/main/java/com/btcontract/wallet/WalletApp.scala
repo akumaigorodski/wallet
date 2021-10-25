@@ -1,45 +1,45 @@
 package com.btcontract.wallet
 
-import immortan._
-import immortan.utils._
-import immortan.sqlite._
-import fr.acinq.eclair._
-import immortan.crypto.Tools._
-import scala.concurrent.duration._
-import com.btcontract.wallet.sqlite._
-import com.btcontract.wallet.R.string._
-import scala.collection.JavaConverters._
-import fr.acinq.eclair.blockchain.electrum._
-
-import android.widget.{EditText, Toast}
 import java.net.{InetSocketAddress, Socket}
-import fr.acinq.bitcoin.{Block, ByteVector32, Satoshi, SatoshiLong}
-import fr.acinq.eclair.blockchain.{CurrentBlockCount, EclairWallet}
-import android.app.{Application, NotificationChannel, NotificationManager}
-import android.content.{ClipData, ClipboardManager, Context, Intent, SharedPreferences}
-import fr.acinq.eclair.channel.{CMD_CHECK_FEERATE, NormalCommits, PersistentChannelData}
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{TransactionReceived, WalletReady}
-import com.btcontract.wallet.utils.{AwaitService, DelayedNotification, LocalBackup, WebsocketBus}
-import fr.acinq.eclair.blockchain.electrum.db.{CompleteChainWalletInfo, SigningWallet, WatchingWallet}
-import fr.acinq.eclair.blockchain.electrum.ElectrumClientPool.ElectrumServerAddress
-import fr.acinq.eclair.blockchain.electrum.ElectrumClient.SSL
-import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
-import com.btcontract.wallet.BaseActivity.StringOps
-import android.view.inputmethod.InputMethodManager
-import fr.acinq.eclair.router.Router.RouterConf
-import androidx.appcompat.app.AppCompatDelegate
-import immortan.utils.Denomination.formatFiat
-import fr.acinq.eclair.wire.NodeAddress
-import android.text.format.DateFormat
-import androidx.multidex.MultiDex
-import java.text.SimpleDateFormat
-import scala.collection.mutable
-import rx.lang.scala.Observable
-import java.text.DecimalFormat
-import scodec.bits.BitVector
-import akka.actor.Props
-import android.os.Build
+import java.text.{DecimalFormat, SimpleDateFormat}
 import java.util.Date
+
+import akka.actor.Props
+import android.app.{Application, NotificationChannel, NotificationManager}
+import android.content._
+import android.os.Build
+import android.text.format.DateFormat
+import android.view.inputmethod.InputMethodManager
+import android.widget.{EditText, Toast}
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.multidex.MultiDex
+import com.btcontract.wallet.BaseActivity.StringOps
+import com.btcontract.wallet.R.string._
+import com.btcontract.wallet.sqlite._
+import com.btcontract.wallet.utils.{AwaitService, DelayedNotification, LocalBackup}
+import fr.acinq.bitcoin.{Block, ByteVector32, Satoshi, SatoshiLong}
+import fr.acinq.eclair._
+import fr.acinq.eclair.blockchain.electrum.ElectrumClient.SSL
+import fr.acinq.eclair.blockchain.electrum.ElectrumClientPool.ElectrumServerAddress
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{TransactionReceived, WalletReady}
+import fr.acinq.eclair.blockchain.electrum._
+import fr.acinq.eclair.blockchain.electrum.db.{CompleteChainWalletInfo, SigningWallet, WatchingWallet}
+import fr.acinq.eclair.blockchain.{CurrentBlockCount, EclairWallet}
+import fr.acinq.eclair.channel.{CMD_CHECK_FEERATE, NormalCommits, PersistentChannelData}
+import fr.acinq.eclair.router.Router.RouterConf
+import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
+import fr.acinq.eclair.wire.NodeAddress
+import immortan._
+import immortan.crypto.Tools._
+import immortan.sqlite._
+import immortan.utils.Denomination.formatFiat
+import immortan.utils._
+import rx.lang.scala.Observable
+import scodec.bits.BitVector
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.concurrent.duration._
 import scala.util.Try
 
 
@@ -99,7 +99,6 @@ object WalletApp {
 
   def freePossiblyUsedResouces: Unit = {
     // Drop whatever network connections we still have
-    WebsocketBus.workers.keys.foreach(WebsocketBus.forget)
     CommsTower.workers.values.map(_.pair).foreach(CommsTower.forget)
     // Clear listeners, destroy actors, finalize state machines
     try LNParams.chainWallets.becomeShutDown catch none
@@ -330,7 +329,7 @@ class WalletApp extends Application { me =>
   lazy val scrWidth: Double = metrics.widthPixels.toDouble / metrics.densityDpi
   lazy val maxDialog: Double = metrics.densityDpi * 2.3
 
-  import android.provider.Settings.System.{getFloat, FONT_SCALE}
+  import android.provider.Settings.System.{FONT_SCALE, getFloat}
   // Special handling for cases when user has chosen large font and screen size is constrained
   lazy val tooFewSpace: Boolean = getFloat(getContentResolver, FONT_SCALE, 1) > 1 && scrWidth < 2.4
 

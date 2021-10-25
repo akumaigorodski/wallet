@@ -91,6 +91,7 @@
 
     <string name="dialog_send_btc_from"><![CDATA[из&#160;<b>%1$s</b>&#160;кошелька]]></string>
     <string name="dialog_send_btc"><![CDATA[Отправить <b>Биткойн</b>-транзакцию<br><b>на адрес</b> %1$s%2$s]]></string>
+    <string name="dialog_send_btc_many"><![CDATA[Отправить <b>Биткойн</b>-транзакцию<br><b>на много адресов</b>]]></string>
     <string name="dialog_send_btc_confirm_fiat">Сумма в фиате</string>
     <string name="dialog_send_btc_confirm_amount">К отправке</string>
     <string name="dialog_send_btc_confirm_fee">Комиссия</string>

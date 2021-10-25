@@ -19,6 +19,17 @@
         android:layout_width="wrap_content"
         layout="@layout/frag_qr"/>
 
+    <ImageButton
+        android:padding="6dp"
+        android:visibility="gone"
+        android:id="@+id/invoiceHolding"
+        android:layout_marginBottom="50dp"
+        android:layout_centerInParent="true"
+        android:layout_alignParentBottom="true"
+        android:src="@drawable/baseline_feedback_24"
+        android:background="?android:selectableItemBackground"
+        style="@style/BoundedView"/>
+
     <ImageView
         android:id="@+id/invoiceSuccess"
         android:layout_marginBottom="50dp"

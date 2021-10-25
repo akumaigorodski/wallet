@@ -15,7 +15,7 @@ import immortan.utils.ImplicitJsonFormats._
 import immortan.utils.{LNUrl, PayRequestMeta, PaymentRequestExt}
 import org.bouncycastle.util.encoders.Base64
 import scodec.bits.ByteVector
-import spray.json.{JsArray, _}
+import spray.json._
 
 import scala.util.Try
 

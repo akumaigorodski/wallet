@@ -10,7 +10,7 @@ import fr.acinq.eclair.channel._
 import fr.acinq.eclair.transactions.{RemoteFulfill, RemoteReject}
 import fr.acinq.eclair.wire.LightningMessage
 import immortan.Channel.channelContext
-import immortan.crypto.Tools.{none, _}
+import immortan.crypto.Tools._
 import immortan.crypto.{CanBeRepliedTo, StateMachine}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}

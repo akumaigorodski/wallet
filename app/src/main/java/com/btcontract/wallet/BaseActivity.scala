@@ -150,7 +150,9 @@ trait BaseActivity extends AppCompatActivity { me =>
   // Snackbar
 
   def snack(parent: View, msg: CharSequence, res: Int): Try[Snackbar] = Try {
-    Snackbar.make(parent, msg, BaseTransientBottomBar.LENGTH_INDEFINITE)
+    val snack: Snackbar = Snackbar.make(parent, msg, BaseTransientBottomBar.LENGTH_INDEFINITE)
+    snack.getView.findViewById(com.google.android.material.R.id.snackbar_text).asInstanceOf[TextView].setMaxLines(5)
+    snack
   }
 
   def snack(parent: View, msg: CharSequence, res: Int, fun: Snackbar => Unit): Try[Snackbar] =
@@ -415,6 +417,13 @@ trait BaseActivity extends AppCompatActivity { me =>
     inputAmount setLocale Denomination.locale
   }
 
+  class TwoSidedItem(val parent: View, firstText: CharSequence, secondText: CharSequence) {
+    val secondItem: TextView = parent.findViewById(R.id.secondItem).asInstanceOf[TextView]
+    val firstItem: TextView = parent.findViewById(R.id.firstItem).asInstanceOf[TextView]
+    secondItem.setText(secondText)
+    firstItem.setText(firstText)
+  }
+
   class FeeView[T](from: FeeratePerByte, val content: View) {
     val feeRate: TextView = content.findViewById(R.id.feeRate).asInstanceOf[TextView]
     val txIssues: TextView = content.findViewById(R.id.txIssues).asInstanceOf[TextView]
@@ -463,11 +472,12 @@ trait BaseActivity extends AppCompatActivity { me =>
     val body: ScrollView = getLayoutInflater.inflate(R.layout.frag_input_on_chain, null).asInstanceOf[ScrollView]
 
     val editChain: LinearLayout = body.findViewById(R.id.editChain).asInstanceOf[LinearLayout]
+    val inputChain: LinearLayout = editChain.findViewById(R.id.inputChain).asInstanceOf[LinearLayout]
     val confirmChain: LinearLayout = body.findViewById(R.id.confirmChain).asInstanceOf[LinearLayout]
 
-    val confirmFiat = new TwoSidedItem(body.findViewById(R.id.confirmFiat), dialog_send_btc_confirm_fiat)
-    val confirmAmount = new TwoSidedItem(body.findViewById(R.id.confirmAmount), dialog_send_btc_confirm_amount)
-    val confirmFee = new TwoSidedItem(body.findViewById(R.id.confirmFee), dialog_send_btc_confirm_fee)
+    val confirmFiat = new TwoSidedItem(body.findViewById(R.id.confirmFiat), getString(dialog_send_btc_confirm_fiat), new String)
+    val confirmAmount = new TwoSidedItem(body.findViewById(R.id.confirmAmount), getString(dialog_send_btc_confirm_amount), new String)
+    val confirmFee = new TwoSidedItem(body.findViewById(R.id.confirmFee), getString(dialog_send_btc_confirm_fee), new String)
 
     val confirmSend: NoboButton = body.findViewById(R.id.confirmSend).asInstanceOf[NoboButton]
     val confirmEdit: NoboButton = body.findViewById(R.id.confirmEdit).asInstanceOf[NoboButton]
@@ -489,11 +499,6 @@ trait BaseActivity extends AppCompatActivity { me =>
       getNegativeButton(alert).setVisibility(View.VISIBLE)
       getNeutralButton(alert).setVisibility(View.VISIBLE)
     }
-  }
-
-  class TwoSidedItem(parent: View, firstItemRes: Int) {
-    parent.findViewById(R.id.firstItem).asInstanceOf[TextView].setText(firstItemRes)
-    val secondItem: TextView = parent.findViewById(R.id.secondItem).asInstanceOf[TextView]
   }
 
   // Guards and send/receive helpers
@@ -592,6 +597,7 @@ trait BaseActivity extends AppCompatActivity { me =>
       val prExt = LNParams.cm.makePrExt(toReceive = manager.resultMsat, description, allowedChans = cs, Crypto.sha256(preimage), randomBytes32)
       LNParams.cm.payBag.replaceIncomingPayment(prExt, preimage, description, BaseActivity.totalBalance, LNParams.fiatRates.info.rates)
       WalletApp.app.showStickyNotification(incoming_notify_title, incoming_notify_body, manager.resultMsat)
+      // This must be called AFTER PaymentInfo is present in db
       processInvoice(prExt)
       alert.dismiss
     }

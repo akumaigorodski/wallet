@@ -10,7 +10,7 @@ import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, Protocol, Satoshi}
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
 import fr.acinq.eclair.router.Announcements
-import fr.acinq.eclair.{CltvExpiry, CltvExpiryDelta, Features, MilliSatoshi, ShortChannelId, UInt64, _}
+import fr.acinq.eclair._
 import immortan.crypto.Tools
 import immortan.{ChannelMaster, LNParams}
 import scodec.DecodeResult

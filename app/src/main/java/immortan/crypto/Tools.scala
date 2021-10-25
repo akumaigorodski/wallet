@@ -14,7 +14,7 @@ import fr.acinq.eclair.router.Graph.GraphStructure.GraphEdge
 import fr.acinq.eclair.router.RouteCalculation
 import fr.acinq.eclair.router.Router.ChannelDesc
 import fr.acinq.eclair.transactions.CommitmentSpec
-import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi, ShortChannelId, _}
+import fr.acinq.eclair._
 import immortan.crypto.Noise.KeyPair
 import immortan.crypto.Tools.runAnd
 import immortan.utils.{FeeRatesInfo, ThrottledWork}

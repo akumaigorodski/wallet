@@ -1,67 +1,78 @@
 package com.btcontract.wallet
 
-import com.btcontract.wallet.Colors._
-import immortan.{ChannelMaster, LNParams}
-import immortan.utils.{InputParser, PaymentRequestExt}
-import android.widget.{ImageView, RelativeLayout, TextView}
-import com.btcontract.wallet.BaseActivity.StringOps
-import androidx.transition.TransitionManager
-import fr.acinq.bitcoin.ByteVector32
-import immortan.fsm.IncomingRevealed
-import immortan.crypto.Tools.none
 import android.os.Bundle
-import android.view.View
+import android.widget.{ImageButton, ImageView, RelativeLayout, TextView}
+import androidx.transition.TransitionManager
+import com.btcontract.wallet.BaseActivity.StringOps
+import com.btcontract.wallet.Colors._
+import immortan.crypto.Tools._
+import immortan.fsm.IncomingRevealed
+import immortan.utils.{InputParser, PaymentRequestExt}
+import immortan.{ChannelMaster, LNParams, PaymentInfo}
+import rx.lang.scala.Subscription
 
 
 class QRInvoiceActivity extends QRActivity with ExternalDataChecker { me =>
   lazy private[this] val activityQRInvoiceMain = findViewById(R.id.activityQRInvoiceMain).asInstanceOf[RelativeLayout]
   lazy private[this] val invoiceQrCaption = findViewById(R.id.invoiceQrCaption).asInstanceOf[TextView]
+  lazy private[this] val invoiceHolding = findViewById(R.id.invoiceHolding).asInstanceOf[ImageButton]
   lazy private[this] val invoiceSuccess = findViewById(R.id.invoiceSuccess).asInstanceOf[ImageView]
   lazy private[this] val qrViewHolder = new QRViewHolder(me findViewById R.id.invoiceQr)
 
-  private var hashOfInterest: ByteVector32 = ByteVector32.Zeroes
-
-  private val subscription = ChannelMaster.inFinalized
-    .collect { case revealed: IncomingRevealed => revealed }
-    .filter(_.fullTag.paymentHash == hashOfInterest)
-    .subscribe(_ => markFulfilled)
+  private var fulfillSubscription: Subscription = _
+  private var holdSubscription: Subscription = _
 
   def markFulfilled: Unit = UITask {
     TransitionManager.beginDelayedTransition(activityQRInvoiceMain)
-    invoiceSuccess.setVisibility(View.VISIBLE)
+    setVisMany(true -> invoiceSuccess, false -> invoiceHolding)
+  }.run
+
+  def markHolding: Unit = UITask {
+    TransitionManager.beginDelayedTransition(activityQRInvoiceMain)
+    setVisMany(false -> invoiceSuccess, true -> invoiceHolding)
   }.run
 
   def INIT(state: Bundle): Unit =
     if (WalletApp.isAlive && LNParams.isOperational) {
       setContentView(R.layout.activity_qr_lightning_invoice)
-      invoiceQrCaption.setText(getString(R.string.dialog_receive_ln).html)
+      invoiceQrCaption setText getString(R.string.dialog_receive_ln).html
+      invoiceHolding setOnClickListener onButtonTap(finish)
       checkExternalData(noneRunnable)
     } else {
       WalletApp.freePossiblyUsedResouces
       me exitTo ClassNames.mainActivityClass
     }
 
-  def showInvoice(prExt: PaymentRequestExt): Unit =
-    runInFutureProcessOnUI(QRActivity.get(prExt.raw.toUpperCase, qrSize), onFail) { qrBitmap =>
-      val amountHuman = WalletApp.denom.parsedWithSign(prExt.pr.amount.get, cardIn, totalZero)
-      def share: Unit = runInFutureProcessOnUI(shareData(qrBitmap, prExt.raw), onFail)(none)
+  def showInvoice(info: PaymentInfo): Unit =
+    runInFutureProcessOnUI(QRActivity.get(info.prExt.raw.toUpperCase, qrSize), onFail) { qrBitmap =>
+      def share: Unit = runInFutureProcessOnUI(shareData(qrBitmap, info.prExt.raw), onFail)(none)
       setVis(isVisible = false, qrViewHolder.qrEdit)
 
-      qrViewHolder.qrCopy setOnClickListener onButtonTap(WalletApp.app copy prExt.raw)
-      qrViewHolder.qrCode setOnClickListener onButtonTap(WalletApp.app copy prExt.raw)
+      qrViewHolder.qrLabel setText WalletApp.denom.parsedWithSign(info.received, cardIn, totalZero).html
+      qrViewHolder.qrCopy setOnClickListener onButtonTap(WalletApp.app copy info.prExt.raw)
+      qrViewHolder.qrCode setOnClickListener onButtonTap(WalletApp.app copy info.prExt.raw)
       qrViewHolder.qrShare setOnClickListener onButtonTap(share)
-      qrViewHolder.qrLabel setText amountHuman.html
       qrViewHolder.qrCode setImageBitmap qrBitmap
-      hashOfInterest = prExt.pr.paymentHash
+
+      fulfillSubscription = ChannelMaster.inFinalized
+        .collect { case revealed: IncomingRevealed => revealed }
+        .filter(revealed => info.fullTag == revealed.fullTag)
+        .subscribe(_ => markFulfilled)
+
+      holdSubscription = ChannelMaster.stateUpdateStream.filter { _ =>
+        val incomingFsmOpt = LNParams.cm.inProcessors.get(info.fullTag)
+        incomingFsmOpt.exists(info.isActivelyHolding)
+      }.subscribe(_ => markHolding)
     }
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
-    case paymentRequestExt: PaymentRequestExt => showInvoice(paymentRequestExt)
+    case prEx: PaymentRequestExt => LNParams.cm.getPaymentInfoMemo(prEx.pr.paymentHash).map(showInvoice).getOrElse(finish)
     case _ => finish
   }
 
   override def onDestroy: Unit = {
-    subscription.unsubscribe
+    fulfillSubscription.unsubscribe
+    holdSubscription.unsubscribe
     super.onDestroy
   }
 }

@@ -117,13 +117,18 @@ case class BitcoinUri(uri: Try[Uri], address: String) {
 }
 
 object MultiAddressParser extends RegexParsers {
-  case class AddressToAmount(values: Map[String, Satoshi] = Map.empty)
 
-  val address: Parser[String] = "(bc1|[123mn]|tb1)[a-zA-HJ-NP-Z0-9]{25,39}".r
+  type AddressToAmountItem = (String, Satoshi)
 
-  val longSat: Parser[Satoshi] = "[0-9,]+".r ^^ (_.replace(",", "").toLong.sat)
+  case class AddressToAmount(values: Seq[AddressToAmountItem] = Nil)
 
-  val decimalSat: Parser[Satoshi] = "[0-9]*\\.[0-9]+".r ^^ (raw => (BigDecimal(raw) * BtcAmount.Coin).toLong.sat)
+  private[this] val longSat = "[0-9,]+".r ^^ (_.replace(",", "").toLong.sat)
 
-  val parse: Parser[AddressToAmount] = repsep(address ~ (decimalSat | longSat) ^^ { case addr ~ sat => addr -> sat }, ";").map(_.toMap).map(AddressToAmount)
+  private[this] val decimalSat = "[0-9]*\\.[0-9]+".r ^^ (raw => (BigDecimal(raw) * BtcAmount.Coin).toLong.sat)
+
+  private[this] val item = "\\w+".r ~ (decimalSat | longSat) ^^ { case address ~ sat => address -> sat }
+
+  private[this] val separator = opt(";")
+
+  val parse: Parser[AddressToAmount] = repsep(item, separator).map(AddressToAmount)
 }

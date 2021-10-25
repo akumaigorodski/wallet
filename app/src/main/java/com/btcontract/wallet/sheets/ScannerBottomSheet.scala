@@ -1,27 +1,25 @@
 package com.btcontract.wallet.sheets
 
-import android.widget.{ImageButton, TextView}
-import android.view.{LayoutInflater, View, ViewGroup}
-import com.btcontract.wallet.{BaseActivity, R, WalletApp}
-import com.journeyapps.barcodescanner.{BarcodeCallback, BarcodeResult, BarcodeView}
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import androidx.appcompat.view.ContextThemeWrapper
-import immortan.utils.InputParser
-import immortan.crypto.Tools
 import android.os.Bundle
+import android.view.{LayoutInflater, View, ViewGroup}
+import android.widget.{ImageButton, TextView}
+import androidx.appcompat.view.ContextThemeWrapper
+import com.btcontract.wallet.{BaseActivity, R, WalletApp}
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.journeyapps.barcodescanner.{BarcodeCallback, BarcodeResult, BarcodeView}
+import immortan.crypto.Tools
+import immortan.utils.InputParser
 
 
-class ScannerBottomSheet(host: BaseActivity, instructionOpt: Option[String], onScan: Runnable) extends BottomSheetDialogFragment with BarcodeCallback { me =>
-  var lastAttempt: Long = System.currentTimeMillis
+abstract class ScannerBottomSheet(host: BaseActivity, instructionOpt: Option[String] = None) extends BottomSheetDialogFragment with BarcodeCallback {
   var barcodeReader: BarcodeView = _
   var flashlight: ImageButton = _
 
   def pauseBarcodeReader: Unit = Tools.runAnd(barcodeReader setTorch false)(barcodeReader.pause)
-  def resumeBarcodeReader: Unit = Tools.runAnd(barcodeReader decodeContinuous me)(barcodeReader.resume)
-  def failedScan(err: Throwable): Unit = Tools.runAnd(WalletApp.app quickToast err.getMessage)(resumeBarcodeReader)
-  def failedPaste(err: Throwable): Unit = WalletApp.app quickToast err.getMessage
-  def successfulScan: Unit = Tools.runAnd(dismiss)(onScan.run)
+  def resumeBarcodeReader: Unit = Tools.runAnd(barcodeReader decodeContinuous this)(barcodeReader.resume)
 
+  type Points = java.util.List[com.google.zxing.ResultPoint]
+  override def possibleResultPoints(points: Points): Unit = Tools.none
   override def onDestroy: Unit = Tools.runAnd(barcodeReader.stopDecoding)(super.onStop)
   override def onResume: Unit = Tools.runAnd(resumeBarcodeReader)(super.onResume)
   override def onStop: Unit = Tools.runAnd(pauseBarcodeReader)(super.onStop)
@@ -44,15 +42,6 @@ class ScannerBottomSheet(host: BaseActivity, instructionOpt: Option[String], onS
     }
   }
 
-  type Points = java.util.List[com.google.zxing.ResultPoint]
-  override def possibleResultPoints(points: Points): Unit = Tools.none
-
-  override def barcodeResult(res: BarcodeResult): Unit = for {
-    text <- Option(res.getText) if System.currentTimeMillis - lastAttempt > 2000
-    _ = host.runInFutureProcessOnUI(InputParser recordValue text, failedScan)(_ => successfulScan)
-    _ = lastAttempt = System.currentTimeMillis
-  } pauseBarcodeReader
-
   def toggleTorch: Unit = {
     val currentTag = flashlight.getTag.asInstanceOf[Int]
 
@@ -66,4 +55,16 @@ class ScannerBottomSheet(host: BaseActivity, instructionOpt: Option[String], onS
       barcodeReader.setTorch(false)
     }
   }
+}
+
+class OnceBottomSheet(host: BaseActivity, instructionOpt: Option[String], onScan: Runnable) extends ScannerBottomSheet(host, instructionOpt) {
+  private[this] var lastAttempt: Long = System.currentTimeMillis
+
+  def successfulScan(result: Any): Unit = Tools.runAnd(dismiss)(onScan.run)
+  def failedScan(error: Throwable): Unit = WalletApp.app.quickToast(error.getMessage)
+
+  override def barcodeResult(scanningResult: BarcodeResult): Unit = for {
+    text <- Option(scanningResult.getText) if System.currentTimeMillis - lastAttempt > 2000
+    _ = host.runInFutureProcessOnUI(InputParser.recordValue(text), failedScan)(successfulScan)
+  } lastAttempt = System.currentTimeMillis
 }

@@ -83,11 +83,11 @@ dependencies {
     implementation 'org.scala-lang.modules:scala-parser-combinators_2.11:2.1.0'
     implementation 'com.softwaremill.quicklens:quicklens_2.11:1.7.5'
     implementation 'com.typesafe.akka:akka-actor_2.11:2.3.14'
-    implementation 'org.scodec:scodec-core_2.11:1.11.3'
+    implementation 'org.scodec:scodec-core_2.11:1.11.4'
     implementation 'io.reactivex:rxscala_2.11:0.27.0'
 
     implementation 'org.json4s:json4s-native_2.11:3.6.7'
-    implementation 'io.spray:spray-json_2.11:1.3.5'
+    implementation 'io.spray:spray-json_2.11:1.3.6'
 
     implementation 'org.bouncycastle:bcprov-jdk15to18:1.68'
     implementation 'com.google.guava:guava:29.0-android'

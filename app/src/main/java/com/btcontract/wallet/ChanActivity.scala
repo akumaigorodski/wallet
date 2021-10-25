@@ -285,8 +285,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     }
 
     def onData: Runnable = UITask(resolveClosingAddress)
-    val instruction: Option[String] = getString(scan_btc_address).asSome
-    val sheet = new sheets.ScannerBottomSheet(me, instruction, onData)
+    val sheet = new sheets.OnceBottomSheet(me, getString(scan_btc_address).asSome, onData)
     callScanner(sheet)
   }
 
@@ -337,8 +336,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     }
 
     def onData: Runnable = UITask(resolveNodeQr)
-    val instruction: Option[String] = getString(chan_open_scan).asSome
-    val sheet = new sheets.ScannerBottomSheet(me, instruction, onData)
+    val sheet = new sheets.OnceBottomSheet(me, getString(chan_open_scan).asSome, onData)
     callScanner(sheet)
   }
 

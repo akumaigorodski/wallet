@@ -5,7 +5,7 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 
 import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.bitcoin.Crypto.PublicKey
-import fr.acinq.eclair.{Features, _}
+import fr.acinq.eclair._
 import fr.acinq.eclair.wire.LightningMessageCodecs.lightningMessageCodecWithFallback
 import fr.acinq.eclair.wire._
 import immortan.crypto.Noise.KeyPair
