@@ -1,0 +1,2 @@
+* Batching (Sending to many addresses).
+* Bugfixes and minor improvements.
