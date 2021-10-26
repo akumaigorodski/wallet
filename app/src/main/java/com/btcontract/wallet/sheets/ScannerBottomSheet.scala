@@ -7,6 +7,7 @@ import androidx.appcompat.view.ContextThemeWrapper
 import com.btcontract.wallet.{BaseActivity, R, WalletApp}
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.journeyapps.barcodescanner.{BarcodeCallback, BarcodeResult, BarcodeView}
+import com.sparrowwallet.hummingbird.{ResultType, UR, URDecoder}
 import immortan.crypto.Tools
 import immortan.utils.InputParser
 
@@ -14,6 +15,7 @@ import immortan.utils.InputParser
 abstract class ScannerBottomSheet(host: BaseActivity, instructionOpt: Option[String] = None) extends BottomSheetDialogFragment with BarcodeCallback {
   var barcodeReader: BarcodeView = _
   var flashlight: ImageButton = _
+  var instruction: TextView = _
 
   def pauseBarcodeReader: Unit = Tools.runAnd(barcodeReader setTorch false)(barcodeReader.pause)
   def resumeBarcodeReader: Unit = Tools.runAnd(barcodeReader decodeContinuous this)(barcodeReader.resume)
@@ -31,14 +33,14 @@ abstract class ScannerBottomSheet(host: BaseActivity, instructionOpt: Option[Str
   }
 
   override def onViewCreated(view: View, savedState: Bundle): Unit = {
+    instruction = view.findViewById(R.id.instruction).asInstanceOf[TextView]
     barcodeReader = view.findViewById(R.id.reader).asInstanceOf[BarcodeView]
     flashlight = view.findViewById(R.id.flashlight).asInstanceOf[ImageButton]
     flashlight setOnClickListener host.onButtonTap(toggleTorch)
 
-    instructionOpt foreach { instruction =>
-      val instructionView = view.findViewById(R.id.instruction).asInstanceOf[TextView]
-      host.setVis(isVisible = true, instructionView)
-      instructionView.setText(instruction)
+    instructionOpt foreach { instructionText =>
+      host.setVis(isVisible = true, instruction)
+      instruction.setText(instructionText)
     }
   }
 
@@ -67,4 +69,23 @@ class OnceBottomSheet(host: BaseActivity, instructionOpt: Option[String], onScan
     text <- Option(scanningResult.getText) if System.currentTimeMillis - lastAttempt > 2000
     _ = host.runInFutureProcessOnUI(InputParser.recordValue(text), failedScan)(successfulScan)
   } lastAttempt = System.currentTimeMillis
+}
+
+class URBottomSheet(host: BaseActivity, onUr: UR => Unit) extends ScannerBottomSheet(host, None) {
+  private[this] val decoder = new URDecoder
+
+  override def barcodeResult(scanningResult: BarcodeResult): Unit = {
+    decoder.receivePart(scanningResult.getText)
+
+    Option(decoder.getResult) foreach { res =>
+      if (res.resultType == ResultType.SUCCESS) onUr(res.ur)
+      else host.onFail(res.error)
+      dismiss
+    }
+
+    val progress = decoder.getEstimatedPercentComplete
+    host.setVis(isVisible = progress > 0D, instruction)
+    val percent = (progress * 100).floor.toLong
+    instruction.setText(s"$percent%")
+  }
 }

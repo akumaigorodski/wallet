@@ -56,7 +56,7 @@ public class URDecoder {
         }
 
         String body = parsedURString.components[0];
-        return decode(parsedURString.type, body);
+        return decode(parsedURString.resultType, body);
     }
 
     public static UR decode(String type, String body) throws UR.InvalidTypeException {
@@ -73,14 +73,14 @@ public class URDecoder {
 
             // Don't continue if this part doesn't validate
             ParsedURString parsedURString = parse(string);
-            if(!validatePart(parsedURString.type)) {
+            if(!validatePart(parsedURString.resultType)) {
                 return false;
             }
 
             // If this is a single-part UR then we're done
             if(parsedURString.components.length == 1) {
                 String body = parsedURString.components[0];
-                result = new Result(ResultType.SUCCESS, decode(parsedURString.type, body), null);
+                result = new Result(ResultType.SUCCESS, decode(parsedURString.resultType, body), null);
                 return true;
             }
 
@@ -113,7 +113,7 @@ public class URDecoder {
                 if(fountainDecoder.getResult() == null) {
                     //Not done yet
                 } else if(fountainDecoder.getResult().type == ResultType.SUCCESS) {
-                    result = new Result(ResultType.SUCCESS, new UR(parsedURString.type, fountainDecoder.getResult().data), null);
+                    result = new Result(ResultType.SUCCESS, new UR(parsedURString.resultType, fountainDecoder.getResult().data), null);
                 } else if(fountainDecoder.getResult().type == ResultType.FAILURE) {
                     result = new Result(ResultType.FAILURE, null, fountainDecoder.getResult().error);
                 }
@@ -168,22 +168,22 @@ public class URDecoder {
     }
 
     private static class ParsedURString {
-        public final String type;
+        public final String resultType;
         public final String[] components;
 
-        public ParsedURString(String type, String[] components) {
-            this.type = type;
+        public ParsedURString(String resultType, String[] components) {
+            this.resultType = resultType;
             this.components = components;
         }
     }
 
     public static class Result {
-        public final ResultType type;
+        public final ResultType resultType;
         public final UR ur;
         public final String error;
 
-        public Result(ResultType type, UR ur, String error) {
-            this.type = type;
+        public Result(ResultType resultType, UR ur, String error) {
+            this.resultType = resultType;
             this.ur = ur;
             this.error = error;
         }
