@@ -1,5 +1,7 @@
 package com.sparrowwallet.hummingbird.fountain;
 
+import android.annotation.TargetApi;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,9 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-/**
- * Ported from https://github.com/BlockchainCommons/URKit
- */
+@TargetApi(24)
 public class FountainUtils {
     static List<Integer> chooseFragments(long seqNum, int seqLen, long checkSum) {
         // The first `seqLen` parts are the "pure" fragments, not mixed with any

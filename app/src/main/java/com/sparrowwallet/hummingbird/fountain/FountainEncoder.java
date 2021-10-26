@@ -1,5 +1,7 @@
 package com.sparrowwallet.hummingbird.fountain;
 
+import android.annotation.TargetApi;
+
 import co.nstant.in.cbor.CborBuilder;
 import co.nstant.in.cbor.CborDecoder;
 import co.nstant.in.cbor.CborEncoder;
@@ -18,9 +20,7 @@ import java.util.zip.CRC32;
 
 import static com.sparrowwallet.hummingbird.fountain.FountainUtils.chooseFragments;
 
-/**
- * Ported from https://github.com/BlockchainCommons/URKit
- */
+@TargetApi(24)
 public class FountainEncoder {
     private final int messageLen;
     private final long checksum;

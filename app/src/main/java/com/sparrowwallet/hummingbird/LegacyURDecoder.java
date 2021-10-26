@@ -1,9 +1,11 @@
 package com.sparrowwallet.hummingbird;
 
+import android.annotation.TargetApi;
+
 import java.security.MessageDigest;
 import java.util.*;
 
-@Deprecated
+@TargetApi(24)
 public class LegacyURDecoder {
     private final Set<String> fragments = new LinkedHashSet<>();
 

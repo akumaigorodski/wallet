@@ -1,5 +1,7 @@
 package com.sparrowwallet.hummingbird.fountain;
 
+import android.annotation.TargetApi;
+
 import com.sparrowwallet.hummingbird.ResultType;
 
 import java.io.ByteArrayOutputStream;
@@ -10,9 +12,7 @@ import java.util.zip.CRC32;
 
 import static com.sparrowwallet.hummingbird.fountain.FountainUtils.chooseFragments;
 
-/**
- * Ported from https://github.com/BlockchainCommons/URKit
- */
+@TargetApi(24)
 public class FountainDecoder {
     private final Set<Integer> recievedPartIndexes = new TreeSet<>();
     private Set<Integer> lastPartIndexes;

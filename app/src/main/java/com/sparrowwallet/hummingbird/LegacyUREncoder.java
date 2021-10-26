@@ -1,11 +1,13 @@
 package com.sparrowwallet.hummingbird;
 
+import android.annotation.TargetApi;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
-@Deprecated
+@TargetApi(24)
 public class LegacyUREncoder {
     public static final int DEFAULT_FRAGMENT_LENGTH = 200;
 

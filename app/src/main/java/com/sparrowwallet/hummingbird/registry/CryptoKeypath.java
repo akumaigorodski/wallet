@@ -1,5 +1,7 @@
 package com.sparrowwallet.hummingbird.registry;
 
+import android.annotation.TargetApi;
+
 import co.nstant.in.cbor.model.*;
 
 import java.math.BigInteger;
@@ -8,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
 
+@TargetApi(24)
 public class CryptoKeypath extends RegistryItem {
     public static final int COMPONENTS_KEY = 1;
     public static final int SOURCE_FINGERPRINT_KEY = 2;

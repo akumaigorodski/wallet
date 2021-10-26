@@ -1,20 +1,14 @@
 package com.sparrowwallet.hummingbird.fountain;
 
+import android.annotation.TargetApi;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-/**
- * Random-number sampling using the Walker-Vose alias method,
- * as described by Keith Schwarz (2011)
- * http://www.keithschwarz.com/darts-dice-coins
- *
- * Based on C implementation:
- * https://jugit.fz-juelich.de/mlz/ransampl
- *
- * Ported from https://github.com/BlockchainCommons/URKit
- */
+
+@TargetApi(24)
 public class RandomSampler {
     /* The probability and alias tables. */
     private final double[] probs;

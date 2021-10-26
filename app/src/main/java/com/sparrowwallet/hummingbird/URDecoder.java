@@ -1,5 +1,7 @@
 package com.sparrowwallet.hummingbird;
 
+import android.annotation.TargetApi;
+
 import co.nstant.in.cbor.CborException;
 import com.sparrowwallet.hummingbird.fountain.FountainDecoder;
 import com.sparrowwallet.hummingbird.fountain.FountainEncoder;
@@ -9,9 +11,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Ported from https://github.com/BlockchainCommons/URKit
- */
+@TargetApi(24)
 public class URDecoder {
     private static final Pattern SEQUENCE_COMPONENT_PATTERN = Pattern.compile("(\\d+)-(\\d+)");
 

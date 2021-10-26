@@ -1,5 +1,7 @@
 package com.sparrowwallet.hummingbird;
 
+import android.annotation.TargetApi;
+
 import co.nstant.in.cbor.CborBuilder;
 import co.nstant.in.cbor.CborDecoder;
 import co.nstant.in.cbor.CborEncoder;
@@ -13,9 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Ported from https://github.com/BlockchainCommons/URKit
- */
+@TargetApi(24)
 public class UR {
     public static final String UR_PREFIX = "ur";
 
