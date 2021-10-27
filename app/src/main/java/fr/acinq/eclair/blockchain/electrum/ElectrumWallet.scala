@@ -207,12 +207,12 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
     case Event(GetBalance, data) => stay replying data.balance
 
     case Event(CompleteTransaction(pubKeyScriptToAmount, feeRatePerKw, sequenceFlag), data) =>
-      val txOuts = for (Tuple2(pubKeyScript, amount) <- pubKeyScriptToAmount) yield TxOut(amount, pubKeyScript)
+      val txOuts = for (Tuple2(script, amount) <- pubKeyScriptToAmount) yield TxOut(amount, script)
       val tx = Transaction(version = 2, txIn = Nil, txOut = txOuts.toList, lockTime = 0)
 
       val resultTry = data.completeTransaction(tx, feeRatePerKw, params.dustLimit, sequenceFlag, data.utxos)
-      val resultTryComplete = for (res <- resultTry) yield res.copy(pubKeyScriptToAmount = pubKeyScriptToAmount)
-      stay replying resultTryComplete
+      val resultTry1 = for (res <- resultTry) yield res.copy(pubKeyScriptToAmount = pubKeyScriptToAmount)
+      stay replying resultTry1
 
     case Event(SendAll(publicKeyScript, pubKeyScriptToAmount, feeRatePerKw, sequenceFlag, fromOutpoints, extraOutUtxos), data) =>
       val inUtxos = if (fromOutpoints.nonEmpty) data.utxos.filter(utxo => fromOutpoints contains utxo.item.outPoint) else data.utxos
@@ -423,7 +423,6 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
 
       case delta if delta.feeOpt.isDefined =>
         val leftUtxos = utxos.filterNot(_.item.txHash == bump.tx.txid)
-        // Result here will explicitly have empty CompleteTransactionResponse.pubKeyScriptToAmount
         completeTransaction(tx1, bump.feeRatePerKw, dustLimit, bump.sequenceFlag, leftUtxos, delta.spentUtxos) match {
           case Success(response) => RBFResponse(response.asRight)
           case _ => RBFResponse(GENERATION_FAIL.asLeft)

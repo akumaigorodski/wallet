@@ -73,17 +73,18 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
 
 
       case (wait: DATA_WAIT_FOR_FUNDING_INTERNAL, realFunding: GenerateTxResponse, WAIT_FOR_ACCEPT) =>
-        val fundingOutputIndex = realFunding.tx.txOut.indexWhere(_.publicKeyScript == wait.initFunder.fakeFunding.pubKeyScriptToAmount.keys.head)
+        val fundingOutputIndex = realFunding.tx.txOut.indexWhere(_.publicKeyScript == realFunding.pubKeyScriptToAmount.keys.head)
 
-        val (localSpec, localCommitTx, remoteSpec, remoteCommitTx) = Helpers.Funding.makeFirstCommitTxs(wait.initFunder.channelFeatures,
-          wait.initFunder.localParams, wait.remoteParams, realFunding.pubKeyScriptToAmount.values.head, wait.initFunder.pushAmount,
-          wait.initFunder.initialFeeratePerKw, realFunding.tx.hash, fundingOutputIndex, wait.remoteFirstPerCommitmentPoint)
+        val (localSpec, localCommitTx, remoteSpec, remoteCommitTx) =
+          Helpers.Funding.makeFirstCommitTxs(wait.initFunder.channelFeatures, wait.initFunder.localParams, wait.remoteParams,
+            realFunding.pubKeyScriptToAmount.values.head, wait.initFunder.pushAmount, wait.initFunder.initialFeeratePerKw,
+            realFunding.tx.hash, fundingOutputIndex, wait.remoteFirstPerCommitmentPoint)
 
         require(fundingOutputIndex >= 0)
         require(realFunding.fee == wait.initFunder.fakeFunding.fee)
+        require(realFunding.pubKeyScriptToAmount.values.head == localCommitTx.input.txOut.amount)
         require(realFunding.pubKeyScriptToAmount.keys.head == localCommitTx.input.txOut.publicKeyScript)
-        require(realFunding.pubKeyScriptToAmount.values.head == wait.initFunder.fakeFunding.pubKeyScriptToAmount.values.head)
-        require(realFunding.pubKeyScriptToAmount.size == 1 && wait.initFunder.fakeFunding.pubKeyScriptToAmount.size == 1)
+        require(realFunding.pubKeyScriptToAmount.size == 1)
 
         val localSigOfRemoteTx = Transactions.sign(remoteCommitTx, wait.initFunder.localParams.keys.fundingKey.privateKey, TxOwner.Remote, wait.initFunder.channelFeatures.commitmentFormat)
         val fundingCreated = FundingCreated(wait.initFunder.temporaryChannelId, realFunding.tx.hash, fundingOutputIndex, localSigOfRemoteTx)
