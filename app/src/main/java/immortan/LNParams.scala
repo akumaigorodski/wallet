@@ -214,8 +214,8 @@ class SyncParams {
   val syncNodes: Set[RemoteNodeInfo] = Set(motherbase, generalBytes, conductor, silentBob, lntxbot1, acinq)
   val phcSyncNodes: Set[RemoteNodeInfo] = Set(motherbase)
 
-  val maxPHCCapacity: MilliSatoshi = MilliSatoshi(1000000000000000L) // PHC can not be larger than 10 000 BTC
-  val minPHCCapacity: MilliSatoshi = MilliSatoshi(5000000000L) // PHC can not be smaller than 0.05 BTC
+  val maxPHCCapacity: MilliSatoshi = MilliSatoshi(100000000000000L) // PHC can not be larger than 1000 BTC
+  val minPHCCapacity: MilliSatoshi = MilliSatoshi(1000000000L) // PHC can not be smaller than 0.01 BTC
   val minNormalChansForPHC = 5 // How many normal chans a node must have to be eligible for PHCs
   val maxPHCPerNode = 2 // How many PHCs a node can have in total
 
