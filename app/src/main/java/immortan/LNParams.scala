@@ -161,7 +161,7 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
 
   def makeSigningWalletParts(core: SigningWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
     val ewt = ElectrumWalletType.makeSigningType(tag = core.walletType, LNParams.secret.keys.master, LNParams.chainHash)
-    val walletRef = LNParams.loggedActor(Props(new ElectrumWallet(pool, sync, params, ewt)), core.walletType + "-signing-wallet")
+    val walletRef = LNParams.loggedActor(Props(classOf[ElectrumWallet], pool, sync, params, ewt), core.walletType + "-signing-wallet")
     val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label)
     ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
   }
@@ -176,7 +176,7 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
 
   def makeWatchingWalletParts(core: WatchingWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
     val ewt = ElectrumWalletType.makeWatchingType(tag = core.walletType, xPub = core.xPub, chainHash = LNParams.chainHash)
-    val walletRef = LNParams.loggedActor(Props(new ElectrumWallet(pool, sync, params, ewt)), core.walletType + "-watching-wallet")
+    val walletRef = LNParams.loggedActor(Props(classOf[ElectrumWallet], pool, sync, params, ewt), core.walletType + "-watching-wallet")
     val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label)
     ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
   }

@@ -75,8 +75,6 @@ abstract class ElectrumWalletType {
 
   val accountMaster: ExtendedPublicKey = derivePublicKey(xPub, 0L :: Nil)
 
-  def xPubPrefix: Int
-
   def textAddress(key: ExtendedPublicKey): String
 
   def computePublicKeyScript(key: PublicKey): Seq[ScriptElt]
@@ -94,12 +92,6 @@ abstract class ElectrumWalletType {
 }
 
 class ElectrumWallet44(val secrets: Option[AccountAndXPrivKey], val xPub: ExtendedPublicKey, val chainHash: ByteVector32) extends ElectrumWalletType {
-
-  override def xPubPrefix: Int = chainHash match {
-    case Block.LivenetGenesisBlock.hash => xpub
-    case Block.TestnetGenesisBlock.hash => tpub
-    case _ => throw new RuntimeException
-  }
 
   override def textAddress(key: ExtendedPublicKey): String = computeP2PkhAddress(key.publicKey, chainHash)
 
@@ -141,12 +133,6 @@ class ElectrumWallet32(override val secrets: Option[AccountAndXPrivKey], overrid
 
 class ElectrumWallet49(val secrets: Option[AccountAndXPrivKey], val xPub: ExtendedPublicKey, val chainHash: ByteVector32) extends ElectrumWalletType {
 
-  override def xPubPrefix: Int = chainHash match {
-    case Block.LivenetGenesisBlock.hash => ypub
-    case Block.TestnetGenesisBlock.hash => upub
-    case _ => throw new RuntimeException
-  }
-
   override def textAddress(key: ExtendedPublicKey): String = computeBIP49Address(key.publicKey, chainHash)
 
   override def computePublicKeyScript(key: PublicKey): Seq[ScriptElt] = Script.pay2sh(Script pay2wpkh key)
@@ -183,12 +169,6 @@ class ElectrumWallet49(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
 }
 
 class ElectrumWallet84(val secrets: Option[AccountAndXPrivKey], val xPub: ExtendedPublicKey, val chainHash: ByteVector32) extends ElectrumWalletType {
-
-  override def xPubPrefix: Int = chainHash match {
-    case Block.LivenetGenesisBlock.hash => zpub
-    case Block.TestnetGenesisBlock.hash => vpub
-    case _ => throw new RuntimeException
-  }
 
   override def textAddress(key: ExtendedPublicKey): String = computeBIP84Address(key.publicKey, chainHash)
 
