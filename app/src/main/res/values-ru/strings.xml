@@ -12,7 +12,7 @@
     <string name="bitcoin_wallet">Биткойн</string>
     <string name="lightning_wallet">Молния</string>
     <string name="total_balance">Общий баланс</string>
-    <string name="hosted_channel">HOSTED-КАНАЛ</string>
+    <string name="hosted_channel">CUSTODIAL КАНАЛ</string>
     <string name="delayed_refunding">Отложенное возмещение средств</string>
     <string name="typing_hints">Биткойн адрес, инвойс, емейл&#8230;</string>
     <string name="copied_to_clipboard">Скопировано в буфер</string>

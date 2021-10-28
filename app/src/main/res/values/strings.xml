@@ -12,7 +12,7 @@
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Total balance</string>
-    <string name="hosted_channel">HOSTED CHANNEL</string>
+    <string name="hosted_channel">CUSTODIAL CHANNEL</string>
     <string name="delayed_refunding">Delayed channel refunding</string>
     <string name="typing_hints">Bitcoin address, invoice, email&#8230;</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
