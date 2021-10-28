@@ -18,7 +18,7 @@ android {
         minSdkVersion 21
 
         versionName '2.2.17'
-        versionCode 81
+        versionCode 82
 
         ndk {
             abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'

@@ -205,14 +205,15 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
 }
 
 class SyncParams {
+  val satm: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"02cd1b7bc418fac2dc99f0ba350d60fa6c45fde5ab6017ee14df6425df485fb1dd"), NodeAddress.unresolved(80, host = 134, 209, 228, 207), "SATM")
   val motherbase: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"021e7ea08e31a576b4fd242761d701452a8ac98113eac3074c153db85d2dcc7d27"), NodeAddress.unresolved(9001, host = 5, 9, 83, 143), "Motherbase")
   val generalBytes: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"03e35a27fa8bfad8675aeb9e96530e7b00e6fa03b571d235f6b4e68cfb4ef9097c"), NodeAddress.unresolved(9736, host = 67, 207, 92, 63), "General Bytes")
   val conductor: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"03c436af41160a355fc1ed230a64f6a64bcbd2ae50f12171d1318f9782602be601"), NodeAddress.unresolved(9735, host = 18, 191, 89, 219), "Conductor")
   val lntxbot1: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"03ee58475055820fbfa52e356a8920f62f8316129c39369dbdde3e5d0198a9e315"), NodeAddress.unresolved(9734, host = 198, 251, 89, 159), "LNTXBOT-E")
   val silentBob: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"02e9046555a9665145b0dbd7f135744598418df7d61d3660659641886ef1274844"), NodeAddress.unresolved(9735, host = 31, 16, 52, 37), "SilentBob")
   val acinq: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f"), NodeAddress.unresolved(9735, host = 34, 239, 230, 56), "ACINQ")
-  val syncNodes: Set[RemoteNodeInfo] = Set(motherbase, generalBytes, conductor, silentBob, lntxbot1, acinq)
-  val phcSyncNodes: Set[RemoteNodeInfo] = Set(motherbase)
+  val syncNodes: Set[RemoteNodeInfo] = Set(satm, motherbase, generalBytes, conductor, silentBob, lntxbot1, acinq)
+  val phcSyncNodes: Set[RemoteNodeInfo] = Set(satm, motherbase)
 
   val maxPHCCapacity: MilliSatoshi = MilliSatoshi(100000000000000L) // PHC can not be larger than 1000 BTC
   val minPHCCapacity: MilliSatoshi = MilliSatoshi(1000000000L) // PHC can not be smaller than 0.01 BTC
