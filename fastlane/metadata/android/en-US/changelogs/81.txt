@@ -1,0 +1,3 @@
+* Fix a bug which was sometimes preventing channel openings.
+* Rename HOSTED CHANNEL label to CUSTODIAL CHANNEL to make its nature more explicit.
+* Other minor UI updates.
