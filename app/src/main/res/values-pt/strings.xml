@@ -393,14 +393,14 @@
         <item><![CDATA[Share <b>Lightning Channel</b> details]]></item>
         <item><![CDATA[Close channel to wallet]]></item>
         <item><![CDATA[Close channel to address]]></item>
-        <item><![CDATA[Receive to this channel]]></item>
+        <item><![CDATA[Receive to channel]]></item>
     </array>
 
     <array name="ln_hosted_chan_actions">
         <item><![CDATA[Share <b>Hosted Channel</b> details]]></item>
         <item><![CDATA[Export channel state]]></item>
         <item><![CDATA[Drain channel balance]]></item>
-        <item><![CDATA[Receive to this channel]]></item>
+        <item><![CDATA[Receive to channel]]></item>
     </array>
     
     <string name="ln_hc_override">Substituir proposta</string>

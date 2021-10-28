@@ -71,7 +71,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       val delay = Rx.initDelay(repeat, getLastTotalResyncStamp, RESYNC_PERIOD, preStartMsec = 100)
       subscription = delay.subscribe(_ => me process CMDResync).asSome
 
-    case (fr: FindRoute, OPERATIONAL) if data.channels.isEmpty =>
+    case (fr: FindRoute, OPERATIONAL) if data.graph.vertices.isEmpty =>
       // Graph is loaded but empty: likely a first launch or synchronizing
       fr.sender process NotifyRejected
 
