@@ -120,7 +120,9 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   // Helpers
 
-  def browse(url: String): Unit = me startActivity new Intent(Intent.ACTION_VIEW, Uri parse url)
+  def browse(maybeUri: String): Unit = try {
+    me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri)
+  } catch { case exception: Throwable => me onFail exception }
 
   def bringRateDialog(view: View): Unit = {
     val marketUri = Uri.parse(s"market://details?id=$getPackageName")
@@ -133,7 +135,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     val shareAction = (new Intent).setAction(Intent.ACTION_SEND)
     shareAction.setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
   }
-  
+
   def viewRecoveryCode: Unit = {
     val content = new TitleView(me getString settings_view_revocery_phrase_ext)
     getWindow.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)

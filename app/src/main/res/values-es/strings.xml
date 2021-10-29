@@ -12,8 +12,8 @@
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Saldo total</string>
-    <string name="hosted_channel">CANAL CUSTODIAL</string>
     <string name="delayed_refunding">Reembolso de canal demorado</string>
+    <string name="hosted_channel">HOSTED CHANNEL\nCustodial solution</string>
     <string name="typing_hints">Dirección de Bitcoin, factura, correo&#8230;</string>
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
     <string name="add_address">Más direcciones no usadas</string>

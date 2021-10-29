@@ -94,8 +94,9 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     val channelCard: CardView = swipeWrap.findViewById(R.id.channelCard).asInstanceOf[CardView]
 
     val hcBranding: RelativeLayout = swipeWrap.findViewById(R.id.hcBranding).asInstanceOf[RelativeLayout]
-    val hcSupportInfo: TextView = swipeWrap.findViewById(R.id.hcSupportInfo).asInstanceOf[TextView]
+    val hcImageContainer: CardView = swipeWrap.findViewById(R.id.hcImageContainer).asInstanceOf[CardView]
     val hcImage: ImageView = swipeWrap.findViewById(R.id.hcImage).asInstanceOf[ImageView]
+    val hcInfo: ImageView = swipeWrap.findViewById(R.id.hcInfo).asInstanceOf[ImageButton]
 
     val baseBar: ProgressBar = swipeWrap.findViewById(R.id.baseBar).asInstanceOf[ProgressBar]
     val overBar: ProgressBar = swipeWrap.findViewById(R.id.overBar).asInstanceOf[ProgressBar]
@@ -196,13 +197,17 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       }
 
       val brandOpt = brandingInfos.get(hc.remoteInfo.nodeId)
+      hcInfo setOnClickListener onButtonTap(me browse "https://lightning-wallet.com/posts/scaling-ln-with-hosted-channels/")
       setVis(isVisible = hc.overrideProposal.isDefined, overrideProposal)
-      setVis(isVisible = brandOpt.isDefined, hcBranding)
+      // Hide image container at start, show it later if bitmap is fine
+      setVisMany(true -> hcBranding, false -> hcImageContainer)
 
-      for (HostedChannelBranding(_, pngIcon, contactInfo) <- brandOpt) {
-        pngIcon.map(_.toArray).map(hcImageMemo.get).foreach(hcImage.setImageBitmap)
-        hcSupportInfo.setText(contactInfo)
-      }
+      for {
+        HostedChannelBranding(_, pngIcon, contactInfo) <- brandOpt
+        bitmapImage <- Try(pngIcon.get.toArray).map(hcImageMemo.get)
+        _ = hcImage setOnClickListener onButtonTap(me browse contactInfo)
+        _ = setVis(isVisible = true, hcImageContainer)
+      } hcImage.setImageBitmap(bitmapImage)
 
       removeItem setOnClickListener onButtonTap {
         if (hc.localSpec.htlcs.nonEmpty) snack(chanContainer, getString(ln_hosted_chan_remove_impossible).html, R.string.dialog_ok, _.dismiss)
