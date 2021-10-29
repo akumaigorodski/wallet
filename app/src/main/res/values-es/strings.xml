@@ -237,6 +237,9 @@
     <string name="settings_backup_where">El archivo se guarda en la carpeta Descargas</string>
     <string name="settings_backup_how">Permisos -> Almacenamiento</string>
 
+    <string name="settings_watching_add">Add watching wallet</string>
+    <string name="settings_hw_zpub_tip">Hardware wallet or zpub</string>
+
     <string name="settings_chain_wallets">Manejar billeteras chain</string>
     <string name="settings_chain_legacy">Billetera antigua</string>
     <string name="settings_chain_modern">Billetera moderna</string>

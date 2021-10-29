@@ -237,6 +237,9 @@
     <string name="settings_backup_where">File gets stored in Download folder</string>
     <string name="settings_backup_how">App permissions -> Storage</string>
 
+    <string name="settings_watching_add">Add watching wallet</string>
+    <string name="settings_hw_zpub_tip">Hardware wallet or zpub</string>
+
     <string name="settings_chain_wallets">Manage chain wallets</string>
     <string name="settings_chain_legacy">Legacy wallet</string>
     <string name="settings_chain_modern">Modern wallet</string>

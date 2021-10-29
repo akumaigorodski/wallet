@@ -237,6 +237,9 @@
     <string name="settings_backup_where">Armazenado na pasta Download</string>
     <string name="settings_backup_how">Permissões do app -> Armazenar</string>
 
+    <string name="settings_watching_add">Add watching wallet</string>
+    <string name="settings_hw_zpub_tip">Hardware wallet or zpub</string>
+
     <string name="settings_chain_wallets">Gerenciar carteiras chain</string>
     <string name="settings_chain_legacy">Carteira legacy</string>
     <string name="settings_chain_modern">Carteira moderna</string>

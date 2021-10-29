@@ -1,25 +1,26 @@
 package com.btcontract.wallet
 
-import android.widget._
-import immortan.crypto.Tools._
-import com.btcontract.wallet.Colors._
-import com.btcontract.wallet.R.string._
-import fr.acinq.eclair.blockchain.EclairWallet._
-
+import android.content.Intent
 import android.os.{Build, Bundle}
 import android.view.{View, ViewGroup}
-import immortan.{ChannelMaster, LNParams}
-import fr.acinq.eclair.wire.{Domain, NodeAddress}
-import immortan.utils.{BtcDenomination, SatDenomination}
-import com.btcontract.wallet.BuildConfig.{VERSION_CODE, VERSION_NAME}
-import com.btcontract.wallet.utils.{LocalBackup, OnListItemClickListener}
-import fr.acinq.eclair.blockchain.electrum.db.SigningWallet
-import com.btcontract.wallet.sheets.BaseChoiceBottomSheet
-import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
-import com.google.android.material.snackbar.Snackbar
+import android.widget._
 import com.btcontract.wallet.BaseActivity.StringOps
+import com.btcontract.wallet.BuildConfig.{VERSION_CODE, VERSION_NAME}
+import com.btcontract.wallet.Colors._
+import com.btcontract.wallet.R.string._
+import com.btcontract.wallet.sheets.BaseChoiceBottomSheet
+import com.btcontract.wallet.utils.{LocalBackup, OnListItemClickListener}
+import com.google.android.material.snackbar.Snackbar
+import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
 import fr.acinq.eclair.MilliSatoshi
-import android.content.Intent
+import fr.acinq.eclair.blockchain.EclairWallet._
+import fr.acinq.eclair.blockchain.electrum.db.SigningWallet
+import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
+import fr.acinq.eclair.wire.{Domain, NodeAddress}
+import immortan.crypto.Tools._
+import immortan.utils.{BtcDenomination, SatDenomination}
+import immortan.{ChannelMaster, LNParams}
+
 import scala.util.Success
 
 
@@ -129,6 +130,19 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
       list.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE)
       new BaseChoiceBottomSheet(list).show(getSupportFragmentManager, "unused-wallet-type-tag")
       for (wallet <- LNParams.chainWallets.wallets) list.setItemChecked(possibleKeys.indexOf(wallet.info.core.walletType), true)
+    }
+  }
+
+  lazy private[this] val addHardware: SettingsHolder = new SettingsHolder {
+    setVisMany(false -> settingsCheck, false -> settingsInfo)
+    view setOnClickListener onButtonTap(callUrScanner)
+    settingsTitle.setText(settings_watching_add)
+    override def updateView: Unit = none
+
+    def callUrScanner: Unit = {
+      def onKey(xPub: ExtendedPublicKey): Unit = ???
+      val sheet = new sheets.URBottomSheet(me, onKey)
+      callScanner(sheet)
     }
   }
 
@@ -294,6 +308,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
       settingsContainer.addView(settingsPageitle.view)
       settingsContainer.addView(storeLocalBackup.view)
       settingsContainer.addView(chainWallets.view)
+      settingsContainer.addView(addHardware.view)
       settingsContainer.addView(electrum.view)
       settingsContainer.addView(setFiat.view)
       settingsContainer.addView(setBtc.view)

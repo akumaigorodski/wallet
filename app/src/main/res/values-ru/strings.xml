@@ -237,6 +237,9 @@
     <string name="settings_backup_where">Файл сохраняется в папке Загрузки</string>
     <string name="settings_backup_how">Разрешения -> Хранилище</string>
 
+    <string name="settings_watching_add">Добавить аппаратный кошелек</string>
+    <string name="settings_hw_zpub_tip">Аппаратный кошелк или zpub</string>
+
     <string name="settings_chain_wallets">Управление кошельками</string>
     <string name="settings_chain_legacy">Устаревший кошелёк</string>
     <string name="settings_chain_modern">Современный кошелёк</string>

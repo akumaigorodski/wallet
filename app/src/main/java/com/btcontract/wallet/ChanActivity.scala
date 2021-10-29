@@ -197,10 +197,9 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       }
 
       val brandOpt = brandingInfos.get(hc.remoteInfo.nodeId)
-      hcInfo setOnClickListener onButtonTap(me browse "https://lightning-wallet.com/posts/scaling-ln-with-hosted-channels/")
-      setVis(isVisible = hc.overrideProposal.isDefined, overrideProposal)
       // Hide image container at start, show it later if bitmap is fine
-      setVisMany(true -> hcBranding, false -> hcImageContainer)
+      hcInfo setOnClickListener onButtonTap(me browse "https://lightning-wallet.com/posts/scaling-ln-with-hosted-channels/")
+      setVisMany(true -> hcBranding, false -> hcImageContainer, hc.overrideProposal.isDefined -> overrideProposal)
 
       for {
         HostedChannelBranding(_, pngIcon, contactInfo) <- brandOpt
