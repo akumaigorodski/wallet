@@ -57,11 +57,6 @@ abstract class PreimageCheck extends StateMachine[PreimageCheck.CheckData] { me 
       become(merge(data, msg).copy(pending = data.pending - worker.info), OPERATIONAL)
       doCheck(force = false)
 
-    case (msg: ReplyPreimages, OPERATIONAL) =>
-      // Unwrapped message from side channel
-      become(merge(data, msg), OPERATIONAL)
-      doCheck(force = false)
-
     case (PreimageCheck.CMDCancel, OPERATIONAL) =>
       // User has manually cancelled a check, disconnect all peers
       for (pair <- data.pairs.values) CommsTower forget pair

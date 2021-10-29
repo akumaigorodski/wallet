@@ -63,7 +63,7 @@
                             android:padding="6dp"
                             android:id="@+id/hcInfo"
                             android:background="?android:selectableItemBackground"
-                            android:src="@drawable/baseline_feedback_24"
+                            android:src="@drawable/outline_help_outline_24"
                             style="@style/BoundedView"/>
 
                         <androidx.cardview.widget.CardView

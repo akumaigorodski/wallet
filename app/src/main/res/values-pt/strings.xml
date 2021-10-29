@@ -12,6 +12,7 @@
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Saldo total</string>
+    <string name="hardware_wallet">Hardware wallet</string>
     <string name="delayed_refunding">Reembolso demorado</string>
     <string name="hosted_channel">HOSTED CHANNEL\nCustodial solution</string>
     <string name="typing_hints">Endereço Bitcoin, invoice, email&#8230;</string>
@@ -237,7 +238,8 @@
     <string name="settings_backup_where">Armazenado na pasta Download</string>
     <string name="settings_backup_how">Permissões do app -> Armazenar</string>
 
-    <string name="settings_watching_add">Add watching wallet</string>
+    <string name="settings_hardware_add">Add hardware wallet</string>
+    <string name="settings_hardware_label">Set hardware wallet label</string>
     <string name="settings_hw_zpub_tip">Hardware wallet or zpub</string>
 
     <string name="settings_chain_wallets">Gerenciar carteiras chain</string>
@@ -261,8 +263,6 @@
     <string name="settings_ln_fee_expensive_omitted">Rotas caras foram omitidas, remova o limite de taxa da LN nas configurações se você quiser permitir rotas mais caras</string>
     
     <string name="settings_fiat_currency">Moeda fiduciária</string>
-    <string name="settings_btc_unit">Unidade de bitcoin</string>
-
     <string name="settings_custom_electrum_host_port">host:port</string>
     <string name="settings_custom_electrum_disabled">Node Electrum personalizado</string>
     <string name="settings_custom_electrum_enabled">Usando node Electrum personalizado</string>

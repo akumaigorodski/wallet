@@ -213,7 +213,7 @@ class SyncParams {
   val silentBob: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"02e9046555a9665145b0dbd7f135744598418df7d61d3660659641886ef1274844"), NodeAddress.unresolved(9735, host = 31, 16, 52, 37), "SilentBob")
   val acinq: RemoteNodeInfo = RemoteNodeInfo(PublicKey(hex"03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f"), NodeAddress.unresolved(9735, host = 34, 239, 230, 56), "ACINQ")
   val syncNodes: Set[RemoteNodeInfo] = Set(satm, motherbase, generalBytes, conductor, silentBob, lntxbot1, acinq)
-  val phcSyncNodes: Set[RemoteNodeInfo] = Set(satm, motherbase)
+  val phcSyncNodes: Set[RemoteNodeInfo] = Set(satm, motherbase, lntxbot1)
 
   val maxPHCCapacity: MilliSatoshi = MilliSatoshi(100000000000000L) // PHC can not be larger than 1000 BTC
   val minPHCCapacity: MilliSatoshi = MilliSatoshi(1000000000L) // PHC can not be smaller than 0.01 BTC

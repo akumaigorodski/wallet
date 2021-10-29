@@ -98,7 +98,7 @@ abstract class ChannelHosted extends Channel { me =>
       if (sentExpired.nonEmpty) {
         val checker = new PreimageCheck {
           override def onComplete(hash2preimage: HashToPreimage): Unit = {
-            val settledOutgoingHtlcIds = sentExpired.values.flatten.map(_.id)
+            val settledOutgoingHtlcIds: Iterable[Long] = sentExpired.values.flatten.map(_.id)
             val (fulfilled, failed) = sentExpired.values.flatten.partition(add => hash2preimage contains add.paymentHash)
             localSuspend(hc.modify(_.postErrorOutgoingResolvedIds).using(_ ++ settledOutgoingHtlcIds), ERR_HOSTED_TIMED_OUT_OUTGOING_HTLC)
             for (add <- fulfilled) events fulfillReceived RemoteFulfill(theirPreimage = hash2preimage(add.paymentHash), ourAdd = add)

@@ -12,6 +12,7 @@
     <string name="bitcoin_wallet">Биткойн</string>
     <string name="lightning_wallet">Молния</string>
     <string name="total_balance">Общий баланс</string>
+    <string name="hardware_wallet">Аппаратный кошелек</string>
     <string name="delayed_refunding">Отложенное возмещение средств</string>
     <string name="hosted_channel">HOSTED CHANNEL\nCustodial solution</string>
     <string name="typing_hints">Биткойн адрес, инвойс, емейл&#8230;</string>
@@ -24,12 +25,12 @@
     <string name="error_log">Логи ошибок</string>
 
     <string name="setup_title">Установка кошелька</string>
-    <string name="setup_create_new">Создать новый кошелёк</string>
-    <string name="setup_restore_existing">Восстановить кошелёк</string>
+    <string name="setup_create_new">Создать новый кошелек</string>
+    <string name="setup_restore_existing">Восстановить кошелек</string>
     <string name="setup_recovery_phrase">Только фраза восстановления</string>
     <string name="setup_backup_file">Резервный файл + фраза</string>
 
-    <string name="setup_create_new_hint">Создать свежий биткойн-кошелёк с новой фразой восстановления.</string>
+    <string name="setup_create_new_hint">Создать свежий биткойн-кошелек с новой фразой восстановления.</string>
     <!-- DO NOT TRANSLATE --> <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
     <!-- DO NOT TRANSLATE --> <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
 
@@ -79,7 +80,7 @@
     <string name="dialog_receive_btc"><![CDATA[Получить на <b>Биткойн</b>-адрес]]></string>
     <string name="dialog_receive_ln"><![CDATA[Получить на инвойс-<b>Молнию</b>]]></string>
 
-    <string name="dialog_legacy_transfer_btc">Перевод на современный кошелёк</string>
+    <string name="dialog_legacy_transfer_btc">Перевод на современный кошелек</string>
     <string name="dialog_legacy_send_btc">Отправить средства на адрес</string>
     <string name="scan_btc_address">Отсканируйте биткойн-адрес</string>
 
@@ -96,26 +97,26 @@
     <string name="dialog_send_btc_confirm_amount">К отправке</string>
     <string name="dialog_send_btc_confirm_fee">Комиссия</string>
 
-    <string name="dialog_send_ln"><![CDATA[Отправить платёж-<b>Молнию</b> %1$s]]></string>
-    <string name="dialog_split_ln"><![CDATA[Разбить платёж-<b>Молнию</b> %1$s]]></string>
+    <string name="dialog_send_ln"><![CDATA[Отправить платеж-<b>Молнию</b> %1$s]]></string>
+    <string name="dialog_split_ln"><![CDATA[Разбить платеж-<b>Молнию</b> %1$s]]></string>
     <string name="dialog_split_ln_tip">Сначала пусть кто-то отсканирует,\nПотом одновременно нажмите OK.</string>
     <string name="dialog_ln_requested"><![CDATA[<b>запрошено</b>&#160;%1$s]]></string>
     <string name="dialog_ln_left"><![CDATA[<b>осталось</b>&#160;%1$s]]></string>
 
-    <string name="btc_transfer_label"><![CDATA[Старый -> новый кошелёк]]></string>
-    <string name="btc_transfer_message"><![CDATA[Перевод денег со старого на современный Биткойн-кошелёк]]></string>
+    <string name="btc_transfer_label"><![CDATA[Старый -> новый кошелек]]></string>
+    <string name="btc_transfer_message"><![CDATA[Перевод денег со старого на современный Биткойн-кошелек]]></string>
     <string name="recovery_phrase_warning">Нажмите, чтобы сохранить фразу восстановления на случай утери или замены телефона.</string>
 
     <!-- errors -->
 
     <string name="error_channel">Произошла ошибка канала</string>
-    <string name="error_channel_remote"><![CDATA[<b>Ошибка с удалённой стороны</b>:<br><br>%1$s]]></string>
+    <string name="error_channel_remote"><![CDATA[<b>Ошибка с удаленной стороны</b>:<br><br>%1$s]]></string>
     <string name="error_channel_closed"><![CDATA[<b>Канал был закрыт принудительно, подробности ошибки</b>:<br><br>%1$s]]></string>
     <string name="error_channel_suspended"><![CDATA[<b>Hosted-канал заморожен, подробности ошибки</b>:<br><br>%1$s]]></string>
 
     <string name="error_channel_unknown"><![CDATA[
-        Удалённая сторона сообщает о канале, который отсутствует на данном устройстве.<br><br>
-        Ваш кошелёк может попросить удалённую сторону закрыть канал так, чтобы остаток ваших средств в канале вернулся в ваш Биткойн-кошелёк.<br><br>
+        Удаленная сторона сообщает о канале, который отсутствует на данном устройстве.<br><br>
+        Ваш кошелек может попросить удаленную сторону закрыть канал так, чтобы остаток ваших средств в канале вернулся в ваш Биткойн-кошелек.<br><br>
         <b>Отсутствующий ID канала</b><br>%1$s<br><br>
         <b>Наш node ID</b><br>%1$s<br><br>
         <b>Их node ID</b><br>%2$s
@@ -123,25 +124,25 @@
 
     <string name="error_rejected_incoming_public">Публичный канал отвергнут: только приватные каналы разрешены</string>
     <string name="error_btc_no_wallet">Не получилось потому что нужный Биткойн-кошелек не найден: пожалуйста, добавьте кошелек через страницу настроек.</string>
-    <string name="error_btc_broadcast_fail">Невозможно отправить транзакцию. Пожалуйста, убедитесь, что кошелёк имеет доступ к сети и попробуйте снова.</string>
+    <string name="error_btc_broadcast_fail">Невозможно отправить транзакцию. Пожалуйста, убедитесь, что кошелек имеет доступ к сети и попробуйте снова.</string>
     <string name="error_could_not_decrypt"><![CDATA[<b>Расшифровка резервного файла не удалась</b>.<br><br>Убедитесь, что резервный файл и фзаза восстановления корректны и принадлежат к одному и тому же кошельку.<br><br>Подробности ошибки<br><b>%1$s</b>]]></string>
-    <string name="error_wrong_phrase"><![CDATA[<b>Введённая фраза восстановления некорректна</b>.<br><br>Подробности ошибки<br><b>%1$s</b>]]></string>
+    <string name="error_wrong_phrase"><![CDATA[<b>Введенная фраза восстановления некорректна</b>.<br><br>Подробности ошибки<br><b>%1$s</b>]]></string>
     <string name="error_nothing_useful">Не найдено ничего интересного</string>
 
     <string name="error_ln_no_chans"><![CDATA[Невозможно получить или отправить платеж-молнию потому что нет открытых каналов.]]></string>
-    <string name="error_ln_waiting"><![CDATA[Невозможно получить или отправить платеж-молнию потому что ни один ваш канал ещё не открыт.<br><br>Пожалуйста, дождитесь большего количества подтверждений для открывающей транзакции.]]></string>
+    <string name="error_ln_waiting"><![CDATA[Невозможно получить или отправить платеж-молнию потому что ни один ваш канал еще не открыт.<br><br>Пожалуйста, дождитесь большего количества подтверждений для открывающей транзакции.]]></string>
 
-    <string name="error_ln_receive_no_update"><![CDATA[Приём средств через Молнию пока недоступен из-за неготовности каналов. Пожалуйста, подождите большего количества подтверждений для открывающей транзакции.]]></string>
-    <string name="error_ln_receive_reserve"><![CDATA[Пока нет возможности принимать средства потому что для приёма вам необходимо сначала потратить как минимум <b>%1$s</b>, чтобы освободить место в канале.]]></string>
+    <string name="error_ln_receive_no_update"><![CDATA[Прием средств через Молнию пока недоступен из-за неготовности каналов. Пожалуйста, подождите большего количества подтверждений для открывающей транзакции.]]></string>
+    <string name="error_ln_receive_reserve"><![CDATA[Пока нет возможности принимать средства потому что для приема вам необходимо сначала потратить как минимум <b>%1$s</b>, чтобы освободить место в канале.]]></string>
 
-    <string name="error_ln_send_small"><![CDATA[Невозможно послать платёж-Молнию потому что сумма <b>%1$s</b> слишком мала, минимальная составляет <b>%2$s</b>.]]></string>
-    <string name="error_ln_send_reserve"><![CDATA[Невозможно послать платёж-Молнию потому что сперва вам необходимо принять как минимум <b>%1$s</b>, чтобы освободить место для отправки.]]></string>
-    <string name="error_ln_send_no_secret"><![CDATA[Невозможно послать платёж-Молнию потому что инвойс не содержит секрет.]]></string>
-    <string name="error_ln_send_network"><![CDATA[Невозможно послать платёж-Молнию потому что он принадлежит к неизвестной сети.]]></string>
+    <string name="error_ln_send_small"><![CDATA[Невозможно послать платеж-Молнию потому что сумма <b>%1$s</b> слишком мала, минимальная составляет <b>%2$s</b>.]]></string>
+    <string name="error_ln_send_reserve"><![CDATA[Невозможно послать платеж-Молнию потому что сперва вам необходимо принять как минимум <b>%1$s</b>, чтобы освободить место для отправки.]]></string>
+    <string name="error_ln_send_no_secret"><![CDATA[Невозможно послать платеж-Молнию потому что инвойс не содержит секрет.]]></string>
+    <string name="error_ln_send_network"><![CDATA[Невозможно послать платеж-Молнию потому что он принадлежит к неизвестной сети.]]></string>
     <string name="error_ln_send_split"><![CDATA[Невозможно обработать сплит-инвойс, потому что его части некорректные.]]></string>
-    <string name="error_ln_send_done_already"><![CDATA[Невозможно послать платёж-Молнию потому что он уже был отправлен.]]></string>
-    <string name="error_ln_send_expired"><![CDATA[Невозможно послать платёж-Молнию потому что срок действия инвойса уже истёк.]]></string>
-    <string name="error_ln_send_in_flight"><![CDATA[Невозможно послать платёж-Молнию потому что он уже в процессе отправки.]]></string>
+    <string name="error_ln_send_done_already"><![CDATA[Невозможно послать платеж-Молнию потому что он уже был отправлен.]]></string>
+    <string name="error_ln_send_expired"><![CDATA[Невозможно послать платеж-Молнию потому что срок действия инвойса уже истек.]]></string>
+    <string name="error_ln_send_in_flight"><![CDATA[Невозможно послать платеж-Молнию потому что он уже в процессе отправки.]]></string>
 
     <string name="error_hc_dangerous_state">Опасное состояние платежа</string>
     <string name="error_hc_option_can_stamp"><![CDATA[Вы можете разместить <b>крипто-печать</b> в блокчейне биткойна для подтверждения того что вам должны <b>%1$s</b>, это будет стоить <b>%2$s</b>.]]></string>
@@ -161,7 +162,7 @@
     <string name="incoming_notify_body">Кошелек работает для приема %1$s</string>
 
     <string name="delayed_notify_wt_title">Оповещение Сторожевой башни</string>
-    <string name="delayed_notify_wt_body">Откройте кошелёк для проверки каналов</string>
+    <string name="delayed_notify_wt_body">Откройте кошелек для проверки каналов</string>
 
     <string name="delayed_notify_pending_payment_title">Платеж-Молния все еще в полете</string>
     <string name="delayed_notify_pending_payment_body">Откройте кошелек, чтобы проверить его состояние</string>
@@ -183,10 +184,10 @@
     <string name="tx_description_cpfp">Сбор за CPFP-ускорение</string>
 
     <string name="tx_btc">Биткойн-транзакция</string>
-    <string name="tx_ln">Платёж-Молния</string>
+    <string name="tx_ln">Платеж-Молния</string>
 
     <string name="tx_state_confs">%1$s из %2$s</string>
-    <string name="tx_state_double_spent">отменён</string>
+    <string name="tx_state_double_spent">отменен</string>
 
     <string name="popup_retry">Повторить попытку</string>
     <string name="popup_run_action"><![CDATA[запустить&#160;экшн&#160;]]></string>
@@ -208,11 +209,11 @@
     <!-- orbot -->
 
     <string name="orbot_err_unclear"><![CDATA[
-        Кошелёк не может подключиться к Tor через localhost:9050. Запуск остановлен потому что кошелек настроен на работу только через Tor.<br><br>
-        Пожалуйста, убедитесь, что Orbot установлен, VPN режим в нём включён и данное приложение добавлено в список разрешённых. 
+        Кошелек не может подключиться к Tor через localhost:9050. Запуск остановлен потому что кошелек настроен на работу только через Tor.<br><br>
+        Пожалуйста, убедитесь, что Orbot установлен, VPN режим в нем включен и данное приложение добавлено в список разрешенных. 
     ]]></string>
 
-    <string name="orbot_action_open">Закрыть кошелёк и открыть Orbot</string>
+    <string name="orbot_action_open">Закрыть кошелек и открыть Orbot</string>
     <string name="orbot_action_skip">Продолжить без Tor</string>
 
     <!-- /orbot -->
@@ -220,10 +221,10 @@
     <!-- Remote peer activity -->
 
     <string name="rpa_title">Соединение с узлом</string>
-    <string name="rpa_disconnected">Удалённый узел отключился</string>
+    <string name="rpa_disconnected">Удаленный узел отключился</string>
     <string name="rpa_no_feature_support">Невозможно открыть канал с этим узлом потмоу что он не поддерживает важные особенности протокола</string>
     <string name="rpa_hc_warn"><![CDATA[<br><b>Внимание!</b><br><br>Ваши средства в hosted-канале будут храниться на стороне хоста: убедитесь, что вы доверяете этому ему!]]></string>
-    <string name="rpa_request_channel">Поделитесь своим node ID с удалённым узлом и оставьте открытой эту страницу до получения входящего канала</string>
+    <string name="rpa_request_channel">Поделитесь своим node ID с удаленным узлом и оставьте открытой эту страницу до получения входящего канала</string>
     <string name="rpa_request_hc">Запросить hosted-канал</string>
     <string name="rpa_share_node_id">Поделиться Node ID</string>
     <string name="rpa_open_nc">Открыть новый канал</string>
@@ -237,12 +238,13 @@
     <string name="settings_backup_where">Файл сохраняется в папке Загрузки</string>
     <string name="settings_backup_how">Разрешения -> Хранилище</string>
 
-    <string name="settings_watching_add">Добавить аппаратный кошелек</string>
-    <string name="settings_hw_zpub_tip">Аппаратный кошелк или zpub</string>
+    <string name="settings_hardware_add">Добавить аппаратный кошелек</string>
+    <string name="settings_hardware_label">Метка для аппаратного кошелька</string>
+    <string name="settings_hw_zpub_tip">Аппаратный кошелек или zpub</string>
 
     <string name="settings_chain_wallets">Управление кошельками</string>
-    <string name="settings_chain_legacy">Устаревший кошелёк</string>
-    <string name="settings_chain_modern">Современный кошелёк</string>
+    <string name="settings_chain_legacy">Устаревший кошелек</string>
+    <string name="settings_chain_modern">Современный кошелек</string>
 
     <string name="settings_use_auth">Авторизоваться через отпечаток</string>
     <string name="settings_auth_no_support">На этом телефоне нет поддержки аутентификации</string>
@@ -261,15 +263,13 @@
     <string name="settings_ln_fee_expensive_omitted">Дорогие маршруты были исключены: отключите лимит по LN-комиссиям в настройках чтобы попробовать более дорогие маршруты</string>
     
     <string name="settings_fiat_currency">Фиатная валюта</string>
-    <string name="settings_btc_unit">Единицы Биткойна</string>
-
     <string name="settings_custom_electrum_host_port">хост:порт</string>
     <string name="settings_custom_electrum_disabled">Установка узла Electrum</string>
     <string name="settings_custom_electrum_enabled">Используется ваш узел Electrum</string>
     <string name="settings_custom_electrum_disabled_tip">Используются случайные узлы</string>
     <string name="settings_custom_electrum_restart_notice">Кошелек нужно перезапустить</string>
 
-    <string name="settings_view_revocery_phrase_ext">Эти слова позволяют вам восстановить кошелёк со средствами на любом устройстве, пожалуйста, всё время храните их в тайне!</string>
+    <string name="settings_view_revocery_phrase_ext">Эти слова позволяют вам восстановить кошелек со средствами на любом устройстве, пожалуйста, все время храните их в тайне!</string>
     <string name="settings_view_revocery_phrase">Фраза для восстановления</string>
     <string name="settings_stats">Статистика использования</string>
 
@@ -371,7 +371,7 @@
     <string name="chan_capacity">Емкость</string>
     <string name="chan_can_send">Можно отправить</string>
     <string name="chan_can_receive">Можно принять</string>
-    <string name="chan_in_flight">В полёте</string>
+    <string name="chan_in_flight">В полете</string>
     <string name="chan_refundable">Можно вернуть</string>
 
     <string name="chan_nothing"><![CDATA[<i>ничего</i>]]></string>
@@ -386,13 +386,13 @@
 
     <string name="ln_info_close_coop">Кооперативное закрытие</string>
     <string name="ln_info_close_local">Закрыто с нашей стороны</string>
-    <string name="ln_info_close_remote">Закрыто удалённым узлом</string>
+    <string name="ln_info_close_remote">Закрыто удаленным узлом</string>
     <string name="ln_info_shutdown">Канал закрывается&#8230;</string>
     <string name="ln_info_opening">Открытие&#8230;</string>
 
     <string name="ln_hosted_chan_drain_impossible_few_funds">На данный момент средства из этого hosted-канала не могут быть перемещены потому что в нем слишком мало денег.</string>
     <string name="ln_hosted_chan_drain_impossible_no_chans">На данный момент средства из этого hosted-канала не могут быть перемещены потому что в кошельке нет каналов, способных принимать деньги.</string>
-    <string name="ln_hosted_chan_remove_impossible">Этот hosted-канал нельзя удалить прямо сейчас потому что в нём есть платежи в полете. Пожалуйста, подождите завершения платежей.</string>
+    <string name="ln_hosted_chan_remove_impossible">Этот hosted-канал нельзя удалить прямо сейчас потому что в нем есть платежи в полете. Пожалуйста, подождите завершения платежей.</string>
     <!-- DO NOT TRANSLATE --> <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string>
     <!-- DO NOT TRANSLATE --> <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
 
@@ -413,7 +413,7 @@
     <string name="ln_hc_override">Override proposal</string>
 
     <string name="ln_hc_override_warn"><![CDATA[
-        <br>Удалённый хост хочет изменить ваш баланс в hosted-канале с текущего <b>%1$s</b> на  новый <b>%2$s</b>,
+        <br>Удаленный хост хочет изменить ваш баланс в hosted-канале с текущего <b>%1$s</b> на  новый <b>%2$s</b>,
         это может произойти только с вашего согласия.<br><br><strong>Убедитесь, что баланс правильный и вы согласны с ним!</strong> 
         Согласны ли вы это подписать?
     ]]></string>
@@ -423,7 +423,7 @@
     <!-- action confirmations -->
 
     <string name="confirm_remove_item">&#9888; Хотите удалить этот элемент?</string>
-    <string name="confirm_ln_normal_chan_close_wallet">&#9888; Хотите закрыть этот канал и вернуть остаток в Биткойн-кошелёк?</string>
+    <string name="confirm_ln_normal_chan_close_wallet">&#9888; Хотите закрыть этот канал и вернуть остаток в Биткойн-кошелек?</string>
     <string name="confirm_ln_normal_chan_close_address"><![CDATA[&#9888; Хотите закрыть этот канал и вернуть остаток на этот адрес?<br><br><b>%1$s</b>]]></string>
     <string name="confirm_ln_normal_chan_force_close">&#9888; Хотите принудительно закрыть этот канал?\n\nЗаметьте, что такое закрытие приведет к задержке возврата средств и более высоким комиссиям.</string>
     <string name="confirm_ln_hosted_chan_remove">&#9888; Хотите удалить этот hosted-канал?\n\nЗаметьте, что вы всегда сможете его восстановить при подключении к удаленному hosted-узлу.</string>

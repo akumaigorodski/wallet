@@ -56,6 +56,7 @@ object WalletApp {
   final val dbFileNameMisc = "misc.db"
   final val dbFileNameGraph = "graph.db"
   final val dbFileNameEssential = "essential.db"
+  val denom: Denomination = SatDenomination
 
   val backupSaveWorker: ThrottledWork[Boolean, Any] = new ThrottledWork[Boolean, Any] {
     private def doAttemptStore: Unit = LocalBackup.encryptAndWritePlainBackup(app, dbFileNameEssential, LNParams.chainHash, LNParams.secret.seed)
@@ -65,7 +66,6 @@ object WalletApp {
 
   final val USE_AUTH = "useAuth"
   final val FIAT_CODE = "fiatCode"
-  final val BTC_DENOM = "btcDenom"
   final val ENSURE_TOR = "ensureTor"
   final val CAP_LN_FEE_TO_CHAIN = "capLNFeeToChain"
   final val LAST_TOTAL_GOSSIP_SYNC = "lastTotalGossipSync"
@@ -84,11 +84,6 @@ object WalletApp {
   final val CHECKED_BUTTONS = "checkedButtons"
   def getCheckedButtons(default: Set[String] = Set.empty): mutable.Set[String] = app.prefs.getStringSet(CHECKED_BUTTONS, default.asJava).asScala
   def putCheckedButtons(buttons: Set[String] = Set.empty): Unit = app.prefs.edit.putStringSet(CHECKED_BUTTONS, buttons.asJava).commit
-
-  def denom: Denomination = {
-    val denom = app.prefs.getString(BTC_DENOM, SatDenomination.sign)
-    if (denom == SatDenomination.sign) SatDenomination else BtcDenomination
-  }
 
   def customElectrumAddress: Try[NodeAddress] = Try {
     val rawAddress = app.prefs.getString(CUSTOM_ELECTRUM_ADDRESS, new String)
@@ -302,7 +297,7 @@ object WalletApp {
   def currentRate(rates: Fiat2Btc, code: String): Try[Double] = Try(rates apply code)
 
   def msatInFiat(rates: Fiat2Btc, code: String)(msat: MilliSatoshi): Try[Double] =
-    currentRate(rates, code).map(perBtc => msat.toLong * perBtc / BtcDenomination.factor)
+    currentRate(rates, code).map(perBtc => msat.toLong * perBtc / Denomination.btcFactor)
 
   def msatInFiatHuman(rates: Fiat2Btc, code: String, msat: MilliSatoshi, decimalFormat: DecimalFormat): String = {
     val fiatAmount = msatInFiat(rates, code)(msat).map(f = decimalFormat.format).getOrElse(default = "?")
@@ -383,7 +378,7 @@ class WalletApp extends Application { me =>
   }
 
   def when(thenDate: Date, simpleFormat: SimpleDateFormat, now: Long = System.currentTimeMillis): String = thenDate.getTime match {
-    case ago if now - ago > 12960000 || tooFewSpace || WalletApp.denom == BtcDenomination => simpleFormat.format(thenDate)
+    case tooLongAgo if now - tooLongAgo > 12960000 || tooFewSpace => simpleFormat.format(thenDate)
     case ago => android.text.format.DateUtils.getRelativeTimeSpanString(ago, now, 0).toString
   }
 
