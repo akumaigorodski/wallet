@@ -70,6 +70,7 @@
     <string name="dialog_max">Max</string>
 
     <string name="dialog_visibility_public">visible to sender</string>
+    <string name="dialog_visibility_receiver">visible to receiver</string>
     <string name="dialog_visibility_private">visible to you only</string>
     <string name="dialog_add_description">Add description&#8230;</string>
     <string name="dialog_set_record_label">Set item label&#8230;</string>

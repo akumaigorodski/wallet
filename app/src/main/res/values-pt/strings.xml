@@ -36,7 +36,7 @@
 
     <string name="setup_backup_file_hint">
         Forneça um arquivo contendo o backup Lightning, depois forneça a
-        frase de recuperação para restaurar a carteira Bitcoin junto com os canais Lightning. 
+        frase de recuperação para restaurar a carteira Bitcoin junto com os canais Lightning.
         Desative outras cópias de sua carteira antes de proceder.
     </string>
 
@@ -70,6 +70,7 @@
     <string name="dialog_max">Máx</string>
 
     <string name="dialog_visibility_public">visível ao pagador</string>
+    <string name="dialog_visibility_receiver">visível ao recebedor</string>
     <string name="dialog_visibility_private">visível apenas a você</string>
     <string name="dialog_add_description">Adicione descrição&#8230;</string>
     <string name="dialog_set_record_label">Rótulo do item&#8230;</string>
@@ -261,7 +262,7 @@
     <string name="settings_ln_fee_cap_disabled"><![CDATA[A taxa da LN é de no máximo <strong>%1$s</strong> do pagamento e <b>pode ficar mais alta</b> do que a atual taxa média da blockchain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[A taxa da LN é de no máximo <strong>%1$s</strong> do pagamento mas <b>nunca maior</b> do que a atual taxa média da blockchain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_expensive_omitted">Rotas caras foram omitidas, remova o limite de taxa da LN nas configurações se você quiser permitir rotas mais caras</string>
-    
+
     <string name="settings_fiat_currency">Moeda fiduciária</string>
     <string name="settings_custom_electrum_host_port">host:port</string>
     <string name="settings_custom_electrum_disabled">Node Electrum personalizado</string>
@@ -272,7 +273,7 @@
     <string name="settings_view_revocery_phrase_ext">Estas palavras permitem recuperar o saldo da sua carteira em qualquer dispositivo, por favor mantenha-as sempre em segredo!</string>
     <string name="settings_view_revocery_phrase">Ver a frase de recuperação BIP39</string>
     <string name="settings_stats">Estatísticas de uso</string>
-    
+
     <string name="settings_old_api_warn"><![CDATA[
         This wallet is currently running on a rather old version of Android which <i>may</i> get unpatched security issues at some point.
         <br><br>It is therefore recommended to migrate this wallet to a more recent Android version sooner rather than later.
@@ -379,7 +380,7 @@
 
     <string name="ln_info_no_update">Ainda não é possível receber</string>
     <string name="ln_info_fee_mismatch">Temporary feerate mismatch</string>
-    
+
     <string name="ln_info_close_coop">Fechamento cooperativo</string>
     <string name="ln_info_close_local">Fechado à força localmente</string>
     <string name="ln_info_close_remote">Fechado à força remotamente</string>
@@ -405,7 +406,7 @@
         <item><![CDATA[Drain channel balance]]></item>
         <item><![CDATA[Receive to channel]]></item>
     </array>
-    
+
     <string name="ln_hc_override">Substituir proposta</string>
 
     <string name="ln_hc_override_warn"><![CDATA[
@@ -413,7 +414,7 @@
         this can only happen with your signature provided.<br><br><strong>Make sure an updated balance looks correct before
         proceeding with this!</strong> Would you like to sign a proposed hosted channel override?
     ]]></string>
-    
+
     <!-- /Channel page -->
 
     <!-- action confirmations -->
@@ -426,7 +427,7 @@
     <string name="confirm_ln_hosted_chan_drain">&#9888; Você deseja drenar fundos deste canal para outros canais desta carteira?</string>
 
     <!-- /action confirmations -->
-    
+
     <!-- CPFP/RBF -->
 
     <string name="tx_cpfp_after">After boost</string>
