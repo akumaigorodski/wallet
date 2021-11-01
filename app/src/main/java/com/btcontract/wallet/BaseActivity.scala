@@ -80,9 +80,7 @@ object Colors {
 }
 
 trait ExternalDataChecker {
-
   def checkExternalData(onNothing: Runnable): Unit
-
   val noneRunnable: Runnable = new Runnable { def run: Unit = none }
 }
 
@@ -99,6 +97,12 @@ trait BaseActivity extends AppCompatActivity { me =>
   val goTo: Class[_] => Any = target => {
     this startActivity new Intent(me, target)
     InputParser.DoNotEraseRecordedValue
+  }
+
+  def goToWithValue(target: Class[_], value: Any): Any = {
+    // Utility method in case if target expects a value
+    InputParser.value = value
+    goTo(target)
   }
 
   val exitTo: Class[_] => Any = target => {
@@ -577,8 +581,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     def proceedSplit(prExt: PaymentRequestExt, origAmount: MilliSatoshi, alert: AlertDialog): Unit = {
       val cmd = LNParams.cm.makeSendCmd(prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(origAmount)
       val pd = PaymentDescription(split = cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
-      InputParser.value = SplitParams(prExt, action = None, pd, cmd, typicalChainTxFee)
-      me goTo ClassNames.qrSplitActivityClass
+      goToWithValue(value = SplitParams(prExt, action = None, pd, cmd, typicalChainTxFee), target = ClassNames.qrSplitActivityClass)
       alert.dismiss
     }
   }
@@ -747,6 +750,10 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     val chainContainer: View = view.findViewById(R.id.chainContainer).asInstanceOf[View]
     val chainWrap: View = view.findViewById(R.id.chainWrap).asInstanceOf[View]
 
+    val setItemLabel: NoboButton = view.findViewById(R.id.setItemLabel).asInstanceOf[NoboButton]
+    val coinControl: NoboButton = view.findViewById(R.id.coinControl).asInstanceOf[NoboButton]
+    val removeItem: NoboButton = view.findViewById(R.id.removeItem).asInstanceOf[NoboButton]
+
     val chainLabel: TextView = view.findViewById(R.id.chainLabel).asInstanceOf[TextView]
     val hardwareWalletNotice: TextView = view.findViewById(R.id.hardwareWalletNotice).asInstanceOf[TextView]
 
@@ -763,21 +770,27 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
 
       val isHardwareWallet = wallet.ewt.secrets.isEmpty
       val showChainBalance = wallet.info.lastBalance > 0L.sat
-      val menuTipVisible = wallet.info.core.isRemovable && !isHardwareWallet && wallet.info.lastBalance < 1L.sat
-      val receiveTipVisible = (isHardwareWallet || !wallet.info.core.isRemovable) && wallet.info.lastBalance < 1L.sat
+      val receiveTipVisible = !wallet.info.core.isRemovable && wallet.info.lastBalance < 1L.sat
+      val menuTipVisible = wallet.info.core.isRemovable && wallet.info.lastBalance < 1L.sat
 
-      host.setVisMany(isHardwareWallet -> hardwareWalletNotice, menuTipVisible -> showMenuTip, receiveTipVisible -> receiveBitcoinTip, showChainBalance -> chainBalanceWrap)
+      host.setVisMany(wallet.info.core.isRemovable -> setItemLabel, wallet.info.core.isRemovable -> removeItem)
+      host.setVisMany(isHardwareWallet -> hardwareWalletNotice, receiveTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip, showChainBalance -> chainBalanceWrap)
       def onTap: Unit = if (isHardwareWallet) onHardwareWalletTap(wallet) else if (wallet.info.core.isRemovable) onLegacyWalletTap(wallet) else onBuiltInWalletTap(wallet)
       val backgroundRes = if (wallet.info.core.isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
 
-      chainWrap.setOnClickListener(host onButtonTap onTap)
-      chainContainer.setBackgroundResource(backgroundRes)
-      chainLabel.setText(wallet.info.label)
+      setItemLabel setOnClickListener host.onButtonTap(self onLabelTap wallet)
+      removeItem setOnClickListener host.onButtonTap(self onRemoveTap wallet)
+      chainWrap setOnClickListener host.onButtonTap(onTap)
+      chainContainer setBackgroundResource backgroundRes
+      chainLabel setText wallet.info.label
     }
   }
 
   def onLegacyWalletTap(wallet: ElectrumEclairWallet): Unit
   def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit
   def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit
+
+  def onLabelTap(wallet: ElectrumEclairWallet): Unit
+  def onRemoveTap(wallet: ElectrumEclairWallet): Unit
   def holder: LinearLayout
 }

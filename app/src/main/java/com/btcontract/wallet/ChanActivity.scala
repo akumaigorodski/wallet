@@ -316,7 +316,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       new OffChainReceiver(getChanByCommits(commits).toList, initMaxReceivable = Long.MaxValue.msat, initMinReceivable = 0L.msat) {
         override def getManager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
         override def getDescription: PaymentDescription = PaymentDescription(split = None, label = None, semanticOrder = None, invoiceText = manager.resultExtraInput getOrElse new String)
-        override def processInvoice(prExt: PaymentRequestExt): Unit = runAnd(InputParser.value = prExt)(me goTo ClassNames.qrInvoiceActivityClass)
+        override def processInvoice(prExt: PaymentRequestExt): Unit = goToWithValue(ClassNames.qrInvoiceActivityClass, prExt)
         override def getTitleText: String = getString(dialog_receive_ln)
       }
     }

@@ -278,7 +278,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       case info: LNUrlPayLink => doCallPayLink(info)
       case info: PaymentInfo if info.isIncoming && PaymentStatus.PENDING == info.status && !LNParams.cm.inProcessors.get(info.fullTag).exists(info.isActivelyHolding) =>
         // Intercept normal flow and show payment request if this is an incoming payment which is still pending and not being actively held at the moment
-        runAnd(InputParser.value = info.prExt)(me goTo ClassNames.qrInvoiceActivityClass)
+        goToWithValue(ClassNames.qrInvoiceActivityClass, info.prExt)
       case info: TransactionDetails =>
         TransitionManager.beginDelayedTransition(contentWindow)
         if (extraInfo.getVisibility == View.VISIBLE) collapse(info)
@@ -886,8 +886,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     val chainCards: ChainWalletCards = new ChainWalletCards(me) {
       def onLegacyWalletTap(wallet: ElectrumEclairWallet): Unit = bringLegacyChainOptions(wallet)
-      def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit = runAnd(InputParser.value = wallet)(me goTo ClassNames.qrChainActivityClass)
-      def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit = runAnd(InputParser.value = wallet)(me goTo ClassNames.qrChainActivityClass)
+      def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
+      def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
+
+      def onLabelTap(wallet: ElectrumEclairWallet): Unit = ???
+      def onRemoveTap(wallet: ElectrumEclairWallet): Unit = ???
       val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
     }
 
@@ -1053,7 +1056,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     case info: RemoteNodeInfo =>
       // In case if IP address has changed
       LNParams.cm.all.values.foreach(_ process info)
-      me goTo ClassNames.remotePeerActivityClass
+      goTo(ClassNames.remotePeerActivityClass)
 
     case prExt: PaymentRequestExt =>
       lnSendGuard(prExt, contentWindow) {
@@ -1134,8 +1137,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val resolve: PartialFunction[LNUrlData, Unit] = {
       case pay: PayRequest => bringPayPopup(pay, lnUrl).run
       case withdraw: WithdrawRequest => UITask(me bringWithdrawPopup withdraw).run
-      case nc: NormalChannelRequest => runAnd(InputParser.value = nc)(me goTo ClassNames.remotePeerActivityClass)
-      case hc: HostedChannelRequest => runAnd(InputParser.value = hc)(me goTo ClassNames.remotePeerActivityClass)
+      case nc: NormalChannelRequest => goToWithValue(ClassNames.remotePeerActivityClass, nc)
+      case hc: HostedChannelRequest => goToWithValue(ClassNames.remotePeerActivityClass, hc)
       case _ => nothingUsefulTask.run
     }
 
@@ -1177,7 +1180,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]
 
   override def onChoiceMade(tag: AnyRef, pos: Int): Unit = (tag, pos) match {
-    case (CHOICE_RECEIVE_TAG, 0) => runAnd(InputParser.value = LNParams.chainWallets.lnWallet)(me goTo ClassNames.qrChainActivityClass)
+    case (CHOICE_RECEIVE_TAG, 0) => goToWithValue(ClassNames.qrChainActivityClass, LNParams.chainWallets.lnWallet)
     case (CHOICE_RECEIVE_TAG, 1) => bringReceivePopup
 
     case (legacy: ElectrumEclairWallet, 0) => transferFromLegacyToModern(legacy)
@@ -1353,8 +1356,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-tag")
   }
 
-  def goToStatPage(view: View): Unit = me goTo ClassNames.chanActivityClass
-  def goToSettingsPage(view: View): Unit = me goTo ClassNames.settingsActivityClass
+  def goToStatPage(view: View): Unit = goTo(ClassNames.chanActivityClass)
+  def goToSettingsPage(view: View): Unit = goTo(ClassNames.settingsActivityClass)
 
   def transferFromLegacyToModern(legacy: ElectrumEclairWallet): Unit = {
     runFutureProcessOnUI(LNParams.chainWallets.lnWallet.getReceiveAddresses, onFail) { addresses =>
@@ -1506,7 +1509,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def bringReceivePopup: Unit = lnReceiveGuard(LNParams.cm.all.values, contentWindow) {
     new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = Long.MaxValue.msat, initMinReceivable = 0L.msat) {
       override def getManager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-      override def processInvoice(prExt: PaymentRequestExt): Unit = runAnd(InputParser.value = prExt)(me goTo ClassNames.qrInvoiceActivityClass)
+      override def processInvoice(prExt: PaymentRequestExt): Unit = goToWithValue(ClassNames.qrInvoiceActivityClass, prExt)
       override def getTitleText: String = getString(dialog_receive_ln)
 
       override def getDescription: PaymentDescription = {
@@ -1553,8 +1556,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
             val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
             val cmd = LNParams.cm.makeSendCmd(pf.prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(minSendable)
             val pd = PaymentDescription(cmd.split.asSome, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, meta = data.meta.textPlain.asSome)
-            InputParser.value = SplitParams(pf.prExt, pf.successAction, pd, cmd, typicalChainTxFee)
-            me goTo ClassNames.qrSplitActivityClass
+            goToWithValue(value = SplitParams(pf.prExt, pf.successAction, pd, cmd, typicalChainTxFee), target = ClassNames.qrSplitActivityClass)
           }
         }
       }

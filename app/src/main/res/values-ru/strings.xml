@@ -9,10 +9,13 @@
     <string name="password">Пароль кошелька</string>
     <string name="manual">Читать инструкцию</string>
 
+    <string name="hardware_wallet">Аппаратный кошелек</string>
+    <string name="hardware_wallet_receive">Получить в аппаратный кошелек</string>
+    <string name="hardware_wallet_spend">Потратить из аппаратного кошелька</string>
+
     <string name="bitcoin_wallet">Биткойн</string>
     <string name="lightning_wallet">Молния</string>
     <string name="total_balance">Общий баланс</string>
-    <string name="hardware_wallet">Аппаратный кошелек</string>
     <string name="swipe_right">Сдвиньте карточку вправо</string>
     <string name="delayed_refunding">Отложенное возмещение средств</string>
     <string name="hosted_channel">HOSTED CHANNEL\nCustodial solution</string>
