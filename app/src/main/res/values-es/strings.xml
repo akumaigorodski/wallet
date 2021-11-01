@@ -70,6 +70,7 @@
     <string name="dialog_max">Max</string>
 
     <string name="dialog_visibility_public">visible para el remitente</string>
+    <string name="dialog_visibility_receiver">visible para el beneficiario</string>
     <string name="dialog_visibility_private">visible solo para ti</string>
     <string name="dialog_add_description">Adjuntar descripción&#8230;</string>
     <string name="dialog_set_record_label">Agregar etiqueta&#8230;</string>
@@ -261,7 +262,7 @@
     <string name="settings_ln_fee_cap_disabled"><![CDATA[La tarifa máxima de LN es como máximo<strong>%1$s</strong> del pago y <b>puede ser más alta</b> que la actual tarifa promedio chain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[La tarifa máxima de LN es como máximo <strong>%1$s</strong> del pago pero <b>nunca más alta</b> que la tarifa promedio chain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_expensive_omitted">Las rutas costosas fueron omitidas, elimina el límite de tarifa de LN si quieres que se permitan rutas mas costosas</string>
-    
+
     <string name="settings_fiat_currency">Moneda fiduciaria</string>
     <string name="settings_custom_electrum_host_port">host:port</string>
     <string name="settings_custom_electrum_disabled">Configura nodo Electrum personalizado</string>
@@ -410,7 +411,7 @@
 
     <string name="ln_hc_override_warn"><![CDATA[
         <br>El host remoto quiere anular el saldo de tu canal hospedado desde  <b>%1$s</b> hasta <b>%2$s</b>,
-        esto solo puede ocurrir si proporcionas tu firma.<br><br><strong>Asegúrate que el saldo actual este correcto antes de 
+        esto solo puede ocurrir si proporcionas tu firma.<br><br><strong>Asegúrate que el saldo actual este correcto antes de
         proceder con esto!</strong> ¿Le gustaría firmar la propuesta de anulación de canal hospedado?
     ]]></string>
 
