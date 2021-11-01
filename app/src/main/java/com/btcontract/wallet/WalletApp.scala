@@ -17,6 +17,7 @@ import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.sqlite._
 import com.btcontract.wallet.utils.{AwaitService, DelayedNotification, LocalBackup}
+import com.softwaremill.quicklens._
 import fr.acinq.bitcoin.{Block, ByteVector32, Satoshi, SatoshiLong}
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.SSL
@@ -229,7 +230,12 @@ object WalletApp {
     LNParams.chainWallets.catcher ! new WalletEventsListener {
       override def onChainTipKnown(event: CurrentBlockCount): Unit = LNParams.cm.initConnect
 
-      override def onWalletReady(event: WalletReady): Unit = LNParams.synchronized(LNParams.chainWallets = LNParams.chainWallets withBalanceUpdated event)
+      override def onWalletReady(event: WalletReady): Unit = LNParams.synchronized {
+        // Wallet is already persisted so our only job at this point is to update runtime
+        def sameXPub(wallet: ElectrumEclairWallet): Boolean = wallet.ewt.xPub == event.xPub
+        val ext1 = LNParams.chainWallets.modify(_.wallets.eachWhere(sameXPub).info.lastBalance)
+        LNParams.chainWallets = ext1.setTo(event.balance)
+      }
 
       override def onChainMasterSelected(event: InetSocketAddress): Unit = currentChainNode = event.asSome
 

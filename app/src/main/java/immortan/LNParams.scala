@@ -145,8 +145,6 @@ object LNParams {
 
 case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, sync: ActorRef, pool: ActorRef, watcher: ActorRef, params: WalletParameters) extends CanBeShutDown { me =>
 
-  def withBalanceUpdated(event: WalletReady): WalletExt = me.modify(_.wallets.eachWhere(_.ewt.xPub == event.xPub).info.lastBalance).setTo(event.balance)
-
   def findSigningByTag(tag: String): Option[ElectrumEclairWallet] = wallets.filter(_.ewt.secrets.isDefined).find(_.info.core.walletType == tag)
 
   def findByPubKey(pub: PublicKey): Option[ElectrumEclairWallet] = wallets.find(_.ewt.xPub.publicKey == pub)
@@ -184,11 +182,18 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
   }
 
   def withoutWallet(wallet: ElectrumEclairWallet): WalletExt = {
-    require(wallet.info.core.isRemovable, "Can not remove wallet")
-    params.walletDb.remove(wallet.ewt.xPub.publicKey)
+    require(wallet.info.core.isRemovable, "Wallet is not removable")
+    params.walletDb.remove(pub = wallet.ewt.xPub.publicKey)
     val wallets1 = wallets diff List(wallet)
     wallet.walletRef ! PoisonPill
     copy(wallets = wallets1)
+  }
+
+  def withNewLabel(label: String)(wallet1: ElectrumEclairWallet): WalletExt = {
+    require(wallet1.info.core.isRemovable, "Can not re-label a default chain wallet")
+    def sameXPub(wallet: ElectrumEclairWallet): Boolean = wallet.ewt.xPub == wallet1.ewt.xPub
+    params.walletDb.updateLabel(label, pub = wallet1.ewt.xPub.publicKey)
+    me.modify(_.wallets.eachWhere(sameXPub).info.label).setTo(label)
   }
 
   override def becomeShutDown: Unit = {

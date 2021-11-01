@@ -235,7 +235,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       val (container, extraInputLayout, extraInput) = singleInputPopup
       val builder = titleBodyAsViewBuilder(title = null, body = container)
       mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
-      extraInputLayout.setHint(dialog_set_record_label)
+      extraInputLayout.setHint(dialog_set_item_label)
       showKeys(extraInput)
 
       def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
@@ -889,7 +889,19 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
       val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
 
-      def onLabelTap(wallet: ElectrumEclairWallet): Unit = ???
+      def onLabelTap(wallet: ElectrumEclairWallet): Unit = {
+        val (container, extraInputLayout, extraInput) = singleInputPopup
+        val builder = titleBodyAsViewBuilder(title = null, body = container)
+        mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
+        extraInputLayout.setHint(dialog_set_item_label)
+        showKeys(extraInput)
+
+        def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
+          LNParams.chainWallets.findByPubKey(pub = wallet.ewt.xPub.publicKey)
+            .map(LNParams.chainWallets withNewLabel extraInput.getText.toString)
+            .foreach(resetChainCards)
+        }
+      }
 
       def onRemoveTap(wallet: ElectrumEclairWallet): Unit = {
         def proceed: Unit = LNParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).map(LNParams.chainWallets.withoutWallet).foreach(resetChainCards)

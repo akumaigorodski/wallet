@@ -133,7 +133,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
         val (container, extraInputLayout, extraInput) = singleInputPopup
         val builder = titleBodyAsViewBuilder(getString(settings_hardware_label).asDefView, container)
         mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
-        extraInputLayout.setHint(dialog_set_record_label)
+        extraInputLayout.setHint(dialog_set_item_label)
         showKeys(extraInput)
 
         def proceed: Unit = runAnd(finish) {
