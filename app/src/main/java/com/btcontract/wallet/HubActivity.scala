@@ -671,6 +671,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
         case info: TxInfo =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
+          val signingWallet = LNParams.chainWallets.findByPubKey(info.pubKey).exists(_.ewt.secrets.isDefined)
           val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
           val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.cpfpOf.isEmpty
           val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.canBeCPFPd
@@ -685,9 +686,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           addFlowChip(extraInfo, getString(popup_now) format WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise), R.drawable.border_gray)
           if (!info.isIncoming && !info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) && info.description.cpfpOf.isEmpty) addFlowChip(extraInfo, getString(popup_chain_fee) format fee, R.drawable.border_gray)
 
-          if (canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
-          if (canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
-          if (canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
+          if (signingWallet && canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
+          if (signingWallet && canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
+          if (signingWallet && canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
 
         case info: RelayedPreimageInfo =>
           val relayedHuman = WalletApp.denom.parsedWithSign(info.relayed, cardIn, cardZero)
@@ -884,10 +885,20 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     searchField.setTag(false)
 
     val chainCards: ChainWalletCards = new ChainWalletCards(me) {
-      def onLegacyWalletTap(wallet: ElectrumEclairWallet): Unit = bringLegacyChainOptions(wallet)
       def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
-      def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
       val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
+
+      def onLegacyWalletTap(wallet: ElectrumEclairWallet): Unit = {
+        val options = Array(dialog_legacy_transfer_btc, dialog_legacy_send_btc).map(getString)
+        val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
+        new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-legacy-tag")
+      }
+
+      def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit = {
+        val options = Array(hardware_wallet_receive, hardware_wallet_spend).map(getString)
+        val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
+        new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-hardware-tag")
+      }
 
       def onLabelTap(wallet: ElectrumEclairWallet): Unit = {
         val (container, extraInputLayout, extraInput) = singleInputPopup
@@ -1198,8 +1209,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     case (CHOICE_RECEIVE_TAG, 0) => goToWithValue(ClassNames.qrChainActivityClass, LNParams.chainWallets.lnWallet)
     case (CHOICE_RECEIVE_TAG, 1) => bringReceivePopup
 
-    case (legacy: ElectrumEclairWallet, 0) => transferFromLegacyToModern(legacy)
-    case (legacy: ElectrumEclairWallet, 1) => bringLegacyAddressScanner(legacy)
+    case (legacy: ElectrumEclairWallet, 0) if legacy.ewt.secrets.isDefined => transferFromLegacyToModern(legacy)
+    case (legacy: ElectrumEclairWallet, 1) if legacy.ewt.secrets.isDefined => bringLegacyAddressScanner(legacy)
+    case (hardware: ElectrumEclairWallet, 0) => goToWithValue(ClassNames.qrChainActivityClass, hardware)
+    case (_: ElectrumEclairWallet, 1) =>
     case _ =>
   }
 
@@ -1358,12 +1371,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val options = Array(dialog_receive_btc, dialog_receive_ln).map(getString).map(_.html)
     val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
     new sheets.ChoiceBottomSheet(list, CHOICE_RECEIVE_TAG, me).show(getSupportFragmentManager, "unused-tag")
-  }
-
-  def bringLegacyChainOptions(wallet: ElectrumEclairWallet): Unit = {
-    val options = Array(dialog_legacy_transfer_btc, dialog_legacy_send_btc).map(getString)
-    val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
-    new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-tag")
   }
 
   def goToStatPage(view: View): Unit = goTo(ClassNames.chanActivityClass)
