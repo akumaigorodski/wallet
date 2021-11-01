@@ -81,14 +81,11 @@ abstract class ElectrumWalletType {
 
   def extractPubKeySpentFrom(txIn: TxIn): Option[PublicKey]
 
-  def setUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction
-
   def signTransaction(usableUtxos: Seq[Utxo], tx: Transaction): Transaction
 
-  def computeScriptHashFromPublicKey(key: PublicKey): ByteVector32 = {
-    val serializedPubKeyScript: Seq[ScriptElt] = computePublicKeyScript(key)
-    Crypto.sha256(Script write serializedPubKeyScript).reverse
-  }
+  def setUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction
+
+  def computeScriptHash(serialized: ByteVector): ByteVector32 = Crypto.sha256(serialized).reverse
 }
 
 class ElectrumWallet44(val secrets: Option[AccountAndXPrivKey], val xPub: ExtendedPublicKey, val chainHash: ByteVector32) extends ElectrumWalletType {

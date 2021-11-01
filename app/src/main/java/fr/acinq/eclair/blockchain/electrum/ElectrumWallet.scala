@@ -230,7 +230,7 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
 
     case Event(KEY_REFILL, data) if data.firstUnusedChangeKey.isEmpty =>
       val newKey = derivePublicKey(ewt.changeMaster, data.changeKeys.last.path.lastChildNumber + 1)
-      val newKeyScriptHash = ewt.computeScriptHashFromPublicKey(newKey.publicKey)
+      val newKeyScriptHash = ewt computeScriptHash Script.write(ewt computePublicKeyScript newKey.publicKey)
       client ! ElectrumClient.ScriptHashSubscription(newKeyScriptHash, self)
 
       val changeKeys1 = data.changeKeys :+ newKey
@@ -240,7 +240,7 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
 
     case Event(KEY_REFILL, data) if data.firstUnusedAccountKeys.size < MAX_RECEIVE_ADDRESSES =>
       val newKey = derivePublicKey(ewt.accountMaster, data.accountKeys.last.path.lastChildNumber + 1)
-      val newKeyScriptHash = ewt.computeScriptHashFromPublicKey(newKey.publicKey)
+      val newKeyScriptHash = ewt computeScriptHash Script.write(ewt computePublicKeyScript newKey.publicKey)
       client ! ElectrumClient.ScriptHashSubscription(newKeyScriptHash, self)
 
       val accountKeys1 = data.accountKeys :+ newKey
@@ -325,21 +325,24 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
                         pendingTransactionRequests: Set[ByteVector32] = Set.empty, pendingHeadersRequests: Set[GetHeaders] = Set.empty, pendingTransactions: List[Transaction] = Nil,
                         pendingMerkleResponses: Set[GetMerkleResponse] = Set.empty, lastReadyMessage: Option[WalletReady] = None) {
 
-  lazy val accountKeyMap: Map[ByteVector32, ExtendedPublicKey] = accountKeys.map(key => ewt.computeScriptHashFromPublicKey(key.publicKey) -> key).toMap
-  lazy val changeKeyMap: Map[ByteVector32, ExtendedPublicKey] = changeKeys.map(key => ewt.computeScriptHashFromPublicKey(key.publicKey) -> key).toMap
-
-  lazy val currentReadyMessage: WalletReady = WalletReady(balance.totalBalance, blockchain.tip.height, proofs.hashCode + transactions.hashCode, ewt.xPub)
-
-  lazy val firstUnusedAccountKeys: immutable.Iterable[ExtendedPublicKey] = accountKeyMap.collect { case (scriptHash, privKey) if status.get(scriptHash).contains(new String) => privKey }
-
-  lazy val firstUnusedChangeKey: Option[ExtendedPublicKey] = {
-    val usedChangeNumbers = transactions.values.flatMap(_.txOut).map(_.publicKeyScript).flatMap(publicScriptChangeMap.get).map(_.path.lastChildNumber).toSet
-    changeKeys.collectFirst { case changeKey if !usedChangeNumbers.contains(changeKey.path.lastChildNumber) => changeKey }
-  }
-
   lazy val publicScriptAccountMap: Map[ByteVector, ExtendedPublicKey] = accountKeys.map(key => Script.write(ewt computePublicKeyScript key.publicKey) -> key).toMap
   lazy val publicScriptChangeMap: Map[ByteVector, ExtendedPublicKey] = changeKeys.map(key => Script.write(ewt computePublicKeyScript key.publicKey) -> key).toMap
   lazy val publicScriptMap: Map[ByteVector, ExtendedPublicKey] = publicScriptAccountMap ++ publicScriptChangeMap
+
+  lazy val accountKeyMap: Map[ByteVector32, ExtendedPublicKey] = for (Tuple2(serialized, key) <- publicScriptAccountMap) yield (ewt.computeScriptHash(serialized), key)
+  lazy val changeKeyMap: Map[ByteVector32, ExtendedPublicKey] = for (Tuple2(serialized, key) <- publicScriptChangeMap) yield (ewt.computeScriptHash(serialized), key)
+
+  lazy val currentReadyMessage: WalletReady = WalletReady(balance.totalBalance, blockchain.tip.height, proofs.hashCode + transactions.hashCode, ewt.xPub)
+
+  lazy val firstUnusedAccountKeys: immutable.Iterable[ExtendedPublicKey] = accountKeyMap.collect {
+    case (nonExistentScriptHash, privKey) if !status.contains(nonExistentScriptHash) => privKey
+    case (emptyScriptHash, privKey) if status(emptyScriptHash) == new String => privKey
+  }
+
+  lazy val firstUnusedChangeKey: Option[ExtendedPublicKey] = {
+    val usedChangeNumbers = transactions.values.flatMap(_.txOut).map(_.publicKeyScript).flatMap(publicScriptChangeMap.get).map(_.path.lastChildNumber).toSet
+    changeKeys.collectFirst { case unusedChangeKey if !usedChangeNumbers.contains(unusedChangeKey.path.lastChildNumber) => unusedChangeKey }
+  }
 
   lazy val utxos: Seq[Utxo] = {
     history.toSeq.flatMap { case (scriptHash, historyItems) =>
@@ -350,7 +353,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
           item <- historyItems
           tx <- transactions.get(item.txHash).toList
           if !overriddenPendingTxids.contains(tx.txid)
-          (txOut, index) <- tx.txOut.zipWithIndex if isReceive(txOut, scriptHash)
+          (txOut, index) <- tx.txOut.zipWithIndex if ewt.computeScriptHash(txOut.publicKeyScript) == scriptHash
           unspent = ElectrumClient.UnspentItem(item.txHash, index, txOut.amount.toLong, item.height)
         } yield Utxo(key, unspent)
 
@@ -368,8 +371,6 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
   def isTxKnown(txid: ByteVector32): Boolean = transactions.contains(txid) || pendingTransactionRequests.contains(txid) || pendingTransactions.exists(_.txid == txid)
 
   def isMine(txIn: TxIn): Boolean = ewt.extractPubKeySpentFrom(txIn).map(ewt.computePublicKeyScript).map(Script.write).exists(publicScriptMap.contains)
-
-  def isReceive(txOut: TxOut, scriptHash: ByteVector32): Boolean = publicScriptMap.get(txOut.publicKeyScript).exists(key => ewt.computeScriptHashFromPublicKey(key.publicKey) == scriptHash)
 
   def toPersistent: PersistentData = PersistentData(accountKeys.length, changeKeys.length, status, transactions, overriddenPendingTxids, history, proofs, pendingTransactions)
 
@@ -503,7 +504,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
     // Remove all our utxos spent by this tx, call this method if the tx was broadcast successfully.
     // Since we base our utxos computation on the history from server, we need to update the history right away if we want to be able to build chained unconfirmed transactions.
     // A few seconds later electrum will notify us and the entry will be overwritten. Note that we need to take into account both inputs and outputs, because there may be change.
-    val incomingScripts = tx.txIn.filter(isMine).flatMap(ewt.extractPubKeySpentFrom).map(ewt.computeScriptHashFromPublicKey)
+    val incomingScripts = tx.txIn.filter(isMine).flatMap(ewt.extractPubKeySpentFrom).map(ewt.computePublicKeyScript).map(Script.write).map(ewt.computeScriptHash)
     val outgoingScripts = tx.txOut.filter(isMine).map(_.publicKeyScript).map(computeScriptHash)
     val scripts = incomingScripts ++ outgoingScripts
 
