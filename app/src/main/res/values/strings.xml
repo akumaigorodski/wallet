@@ -13,6 +13,7 @@
     <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Total balance</string>
     <string name="hardware_wallet">Hardware wallet</string>
+    <string name="swipe_right">Swipe card to the right</string>
     <string name="delayed_refunding">Delayed channel refunding</string>
     <string name="hosted_channel">HOSTED CHANNEL\nCustodial solution</string>
     <string name="typing_hints">Bitcoin address, invoice, email&#8230;</string>
@@ -127,6 +128,7 @@
     <string name="error_btc_broadcast_fail">Could not broadcast a transaction, please make sure that wallet has network connection and then try again.</string>
     <string name="error_could_not_decrypt"><![CDATA[<b>Backup decryption failed</b>.<br><br>Make sure that both backup file and recovery phrase are correct and belong to the same wallet.<br><br>Error details<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>Provided phrase is incorrect</b>.<br><br>Error details<br><b>%1$s</b>]]></string>
+    <string name="error_old_api_level">Requires API 24+, yours is %1$s</string>
     <string name="error_nothing_useful">Nothing useful is found</string>
 
     <string name="error_ln_no_chans"><![CDATA[Can neither send nor receive Lightning payments because no open channels are present.]]></string>
@@ -272,11 +274,6 @@
     <string name="settings_view_revocery_phrase_ext">These words allow to restore wallet balance on any device, please keep it secret at all times!</string>
     <string name="settings_view_revocery_phrase">View BIP39 recovery phrase</string>
     <string name="settings_stats">Usage statistics</string>
-
-    <string name="settings_old_api_warn"><![CDATA[
-        This wallet is currently running on a rather old version of Android which <i>may</i> get unpatched security issues at some point.
-        <br><br>It is therefore recommended to migrate this wallet to a more recent Android version sooner rather than later.
-    ]]></string>
 
     <!-- /Settings activity -->
 

@@ -175,9 +175,9 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       baseBar.setProgress(barCanSend)
 
       totalCapacityText.setText(sumOrNothing(capacity.toMilliSatoshi, cardIn).html)
-      canReceiveText.setText(sumOrNothing(cs.availableForReceive, cardOut).html)
-      canSendText.setText(sumOrNothing(cs.availableForSend, cardIn).html)
-      refundableAmountText.setText(sumOrNothing(refundable, cardIn).html)
+      canReceiveText.setText(sumOrNothing(cs.availableForReceive.truncateToSatoshi.toMilliSatoshi, cardOut).html)
+      canSendText.setText(sumOrNothing(cs.availableForSend.truncateToSatoshi.toMilliSatoshi, cardIn).html)
+      refundableAmountText.setText(sumOrNothing(refundable.truncateToSatoshi.toMilliSatoshi, cardIn).html)
       paymentsInFlightText.setText(sumOrNothing(inFlight, cardIn).html)
       this
     }
@@ -211,7 +211,6 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       removeItem setOnClickListener onButtonTap {
         if (hc.localSpec.htlcs.nonEmpty) snack(chanContainer, getString(ln_hosted_chan_remove_impossible).html, R.string.dialog_ok, _.dismiss)
         else mkCheckForm(alert => runAnd(alert.dismiss)(me removeHc hc), none, confirmationBuilder(hc, getString(confirm_ln_hosted_chan_remove).html), dialog_ok, dialog_cancel)
-        swipeWrap.close(true)
       }
 
       overrideProposal setOnClickListener onButtonTap {
@@ -232,9 +231,9 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       baseBar.setSecondaryProgress(barCanSend + barCanReceive)
       baseBar.setProgress(barCanSend)
 
-      totalCapacityText.setText(sumOrNothing(capacity, cardIn).html)
-      canReceiveText.setText(sumOrNothing(hc.availableForReceive, cardOut).html)
-      canSendText.setText(sumOrNothing(hc.availableForSend, cardIn).html)
+      totalCapacityText.setText(sumOrNothing(capacity.truncateToSatoshi.toMilliSatoshi, cardIn).html)
+      canReceiveText.setText(sumOrNothing(hc.availableForReceive.truncateToSatoshi.toMilliSatoshi, cardOut).html)
+      canSendText.setText(sumOrNothing(hc.availableForSend.truncateToSatoshi.toMilliSatoshi, cardIn).html)
       paymentsInFlightText.setText(sumOrNothing(inFlight, cardIn).html)
 
       // Order messages by degree of importance since user can only see a single one

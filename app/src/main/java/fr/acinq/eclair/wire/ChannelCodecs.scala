@@ -180,6 +180,10 @@ object ChannelCodecs {
       (zeropaddedstring(32) withContext "alias")
   }.as[RemoteNodeInfo]
 
+  val channelLabelCodec = (text withContext "label").as[ChannelLabel]
+
+  val extParamsCodec = discriminated[ExtParams].by(uint16).typecase(1, channelLabelCodec)
+
   val commitmentsCodec = {
     (byte withContext "channelFlags") ::
       (bytes32 withContext "channelId") ::
@@ -198,7 +202,7 @@ object ChannelCodecs {
       (uint64overflow withContext "localNextHtlcId") ::
       (uint64overflow withContext "remoteNextHtlcId") ::
       (inputInfoCodec withContext "commitInput") ::
-      (listOfN(uint16, varsizebinarydata) withContext "extParams") ::
+      (listOfN(uint16, extParamsCodec) withContext "extParams") ::
       (int64 withContext "startedAt")
   }.as[NormalCommits]
 
@@ -300,7 +304,7 @@ object ChannelCodecs {
       (optional(bool8, lengthDelimited(failCodec)) withContext "remoteError") ::
       (optional(bool8, lengthDelimited(resizeChannelCodec)) withContext "resizeProposal") ::
       (optional(bool8, lengthDelimited(stateOverrideCodec)) withContext "overrideProposal") ::
-      (listOfN(uint16, varsizebinarydata) withContext "extParams") ::
+      (listOfN(uint16, extParamsCodec) withContext "extParams") ::
       (int64 withContext "startedAt")
   }.as[HostedCommits]
 

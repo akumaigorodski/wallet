@@ -199,8 +199,8 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
 
     case Event(GetCurrentReceiveAddresses, data) =>
       val changeKey = data.firstUnusedChangeKey.getOrElse(data.changeKeys.head)
-      val res = GetCurrentReceiveAddressesResponse(data.currentReceiveAddresses, ewt.textAddress(changeKey), changeKey)
-      stay replying res
+      val sortredAccountKeys = data.firstUnusedAccountKeys.toList.sortBy(_.path.lastChildNumber)
+      stay replying GetCurrentReceiveAddressesResponse(sortredAccountKeys, changeKey, ewt)
 
     case Event(ElectrumClient.ElectrumDisconnected, data) => goto(DISCONNECTED) using data.reset
 
@@ -282,7 +282,10 @@ object ElectrumWallet {
   case class GetBalanceResponse(totalBalance: Satoshi) extends Response
 
   case object GetCurrentReceiveAddresses extends Request
-  case class GetCurrentReceiveAddressesResponse(accountToKey: Map[String, ExtendedPublicKey], changeAddress: String, changeKey: ExtendedPublicKey) extends Response
+  case class GetCurrentReceiveAddressesResponse(keys: List[ExtendedPublicKey], changeKey: ExtendedPublicKey, ewt: ElectrumWalletType) extends Response {
+    def firstAccountAddress: String = ewt.textAddress(keys.head)
+    def changeAddress: String = ewt.textAddress(changeKey)
+  }
 
   case class CompleteTransaction(pubKeyScriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw, sequenceFlag: Long) extends Request
   case class CompleteTransactionResponse(pubKeyScriptToAmount: Map[ByteVector, Satoshi], tx: Transaction, fee: Satoshi) extends GenerateTxResponse
@@ -357,11 +360,6 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
         unspents.filterNot(utxo => outPoints contains utxo.item.outPoint)
       } getOrElse Nil
     }
-  }
-
-  def currentReceiveAddresses: Map[String, ExtendedPublicKey] = firstUnusedAccountKeys match {
-    case keys if keys.isEmpty => accountKeys.map(ewt.textAddress).zip(accountKeys).toMap
-    case keys => keys.map(ewt.textAddress).zip(keys).toMap
   }
 
   // Remove status for each script hash for which we have pending requests, this will make us query script hash history for these script hashes again when we reconnect

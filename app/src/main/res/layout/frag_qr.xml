@@ -38,7 +38,7 @@
             android:padding="10dp"/>
 
         <androidx.appcompat.widget.AppCompatButton
-            android:drawableTop="@drawable/outline_edit_24"
+            android:drawableTop="@drawable/outline_edit_20_24"
             android:background="?android:selectableItemBackground"
             android:text="@string/dialog_edit"
             android:drawablePadding="6dp"

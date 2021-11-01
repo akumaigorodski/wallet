@@ -67,6 +67,7 @@ object WalletApp {
   final val USE_AUTH = "useAuth"
   final val FIAT_CODE = "fiatCode"
   final val ENSURE_TOR = "ensureTor"
+  final val SHOW_TOOLTIP = "showTooltip"
   final val CAP_LN_FEE_TO_CHAIN = "capLNFeeToChain"
   final val LAST_TOTAL_GOSSIP_SYNC = "lastTotalGossipSync"
   final val LAST_NORMAL_GOSSIP_SYNC = "lastNormalGossipSync"
@@ -77,6 +78,7 @@ object WalletApp {
   def useAuth: Boolean = app.prefs.getBoolean(USE_AUTH, false)
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
   def ensureTor: Boolean = app.prefs.getBoolean(ENSURE_TOR, false)
+  def showTooltip: Boolean = app.prefs.getBoolean(SHOW_TOOLTIP, true)
   def capLNFeeToChain: Boolean = app.prefs.getBoolean(CAP_LN_FEE_TO_CHAIN, false)
   def showRateUs: Boolean = app.prefs.getBoolean(SHOW_RATE_US, true)
   def openHc: Boolean = app.prefs.getBoolean(OPEN_HC, true)
@@ -193,15 +195,15 @@ object WalletApp {
 
     val walletExt: WalletExt =
       (WalletExt(wallets = Nil, catcher, sync, pool, watcher, params) /: chainWalletBag.listWallets) {
-        case walletExt1 ~ CompleteChainWalletInfo(core: SigningWallet, persistentSigningData, lastBalance, label) =>
-          val signingWallet = walletExt1.makeSigningWalletParts(core, lastBalance, label)
-          signingWallet.walletRef ! persistentSigningData
-          walletExt1 + signingWallet
+        case ext ~ CompleteChainWalletInfo(core: SigningWallet, persistentSigningWalletData, lastBalance, label) =>
+          val signingWallet = ext.makeSigningWalletParts(core, lastBalance, label)
+          signingWallet.walletRef ! persistentSigningWalletData
+          ext.copy(wallets = signingWallet :: ext.wallets)
 
-        case walletExt1 ~ CompleteChainWalletInfo(core: WatchingWallet, persistentWatchingData, lastBalance, label) =>
-          val watchingWallet = walletExt1.makeWatchingWalletParts(core, lastBalance, label)
-          watchingWallet.walletRef ! persistentWatchingData
-          walletExt1 + watchingWallet
+        case ext ~ CompleteChainWalletInfo(core: WatchingWallet, persistentWatchingWalletData, lastBalance, label) =>
+          val watchingWallet = ext.makeWatchingWalletParts(core, lastBalance, label)
+          watchingWallet.walletRef ! persistentWatchingWalletData
+          ext.copy(wallets = watchingWallet :: ext.wallets)
       }
 
     LNParams.chainWallets = if (walletExt.wallets.isEmpty) {

@@ -14,7 +14,6 @@ import fr.acinq.eclair.wire._
 import immortan.crypto.Tools.{Any2Some, newFeerate, none}
 import immortan.utils.Rx
 import immortan.{LNParams, RemoteNodeInfo, UpdateAddHtlcExt}
-import scodec.bits.ByteVector
 
 
 case class LocalChanges(proposed: List[UpdateMessage], signed: List[UpdateMessage], acked: List[UpdateMessage] = Nil) {
@@ -41,7 +40,7 @@ trait Commitments {
   def channelId: ByteVector32
   def remoteInfo: RemoteNodeInfo
   def updateOpt: Option[ChannelUpdate]
-  def extParams: List[ByteVector]
+  def extParams: List[ExtParams]
   def startedAt: Long
 
   def minSendable: MilliSatoshi
@@ -64,7 +63,7 @@ trait Commitments {
 case class NormalCommits(channelFlags: Byte, channelId: ByteVector32, channelFeatures: ChannelFeatures, remoteNextCommitInfo: Either[WaitingForRevocation, PublicKey],
                          remotePerCommitmentSecrets: ShaChain, updateOpt: Option[ChannelUpdate], postCloseOutgoingResolvedIds: Set[Long], remoteInfo: RemoteNodeInfo, localParams: LocalParams,
                          remoteParams: RemoteParams, localCommit: LocalCommit, remoteCommit: RemoteCommit, localChanges: LocalChanges, remoteChanges: RemoteChanges, localNextHtlcId: Long,
-                         remoteNextHtlcId: Long, commitInput: InputInfo, extParams: List[ByteVector] = Nil, startedAt: Long = System.currentTimeMillis) extends Commitments { me =>
+                         remoteNextHtlcId: Long, commitInput: InputInfo, extParams: List[ExtParams] = Nil, startedAt: Long = System.currentTimeMillis) extends Commitments { me =>
 
   lazy val minSendable: MilliSatoshi = remoteParams.htlcMinimum.max(localParams.htlcMinimum)
 
@@ -350,3 +349,6 @@ object NormalCommits {
     (commitTx, timeouts, successes)
   }
 }
+
+sealed trait ExtParams
+case class ChannelLabel(label: String) extends ExtParams

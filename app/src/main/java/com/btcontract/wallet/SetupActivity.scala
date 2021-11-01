@@ -112,12 +112,15 @@ class SetupActivity extends BaseActivity { me =>
     recoveryPhrase setAdapter new ArrayAdapter(me, android.R.layout.simple_list_item_1, englishWordList)
     recoveryPhrase setDropDownBackgroundResource R.color.button_material_dark
 
-    def maybeProceed(alert: AlertDialog): Unit = try {
+    def getMnemonicList: List[String] = {
       val mnemonic = recoveryPhrase.getText.toString.toLowerCase.trim
       val pureMnemonic = mnemonic.replaceAll("[^a-zA-Z0-9']+", SEPARATOR)
-      val mnemonicList = pureMnemonic.split(SEPARATOR).toList
-      MnemonicCode.validate(mnemonicList, englishWordList)
-      onMnemonic(mnemonicList)
+      pureMnemonic.split(SEPARATOR).toList
+    }
+
+    def proceed(alert: AlertDialog): Unit = try {
+      MnemonicCode.validate(getMnemonicList, englishWordList)
+      onMnemonic(getMnemonicList)
       alert.dismiss
     } catch {
       case exception: Throwable =>
@@ -126,6 +129,11 @@ class SetupActivity extends BaseActivity { me =>
     }
 
     val builder = titleBodyAsViewBuilder(getString(title).asDefView, mnemonicWrap)
-    mkCheckForm(maybeProceed, none, builder, R.string.dialog_ok, R.string.dialog_cancel)
+    val alert = mkCheckForm(proceed, none, builder, R.string.dialog_ok, R.string.dialog_cancel)
+    updatePopupButton(getPositiveButton(alert), isEnabled = false)
+
+    recoveryPhrase addTextChangedListener onTextChange { _ =>
+      updatePopupButton(getPositiveButton(alert), getMnemonicList.size > 11)
+    }
   }
 }

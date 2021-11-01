@@ -71,14 +71,9 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
   }
 
   lazy private[this] val chainWallets: SettingsHolder = new SettingsHolder {
+    setVisMany(false -> settingsCheck, false -> settingsInfo)
     settingsTitle.setText(settings_chain_wallets)
-    setVis(isVisible = false, settingsCheck)
-
-    override def updateView: Unit = {
-      val usedWalletTags = LNParams.chainWallets.wallets.map(_.info.core.walletType)
-      val text = usedWalletTags.mkString(s" <font color=$cardZero>/</font> ")
-      settingsInfo.setText(text.html)
-    }
+    override def updateView: Unit = none
 
     private val wallets = Map(
       BIP32 -> ("BRD, legacy wallet", "m/0'/0/n"),
@@ -108,10 +103,10 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
         def onItemClicked(itemPosition: Int): Unit = {
           val core = SigningWallet(possibleKeys(itemPosition), isRemovable = true)
           if (list isItemChecked itemPosition) LNParams.chainWallets.withNewSigning(core, core.walletType).asSome.foreach(LNParams.updateChainWallet)
-          else LNParams.chainWallets.findByTag(core.walletType).map(LNParams.chainWallets.withoutWallet).foreach(LNParams.updateChainWallet)
+          else LNParams.chainWallets.findSigningByTag(core.walletType).map(LNParams.chainWallets.withoutWallet).foreach(LNParams.updateChainWallet)
           // Call this after chain wallets have been updated to redraw them on hub activity
           HubActivity.chainWalletStream.onNext(LNParams.chainWallets)
-          updateView
+          ChannelMaster.next(ChannelMaster.statusUpdateStream)
         }
       }
 
@@ -128,6 +123,14 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     settingsTitle.setText(settings_hardware_add)
     override def updateView: Unit = none
 
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+      val message = getString(error_old_api_level).format(Build.VERSION.SDK_INT)
+      setVis(isVisible = true, settingsInfo)
+      settingsInfo.setText(message)
+      settingsTitle.setAlpha(0.5F)
+      view.setEnabled(false)
+    }
+
     def callUrScanner: Unit = {
       def onKey(xPub: ExtendedPublicKey): Unit = {
         val (container, extraInputLayout, extraInput) = singleInputPopup
@@ -136,12 +139,13 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
         extraInputLayout.setHint(dialog_set_record_label)
         showKeys(extraInput)
 
-        def proceed: Unit = {
-          val core = WatchingWallet(EclairWallet.BIP84, xPub, isRemovable = true)
-          val label = extraInput.getText.toString.trim.asSome.filter(_.nonEmpty).getOrElse(EclairWallet.BIP84)
-          LNParams.chainWallets.withNewWatching(core, label).asSome.foreach(LNParams.updateChainWallet)
-          HubActivity.chainWalletStream.onNext(LNParams.chainWallets)
-          finish
+        def proceed: Unit = runAnd(finish) {
+          if (LNParams.chainWallets.findByPubKey(xPub.publicKey).isEmpty) {
+            val core = WatchingWallet(EclairWallet.BIP84, xPub, isRemovable = true)
+            val label = extraInput.getText.toString.trim.asSome.filter(_.nonEmpty).getOrElse(EclairWallet.BIP84)
+            LNParams.chainWallets.withNewWatching(core, label).asSome.foreach(LNParams.updateChainWallet)
+            HubActivity.chainWalletStream.onNext(LNParams.chainWallets)
+          }
         }
       }
 
@@ -282,8 +286,6 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
       addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://lightning-wallet.com/posts/manual")
       addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/btcontract/wallet")
       addFlowChip(links.flow, getString(rate), R.drawable.border_green, _ => me bringRateDialog null)
-
-      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) addFlowChip(links.flow, getString(settings_old_api_warn), R.drawable.border_yellow).setMaxLines(10)
 
       for (count <- LNParams.logBag.count if count > 0) {
         def exportLog: Unit = me share LNParams.logBag.recent.map(_.asString).mkString("\n\n")

@@ -13,6 +13,7 @@
     <string name="lightning_wallet">Молния</string>
     <string name="total_balance">Общий баланс</string>
     <string name="hardware_wallet">Аппаратный кошелек</string>
+    <string name="swipe_right">Сдвиньте карточку вправо</string>
     <string name="delayed_refunding">Отложенное возмещение средств</string>
     <string name="hosted_channel">HOSTED CHANNEL\nCustodial solution</string>
     <string name="typing_hints">Биткойн адрес, инвойс, емейл&#8230;</string>
@@ -127,6 +128,7 @@
     <string name="error_btc_broadcast_fail">Невозможно отправить транзакцию. Пожалуйста, убедитесь, что кошелек имеет доступ к сети и попробуйте снова.</string>
     <string name="error_could_not_decrypt"><![CDATA[<b>Расшифровка резервного файла не удалась</b>.<br><br>Убедитесь, что резервный файл и фзаза восстановления корректны и принадлежат к одному и тому же кошельку.<br><br>Подробности ошибки<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>Введенная фраза восстановления некорректна</b>.<br><br>Подробности ошибки<br><b>%1$s</b>]]></string>
+    <string name="error_old_api_level">Требует API уровня 24+, ваш: %1$s</string>
     <string name="error_nothing_useful">Не найдено ничего интересного</string>
 
     <string name="error_ln_no_chans"><![CDATA[Невозможно получить или отправить платеж-молнию потому что нет открытых каналов.]]></string>
@@ -272,11 +274,6 @@
     <string name="settings_view_revocery_phrase_ext">Эти слова позволяют вам восстановить кошелек со средствами на любом устройстве, пожалуйста, все время храните их в тайне!</string>
     <string name="settings_view_revocery_phrase">Фраза для восстановления</string>
     <string name="settings_stats">Статистика использования</string>
-
-    <string name="settings_old_api_warn"><![CDATA[
-        Этот кошелек работает на довольно старой версии Андроида: есть риск что в такой системе <i>могут быть</i> найдены дыры в безопасности.
-        <br><br>Разработчики рекомендуют перенести кошелек на более новую версию Андроида как только появится такая возможность.
-    ]]></string>
 
     <!-- /Settings activity -->
 

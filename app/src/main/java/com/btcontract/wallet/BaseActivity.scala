@@ -65,7 +65,8 @@ object BaseActivity {
 
   def totalBalance: MilliSatoshi = {
     val chainBalance = LNParams.chainWallets.wallets.map(_.info.lastBalance).sum
-    Channel.totalBalance(LNParams.cm.all.values) + chainBalance.toMilliSatoshi
+    val lnBalance = Channel.totalBalance(LNParams.cm.all.values).truncateToSatoshi.toMilliSatoshi
+    lnBalance + chainBalance
   }
 }
 
@@ -366,9 +367,9 @@ trait BaseActivity extends AppCompatActivity { me =>
       updateFiatInput
     }
 
-    def bigDecimalFrom(input: CurrencyEditText, times: Long = 1L): BigDecimal = BigDecimal(input.getNumericValueBigDecimal) * times
-    def resultMsat: MilliSatoshi = MilliSatoshi(bigDecimalFrom(inputAmount, times = WalletApp.denom.factor).toLong)
+    def bigDecimalFrom(input: CurrencyEditText): BigDecimal = BigDecimal(input.getNumericValueBigDecimal)
     def resultExtraInput: Option[String] = Option(extraInput.getText.toString).map(trimmed).filter(_.nonEmpty)
+    def resultMsat: MilliSatoshi = (bigDecimalFrom(inputAmount) * Denomination.satFactor).toLong.msat
 
     def updatedFiatFromBtc: String =
       WalletApp.msatInFiat(rates, fiatCode)(resultMsat)
@@ -527,7 +528,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     case Some(PaymentInfo.NOT_SENDABLE_IN_FLIGHT) => snack(container, getString(error_ln_send_in_flight).html, dialog_ok, _.dismiss)
     case Some(PaymentInfo.NOT_SENDABLE_SUCCESS) => snack(container, getString(error_ln_send_done_already).html, dialog_ok, _.dismiss)
     case _ if prExt.pr.prefix != PaymentRequest.prefixes(LNParams.chainHash) => snack(container, getString(error_ln_send_network).html, dialog_ok, _.dismiss)
-    case _ => onOK(prExt.pr.amount map Denomination.satCeil)
+    case _ => onOK(prExt.pr.amount)
   }
 
   def lnReceiveGuard(into: Iterable[Channel], container: View)(onOk: => Unit): Unit = LNParams.cm.sortedReceivable(into).lastOption match {
@@ -743,9 +744,11 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
 
   class ChainCard {
     val view: View = host.getLayoutInflater.inflate(R.layout.frag_chain_card, null)
-    val chainLabel: TextView = view.findViewById(R.id.chainLabel).asInstanceOf[TextView]
     val chainContainer: View = view.findViewById(R.id.chainContainer).asInstanceOf[View]
     val chainWrap: View = view.findViewById(R.id.chainWrap).asInstanceOf[View]
+
+    val chainLabel: TextView = view.findViewById(R.id.chainLabel).asInstanceOf[TextView]
+    val hardwareWalletNotice: TextView = view.findViewById(R.id.hardwareWalletNotice).asInstanceOf[TextView]
 
     val chainBalanceWrap: LinearLayout = view.findViewById(R.id.chainBalanceWrap).asInstanceOf[LinearLayout]
     val chainBalanceFiat: TextView = view.findViewById(R.id.chainBalanceFiat).asInstanceOf[TextView]
@@ -755,14 +758,17 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     val showMenuTip: ImageView = view.findViewById(R.id.showMenuTip).asInstanceOf[ImageView]
 
     def updateView(wallet: ElectrumEclairWallet): Unit = {
-      def onTap: Unit = if (wallet.info.core.isRemovable) onLegacyWalletTap(wallet) else onModernWalletTap(wallet)
-      val backgroundRes = if (wallet.info.core.isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
       chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, btcCardZero).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
 
-      host.setVis(isVisible = !wallet.info.core.isRemovable && wallet.info.lastBalance == 0L.sat, receiveBitcoinTip)
-      host.setVis(isVisible = wallet.info.core.isRemovable && wallet.info.lastBalance == 0L.sat, showMenuTip)
-      host.setVis(isVisible = wallet.info.lastBalance != 0L.sat, chainBalanceWrap)
+      val isHardwareWallet = wallet.ewt.secrets.isEmpty
+      val showChainBalance = wallet.info.lastBalance > 0L.sat
+      val menuTipVisible = wallet.info.core.isRemovable && !isHardwareWallet && wallet.info.lastBalance < 1L.sat
+      val receiveTipVisible = (isHardwareWallet || !wallet.info.core.isRemovable) && wallet.info.lastBalance < 1L.sat
+
+      host.setVisMany(isHardwareWallet -> hardwareWalletNotice, menuTipVisible -> showMenuTip, receiveTipVisible -> receiveBitcoinTip, showChainBalance -> chainBalanceWrap)
+      def onTap: Unit = if (isHardwareWallet) onHardwareWalletTap(wallet) else if (wallet.info.core.isRemovable) onLegacyWalletTap(wallet) else onBuiltInWalletTap(wallet)
+      val backgroundRes = if (wallet.info.core.isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
 
       chainWrap.setOnClickListener(host onButtonTap onTap)
       chainContainer.setBackgroundResource(backgroundRes)
@@ -771,6 +777,7 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
   }
 
   def onLegacyWalletTap(wallet: ElectrumEclairWallet): Unit
-  def onModernWalletTap(wallet: ElectrumEclairWallet): Unit
+  def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit
+  def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit
   def holder: LinearLayout
 }

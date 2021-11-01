@@ -5,6 +5,7 @@ import fr.acinq.eclair._
 import fr.acinq.eclair.router.Graph.GraphStructure._
 import fr.acinq.eclair.router.Graph.RichWeight
 import fr.acinq.eclair.wire._
+import immortan.crypto.Tools._
 import scodec.bits.ByteVector
 
 
@@ -63,9 +64,9 @@ object Router {
 
     lazy val routedPerChannelHop: Seq[RoutedPerChannelHop] = routedPerHop.collect { case (amt, chanHop: ChannelHop) => amt -> chanHop }
 
-    def getEdgeForNode(nodeId: PublicKey): Option[GraphEdge] = routedPerChannelHop.collectFirst { case (_, chanHop: ChannelHop) if nodeId == chanHop.nodeId => chanHop.edge }
+    def getEdgeForNode(nodeId: PublicKey): Option[GraphEdge] = routedPerChannelHop.secondItems.collectFirst { case chanHop if nodeId == chanHop.nodeId => chanHop.edge }
 
-    def asString: String = routedPerHop.collect { case (_, hop) => hop.toString }.mkString(s"${weight.costs.head} -> ", " -> ", s" -> ${weight.costs.last}, route fee: $fee")
+    def asString: String = routedPerHop.secondItems.map(_.toString).mkString(s"${weight.costs.head}\n->\n", "\n->\n", s"\n->\n${weight.costs.last}\n---\nroute fee: $fee")
 
     require(hops.nonEmpty, "Route cannot be empty")
   }

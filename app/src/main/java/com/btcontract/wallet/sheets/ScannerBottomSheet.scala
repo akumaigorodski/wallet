@@ -21,6 +21,7 @@ import scala.util.{Failure, Success, Try}
 
 
 abstract class ScannerBottomSheet(host: BaseActivity) extends BottomSheetDialogFragment with BarcodeCallback {
+  var lastAttempt: Long = System.currentTimeMillis
   var barcodeReader: BarcodeView = _
   var flashlight: ImageButton = _
   var instruction: TextView = _
@@ -63,11 +64,8 @@ abstract class ScannerBottomSheet(host: BaseActivity) extends BottomSheetDialogF
 }
 
 class OnceBottomSheet(host: BaseActivity, instructionOpt: Option[String], onScan: Runnable) extends ScannerBottomSheet(host) {
-  private[this] var lastAttempt: Long = System.currentTimeMillis
-
-  def successfulScan(result: Any): Unit = runAnd(dismiss)(onScan.run)
-
   def failedScan(error: Throwable): Unit = WalletApp.app.quickToast(error.getMessage)
+  def successfulScan(result: Any): Unit = runAnd(dismiss)(onScan.run)
 
   override def onViewCreated(view: View, savedState: Bundle): Unit = {
     super.onViewCreated(view, savedState)
@@ -87,10 +85,7 @@ class OnceBottomSheet(host: BaseActivity, instructionOpt: Option[String], onScan
 class URBottomSheet(host: BaseActivity, onKey: ExtendedPublicKey => Unit) extends ScannerBottomSheet(host) { me =>
   private[this] val bip84PathPrefix = KeyPath(hardened(84L) :: hardened(0L) :: Nil)
   private[this] val decoder = new URDecoder
-
   private[this] val zPubPrefix = "zpub"
-  private[this] val xPubPrefix = "xpub"
-  private[this] val yPubPrefix = "ypub"
 
   override def onViewCreated(view: View, savedState: Bundle): Unit = {
     super.onViewCreated(view, savedState)
@@ -100,12 +95,7 @@ class URBottomSheet(host: BaseActivity, onKey: ExtendedPublicKey => Unit) extend
     instruction.setText(tip)
   }
 
-  override def barcodeResult(scanningResult: BarcodeResult): Unit = {
-    if (scanningResult.getText.toLowerCase startsWith xPubPrefix) onError(host getString R.string.error_nothing_useful)
-    else if (scanningResult.getText.toLowerCase startsWith yPubPrefix) onError(host getString R.string.error_nothing_useful)
-    else if (scanningResult.getText.toLowerCase startsWith zPubPrefix) handleZpub(scanningResult.getText)
-    else handleUR(scanningResult.getText)
-  }
+  override def barcodeResult(res: BarcodeResult): Unit = if (res.getText.toLowerCase startsWith zPubPrefix) handleZpub(res.getText) else handleUR(res.getText)
 
   def decodeZPubFromString(zPub: String): (Int, ExtendedPublicKey) = ExtendedPublicKey.decode(zPub, bip84PathPrefix)
 
@@ -136,17 +126,23 @@ class URBottomSheet(host: BaseActivity, onKey: ExtendedPublicKey => Unit) extend
   }
 
   def handleUR(part: String): Unit = {
-    decoder.receivePart(part)
+    val isUseful = decoder.receivePart(part)
+    val percent = decoder.getEstimatedPercentComplete
+
+    if (!isUseful && System.currentTimeMillis - lastAttempt > 2000) {
+      WalletApp.app.quickToast(R.string.error_nothing_useful)
+      lastAttempt = System.currentTimeMillis
+    }
+
+    if (percent > 0D) {
+      val pct = (percent * 100).floor.toLong
+      host.setVis(isVisible = true, instruction)
+      instruction.setText(s"$pct%")
+    }
 
     for {
       result <- Option(decoder.getResult)
       isOK = result.resultType == ResultType.SUCCESS
     } if (isOK) onUR(result.ur) else onError(result.error)
-
-    if (decoder.getEstimatedPercentComplete > 0D) {
-      val pct = (decoder.getEstimatedPercentComplete * 100).floor.toLong
-      host.setVis(isVisible = true, instruction)
-      instruction.setText(s"$pct%")
-    }
   }
 }

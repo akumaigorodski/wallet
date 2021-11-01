@@ -23,27 +23,30 @@
             <include layout="@layout/frag_two_sided_item" android:id="@+id/confirmFee"/>
 
             <RelativeLayout
-                android:paddingTop="15dp"
                 android:paddingEnd="15dp"
                 android:paddingStart="15dp"
-                android:paddingBottom="5dp"
+                android:layout_marginTop="15dp"
+                android:layout_marginBottom="5dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
                 <com.ornach.nobobutton.NoboButton
                     app:nb_text="@string/dialog_send"
+                    android:layout_centerVertical="true"
                     android:id="@+id/confirmSend"
                     style="@style/GreenButton"/>
 
                 <com.ornach.nobobutton.NoboButton
-                    app:nb_drawableResource="@drawable/outline_edit_24"
+                    app:nb_drawableResource="@drawable/outline_edit_20_24"
                     android:layout_toStartOf="@id/cancelSend"
+                    android:layout_centerVertical="true"
                     android:id="@+id/confirmEdit"
                     style="@style/GrayButton"/>
 
                 <com.ornach.nobobutton.NoboButton
                     android:layout_marginStart="5dp"
                     android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
                     app:nb_text="@string/dialog_cancel"
                     android:id="@+id/cancelSend"
                     style="@style/GrayButton"/>

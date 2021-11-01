@@ -13,6 +13,7 @@
     <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Saldo total</string>
     <string name="hardware_wallet">Hardware wallet</string>
+    <string name="swipe_right">Swipe card to the right</string>
     <string name="delayed_refunding">Reembolso demorado</string>
     <string name="hosted_channel">HOSTED CHANNEL\nCustodial solution</string>
     <string name="typing_hints">Endereço Bitcoin, invoice, email&#8230;</string>
@@ -127,6 +128,7 @@
     <string name="error_btc_broadcast_fail">Não foi possível transmitir a transação, por favor certifique-se de que a carteira está conectada à rede e tente novamente.</string>
     <string name="error_could_not_decrypt"><![CDATA[<b>A decodificação do backup falhou</b>.<br><br>Certifique-se de que o arquivo de backup e a frase de recuperação estão corretos.<br><br>Detalhes do erro<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>A frase fornecida está incorreta</b>.<br><br>Detalhes do erro<br><b>%1$s</b>]]></string>
+    <string name="error_old_api_level">Requires API 24+, yours is %1$s</string>
     <string name="error_nothing_useful">Nada útil foi encontrado</string>
 
     <string name="error_ln_no_chans"><![CDATA[Não é possível enviar ou receber pagamentos Relâmpago porque não há nenhum canal aberto.]]></string>
@@ -272,11 +274,6 @@
     <string name="settings_view_revocery_phrase_ext">Estas palavras permitem recuperar o saldo da sua carteira em qualquer dispositivo, por favor mantenha-as sempre em segredo!</string>
     <string name="settings_view_revocery_phrase">Ver a frase de recuperação BIP39</string>
     <string name="settings_stats">Estatísticas de uso</string>
-    
-    <string name="settings_old_api_warn"><![CDATA[
-        This wallet is currently running on a rather old version of Android which <i>may</i> get unpatched security issues at some point.
-        <br><br>It is therefore recommended to migrate this wallet to a more recent Android version sooner rather than later.
-    ]]></string>
 
     <!-- /Settings activity -->
 

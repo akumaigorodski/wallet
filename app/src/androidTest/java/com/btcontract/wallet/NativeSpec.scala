@@ -11,6 +11,8 @@ import org.junit.Assert.assertTrue
 import org.junit.runner.RunWith
 import scodec.bits.ByteVector
 import java.math.BigInteger
+
+import immortan.utils.Haiku
 import org.junit.Test
 
 
@@ -39,6 +41,12 @@ class NativeSpec {
   @Test
   def useAppContext: Unit = {
     assertTrue(Secp256k1Context.isEnabled)
+  }
+
+  @Test
+  def utxoNames: Unit = {
+    val generated = for (_ <- 0 to 100) yield Haiku.name(fr.acinq.eclair.randomBytes32)
+    assert(generated.toSet.size == generated.size)
   }
 
   @Test

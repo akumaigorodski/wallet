@@ -44,7 +44,7 @@
             style="@style/GrayButton"/>
 
         <com.ornach.nobobutton.NoboButton
-            app:nb_drawableResource="@drawable/outline_qr_code_scanner_24"
+            app:nb_drawableResource="@drawable/outline_qr_code_scanner_32_24"
             android:onClick="bringScanner"
             style="@style/GrayButton"/>
 

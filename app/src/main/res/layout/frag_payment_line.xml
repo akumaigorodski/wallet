@@ -13,19 +13,19 @@
 
         <com.ornach.nobobutton.NoboButton
             android:layout_marginStart="15dp"
-            app:nb_drawableResource="@drawable/baseline_label_24"
+            app:nb_drawableResource="@drawable/baseline_label_20_24"
             android:id="@+id/setItemLabel"
             style="@style/GrayButton"/>
 
         <com.ornach.nobobutton.NoboButton
             android:layout_marginStart="15dp"
-            app:nb_drawableResource="@drawable/outline_ios_share_24"
+            app:nb_drawableResource="@drawable/outline_ios_share_20_24"
             android:id="@+id/shareItem"
             style="@style/GrayButton"/>
 
         <com.ornach.nobobutton.NoboButton
             android:layout_marginStart="15dp"
-            app:nb_drawableResource="@drawable/baseline_close_24"
+            app:nb_drawableResource="@drawable/baseline_close_20_24"
             android:id="@+id/removeItem"
             style="@style/RedButton"/>
 
@@ -156,7 +156,7 @@
                             android:id="@+id/labelIcon"
                             android:layout_marginEnd="3dp"
                             android:layout_centerVertical="true"
-                            android:src="@drawable/baseline_label_24"/>
+                            android:src="@drawable/baseline_label_20_24"/>
 
                         <TextView
                             style="@style/FillingView"
@@ -241,7 +241,7 @@
                 <TextView
                     style="@style/FillingView"
                     android:layout_toStartOf="@id/linkImageWrap"
-                    android:drawableStart="@drawable/baseline_label_24"
+                    android:drawableStart="@drawable/baseline_label_20_24"
                     android:layout_marginTop="10dp"
                     android:drawablePadding="3dp"
                     android:id="@+id/marketLabel"
