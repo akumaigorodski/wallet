@@ -140,8 +140,6 @@ object LNParams {
 
   def addressToPubKeyScript(address: String): ByteVector = Script write addressToPublicKeyScript(address, chainHash)
 
-  def updateChainWallet(walletExt: WalletExt): Unit = synchronized(chainWallets = walletExt)
-
   def isMainnet: Boolean = chainHash == Block.LivenetGenesisBlock.hash
 }
 

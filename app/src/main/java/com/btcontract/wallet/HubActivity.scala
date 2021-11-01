@@ -46,7 +46,7 @@ import io.github.douglasjunior.androidSimpleTooltip.SimpleTooltip
 import org.apmem.tools.layouts.FlowLayout
 import org.ndeftools.Message
 import org.ndeftools.util.activity.NfcReaderActivity
-import rx.lang.scala.{Observable, Subject, Subscription}
+import rx.lang.scala.{Observable, Subscription}
 import spray.json._
 
 import scala.collection.JavaConverters._
@@ -62,14 +62,13 @@ object HubActivity {
   var lnUrlPayLinks = new ItemsWithMemory[LNUrlPayLink]
   var relayedPreimageInfos = new ItemsWithMemory[RelayedPreimageInfo]
   val allItems = List(txInfos, paymentInfos, relayedPreimageInfos, lnUrlPayLinks)
-
-  final val chainWalletStream: Subject[WalletExt] = Subject[WalletExt]
   // Run clear up method once on app start, do not re-run it every time this activity gets restarted
   lazy val markAsFailedOnce: Unit = LNParams.cm.markAsFailed(paymentInfos.lastItems, LNParams.cm.allInChannelOutgoing)
 
   var lastHostedReveals: Map[ByteVector32, RevealedLocalFulfills] = Map.empty
   var lastInChannelOutgoing: Map[FullPaymentTag, OutgoingAdds] = Map.empty
   var allInfos: Seq[TransactionDetails] = Nil
+  var instance: HubActivity = _
 
   def requestHostedChannel: Unit = {
     val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minChanDustLimit)
@@ -116,7 +115,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   private[this] lazy val contentWindow = findViewById(R.id.contentWindow).asInstanceOf[RelativeLayout]
   private[this] lazy val itemsList = findViewById(R.id.itemsList).asInstanceOf[ListView]
 
-  private[this] lazy val walletCards = new WalletCardsViewHolder
+  lazy val walletCards = new WalletCardsViewHolder
   private[this] val viewBinderHelper = new ViewBinderHelper
   private[this] val CHOICE_RECEIVE_TAG = "choiceReceiveTag"
   var disaplyThreshold: Long = System.currentTimeMillis
@@ -888,17 +887,23 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       def onLegacyWalletTap(wallet: ElectrumEclairWallet): Unit = bringLegacyChainOptions(wallet)
       def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
       def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
+      val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
 
       def onLabelTap(wallet: ElectrumEclairWallet): Unit = ???
-      def onRemoveTap(wallet: ElectrumEclairWallet): Unit = ???
-      val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
+
+      def onRemoveTap(wallet: ElectrumEclairWallet): Unit = {
+        def proceed: Unit = LNParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).map(LNParams.chainWallets.withoutWallet).foreach(resetChainCards)
+        mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, new AlertDialog.Builder(me).setMessage(confirm_remove_item), dialog_ok, dialog_cancel)
+      }
     }
 
-    def resetChainCards(ext1: WalletExt): Unit = UITask {
+    def resetChainCards(ext1: WalletExt): Unit = {
       // Remove all existing cards and place new ones
+      LNParams.synchronized(LNParams.chainWallets = ext1)
       chainCards.holder.removeAllViewsInLayout
       chainCards.init(ext1)
-    }.run
+      updateView
+    }
 
     def updateView: Unit = {
       val allChannels = LNParams.cm.all.values.take(8)
@@ -938,7 +943,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   private var stateSubscription = Option.empty[Subscription]
   private var statusSubscription = Option.empty[Subscription]
   private var inFinalizedSubscription = Option.empty[Subscription]
-  private var chainWalletSubscription = Option.empty[Subscription]
 
   private val netListener = new Monitor.ConnectivityListener {
     override def onConnectivityChanged(ct: Int, isConnected: Boolean, isFast: Boolean): Unit = UITask {
@@ -1021,7 +1025,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     stateSubscription.foreach(_.unsubscribe)
     statusSubscription.foreach(_.unsubscribe)
     inFinalizedSubscription.foreach(_.unsubscribe)
-    chainWalletSubscription.foreach(_.unsubscribe)
 
     try LNParams.chainWallets.catcher ! WalletEventsCatcher.Remove(chainListener) catch none
     try for (channel <- LNParams.cm.all.values) channel.listeners -= me catch none
@@ -1191,8 +1194,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def INIT(state: Bundle): Unit = {
     if (WalletApp.isAlive && LNParams.isOperational) {
       setContentView(com.btcontract.wallet.R.layout.activity_hub)
-
-      // LISTENERS
+      instance = me
 
       for (channel <- LNParams.cm.all.values) channel.listeners += me
       LNParams.cm.localPaymentListeners add extraOutgoingListener
@@ -1272,11 +1274,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       stateSubscription = txEvents.merge(paymentEvents).merge(relayEvents).merge(marketEvents).merge(stateEvents).doOnNext(_ => updAllInfos).subscribe(_ => paymentAdapterDataChanged.run).asSome
       statusSubscription = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.statusUpdateStream, window).merge(stateEvents).subscribe(_ => UITask(walletCards.updateView).run).asSome
-      chainWalletSubscription = chainWalletStream.subscribe(ext1 => walletCards resetChainCards ext1).asSome
-
-      inFinalizedSubscription = ChannelMaster.inFinalized
-        .collect { case _: IncomingRevealed => true }
-        .subscribe(_ => Vibrator.vibrate).asSome
+      inFinalizedSubscription = ChannelMaster.inFinalized.collect { case _: IncomingRevealed => true }.subscribe(_ => Vibrator.vibrate).asSome
 
       timer.scheduleAtFixedRate(paymentAdapterDataChanged, 30000, 30000)
       val backupAllowed = LocalBackup.isAllowed(context = WalletApp.app)

@@ -102,12 +102,9 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
       val listener = new OnListItemClickListener {
         def onItemClicked(itemPosition: Int): Unit = {
           val core = SigningWallet(possibleKeys(itemPosition), isRemovable = true)
-          if (list isItemChecked itemPosition) LNParams.chainWallets.withNewSigning(core, core.walletType).asSome.foreach(LNParams.updateChainWallet)
-          else LNParams.chainWallets.findSigningByTag(core.walletType).map(LNParams.chainWallets.withoutWallet).foreach(LNParams.updateChainWallet)
-          // Call this after chain wallets have been updated to redraw them on hub activity
-          HubActivity.chainWalletStream.onNext(LNParams.chainWallets)
-          ChannelMaster.next(ChannelMaster.statusUpdateStream)
-        }
+          if (list isItemChecked itemPosition) LNParams.chainWallets.withNewSigning(core, core.walletType).asSome
+          else LNParams.chainWallets.findSigningByTag(core.walletType).map(LNParams.chainWallets.withoutWallet)
+        } foreach HubActivity.instance.walletCards.resetChainCards
       }
 
       list.setOnItemClickListener(listener)
@@ -143,8 +140,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
           if (LNParams.chainWallets.findByPubKey(xPub.publicKey).isEmpty) {
             val core = WatchingWallet(EclairWallet.BIP84, xPub, isRemovable = true)
             val label = extraInput.getText.toString.trim.asSome.filter(_.nonEmpty).getOrElse(EclairWallet.BIP84)
-            LNParams.chainWallets.withNewWatching(core, label).asSome.foreach(LNParams.updateChainWallet)
-            HubActivity.chainWalletStream.onNext(LNParams.chainWallets)
+            LNParams.chainWallets.withNewWatching(core, label).asSome.foreach(HubActivity.instance.walletCards.resetChainCards)
           }
         }
       }

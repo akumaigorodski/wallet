@@ -132,8 +132,7 @@ class MainActivity extends NfcReaderActivity with BaseActivity { me =>
         val core = SigningWallet(walletType = BIP32, isRemovable = true)
         decrypt(restoreLegacyWallet, extraInput.getText.toString) map { seed =>
           SetupActivity.fromMnemonics(seed.getMnemonicCode.asScala.toList, host = me)
-          val walletExt1 = LNParams.chainWallets.withNewSigning(core, core.walletType)
-          LNParams.updateChainWallet(walletExt = walletExt1)
+          LNParams.chainWallets = LNParams.chainWallets.withNewSigning(core, core.walletType)
           me exitTo ClassNames.hubActivityClass
           legacyWalletFile.delete
         } getOrElse makeAttempt
