@@ -71,6 +71,7 @@
     <string name="dialog_max">Máx</string>
 
     <string name="dialog_visibility_public">visível ao pagador</string>
+    <string name="dialog_visibility_receiver">visível ao recebedor</string>
     <string name="dialog_visibility_private">visível apenas a você</string>
     <string name="dialog_add_description">Adicione descrição&#8230;</string>
     <string name="dialog_set_record_label">Rótulo do item&#8230;</string>
