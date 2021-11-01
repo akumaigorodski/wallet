@@ -1505,7 +1505,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   def bringReceivePopup: Unit = lnReceiveGuard(LNParams.cm.all.values, contentWindow) {
     new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = Long.MaxValue.msat, initMinReceivable = 0L.msat) {
-      override def getManager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_public, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+      override def getManager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
       override def processInvoice(prExt: PaymentRequestExt): Unit = runAnd(InputParser.value = prExt)(me goTo ClassNames.qrInvoiceActivityClass)
       override def getTitleText: String = getString(dialog_receive_ln)
 

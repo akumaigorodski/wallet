@@ -70,7 +70,7 @@
     <string name="dialog_edit">Edit</string>
     <string name="dialog_max">Max</string>
 
-    <string name="dialog_visibility_public">Lo verá el pagador</string>
+    <string name="dialog_visibility_sender">Lo verá el pagador</string>
     <string name="dialog_visibility_receiver">Lo verá el receptor</string>
     <string name="dialog_visibility_private">visible solo para ti</string>
     <string name="dialog_add_description">Adjuntar descripción&#8230;</string>
