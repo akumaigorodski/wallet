@@ -390,7 +390,8 @@
     <string name="ln_hosted_chan_drain_impossible_few_funds">Los fondos no se pueden mover del canal hospedado en este momento porque un monto que contiene es muy pequeño.</string>
     <string name="ln_hosted_chan_drain_impossible_no_chans">Los fondos no se pueden mover de este canal hospedado porque no existe un canal Lightning capaz de recibirlos actualmente.</string>
     <string name="ln_hosted_chan_remove_impossible">Este canal hospedado no se puede remover ahora porque tiene pagos en camino, por favor espere hasta que hayan sido completados.</string>
-    <!-- DO NOT TRANSLATE --> <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nChannel started\n%4$s</string>
+
+    <!-- DO NOT TRANSLATE --> <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nFunding txid\n%4$s\n\nChannel started\n%5$s</string>
     <!-- DO NOT TRANSLATE --> <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
 
     <array name="ln_normal_chan_actions">

@@ -38,15 +38,14 @@ object ChanActivity {
     val preimages = hc.revealedFulfills.map(_.ourPreimage.toHex).mkString("\n")
     val hostedState = HostedState(hc.remoteInfo.nodeId, hc.remoteInfo.nodeSpecificPubKey, hc.lastCrossSignedState)
     val serializedHostedState = immortan.wire.ExtCodecs.hostedStateCodec.encode(value = hostedState).require.toHex
-    WalletApp.app.getString(ln_hosted_chan_state).format(getDetails(hc), serializedHostedState, preimages)
+    WalletApp.app.getString(ln_hosted_chan_state).format(getDetails(hc, "n/a"), serializedHostedState, preimages)
   }
 
-  def getDetails(cs: Commitments): String = {
-    val remoteId = cs.remoteInfo.nodeId.toString
-    val localId = cs.remoteInfo.nodeSpecificPubKey.toString
+  def getDetails(cs: Commitments, fundingTxid: String): String = {
     val shortId = cs.updateOpt.map(_.shortChannelId.toString).getOrElse("unknown")
     val stamp = WalletApp.app.when(new Date(cs.startedAt), WalletApp.app.dateFormat)
-    WalletApp.app.getString(ln_chan_details).format(remoteId, localId, shortId, stamp)
+    WalletApp.app.getString(ln_chan_details).format(cs.remoteInfo.nodeId.toString,
+      cs.remoteInfo.nodeSpecificPubKey.toString, shortId, fundingTxid, stamp)
   }
 }
 
@@ -251,8 +250,9 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
   }
 
   override def onChoiceMade(tag: AnyRef, pos: Int): Unit = (tag, pos) match {
-    case (commits: Commitments, 0) => share(ChanActivity getDetails commits)
-    case (hc: HostedCommits, 1) => share(ChanActivity getHcState hc)
+    case (cs: NormalCommits, 0) => me share ChanActivity.getDetails(cs, cs.commitInput.outPoint.txid.toString)
+    case (nc: HostedCommits, 0) => me share ChanActivity.getDetails(nc, fundingTxid = "n/a")
+    case (hc: HostedCommits, 1) => me share ChanActivity.getHcState(hc)
 
     case (cs: NormalCommits, 1) =>
       val builder = confirmationBuilder(cs, getString(confirm_ln_normal_chan_close_wallet).html)

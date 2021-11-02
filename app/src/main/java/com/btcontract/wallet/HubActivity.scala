@@ -287,8 +287,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     // DANGEROUS HC STUFF
 
     def getStallingCommits(localFulfills: List[LocalFulfill], info: PaymentInfo): String = {
-      val hcStates = LNParams.cm.allHostedCommits.map(commitments => commitments.channelId -> commitments).toMap
-      val details = localFulfills.map(_.theirAdd.channelId).toSet.flatMap(hcStates.get).map(ChanActivity.getDetails)
+      val hcStates = LNParams.cm.allHostedCommits.map(commits => commits.channelId -> commits).toMap
+      val affectedHcStates = localFulfills.map(_.theirAdd.channelId).toSet.flatMap(hcStates.get)
+      val details = for (hc <- affectedHcStates) yield ChanActivity.getDetails(hc, "n/a")
       details.mkString("\n\n====\n\n")
     }
 
@@ -671,7 +672,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
         case info: TxInfo =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
-          val signingWallet = LNParams.chainWallets.findByPubKey(info.pubKey).exists(_.ewt.secrets.isDefined)
+          val belongsToSigningWallet = LNParams.chainWallets.findByPubKey(info.pubKey).exists(_.ewt.secrets.isDefined)
           val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
           val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.cpfpOf.isEmpty
           val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.canBeCPFPd
@@ -686,9 +687,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           addFlowChip(extraInfo, getString(popup_now) format WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise), R.drawable.border_gray)
           if (!info.isIncoming && !info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) && info.description.cpfpOf.isEmpty) addFlowChip(extraInfo, getString(popup_chain_fee) format fee, R.drawable.border_gray)
 
-          if (signingWallet && canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
-          if (signingWallet && canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
-          if (signingWallet && canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
+          if (belongsToSigningWallet && canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
+          if (belongsToSigningWallet && canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
+          if (belongsToSigningWallet && canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
 
         case info: RelayedPreimageInfo =>
           val relayedHuman = WalletApp.denom.parsedWithSign(info.relayed, cardIn, cardZero)
