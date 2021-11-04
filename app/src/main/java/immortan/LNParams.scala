@@ -117,9 +117,9 @@ object LNParams {
     ), tlvStream)
   }
 
-  // We make sure force-close pays directly to wallet
-  def makeChannelParams(chainWallet: WalletExt, isFunder: Boolean, fundingAmount: Satoshi): LocalParams = {
-    val walletPubKey = Await.result(chainWallet.lnWallet.getReceiveAddresses, atMost = 40.seconds).keys.head.publicKey
+  // We make sure force-close pays directly to our local wallet always
+  def makeChannelParams(isFunder: Boolean, fundingAmount: Satoshi): LocalParams = {
+    val walletPubKey = Await.result(chainWallets.lnWallet.getReceiveAddresses, atMost = 40.seconds).keys.head.publicKey
     makeChannelParams(Script.write(Script.pay2wpkh(walletPubKey).toList), walletPubKey, isFunder, fundingAmount)
   }
 

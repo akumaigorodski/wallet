@@ -113,7 +113,7 @@ class ElectrumWallet44(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
       (txIn, idx) <- tx.txIn.zipWithIndex
       utxo <- usableUtxos.find(_.item.outPoint == txIn.outPoint)
       previousOutputScript = Script.pay2pkh(pubKey = utxo.key.publicKey)
-      privateKey = derivePrivateKey(secrets.get.master, utxo.key.path).privateKey
+      privateKey = derivePrivateKey(secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), utxo.key.path).privateKey
       sig = Transaction.signInput(tx, idx, previousOutputScript, SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_BASE, privateKey)
       sigScript = Script.write(OP_PUSHDATA(sig) :: OP_PUSHDATA(utxo.key.publicKey) :: Nil)
     } yield txIn.copy(signatureScript = sigScript)
@@ -158,7 +158,7 @@ class ElectrumWallet49(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
       (txIn, idx) <- tx.txIn.zipWithIndex
       utxo <- usableUtxos.find(_.item.outPoint == txIn.outPoint)
       pubKeyScript = Script.write(Script pay2wpkh utxo.key.publicKey)
-      privateKey = derivePrivateKey(secrets.get.master, utxo.key.path).privateKey
+      privateKey = derivePrivateKey(secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), utxo.key.path).privateKey
       sig = Transaction.signInput(tx, idx, Script.pay2pkh(utxo.key.publicKey), SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_WITNESS_V0, privateKey)
     } yield txIn.copy(signatureScript = Script.write(OP_PUSHDATA(pubKeyScript) :: Nil), witness = ScriptWitness(sig :: utxo.key.publicKey.value :: Nil))
     tx.copy(txIn = txIn1)
@@ -185,7 +185,7 @@ class ElectrumWallet84(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
     val txIn1 = for {
       (txIn, idx) <- tx.txIn.zipWithIndex
       utxo <- usableUtxos.find(_.item.outPoint == txIn.outPoint)
-      privateKey = derivePrivateKey(secrets.get.master, utxo.key.path).privateKey
+      privateKey = derivePrivateKey(secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), utxo.key.path).privateKey
       sig = Transaction.signInput(tx, idx, Script.pay2pkh(utxo.key.publicKey), SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_WITNESS_V0, privateKey)
     } yield txIn.copy(witness = ScriptWitness(sig :: utxo.key.publicKey.value :: Nil), signatureScript = ByteVector.empty)
     tx.copy(txIn = txIn1)

@@ -26,75 +26,56 @@
             android:id="@+id/peerIpAddress"
             android:textColor="@color/colorAccent"/>
 
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_marginTop="25dp"
-            android:layout_marginBottom="25dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="?android:attr/progressBarStyle"/>
-
         <!-- Features and actions -->
 
+        <org.apmem.tools.layouts.FlowLayout android:layout_marginBottom="5dp" android:layout_marginTop="25dp" style="@style/BoundedView" f:layout_newLine="true">
+            <TextView style="@style/ChipTextGrayMargin" android:id="@+id/ChannelRangeQueriesExtended"/>
+            <TextView style="@style/ChipTextGrayMargin" android:id="@+id/OptionDataLossProtect"/>
+            <TextView style="@style/ChipTextGrayMargin" android:id="@+id/BasicMultiPartPayment"/>
+            <TextView style="@style/ChipTextGrayMargin" android:id="@+id/TrampolineRouting"/>
+            <TextView style="@style/ChipTextGrayMargin" android:id="@+id/StaticRemoteKey"/>
+            <TextView style="@style/ChipTextGrayMargin" android:id="@+id/HostedChannels"/>
+            <TextView style="@style/ChipTextGrayMargin" android:id="@+id/ChainSwap"/>
+            <TextView style="@style/ChipTextGrayMargin" android:id="@+id/Wumbo"/>
+        </org.apmem.tools.layouts.FlowLayout>
+
+        <TextView
+            style="@style/BoundedView"
+            android:layout_marginTop="25dp"
+            android:text="@string/rpa_no_feature_support"
+            android:id="@+id/viewNoFeatureSupport"/>
+
+        <!-- Actions -->
+
         <LinearLayout
-            style="@style/StandardLinearLayout"
-            android:id="@+id/peerDetails"
-            android:visibility="gone">
+            android:visibility="gone"
+            android:id="@+id/viewYesFeatureSupport"
+            style="@style/StandardLinearLayout">
 
-            <org.apmem.tools.layouts.FlowLayout
-                android:layout_marginBottom="5dp"
+            <com.ornach.nobobutton.NoboButton
+                app:nb_text="@string/rpa_open_nc"
+                android:onClick="fundNewChannel"
                 android:layout_marginTop="25dp"
-                style="@style/BoundedView"
-                f:layout_newLine="true">
-
-                <TextView style="@style/ChipTextGrayMargin" android:id="@+id/ChannelRangeQueriesExtended"/>
-                <TextView style="@style/ChipTextGrayMargin" android:id="@+id/OptionDataLossProtect"/>
-                <TextView style="@style/ChipTextGrayMargin" android:id="@+id/BasicMultiPartPayment"/>
-                <TextView style="@style/ChipTextGrayMargin" android:id="@+id/TrampolineRouting"/>
-                <TextView style="@style/ChipTextGrayMargin" android:id="@+id/StaticRemoteKey"/>
-                <TextView style="@style/ChipTextGrayMargin" android:id="@+id/HostedChannels"/>
-                <TextView style="@style/ChipTextGrayMargin" android:id="@+id/ChainSwap"/>
-                <TextView style="@style/ChipTextGrayMargin" android:id="@+id/Wumbo"/>
-
-            </org.apmem.tools.layouts.FlowLayout>
+                style="@style/GreenButton"/>
 
             <TextView
                 style="@style/BoundedView"
                 android:layout_marginTop="25dp"
-                android:text="@string/rpa_no_feature_support"
-                android:id="@+id/viewNoFeatureSupport"/>
+                android:text="@string/rpa_request_channel"/>
 
-            <!-- Actions -->
+            <com.ornach.nobobutton.NoboButton
+                android:layout_marginTop="@dimen/chip_default_padding_edge"
+                android:onClick="sharePeerSpecificNodeId"
+                app:nb_text="@string/rpa_share_node_id"
+                style="@style/GrayButton"/>
 
-            <LinearLayout
-                android:id="@+id/viewYesFeatureSupport"
-                style="@style/StandardLinearLayout">
+            <com.ornach.nobobutton.NoboButton
+                app:nb_text="@string/rpa_request_hc"
+                android:id="@+id/optionHostedChannel"
+                android:layout_marginTop="@dimen/large_button_margin"
+                android:onClick="requestHostedChannel"
+                style="@style/GrayButton"/>
 
-                <com.ornach.nobobutton.NoboButton
-                    app:nb_text="@string/rpa_open_nc"
-                    android:onClick="fundNewChannel"
-                    android:layout_marginTop="25dp"
-                    style="@style/GreenButton"/>
-
-                <TextView
-                    style="@style/BoundedView"
-                    android:layout_marginTop="25dp"
-                    android:text="@string/rpa_request_channel"/>
-
-                <com.ornach.nobobutton.NoboButton
-                    android:layout_marginTop="@dimen/chip_default_padding_edge"
-                    android:onClick="sharePeerSpecificNodeId"
-                    app:nb_text="@string/rpa_share_node_id"
-                    style="@style/GrayButton"/>
-
-                <com.ornach.nobobutton.NoboButton
-                    app:nb_text="@string/rpa_request_hc"
-                    android:id="@+id/optionHostedChannel"
-                    android:layout_marginTop="@dimen/large_button_margin"
-                    android:onClick="requestHostedChannel"
-                    style="@style/GrayButton"/>
-
-            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

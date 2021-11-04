@@ -1,10 +1,9 @@
 package fr.acinq.bitcoin
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
-
 import fr.acinq.bitcoin.Crypto._
 import scodec.bits.ByteVector
 
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
@@ -177,7 +176,7 @@ object Script {
     case OP_PUSHDATA(data, 0x4c) :: tail if data.length < 0xff => writeUInt8(0x4c, out); writeUInt8(data.length.toInt, out); out.write(data.toArray); write(tail, out)
     case OP_PUSHDATA(data, 0x4d) :: tail if data.length < 0xffff => writeUInt8(0x4d, out); writeUInt16(data.length.toInt, out); out.write(data.toArray); write(tail, out)
     case OP_PUSHDATA(data, 0x4e) :: tail if data.length < 0xffffffff => writeUInt8(0x4e, out); writeUInt32(data.length, out); out.write(data.toArray); write(tail, out)
-    case op@OP_PUSHDATA(data, code) :: tail => throw new RuntimeException(s"invalid element $op")
+    case op@OP_PUSHDATA(_, _) :: _ => throw new RuntimeException(s"invalid element $op")
     case head :: tail => out.write(elt2code(head)); write(tail, out)
   }
 
@@ -479,7 +478,6 @@ object Script {
     /**
      * execute a script, starting from an empty stack
      *
-     * @param script
      * @return the stack created by the script
      */
     def run(script: List[ScriptElt]): Stack = run(script, List.empty[ByteVector])
@@ -586,7 +584,7 @@ object Script {
             run(tail, encodeNumber(result) :: stacktail, state.copy(opCount = opCount + 1), signatureVersion)
           case _ => throw new RuntimeException("cannot run OP_BOOLOR on a stack with less than 2 elements")
         }
-        case OP_CHECKLOCKTIMEVERIFY :: tail if ((scriptFlag & SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY) != 0) => stack match {
+        case OP_CHECKLOCKTIMEVERIFY :: tail if (scriptFlag & SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY) != 0 => stack match {
           case head :: _ =>
             // Note that elsewhere numeric opcodes are limited to
             // operands in the range -2**31+1 to 2**31-1, however it is
@@ -609,9 +607,9 @@ object Script {
             run(tail, stack, state.copy(opCount = opCount + 1), signatureVersion)
           case _ => throw new RuntimeException("cannot run OP_CHECKLOCKTIMEVERIFY on an empty stack")
         }
-        case OP_CHECKLOCKTIMEVERIFY :: _ if ((scriptFlag & SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS) != 0) => throw new RuntimeException("use of upgradable NOP is discouraged")
+        case OP_CHECKLOCKTIMEVERIFY :: _ if (scriptFlag & SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS) != 0 => throw new RuntimeException("use of upgradable NOP is discouraged")
         case OP_CHECKLOCKTIMEVERIFY :: tail => run(tail, stack, state.copy(opCount = opCount + 1), signatureVersion)
-        case OP_CHECKSEQUENCEVERIFY :: tail if ((scriptFlag & SCRIPT_VERIFY_CHECKSEQUENCEVERIFY) != 0) => stack match {
+        case OP_CHECKSEQUENCEVERIFY :: tail if (scriptFlag & SCRIPT_VERIFY_CHECKSEQUENCEVERIFY) != 0 => stack match {
           case head :: _ =>
             // nSequence, like nLockTime, is a 32-bit unsigned integer
             // field. See the comment in CHECKLOCKTIMEVERIFY regarding
@@ -635,10 +633,10 @@ object Script {
             run(tail, stack, state.copy(opCount = opCount + 1), signatureVersion)
           case _ => throw new RuntimeException("cannot run OP_CHECKSEQUENCEVERIFY on an empty stack")
         }
-        case OP_CHECKSEQUENCEVERIFY :: _ if ((scriptFlag & SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS) != 0) => throw new RuntimeException("use of upgradable NOP is discouraged")
+        case OP_CHECKSEQUENCEVERIFY :: _ if (scriptFlag & SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS) != 0 => throw new RuntimeException("use of upgradable NOP is discouraged")
         case OP_CHECKSEQUENCEVERIFY :: tail => run(tail, stack, state.copy(opCount = opCount + 1), signatureVersion)
         case OP_CHECKSIG :: tail => stack match {
-          case pubKey :: sigBytes :: stacktail => {
+          case pubKey :: sigBytes :: stacktail =>
             // remove signature from script
             val scriptCode1 = if (signatureVersion == SigVersion.SIGVERSION_BASE) {
               val scriptCode1 = removeSignature(scriptCode, sigBytes)
@@ -651,11 +649,10 @@ object Script {
               require(sigBytes.isEmpty, "Signature must be zero for failed CHECKSIG operation")
             }
             run(tail, (if (success) True else False) :: stacktail, state.copy(opCount = opCount + 1), signatureVersion)
-          }
           case _ => throw new RuntimeException("Cannot perform OP_CHECKSIG on a stack with less than 2 elements")
         }
         case OP_CHECKSIGVERIFY :: tail => run(OP_CHECKSIG :: OP_VERIFY :: tail, stack, state.copy(opCount = opCount - 1), signatureVersion)
-        case OP_CHECKMULTISIG :: tail => {
+        case OP_CHECKMULTISIG :: tail =>
           // pop public keys
           val m = decodeNumber(stack.head).toInt
           if (m < 0 || m > 20) throw new RuntimeException("OP_CHECKMULTISIG: invalid number of public keys")
@@ -687,7 +684,6 @@ object Script {
             sigs.foreach(sig => require(sig.isEmpty, "Signature must be zero for failed CHECKMULTISIG operation"))
           }
           run(tail, (if (success) True else False) :: stack4, state.copy(opCount = nextOpCount), signatureVersion)
-        }
         case OP_CHECKMULTISIGVERIFY :: tail => run(OP_CHECKMULTISIG :: OP_VERIFY :: tail, stack, state.copy(opCount = opCount - 1), signatureVersion)
         case OP_CODESEPARATOR :: tail => run(tail, stack, state.copy(opCount = opCount + 1, scriptCode = tail), signatureVersion)
         case OP_DEPTH :: tail => run(tail, encodeNumber(stack.length) :: stack, state.copy(opCount = opCount + 1), signatureVersion)
@@ -804,9 +800,7 @@ object Script {
             run(tail, stacktail(n) :: stacktail, state.copy(opCount = opCount + 1), signatureVersion)
           case _ => throw new RuntimeException("Cannot perform OP_PICK on a stack with less than 1 elements")
         }
-        case OP_PUSHDATA(data, code) :: _ if ((scriptFlag & SCRIPT_VERIFY_MINIMALDATA) != 0) && !OP_PUSHDATA.isMinimal(data, code) => {
-          throw new RuntimeException("not minimal push")
-        }
+        case OP_PUSHDATA(data, code) :: _ if ((scriptFlag & SCRIPT_VERIFY_MINIMALDATA) != 0) && !OP_PUSHDATA.isMinimal(data, code) => throw new RuntimeException("not minimal push")
         case OP_PUSHDATA(data, _) :: tail => run(tail, data :: stack, state, signatureVersion)
         case OP_ROLL :: tail => stack match {
           case head :: stacktail =>
@@ -876,7 +870,7 @@ object Script {
         case 0 =>
           throw new IllegalArgumentException(s"Invalid witness program length: ${program.length}")
         case _ if (scriptFlag & SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM) != 0 =>
-          throw new IllegalArgumentException(s"Invalid witness version: ${witnessVersion}")
+          throw new IllegalArgumentException(s"Invalid witness version: $witnessVersion")
         case _ =>
           // Higher version witness scripts return true for future softfork compatibility
           return
@@ -932,13 +926,12 @@ object Script {
       var hadWitness = false
       val stack1 = if ((scriptFlag & SCRIPT_VERIFY_WITNESS) != 0) {
         spub match {
-          case op :: OP_PUSHDATA(program, code) :: Nil if isSimpleValue(op) && OP_PUSHDATA.isMinimal(program, code) && program.length >= 2 && program.length <= 40 => {
+          case op :: OP_PUSHDATA(program, code) :: Nil if isSimpleValue(op) && OP_PUSHDATA.isMinimal(program, code) && program.length >= 2 && program.length <= 40 =>
             hadWitness = true
             val witnessVersion = simpleValue(op)
             require(ssig.isEmpty, "Malleated segwit script")
             verifyWitnessProgram(witness, witnessVersion, program)
             stack0.take(1)
-          }
           case _ => stack0
         }
       } else stack0
@@ -959,13 +952,12 @@ object Script {
 
         if ((scriptFlag & SCRIPT_VERIFY_WITNESS) != 0) {
           Script.parse(stack.head) match {
-            case op :: OP_PUSHDATA(program, _) :: Nil if isSimpleValue(op) && program.length >= 2 && program.length <= 32 => {
+            case op :: OP_PUSHDATA(program, _) :: Nil if isSimpleValue(op) && program.length >= 2 && program.length <= 32 =>
               hadWitness = true
               val witnessVersion = simpleValue(op)
               //require(ssig.isEmpty, "Malleated segwit script")
               verifyWitnessProgram(witness, witnessVersion, program)
               stackp2sh.take(1)
-            }
             case _ => stackp2sh
           }
         } else stackp2sh
@@ -1109,5 +1101,15 @@ object Script {
    * @return script witness for the corresponding pay-to-witness-public-key-hash script
    */
   def witnessPay2wpkh(pubKey: PublicKey, sig: ByteVector): ScriptWitness = ScriptWitness(sig :: pubKey.value :: Nil)
+
+  /**
+   * @param pubKeys are the public keys signatures will be checked against.
+   * @param sigs    are the signatures for a subset of the public keys.
+   * @return script witness for the pay-to-witness-script-hash script containing a multisig script.
+   */
+  def witnessMultiSigMofN(pubKeys: Seq[PublicKey], sigs: Seq[ByteVector]): ScriptWitness = {
+    val redeemScript = Script.write(Script.createMultiSigMofN(sigs.size, pubKeys))
+    ScriptWitness(ByteVector.empty +: sigs :+ redeemScript)
+  }
 
 }

@@ -37,16 +37,17 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
     }
   }
 
-  override def commit(tx: Transaction, tag: String): Future[Boolean] = {
+  override def broadcast(tx: Transaction): Future[Response] = {
     val broadcast = BroadcastTransaction(tx)
+    (walletRef ? broadcast).mapTo[Response]
+  }
+
+  override def commit(tx: Transaction, tag: String): Future[Boolean] = {
     val commit = CommitTransaction(tx)
 
-    (walletRef ? broadcast).flatMap {
-      case ElectrumClient.BroadcastTransactionResponse(_, None) =>
-        (walletRef ? commit).mapTo[Boolean]
-
-      case res: ElectrumClient.BroadcastTransactionResponse if res.error.exists(isInChain) =>
-        (walletRef ? commit).mapTo[Boolean]
+    broadcast(tx) flatMap {
+      case ElectrumClient.BroadcastTransactionResponse(_, None) => (walletRef ? commit).mapTo[Boolean]
+      case res: ElectrumClient.BroadcastTransactionResponse if res.error.exists(isInChain) => (walletRef ? commit).mapTo[Boolean]
 
       case res: ElectrumClient.BroadcastTransactionResponse if res.error.isDefined =>
         logBag.put(tag, res.error.get.message)

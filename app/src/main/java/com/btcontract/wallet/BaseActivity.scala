@@ -31,11 +31,13 @@ import com.google.common.cache.{Cache, CacheBuilder}
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.{BarcodeFormat, EncodeHintType}
+import com.journeyapps.barcodescanner.BarcodeView
 import com.ornach.nobobutton.NoboButton
 import com.softwaremill.quicklens._
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import fr.acinq.eclair.payment.PaymentRequest
 import fr.acinq.eclair.transactions.Transactions
@@ -475,37 +477,85 @@ trait BaseActivity extends AppCompatActivity { me =>
     }
   }
 
-  class ChainSendView {
+  // Chan TX popup for signing and hardware wallets
+
+  class ChainButtonsView(host: View) {
+    val chainTextInfo: TextView = host.findViewById(R.id.chainTextInfo).asInstanceOf[TextView]
+    val chainNextButton: NoboButton = host.findViewById(R.id.chainNextButton).asInstanceOf[NoboButton]
+    val chainEditButton: NoboButton = host.findViewById(R.id.chainEditButton).asInstanceOf[NoboButton]
+    val chainCancelButton: NoboButton = host.findViewById(R.id.chainCancelButton).asInstanceOf[NoboButton]
+  }
+
+  class ChainSlideshowView(host: View) {
+    val qrSlideshow: ImageView = host.findViewById(R.id.qrSlideshow).asInstanceOf[ImageView]
+    val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
+  }
+
+  class ChainReaderView(host: View) {
+    val qrReader: BarcodeView = host.findViewById(R.id.qrReader).asInstanceOf[BarcodeView]
+    val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
+  }
+
+  class ChainConfirmView(host: View) {
+    val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
+    val confirmFiat = new TwoSidedItem(host.findViewById(R.id.confirmFiat), getString(dialog_send_btc_confirm_fiat), new String)
+    val confirmAmount = new TwoSidedItem(host.findViewById(R.id.confirmAmount), getString(dialog_send_btc_confirm_amount), new String)
+    val confirmFee = new TwoSidedItem(host.findViewById(R.id.confirmFee), getString(dialog_send_btc_confirm_fee), new String)
+  }
+
+  class ChainEditView(val host: LinearLayout, manager: RateManager, fromWallet: ElectrumEclairWallet) {
+    val canSend: String = WalletApp.denom.parsedWithSign(fromWallet.info.lastBalance.toMilliSatoshi, cardIn, cardZero)
+    val canSendFiat: String = WalletApp.currentMsatInFiatHuman(fromWallet.info.lastBalance.toMilliSatoshi)
+    val inputChain: LinearLayout = host.findViewById(R.id.inputChain).asInstanceOf[LinearLayout]
+    manager.hintFiatDenom setText getString(dialog_up_to).format(canSendFiat).html
+    manager.hintDenom setText getString(dialog_up_to).format(canSend).html
+  }
+
+  class ChainSendView(val fromWallet: ElectrumEclairWallet, badge: Option[String], visibilityRes: Int) {
     val body: ScrollView = getLayoutInflater.inflate(R.layout.frag_input_on_chain, null).asInstanceOf[ScrollView]
+    val progressBar: ProgressBar = body.findViewById(R.id.progressBar).asInstanceOf[ProgressBar]
 
-    val editChain: LinearLayout = body.findViewById(R.id.editChain).asInstanceOf[LinearLayout]
-    val inputChain: LinearLayout = editChain.findViewById(R.id.inputChain).asInstanceOf[LinearLayout]
-    val confirmChain: LinearLayout = body.findViewById(R.id.confirmChain).asInstanceOf[LinearLayout]
+    val manager: RateManager = new RateManager(body, badge, visibilityRes, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+    val chainEditView = new ChainEditView(body.findViewById(R.id.editChain).asInstanceOf[LinearLayout], manager, fromWallet)
+    val chainSlideshowView = new ChainSlideshowView(body findViewById R.id.slideshowChain)
+    val chainConfirmView = new ChainConfirmView(body findViewById R.id.confirmChain)
+    val chainReaderView = new ChainReaderView(body findViewById R.id.readerChain)
 
-    val confirmFiat = new TwoSidedItem(body.findViewById(R.id.confirmFiat), getString(dialog_send_btc_confirm_fiat), new String)
-    val confirmAmount = new TwoSidedItem(body.findViewById(R.id.confirmAmount), getString(dialog_send_btc_confirm_amount), new String)
-    val confirmFee = new TwoSidedItem(body.findViewById(R.id.confirmFee), getString(dialog_send_btc_confirm_fee), new String)
+    def switchToConfirm(alert: AlertDialog, totalAmount: MilliSatoshi, fee: MilliSatoshi): Unit = ???
 
-    val confirmSend: NoboButton = body.findViewById(R.id.confirmSend).asInstanceOf[NoboButton]
-    val confirmEdit: NoboButton = body.findViewById(R.id.confirmEdit).asInstanceOf[NoboButton]
-    val cancelSend: NoboButton = body.findViewById(R.id.cancelSend).asInstanceOf[NoboButton]
+    def switchToHardwareOutgoing(alert: AlertDialog, response: GenerateTxResponse): Unit = ???
 
-    def switchToConfirm(alert: AlertDialog, amount: MilliSatoshi, fee: MilliSatoshi): Unit = {
-      confirmAmount.secondItem.setText(WalletApp.denom.parsedWithSign(amount, cardIn, cardZero).html)
-      confirmFee.secondItem.setText(WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html)
-      confirmFiat.secondItem.setText(WalletApp.currentMsatInFiatHuman(amount).html)
-      setVisMany(false -> editChain, true -> confirmChain)
-      getPositiveButton(alert).setVisibility(View.GONE)
-      getNegativeButton(alert).setVisibility(View.GONE)
-      getNeutralButton(alert).setVisibility(View.GONE)
-    }
+    def switchToHardwareIncoming(alert: AlertDialog): Unit = ???
 
-    def switchToEdit(alert: AlertDialog): Unit = {
-      setVisMany(true -> editChain, false -> confirmChain)
-      getPositiveButton(alert).setVisibility(View.VISIBLE)
-      getNegativeButton(alert).setVisibility(View.VISIBLE)
-      getNeutralButton(alert).setVisibility(View.VISIBLE)
-    }
+    def switchToSpinner: Unit = ???
+
+
+    //    val editChain: LinearLayout = body.findViewById(R.id.editChain).asInstanceOf[LinearLayout]
+//    val inputChain: LinearLayout = editChain.findViewById(R.id.inputChain).asInstanceOf[LinearLayout]
+//    val confirmChain: LinearLayout = body.findViewById(R.id.confirmChain).asInstanceOf[LinearLayout]
+//
+//
+//
+//    val confirmSend: NoboButton = body.findViewById(R.id.confirmSend).asInstanceOf[NoboButton]
+//    val confirmEdit: NoboButton = body.findViewById(R.id.confirmEdit).asInstanceOf[NoboButton]
+//    val cancelSend: NoboButton = body.findViewById(R.id.cancelSend).asInstanceOf[NoboButton]
+//
+//    def switchToConfirm(alert: AlertDialog, amount: MilliSatoshi, fee: MilliSatoshi): Unit = {
+//      confirmAmount.secondItem.setText(WalletApp.denom.parsedWithSign(amount, cardIn, cardZero).html)
+//      confirmFee.secondItem.setText(WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html)
+//      confirmFiat.secondItem.setText(WalletApp.currentMsatInFiatHuman(amount).html)
+//      setVisMany(false -> editChain, true -> confirmChain)
+//      getPositiveButton(alert).setVisibility(View.GONE)
+//      getNegativeButton(alert).setVisibility(View.GONE)
+//      getNeutralButton(alert).setVisibility(View.GONE)
+//    }
+//
+//    def switchToEdit(alert: AlertDialog): Unit = {
+//      setVisMany(true -> editChain, false -> confirmChain)
+//      getPositiveButton(alert).setVisibility(View.VISIBLE)
+//      getNegativeButton(alert).setVisibility(View.VISIBLE)
+//      getNeutralButton(alert).setVisibility(View.VISIBLE)
+//    }
   }
 
   // Guards and send/receive helpers

@@ -26,10 +26,9 @@ import scala.util.Try
 
 
 object ChannelNormal {
-  def make(initListeners: Set[ChannelListener], normalData: HasNormalCommitments, cw: WalletExt, bag: ChannelBag): ChannelNormal = new ChannelNormal(bag) {
+  def make(initListeners: Set[ChannelListener], normalData: HasNormalCommitments, bag: ChannelBag): ChannelNormal = new ChannelNormal(bag) {
     def SEND(messages: LightningMessage*): Unit = CommsTower.sendMany(messages, normalData.commitments.remoteInfo.nodeSpecificPair)
     def STORE(normalData1: PersistentChannelData): PersistentChannelData = bag.put(normalData1)
-    val chainWallet: WalletExt = cw
     listeners = initListeners
     doProcess(normalData)
   }
@@ -37,11 +36,9 @@ object ChannelNormal {
 
 abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
   def watchConfirmedSpent(cs: NormalCommits, watchConfirmed: Boolean, watchSpent: Boolean): Unit = {
-    if (watchConfirmed) chainWallet.watcher ! WatchConfirmed(receiver, cs.commitInput.outPoint.txid, cs.commitInput.txOut.publicKeyScript, LNParams.minDepthBlocks, BITCOIN_FUNDING_DEPTHOK)
-    if (watchSpent) chainWallet.watcher ! WatchSpent(receiver, cs.commitInput.outPoint.txid, cs.commitInput.outPoint.index.toInt, cs.commitInput.txOut.publicKeyScript, BITCOIN_FUNDING_SPENT)
+    if (watchConfirmed) LNParams.chainWallets.watcher ! WatchConfirmed(receiver, cs.commitInput.outPoint.txid, cs.commitInput.txOut.publicKeyScript, LNParams.minDepthBlocks, BITCOIN_FUNDING_DEPTHOK)
+    if (watchSpent) LNParams.chainWallets.watcher ! WatchSpent(receiver, cs.commitInput.outPoint.txid, cs.commitInput.outPoint.index.toInt, cs.commitInput.txOut.publicKeyScript, BITCOIN_FUNDING_SPENT)
   }
-
-  val chainWallet: WalletExt
 
   def doProcess(change: Any): Unit =
     Tuple3(data, change, state) match {
@@ -112,7 +109,6 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
         watchConfirmedSpent(commits, watchConfirmed = true, watchSpent = true)
         // Persist a channel unconditionally, try to re-publish a funding tx on restart unconditionally (don't react to commit=false, we can't trust remote servers on this)
         StoreBecomeSend(DATA_WAIT_FOR_FUNDING_CONFIRMED(commits, wait.fundingTx.asSome, System.currentTimeMillis, Left(wait.lastSent), deferred = None), WAIT_FUNDING_DONE)
-        chainWallet.lnWallet.commit(wait.fundingTx, "channel-funding-tx")
 
       // OPENING PHASE: FUNDEE FLOW
 
@@ -444,9 +440,9 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
 
       case (wait: DATA_WAIT_FOR_FUNDING_CONFIRMED, _: ChannelReestablish, SLEEPING) =>
         // We put back the watch (operation is idempotent) because corresponding event may have been already fired while we were in SLEEPING state
-        chainWallet.watcher ! WatchConfirmed(receiver, wait.commitments.commitInput.outPoint.txid, wait.commitments.commitInput.txOut.publicKeyScript, LNParams.minDepthBlocks, BITCOIN_FUNDING_DEPTHOK)
+        LNParams.chainWallets.watcher ! WatchConfirmed(receiver, wait.commitments.commitInput.outPoint.txid, wait.commitments.commitInput.txOut.publicKeyScript, LNParams.minDepthBlocks, BITCOIN_FUNDING_DEPTHOK)
         // Getting remote ChannelReestablish means our chain wallet is online (since we start connecting channels only after it becomes online), it makes sense to retry a funding broadcast here
-        for (tx <- wait.fundingTx) chainWallet.lnWallet.commit(tx, "channel-funding-reestablish-tx")
+        wait.fundingTx.foreach(LNParams.chainWallets.lnWallet.broadcast)
         BECOME(wait, WAIT_FUNDING_DONE)
 
 
@@ -530,7 +526,7 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
 
       case (closing: DATA_CLOSING, WatchEventSpent(BITCOIN_OUTPUT_SPENT, tx), CLOSING) =>
         // An output in local/remote/revoked commit was spent, add it to irrevocably spent once confirmed
-        chainWallet.watcher ! WatchConfirmed(receiver, tx, event = BITCOIN_TX_CONFIRMED(tx), minDepth = 1L)
+        LNParams.chainWallets.watcher ! WatchConfirmed(receiver, tx, event = BITCOIN_TX_CONFIRMED(tx), minDepth = 1L)
         // Peer might have just used a preimage on chain to claim our timeout HTLCs UTXO: consider a payment sent then
         val remoteFulfills = Closing.extractPreimages(closing.commitments.localCommit, tx).map(RemoteFulfill.tupled)
         val settledOutgoingHtlcIds = remoteFulfills.map(_.ourAdd.id)
@@ -538,8 +534,8 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
         val rev1 = closing.revokedCommitPublished.map { revokedCommit =>
           // This might be further spend of success/timeout UTXO from an old revoked state which peer has published previously
           val (txOpt, rev1) = Closing.claimRevokedHtlcTxOutputs(closing.commitments, revokedCommit, tx, LNParams.feeRates.info.onChainFeeConf.feeEstimator)
-          for (claimTx <- txOpt) chainWallet.watcher ! WatchSpent(receiver, tx, claimTx.txIn.filter(_.outPoint.txid == tx.txid).head.outPoint.index.toInt, BITCOIN_OUTPUT_SPENT)
-          for (claimTx <- txOpt) chainWallet.watcher ! PublishAsap(claimTx)
+          for (claimTx <- txOpt) LNParams.chainWallets.watcher ! WatchSpent(receiver, tx, claimTx.txIn.filter(_.outPoint.txid == tx.txid).head.outPoint.index.toInt, BITCOIN_OUTPUT_SPENT)
+          for (claimTx <- txOpt) LNParams.chainWallets.watcher ! PublishAsap(claimTx)
           rev1
         }
 
@@ -770,23 +766,23 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
   // Publish handlers
 
   private def doPublish(closingTx: Transaction): Unit = {
-    chainWallet.watcher ! WatchConfirmed(receiver, closingTx, BITCOIN_TX_CONFIRMED(closingTx), minDepth = 1L)
-    chainWallet.watcher ! PublishAsap(closingTx)
+    LNParams.chainWallets.watcher ! WatchConfirmed(receiver, closingTx, BITCOIN_TX_CONFIRMED(closingTx), minDepth = 1L)
+    LNParams.chainWallets.watcher ! PublishAsap(closingTx)
   }
 
   private def publishIfNeeded(txes: Iterable[Transaction], fcc: ForceCloseCommitPublished): Unit =
-    txes.filterNot(fcc.isIrrevocablySpent).map(PublishAsap).foreach(event => chainWallet.watcher ! event)
+    txes.filterNot(fcc.isIrrevocablySpent).map(PublishAsap).foreach(event => LNParams.chainWallets.watcher ! event)
 
   // Watch utxos only we can spend to get basically resolved
   private def watchConfirmedIfNeeded(txes: Iterable[Transaction], fcc: ForceCloseCommitPublished): Unit =
     txes.filterNot(fcc.isIrrevocablySpent).map(BITCOIN_TX_CONFIRMED).foreach { replyEvent =>
-      chainWallet.watcher ! WatchConfirmed(receiver, replyEvent.tx, replyEvent, minDepth = 1L)
+      LNParams.chainWallets.watcher ! WatchConfirmed(receiver, replyEvent.tx, replyEvent, minDepth = 1L)
     }
 
   // Watch utxos that both we and peer can spend to get triggered (spent, but not confirmed yet)
   private def watchSpentIfNeeded(parentTx: Transaction, txes: Iterable[Transaction], fcc: ForceCloseCommitPublished): Unit =
     txes.filterNot(fcc.isIrrevocablySpent).map(_.txIn.head.outPoint.index.toInt).foreach { outPointIndex =>
-      chainWallet.watcher ! WatchSpent(receiver, parentTx, outPointIndex, BITCOIN_OUTPUT_SPENT)
+      LNParams.chainWallets.watcher ! WatchSpent(receiver, parentTx, outPointIndex, BITCOIN_OUTPUT_SPENT)
     }
 
   private def doPublish(lcp: LocalCommitPublished): Unit = {
