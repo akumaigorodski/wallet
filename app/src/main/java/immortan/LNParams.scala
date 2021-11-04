@@ -303,7 +303,7 @@ trait PaymentBag {
 
   def listRecentRelays(limit: Int): RichCursor
   def listRecentPayments(limit: Int): RichCursor
-  def listPendingSecrets: Set[ByteVector32]
+  def listPendingSecrets: Iterable[ByteVector32]
 
   def paymentSummary: Try[PaymentSummary]
   def relaySummary: Try[RelaySummary]
