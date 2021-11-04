@@ -121,17 +121,16 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
       // Attempt to decrypt an onion with our peer-specific nodeId, this would be a routed payment
       // If fails with BadOnion: get all waiting incoming secrets and try to find a matching one
 
-      case Left(_: BadOnion) =>
-        // Add random secret to find at least one BadOnion result and fail this HTLC properly
-        val ephemeralKeys = (payBag.listPendingSecrets + randomBytes32).map(LNParams.secret.keys.fakeInvoiceKey)
+      case Left(routed: BadOnion) =>
+        val ephemeralKeys = payBag.listPendingSecrets.map(LNParams.secret.keys.fakeInvoiceKey).toList
         val decryptionResults = for (ephemeralKey <- ephemeralKeys) yield IncomingPacket.decrypt(ext.theirAdd, ephemeralKey)
-        val resultsAndKeys = decryptionResults.zip(ephemeralKeys)
+        val goodResultFirst = decryptionResults.zip(ephemeralKeys) sortBy { case res ~ _ if res.isRight => 0 case _ => 1 }
 
-        resultsAndKeys.find(_._1.isRight).getOrElse(resultsAndKeys.head) match {
-          case Left(fail: BadOnion) ~ _ => CMD_FAIL_MALFORMED_HTLC(fail.onionHash, fail.code, ext.theirAdd)
-          case Left(onionFail) ~ secret => CMD_FAIL_HTLC(Right(onionFail), secret, ext.theirAdd)
-          case Right(packet) ~ secret => defineResolution(secret, packet)
-          case _ => throw new RuntimeException
+        goodResultFirst.headOption match {
+          case None => CMD_FAIL_MALFORMED_HTLC(routed.onionHash, routed.code, ext.theirAdd)
+          case Some(Left(fail: BadOnion) ~ _) => CMD_FAIL_MALFORMED_HTLC(fail.onionHash, fail.code, ext.theirAdd)
+          case Some(Left(onionFail) ~ secret) => CMD_FAIL_HTLC(Right(onionFail), secret, ext.theirAdd)
+          case Some(Right(packet) ~ secret) => defineResolution(secret, packet)
         }
 
       case Left(onionFail) => CMD_FAIL_HTLC(Right(onionFail), ext.remoteInfo.nodeSpecificPrivKey, ext.theirAdd)

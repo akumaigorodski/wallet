@@ -36,9 +36,9 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
 
   def searchPayments(rawSearchQuery: String): RichCursor = db.search(PaymentTable.searchSql, rawSearchQuery.toLowerCase)
 
-  def listPendingSecrets: Set[ByteVector32] = {
+  def listPendingSecrets: Iterable[ByteVector32] = {
     val incomingThreshold = System.currentTimeMillis - PaymentRequest.OUR_EXPIRY_SECONDS * 1000L // Skip incoming payments which are expired by now
-    db.select(PaymentTable.selectPendingSql, incomingThreshold.toString).set(_ string PaymentTable.secret).map(ByteVector32.fromValidHex)
+    db.select(PaymentTable.selectPendingSql, incomingThreshold.toString).iterable(_ string PaymentTable.secret).map(ByteVector32.fromValidHex)
   }
 
   def listRecentPayments(limit: Int): RichCursor = {
