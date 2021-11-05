@@ -480,7 +480,7 @@ trait BaseActivity extends AppCompatActivity { me =>
   // Chan TX popup for signing and hardware wallets
 
   class ChainButtonsView(host: View) {
-    val chainTextInfo: TextView = host.findViewById(R.id.chainTextInfo).asInstanceOf[TextView]
+    val instruction: TextView = host.findViewById(R.id.instruction).asInstanceOf[TextView]
     val chainNextButton: NoboButton = host.findViewById(R.id.chainNextButton).asInstanceOf[NoboButton]
     val chainEditButton: NoboButton = host.findViewById(R.id.chainEditButton).asInstanceOf[NoboButton]
     val chainCancelButton: NoboButton = host.findViewById(R.id.chainCancelButton).asInstanceOf[NoboButton]

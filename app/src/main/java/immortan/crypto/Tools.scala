@@ -116,6 +116,13 @@ object Tools {
     ChaCha20Poly1305.decrypt(key, nonce = data drop 16 take 12, ciphertext = data drop 28, ByteVector.empty, mac = data take 16)
   }
 
+  def bip84TxPsbtBytes(tx: Transaction): Bytes = {
+    val emptyWitnessList = List.fill(tx.txIn.size)(ScriptWitness.empty)
+    val unsignedTx = tx.updateWitnesses(emptyWitnessList)
+    val psbt = Psbt(unsignedTx)
+    Psbt.write(psbt)
+  }
+
   object ~ {
     // Useful for matching nested Tuple2 with less noise
     def unapply[A, B](t2: (A, B) /* Got a tuple */) = Some(t2)

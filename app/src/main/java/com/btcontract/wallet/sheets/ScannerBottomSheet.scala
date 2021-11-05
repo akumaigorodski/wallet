@@ -20,20 +20,46 @@ import spray.json._
 import scala.util.{Failure, Success, Try}
 
 
-abstract class ScannerBottomSheet(host: BaseActivity) extends BottomSheetDialogFragment with BarcodeCallback {
+trait HasBarcodeReader extends BarcodeCallback {
   var lastAttempt: Long = System.currentTimeMillis
   var barcodeReader: BarcodeView = _
-  var flashlight: ImageButton = _
   var instruction: TextView = _
+}
 
-  def pauseBarcodeReader: Unit = runAnd(barcodeReader setTorch false)(barcodeReader.pause)
+trait HasUrDecoder extends HasBarcodeReader {
+  val decoder: URDecoder = new URDecoder
+  def onError(error: String)
+  def onUR(ur: UR): Unit
+
+  def handleUR(part: String): Unit = {
+    val isUseful = decoder.receivePart(part)
+    val percent = decoder.getEstimatedPercentComplete
+
+    if (!isUseful && System.currentTimeMillis - lastAttempt > 2000) {
+      WalletApp.app.quickToast(R.string.error_nothing_useful)
+      lastAttempt = System.currentTimeMillis
+    }
+
+    if (percent > 0D) {
+      val pct = (percent * 100).floor.toLong
+      instruction.setText(s"$pct%")
+    }
+
+    for {
+      result <- Option(decoder.getResult)
+      isOK = result.resultType == ResultType.SUCCESS
+    } if (isOK) onUR(result.ur) else onError(result.error)
+  }
+}
+
+abstract class ScannerBottomSheet(host: BaseActivity) extends BottomSheetDialogFragment with HasBarcodeReader {
   def resumeBarcodeReader: Unit = runAnd(barcodeReader decodeContinuous this)(barcodeReader.resume)
+  def pauseBarcodeReader: Unit = runAnd(barcodeReader setTorch false)(barcodeReader.pause)
 
-  type Points = java.util.List[com.google.zxing.ResultPoint]
-  override def possibleResultPoints(points: Points): Unit = none
   override def onDestroy: Unit = runAnd(barcodeReader.stopDecoding)(super.onStop)
   override def onResume: Unit = runAnd(resumeBarcodeReader)(super.onResume)
   override def onStop: Unit = runAnd(pauseBarcodeReader)(super.onStop)
+  var flashlight: ImageButton = _
 
   override def onCreateView(inflater: LayoutInflater, container: ViewGroup, state: Bundle): View = {
     val contextThemeWrapper = new ContextThemeWrapper(host, R.style.AppTheme)
@@ -82,9 +108,8 @@ class OnceBottomSheet(host: BaseActivity, instructionOpt: Option[String], onScan
   } lastAttempt = System.currentTimeMillis
 }
 
-class URBottomSheet(host: BaseActivity, onKey: ExtendedPublicKey => Unit) extends ScannerBottomSheet(host) { me =>
+class URBottomSheet(host: BaseActivity, onKey: ExtendedPublicKey => Unit) extends ScannerBottomSheet(host) with HasUrDecoder { me =>
   private[this] val bip84PathPrefix = KeyPath(hardened(84L) :: hardened(0L) :: Nil)
-  private[this] val decoder = new URDecoder
   private[this] val zPubPrefix = "zpub"
 
   override def onViewCreated(view: View, savedState: Bundle): Unit = {
@@ -95,9 +120,13 @@ class URBottomSheet(host: BaseActivity, onKey: ExtendedPublicKey => Unit) extend
     instruction.setText(tip)
   }
 
-  override def barcodeResult(res: BarcodeResult): Unit = if (res.getText.toLowerCase startsWith zPubPrefix) handleZpub(res.getText) else handleUR(res.getText)
+  override def barcodeResult(res: BarcodeResult): Unit = {
+    val isZPub = res.getText.toLowerCase.startsWith(zPubPrefix)
+    if (isZPub) handleZpub(res.getText) else handleUR(res.getText)
+  }
 
-  def decodeZPubFromString(zPub: String): (Int, ExtendedPublicKey) = ExtendedPublicKey.decode(zPub, bip84PathPrefix)
+  def decodeZPubFromString(zPub: String): (Int, ExtendedPublicKey) =
+    ExtendedPublicKey.decode(zPub, bip84PathPrefix)
 
   def handleZpub(zPub: String): Unit = {
     Try(me decodeZPubFromString zPub) match {
@@ -107,8 +136,6 @@ class URBottomSheet(host: BaseActivity, onKey: ExtendedPublicKey => Unit) extend
 
     dismiss
   }
-
-  // UR
 
   def onError(error: String): Unit = {
     host.onFail(error)
@@ -123,26 +150,5 @@ class URBottomSheet(host: BaseActivity, onKey: ExtendedPublicKey => Unit) extend
   } match {
     case Success(zPubString) => handleZpub(zPubString)
     case Failure(exception) => onError(exception.getMessage)
-  }
-
-  def handleUR(part: String): Unit = {
-    val isUseful = decoder.receivePart(part)
-    val percent = decoder.getEstimatedPercentComplete
-
-    if (!isUseful && System.currentTimeMillis - lastAttempt > 2000) {
-      WalletApp.app.quickToast(R.string.error_nothing_useful)
-      lastAttempt = System.currentTimeMillis
-    }
-
-    if (percent > 0D) {
-      val pct = (percent * 100).floor.toLong
-      host.setVis(isVisible = true, instruction)
-      instruction.setText(s"$pct%")
-    }
-
-    for {
-      result <- Option(decoder.getResult)
-      isOK = result.resultType == ResultType.SUCCESS
-    } if (isOK) onUR(result.ur) else onError(result.error)
   }
 }
