@@ -36,10 +36,10 @@ abstract class ChannelHosted extends Channel { me =>
 
 
     case (WaitRemoteHostedReply(remoteInfo, refundScriptPubKey, _), init: InitHostedChannel, WAIT_FOR_ACCEPT) =>
-      if (init.initialClientBalanceMsat > init.channelCapacityMsat) throw new RuntimeException("Their init balance for us is larger than capacity")
-      if (UInt64(100000000L) > init.maxHtlcValueInFlightMsat) throw new RuntimeException("Their max value in-flight is too low")
-      if (init.htlcMinimumMsat > 546000L.msat) throw new RuntimeException("Their minimal payment size is too high")
-      if (init.maxAcceptedHtlcs < 1) throw new RuntimeException("They can accept too few payments")
+      if (init.initialClientBalanceMsat > init.channelCapacityMsat) throw new RuntimeException(s"Their init balance for us=${init.initialClientBalanceMsat}, is larger than capacity")
+      if (UInt64(100000000L) > init.maxHtlcValueInFlightMsat) throw new RuntimeException(s"Their max value in-flight=${init.maxHtlcValueInFlightMsat}, is too low")
+      if (init.htlcMinimumMsat > 546000L.msat) throw new RuntimeException(s"Their minimal payment size=${init.htlcMinimumMsat}, is too high")
+      if (init.maxAcceptedHtlcs < 1) throw new RuntimeException("They can accept too few in-flight payments")
 
       val localHalfSignedHC =
         restoreCommits(LastCrossSignedState(isHost = false, refundScriptPubKey, init, LNParams.currentBlockDay, init.initialClientBalanceMsat,
