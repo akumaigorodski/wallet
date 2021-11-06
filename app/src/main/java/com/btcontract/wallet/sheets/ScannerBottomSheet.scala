@@ -137,18 +137,18 @@ class URBottomSheet(host: BaseActivity, onKey: ExtendedPublicKey => Unit) extend
     dismiss
   }
 
-  def onError(error: String): Unit = {
+  override def onError(error: String): Unit = {
     host.onFail(error)
     dismiss
   }
 
-  def onUR(ur: UR): Unit = Try {
+  override def onUR(ur: UR): Unit = Try {
     val urBytes = ur.decodeFromRegistry.asInstanceOf[Bytes]
     val charBuffer = StandardCharsets.UTF_8.newDecoder.decode(ByteBuffer wrap urBytes).toString
     val bip84zPub = charBuffer.parseJson.asJsObject.fields("bip84").asJsObject.fields("xpub")
     json2String(bip84zPub)
   } match {
     case Success(zPubString) => handleZpub(zPubString)
-    case Failure(exception) => onError(exception.getMessage)
+    case Failure(why) => onError(why.getMessage)
   }
 }

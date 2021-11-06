@@ -11,7 +11,7 @@
 
     <TextView
         style="@style/BoundedView"
-        android:id="@+id/instruction"
+        android:id="@+id/chainText"
         android:layout_centerVertical="true"
         android:visibility="gone"/>
 

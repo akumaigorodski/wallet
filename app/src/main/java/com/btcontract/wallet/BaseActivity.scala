@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
+import com.btcontract.wallet.sheets.HasUrDecoder
 import com.cottacush.android.currencyedittext.CurrencyEditText
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.{BaseTransientBottomBar, Snackbar}
@@ -31,9 +32,12 @@ import com.google.common.cache.{Cache, CacheBuilder}
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.{BarcodeFormat, EncodeHintType}
-import com.journeyapps.barcodescanner.BarcodeView
+import com.journeyapps.barcodescanner.{BarcodeResult, BarcodeView}
 import com.ornach.nobobutton.NoboButton
 import com.softwaremill.quicklens._
+
+import scala.concurrent.duration._
+import com.sparrowwallet.hummingbird.{UR, UREncoder}
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
@@ -46,6 +50,7 @@ import immortan._
 import immortan.crypto.Tools._
 import immortan.utils.{Denomination, InputParser, PaymentRequestExt, ThrottledWork}
 import org.apmem.tools.layouts.FlowLayout
+import rx.lang.scala.{Observable, Subscription}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -91,9 +96,8 @@ trait ChoiceReceiver {
 }
 
 trait BaseActivity extends AppCompatActivity { me =>
-
+  lazy val qrSize: Int = getResources.getDimensionPixelSize(R.dimen.qr_size)
   val nothingUsefulTask: Runnable = UITask(WalletApp.app quickToast error_nothing_useful)
-
   val timer: java.util.Timer = new java.util.Timer
 
   val goTo: Class[_] => Any = target => {
@@ -480,30 +484,56 @@ trait BaseActivity extends AppCompatActivity { me =>
   // Chan TX popup for signing and hardware wallets
 
   class ChainButtonsView(host: View) {
-    val instruction: TextView = host.findViewById(R.id.instruction).asInstanceOf[TextView]
+    val chainText: TextView = host.findViewById(R.id.chainText).asInstanceOf[TextView]
     val chainNextButton: NoboButton = host.findViewById(R.id.chainNextButton).asInstanceOf[NoboButton]
     val chainEditButton: NoboButton = host.findViewById(R.id.chainEditButton).asInstanceOf[NoboButton]
     val chainCancelButton: NoboButton = host.findViewById(R.id.chainCancelButton).asInstanceOf[NoboButton]
   }
 
-  class ChainSlideshowView(host: View) {
+  sealed trait HasHostView {
+    val host: View
+  }
+
+  class ChainSlideshowView(val host: View) extends HasHostView {
+    val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
     val qrSlideshow: ImageView = host.findViewById(R.id.qrSlideshow).asInstanceOf[ImageView]
-    val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
+    var subscription: Option[Subscription] = None
+
+    def activate(bytes: Bytes): Unit = {
+      val encoder = new UREncoder(UR.fromBytes(bytes), 10, 100, 0)
+      val stringToQr: String => Bitmap = source => QRActivity.get(source, qrSize)
+      val updateView: Bitmap => Unit = source => UITask(qrSlideshow setImageBitmap source).run
+      val layoutParams = new LinearLayout.LayoutParams(qrSlideshow.getWidth, qrSlideshow.getWidth)
+      subscription = Observable.interval(1.second).map(_ => encoder.nextPart).map(stringToQr).subscribe(updateView).asSome
+      qrSlideshow.setLayoutParams(layoutParams)
+    }
   }
 
-  class ChainReaderView(host: View) {
-    val qrReader: BarcodeView = host.findViewById(R.id.qrReader).asInstanceOf[BarcodeView]
+  class ChainReaderView(val host: View) extends HasUrDecoder with HasHostView {
+    barcodeReader = host.findViewById(R.id.qrReader).asInstanceOf[BarcodeView]
     val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
+    instruction = chainButtonsView.chainText
+    var onPsbt: Psbt => Unit = none
+
+    override def barcodeResult(res: BarcodeResult): Unit = handleUR(res.getText)
+    override def onError(error: String): Unit = onFail(error)
+
+    override def onUR(ur: UR): Unit = Try {
+      ur.decodeFromRegistry.asInstanceOf[Bytes]
+    } flatMap Psbt.read match {
+      case Success(psbtResult) => onPsbt(psbtResult)
+      case Failure(why) => onError(why.getMessage)
+    }
   }
 
-  class ChainConfirmView(host: View) {
+  class ChainConfirmView(val host: View) extends HasHostView {
     val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
     val confirmFiat = new TwoSidedItem(host.findViewById(R.id.confirmFiat), getString(dialog_send_btc_confirm_fiat), new String)
     val confirmAmount = new TwoSidedItem(host.findViewById(R.id.confirmAmount), getString(dialog_send_btc_confirm_amount), new String)
     val confirmFee = new TwoSidedItem(host.findViewById(R.id.confirmFee), getString(dialog_send_btc_confirm_fee), new String)
   }
 
-  class ChainEditView(val host: LinearLayout, manager: RateManager, fromWallet: ElectrumEclairWallet) {
+  class ChainEditView(val host: LinearLayout, manager: RateManager, fromWallet: ElectrumEclairWallet) extends HasHostView {
     val canSend: String = WalletApp.denom.parsedWithSign(fromWallet.info.lastBalance.toMilliSatoshi, cardIn, cardZero)
     val canSendFiat: String = WalletApp.currentMsatInFiatHuman(fromWallet.info.lastBalance.toMilliSatoshi)
     val inputChain: LinearLayout = host.findViewById(R.id.inputChain).asInstanceOf[LinearLayout]
@@ -511,15 +541,21 @@ trait BaseActivity extends AppCompatActivity { me =>
     manager.hintDenom setText getString(dialog_up_to).format(canSend).html
   }
 
+  class CircularSpinnerView(val host: View) extends HasHostView {
+    val progressBar: ProgressBar = host.findViewById(R.id.progressBar).asInstanceOf[ProgressBar]
+  }
+
   class ChainSendView(val fromWallet: ElectrumEclairWallet, badge: Option[String], visibilityRes: Int) {
     val body: ScrollView = getLayoutInflater.inflate(R.layout.frag_input_on_chain, null).asInstanceOf[ScrollView]
-    val progressBar: ProgressBar = body.findViewById(R.id.progressBar).asInstanceOf[ProgressBar]
-
     val manager: RateManager = new RateManager(body, badge, visibilityRes, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
     val chainEditView = new ChainEditView(body.findViewById(R.id.editChain).asInstanceOf[LinearLayout], manager, fromWallet)
     val chainSlideshowView = new ChainSlideshowView(body findViewById R.id.slideshowChain)
     val chainConfirmView = new ChainConfirmView(body findViewById R.id.confirmChain)
     val chainReaderView = new ChainReaderView(body findViewById R.id.readerChain)
+    val circularSpinnerView = new CircularSpinnerView(body)
+
+    private[this] val views: List[HasHostView] = List(chainEditView, chainSlideshowView, chainConfirmView, chainReaderView, circularSpinnerView)
+    def switchTo(visibleSection: HasHostView): Unit = for (section <- views) setVis(isVisible = visibleSection == section, section.host)
 
     def switchToConfirm(alert: AlertDialog, totalAmount: MilliSatoshi, fee: MilliSatoshi): Unit = ???
 
@@ -717,8 +753,6 @@ trait ChanErrorHandlerActivity extends BaseActivity { me =>
 }
 
 trait QRActivity extends BaseActivity { me =>
-  lazy val qrSize: Int = getResources.getDimensionPixelSize(R.dimen.qr_size)
-
   def shareData(bitmap: Bitmap, bech32: String): Unit = {
     val paymentRequestFilePath = new File(getCacheDir, "images")
     if (!paymentRequestFilePath.isFile) paymentRequestFilePath.mkdirs

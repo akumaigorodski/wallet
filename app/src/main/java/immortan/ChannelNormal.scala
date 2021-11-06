@@ -651,7 +651,6 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
     val commitsNoChanges = data1.commitments.modifyAll(_.remoteChanges.proposed, _.localChanges.proposed).setTo(Nil)
     val commitsNoRemoteUpdates = commitsNoChanges.modify(_.remoteNextHtlcId).using(_ - remoteProposed.size)
     val commits = commitsNoRemoteUpdates.modify(_.localNextHtlcId).using(_ - localProposed.size)
-
     (data1 withNewCommits commits, localProposed, hadProposed)
   }
 

@@ -17,7 +17,7 @@ import scala.util.Try
 
 case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, info: CompleteChainWalletInfo) extends EclairWallet {
 
-  import immortan.LNParams.{ec, logBag, timeout}
+  import immortan.LNParams.{ec, timeout}
 
   type GenerateTxResponseTry = Try[GenerateTxResponse]
 
@@ -37,25 +37,12 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
     }
   }
 
-  override def broadcast(tx: Transaction): Future[Response] = {
-    val broadcast = BroadcastTransaction(tx)
-    (walletRef ? broadcast).mapTo[Response]
-  }
-
-  override def commit(tx: Transaction, tag: String): Future[Boolean] = {
-    val commit = CommitTransaction(tx)
-
-    broadcast(tx) flatMap {
-      case ElectrumClient.BroadcastTransactionResponse(_, None) => (walletRef ? commit).mapTo[Boolean]
-      case res: ElectrumClient.BroadcastTransactionResponse if res.error.exists(isInChain) => (walletRef ? commit).mapTo[Boolean]
-
-      case res: ElectrumClient.BroadcastTransactionResponse if res.error.isDefined =>
-        logBag.put(tag, res.error.get.message)
-        Future(false)
-
-      case ElectrumClient.ServerError(_: ElectrumClient.BroadcastTransaction, error) =>
-        logBag.put(tag, error.message)
-        Future(false)
+  override def broadcast(tx: Transaction): Future[Boolean] = {
+    walletRef ? BroadcastTransaction(tx) flatMap {
+      case ElectrumClient.BroadcastTransactionResponse(_, None) => Future(true)
+      case res: ElectrumClient.BroadcastTransactionResponse if res.error.exists(isInChain) => Future(true)
+      case res: ElectrumClient.BroadcastTransactionResponse if res.error.isDefined => Future(false)
+      case ElectrumClient.ServerError(_: ElectrumClient.BroadcastTransaction, _) => Future(false)
     }
   }
 

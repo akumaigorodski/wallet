@@ -299,15 +299,14 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       val paymentAmount = WalletApp.denom.parsedWithSign(myFulfills.map(_.theirAdd.amountMsat).sum, cardOut, cardZero)
       val closestExpiry = WalletApp.app.plurOrZero(myFulfills.map(_.theirAdd.cltvExpiry).min.toLong - LNParams.blockCount.get, inBlocks)
 
-      def stampProof(stampTx: Transaction)(alert: AlertDialog): Unit = {
+      def stampProof(tx: Transaction)(alert: AlertDialog): Unit = {
         val txOrder = SemanticOrder(id = info.identity, order = Long.MinValue).asSome
         val infoOrder = SemanticOrder(id = info.identity, order = -System.currentTimeMillis).asSome
-        val txDesc = OpReturnTxDescription(myFulfills.map(_.ourPreimage), label = None, semanticOrder = txOrder)
-        val infoDesc1 = info.description.modify(_.proofTxid).setTo(stampTx.txid.toHex.asSome).modify(_.semanticOrder).setTo(infoOrder)
-        WalletApp.txDescriptions += Tuple2(stampTx.txid, txDesc)
+        val infoDesc1 = info.description.modify(_.proofTxid).setTo(tx.txid.toHex.asSome).modify(_.semanticOrder).setTo(infoOrder)
+        WalletApp.txDescriptions(tx.txid) = OpReturnTxDescription(myFulfills.map(_.ourPreimage), label = None, semanticOrder = txOrder)
         alert.dismiss
 
-        runFutureProcessOnUI(LNParams.chainWallets.lnWallet.commit(stampTx, "hc-stamp-tx"), onFail) {
+        runFutureProcessOnUI(LNParams.chainWallets.lnWallet.broadcast(tx), onFail) {
           case true => LNParams.cm.updateDescriptionAndCache(infoDesc1, info.paymentHash)
           case false => onFail(error = me getString error_btc_broadcast_fail)
         }
@@ -426,9 +425,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           reponse <- fromWallet.makeCPFP(fromOutPoints.toSet, chainPubKeyScript, feeView.rate)
           bumpDescription = PlainTxDescription(chainAddress :: Nil, None, cpfpBumpOrder.asSome, None, cpfpOf = info.txid.asSome)
           // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions += Tuple2(reponse.tx.txid, bumpDescription)
-          isCommitted <- fromWallet.commit(reponse.tx, "cpfp-bump-tx")
-        } if (isCommitted) {
+          _ = WalletApp.txDescriptions(reponse.tx.txid) = bumpDescription
+          isSent <- fromWallet.broadcast(reponse.tx)
+        } if (isSent) {
           // Parent semantic order is already updated, now we also update CPFP parent info
           WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCpfpBy(reponse.tx.txid), info.txid)
         } else {
@@ -502,9 +501,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           reponse <- fromWallet.makeRBFBump(info.tx, feeView.rate).map(_.result.right.get)
           bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
           // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions += Tuple2(reponse.tx.txid, bumpDescription)
-          isCommitted <- fromWallet.commit(reponse.tx, "rbf-bump-tx")
-        } if (isCommitted) {
+          _ = WalletApp.txDescriptions(reponse.tx.txid) = bumpDescription
+          isSent <- fromWallet.broadcast(reponse.tx)
+        } if (isSent) {
           val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
           val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
           WalletApp.txDataBag.updDescription(parentDesc, info.txid)
@@ -583,9 +582,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           reponse <- fromWallet.makeRBFReroute(info.tx, feeView.rate, changePubKeyScript).map(_.result.right.get)
           bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
           // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions += Tuple2(reponse.tx.txid, bumpDescription)
-          isCommitted <- fromWallet.commit(reponse.tx, "rbf-cancel-tx")
-        } if (isCommitted) {
+          _ = WalletApp.txDescriptions(reponse.tx.txid) = bumpDescription
+          isSent <- fromWallet.broadcast(reponse.tx)
+        } if (isSent) {
           val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
           val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
           WalletApp.txDataBag.updDescription(parentDesc, info.txid)
@@ -1397,9 +1396,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       def process(response: GenerateTxResponse): Unit = {
         val transactionLabel = sendView.manager.resultExtraInput orElse uri.label orElse uri.message
-        WalletApp.txDescriptions += (PlainTxDescription(uri.address :: Nil, transactionLabel), response.tx.txid).swap
-        val isCommitted = Await.result(fromWallet.commit(response.tx, "send-address-tx"), atMost = 40.seconds)
-        if (!isCommitted) onFail(me getString error_btc_broadcast_fail)
+        WalletApp.txDescriptions(response.tx.txid) = PlainTxDescription(uri.address :: Nil, transactionLabel)
+        val isSent = Await.result(fromWallet.broadcast(response.tx), atMost = 40.seconds)
+        if (!isSent) onFail(me getString error_btc_broadcast_fail)
         alert.dismiss
       }
     }
@@ -1468,9 +1467,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       def process(response: GenerateTxResponse): Unit = {
-        WalletApp.txDescriptions += (PlainTxDescription(addressToAmount.values.firstItems.toList), response.tx.txid).swap
-        val isCommitted = Await.result(fromWallet.commit(response.tx, "send-batch-tx"), atMost = 40.seconds)
-        if (!isCommitted) onFail(me getString error_btc_broadcast_fail)
+        WalletApp.txDescriptions(response.tx.txid) = PlainTxDescription(addressToAmount.values.firstItems.toList)
+        val isSent = Await.result(fromWallet.broadcast(response.tx), atMost = 40.seconds)
+        if (!isSent) onFail(me getString error_btc_broadcast_fail)
         alert.dismiss
       }
     }

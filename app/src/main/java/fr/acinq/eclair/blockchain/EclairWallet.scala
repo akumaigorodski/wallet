@@ -2,7 +2,7 @@ package fr.acinq.eclair.blockchain
 
 import fr.acinq.bitcoin.{ByteVector32, OutPoint, Satoshi, Transaction, TxIn}
 import fr.acinq.eclair.blockchain.EclairWallet._
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, GetCurrentReceiveAddressesResponse, RBFResponse, Response}
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, GetCurrentReceiveAddressesResponse, RBFResponse}
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import scodec.bits.ByteVector
 
@@ -38,9 +38,7 @@ trait EclairWallet {
 
   def makeRBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, pubKeyScript: ByteVector): Future[RBFResponse]
 
-  def broadcast(tx: Transaction): Future[Response]
-
-  def commit(tx: Transaction, tag: String): Future[Boolean]
+  def broadcast(tx: Transaction): Future[Boolean]
 
   def doubleSpent(tx: Transaction): Future[DepthAndDoubleSpent]
 }

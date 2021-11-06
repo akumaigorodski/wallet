@@ -176,14 +176,6 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
     case Event(bc: ElectrumClient.BroadcastTransaction, _) =>
       client forward bc
       stay
-
-    case Event(commit: CommitTransaction, data) =>
-      val data1 = data.commitTransaction(commit.tx)
-      // We use the initial state to compute the effect of the tx
-      val TransactionDelta(_, feeOpt, received, sent) = data.computeTransactionDelta(commit.tx).get
-      // We notify here because the tx won't be downloaded again (it has been added to the state at commit)
-      context.system.eventStream publish data1.transactionReceived(commit.tx, feeOpt, received, sent, ewt.xPub)
-      stay using persistAndNotify(data1.withOverridingTxids) replying true
   }
 
   whenUnhandled {
@@ -298,8 +290,6 @@ object ElectrumWallet {
   case class RBFResponse(result: Either[Int, GenerateTxResponse] = GENERATION_FAIL.asLeft) extends Response
 
   case class ChainFor(target: ActorRef) extends Request
-
-  case class CommitTransaction(tx: Transaction) extends Request
 
   case class IsDoubleSpentResponse(tx: Transaction, depth: Long, isDoubleSpent: Boolean) extends Response
 
@@ -498,30 +488,6 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
     val tx2 = tx1.copy(txOut = restTxOut1 :: strictTxOuts.toList ::: extraOutUtxos)
     val allPubKeyScriptsToAmount = strictPubKeyScriptsToAmount.updated(restPubKeyScript, restTxOut1.amount)
     SendAllResponse(allPubKeyScriptsToAmount, ewt.signTransaction(usableInUtxos, tx2), fee)
-  }
-
-  def commitTransaction(tx: Transaction): ElectrumData = {
-    // Remove all our utxos spent by this tx, call this method if the tx was broadcast successfully.
-    // Since we base our utxos computation on the history from server, we need to update the history right away if we want to be able to build chained unconfirmed transactions.
-    // A few seconds later electrum will notify us and the entry will be overwritten. Note that we need to take into account both inputs and outputs, because there may be change.
-    val incomingScripts = tx.txIn.filter(isMine).flatMap(ewt.extractPubKeySpentFrom).map(ewt.computePublicKeyScript).map(Script.write).map(ewt.computeScriptHash)
-    val outgoingScripts = tx.txOut.filter(isMine).map(_.publicKeyScript).map(computeScriptHash)
-    val scripts = incomingScripts ++ outgoingScripts
-
-    val history2 =
-      scripts.foldLeft(history) {
-        case (history1, scriptHash) =>
-          val entry = history1.get(scriptHash) match {
-            case Some(items) if items.map(_.txHash).contains(tx.txid) => items
-            case Some(items) => TransactionHistoryItem(0, tx.txid) :: items
-            case None => TransactionHistoryItem(0, tx.txid) :: Nil
-          }
-
-          history1.updated(scriptHash, entry)
-      }
-
-    val transactions1 = transactions.updated(tx.txid, tx)
-    copy(transactions = transactions1, history = history2)
   }
 
   def withOverridingTxids: ElectrumData = {

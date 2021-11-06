@@ -51,7 +51,7 @@ object WalletApp {
   var extDataBag: SQLiteDataExtended = _
   var app: WalletApp = _
 
-  var txDescriptions: Map[ByteVector32, TxDescription] = Map.empty
+  val txDescriptions = mutable.Map.empty[ByteVector32, TxDescription]
   var currentChainNode: Option[InetSocketAddress] = None
 
   final val dbFileNameMisc = "misc.db"
