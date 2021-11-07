@@ -75,8 +75,8 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
 
     def proceed(alert: AlertDialog): Unit = {
       val uriBuilder = bu.uri.get.buildUpon.clearQuery
-      val resultSat = manager.resultMsat.truncateToSatoshi.toMilliSatoshi
-      val uriBuilder1 = if (resultSat > LNParams.chainWallets.params.dustLimit) uriBuilder.appendQueryParameter("amount", Denomination.mast2BtcBigDecimal(resultSat).toString) else uriBuilder
+      val resultMsat = manager.resultMsat.truncateToSatoshi.toMilliSatoshi
+      val uriBuilder1 = if (resultMsat > LNParams.chainWallets.params.dustLimit) uriBuilder.appendQueryParameter("amount", Denomination.mast2BtcBigDecimal(resultMsat).toString) else uriBuilder
       val uriBuilder2 = manager.resultExtraInput match { case Some(resultExtraInput) => uriBuilder1.appendQueryParameter("label", resultExtraInput) case None => uriBuilder1 }
 
       addresses = addresses map {

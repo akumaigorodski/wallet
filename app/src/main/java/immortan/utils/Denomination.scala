@@ -40,15 +40,13 @@ trait Denomination {
 }
 
 object SatDenomination extends Denomination { me =>
-  val fmt: DecimalFormat = new DecimalFormat("###,###,###.###")
+  val fmt: DecimalFormat = new DecimalFormat("###,###,###")
   fmt.setDecimalFormatSymbols(Denomination.symbols)
   val sign = "sat"
 
   def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = {
-    val basicMsatSum = fmt.format(BigDecimal(msat.toLong) / Denomination.satFactor)
-    val (whole, decimal) = basicMsatSum splitAt basicMsatSum.indexOf(".")
-
-    if (decimal == basicMsatSum) s"<font color=$mainColor>$basicMsatSum</font>"
-    else s"<font color=$mainColor>$whole<small>$decimal</small></font>"
+    // Zero color is not used in SAT denomination since it has no decimal parts
+    val basicFormatted = fmt.format(me fromMsat msat)
+    s"<font color=$mainColor>$basicFormatted</font>"
   }
 }

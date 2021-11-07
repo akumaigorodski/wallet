@@ -65,7 +65,7 @@ object BaseActivity {
 
   def totalBalance: MilliSatoshi = {
     val chainBalance = LNParams.chainWallets.wallets.map(_.info.lastBalance).sum
-    val lnBalance = Channel.totalBalance(LNParams.cm.all.values).truncateToSatoshi.toMilliSatoshi
+    val lnBalance = Channel.totalBalance(LNParams.cm.all.values)
     lnBalance + chainBalance
   }
 }

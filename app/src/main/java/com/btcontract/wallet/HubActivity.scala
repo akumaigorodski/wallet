@@ -941,7 +941,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       totalFiatBalance.setText(WalletApp.currentMsatInFiatHuman(BaseActivity.totalBalance).html)
       totalBalance.setText(WalletApp.denom.parsedWithSign(BaseActivity.totalBalance, cardIn, totalZero).html)
 
-      val lnBalance = Channel.totalBalance(LNParams.cm.all.values).truncateToSatoshi.toMilliSatoshi
+      val lnBalance = Channel.totalBalance(LNParams.cm.all.values)
       totalLightningBalance.setText(WalletApp.denom.parsedWithSign(lnBalance, cardIn, lnCardZero).html)
       lnBalanceFiat.setText(WalletApp currentMsatInFiatHuman lnBalance)
       channelIndicator.createIndicators(allChannels.toArray)
