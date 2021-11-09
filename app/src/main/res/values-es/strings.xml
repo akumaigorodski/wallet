@@ -10,8 +10,6 @@
     <string name="manual">Leer manual</string>
 
     <string name="hardware_wallet">Hardware wallet</string>
-    <string name="hardware_wallet_receive">Receive to hardware wallet</string>
-    <string name="hardware_wallet_spend">Spend from hardware wallet</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="lightning_wallet">Lightning</string>

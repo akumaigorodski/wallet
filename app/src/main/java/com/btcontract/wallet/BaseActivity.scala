@@ -867,14 +867,14 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
       chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, btcCardZero).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
 
-      val isHardwareWallet = wallet.ewt.secrets.isEmpty
-      val showChainBalance = wallet.info.lastBalance > 0L.sat
-      val receiveTipVisible = !wallet.info.core.isRemovable && wallet.info.lastBalance < 1L.sat
-      val menuTipVisible = wallet.info.core.isRemovable && wallet.info.lastBalance < 1L.sat
+      val isWatchingWallet = wallet.ewt.secrets.isEmpty
+      val chainBalanceVisible = wallet.info.lastBalance > 0L.sat
+      val receiveTipVisible = (!wallet.info.core.isRemovable || isWatchingWallet) && !chainBalanceVisible
+      val menuTipVisible = (wallet.info.core.isRemovable && !isWatchingWallet) && !chainBalanceVisible
 
       host.setVisMany(wallet.info.core.isRemovable -> setItemLabel, wallet.info.core.isRemovable -> removeItem)
-      host.setVisMany(isHardwareWallet -> hardwareWalletNotice, receiveTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip, showChainBalance -> chainBalanceWrap)
-      def onTap: Unit = if (isHardwareWallet) onHardwareWalletTap(wallet) else if (wallet.info.core.isRemovable) onLegacyWalletTap(wallet) else onBuiltInWalletTap(wallet)
+      host.setVisMany(isWatchingWallet -> hardwareWalletNotice, receiveTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip, chainBalanceVisible -> chainBalanceWrap)
+      def onTap: Unit = if (isWatchingWallet) onHardwareWalletTap(wallet) else if (wallet.info.core.isRemovable) onLegacyWalletTap(wallet) else onBuiltInWalletTap(wallet)
       val backgroundRes = if (wallet.info.core.isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
 
       setItemLabel setOnClickListener host.onButtonTap(self onLabelTap wallet)

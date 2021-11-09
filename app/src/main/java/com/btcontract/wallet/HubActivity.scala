@@ -886,6 +886,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     searchField.setTag(false)
 
     val chainCards: ChainWalletCards = new ChainWalletCards(me) {
+      def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
       def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
       val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
 
@@ -893,12 +894,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         val options = Array(dialog_legacy_transfer_btc, dialog_legacy_send_btc).map(getString)
         val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
         new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-legacy-tag")
-      }
-
-      def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit = {
-        val options = Array(hardware_wallet_receive, hardware_wallet_spend).map(getString)
-        val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
-        new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-hardware-tag")
       }
 
       def onLabelTap(wallet: ElectrumEclairWallet): Unit = {
@@ -1207,13 +1202,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]
 
   override def onChoiceMade(tag: AnyRef, pos: Int): Unit = (tag, pos) match {
-    case (CHOICE_RECEIVE_TAG, 0) => goToWithValue(ClassNames.qrChainActivityClass, LNParams.chainWallets.lnWallet)
-    case (CHOICE_RECEIVE_TAG, 1) => bringReceivePopup
-
     case (legacy: ElectrumEclairWallet, 0) if legacy.ewt.secrets.isDefined => transferFromLegacyToModern(legacy)
     case (legacy: ElectrumEclairWallet, 1) if legacy.ewt.secrets.isDefined => bringBitcoinSpecificScanner(legacy)
-    case (hardware: ElectrumEclairWallet, 0) => goToWithValue(ClassNames.qrChainActivityClass, hardware)
-    case (hardware: ElectrumEclairWallet, 1) => bringBitcoinSpecificScanner(hardware)
+    case (CHOICE_RECEIVE_TAG, 0) => goToWithValue(ClassNames.qrChainActivityClass, LNParams.chainWallets.lnWallet)
+    case (CHOICE_RECEIVE_TAG, 1) => bringReceivePopup
     case _ =>
   }
 

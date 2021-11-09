@@ -10,8 +10,6 @@
     <string name="manual">Читать инструкцию</string>
 
     <string name="hardware_wallet">Аппаратный кошелек</string>
-    <string name="hardware_wallet_receive">Получить в аппаратный кошелек</string>
-    <string name="hardware_wallet_spend">Потратить из аппаратного кошелька</string>
 
     <string name="bitcoin_wallet">Биткойн</string>
     <string name="lightning_wallet">Молния</string>
