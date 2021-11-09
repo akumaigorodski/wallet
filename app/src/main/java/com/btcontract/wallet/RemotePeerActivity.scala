@@ -165,20 +165,20 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
     val sendView: ChainSendView = new ChainSendView(fromWallet, badge = None, visibilityRes = -1)
 
     def attempt(alert: AlertDialog): Unit = {
-      runFutureProcessOnUI(NCFunderOpenHandler.makeFunding(fromWallet, sendView.manager.resultMsat.truncateToSatoshi, feeView.rate), onFail) { fakeResponse =>
-        if (fromWallet.ewt.secrets.isDefined) sendView.switchToConfirm(alert, fakeResponse.pubKeyScriptToAmount.values.head.toMilliSatoshi, fakeResponse.fee.toMilliSatoshi, process)
-        else sendView.switchToSpinner
-      }
-
-      def process(fakeFundingResponse: GenerateTxResponse): Unit = {
-        new NCFunderOpenHandler(hasInfo.remoteInfo, fakeFundingResponse, feeView.rate, LNParams.cm) {
-          override def onEstablished(commitments: Commitments, chan: ChannelNormal): Unit = implant(commitments, chan)
-          override def onFailure(reason: Throwable): Unit = revertAndInform(reason)
-        }
-
-        stopAcceptingIncomingOffers
-        alert.dismiss
-      }
+//      runFutureProcessOnUI(NCFunderOpenHandler.makeFunding(fromWallet, sendView.manager.resultMsat.truncateToSatoshi, feeView.rate), onFail) { fakeResponse =>
+//        if (fromWallet.ewt.secrets.isDefined) sendView.switchToConfirm(alert, fakeResponse.pubKeyScriptToAmount.values.head.toMilliSatoshi, fakeResponse.fee.toMilliSatoshi, process)
+//        else sendView.switchToSpinner
+//      }
+//
+//      def process(fakeFundingResponse: GenerateTxResponse): Unit = {
+//        new NCFunderOpenHandler(hasInfo.remoteInfo, fakeFundingResponse, feeView.rate, LNParams.cm) {
+//          override def onEstablished(commitments: Commitments, chan: ChannelNormal): Unit = implant(commitments, chan)
+//          override def onFailure(reason: Throwable): Unit = revertAndInform(reason)
+//        }
+//
+//        stopAcceptingIncomingOffers
+//        alert.dismiss
+//      }
     }
 
     lazy val alert = {

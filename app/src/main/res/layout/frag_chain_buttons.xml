@@ -12,10 +12,10 @@
     <TextView
         style="@style/BoundedView"
         android:id="@+id/chainText"
-        android:layout_centerVertical="true"
-        android:visibility="gone"/>
+        android:layout_centerVertical="true"/>
 
     <com.ornach.nobobutton.NoboButton
+        app:nb_text="@string/dialog_ok"
         android:layout_centerVertical="true"
         android:id="@+id/chainNextButton"
         style="@style/GreenButton"/>

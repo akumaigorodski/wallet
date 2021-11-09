@@ -8,10 +8,10 @@ import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.BuildConfig.{VERSION_CODE, VERSION_NAME}
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
-import com.btcontract.wallet.sheets.BaseChoiceBottomSheet
+import com.btcontract.wallet.sheets.{BaseChoiceBottomSheet, PairingData}
 import com.btcontract.wallet.utils.{LocalBackup, OnListItemClickListener}
 import com.google.android.material.snackbar.Snackbar
-import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
+import fr.acinq.bitcoin.Satoshi
 import fr.acinq.eclair.blockchain.EclairWallet
 import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.eclair.blockchain.electrum.db.{SigningWallet, WatchingWallet}
@@ -102,9 +102,15 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
       val listener = new OnListItemClickListener {
         def onItemClicked(itemPosition: Int): Unit = {
           val core = SigningWallet(possibleKeys(itemPosition), isRemovable = true)
-          if (list isItemChecked itemPosition) LNParams.chainWallets.withNewSigning(core, core.walletType).asSome
-          else LNParams.chainWallets.findSigningByTag(core.walletType).map(LNParams.chainWallets.withoutWallet)
-        } foreach HubActivity.instance.walletCards.resetChainCards
+
+          if (list isItemChecked itemPosition) {
+            val wallet = LNParams.chainWallets.makeSigningWalletParts(core, Satoshi(0L), label = core.walletType)
+            HubActivity.instance.walletCards.resetChainCards(LNParams.chainWallets withFreshWallet wallet)
+          } else {
+            val updatedWallets = LNParams.chainWallets.findSigningByTag(core.walletType).map(LNParams.chainWallets.withoutWallet)
+            updatedWallets.foreach(wallets => HubActivity.instance.walletCards resetChainCards wallets)
+          }
+        }
       }
 
       list.setOnItemClickListener(listener)
@@ -129,7 +135,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     }
 
     def callUrScanner: Unit = {
-      def onKey(xPub: ExtendedPublicKey): Unit = {
+      def onKey(data: PairingData): Unit = {
         val (container, extraInputLayout, extraInput) = singleInputPopup
         val builder = titleBodyAsViewBuilder(getString(settings_hardware_label).asDefView, container)
         mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
@@ -137,10 +143,11 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
         showKeys(extraInput)
 
         def proceed: Unit = runAnd(finish) {
-          if (LNParams.chainWallets.findByPubKey(xPub.publicKey).isEmpty) {
-            val core = WatchingWallet(EclairWallet.BIP84, xPub, isRemovable = true)
+          if (LNParams.chainWallets.findByPubKey(data.bip84XPub.publicKey).isEmpty) {
+            val core = WatchingWallet(EclairWallet.BIP84, data.masterFingerprint, data.bip84XPub, isRemovable = true)
             val label = extraInput.getText.toString.trim.asSome.filter(_.nonEmpty).getOrElse(EclairWallet.BIP84)
-            LNParams.chainWallets.withNewWatching(core, label).asSome.foreach(HubActivity.instance.walletCards.resetChainCards)
+            val wallet = LNParams.chainWallets.makeWatchingWallet84Parts(core, lastBalance = Satoshi(0L), label)
+            HubActivity.instance.walletCards.resetChainCards(LNParams.chainWallets withFreshWallet wallet)
           }
         }
       }

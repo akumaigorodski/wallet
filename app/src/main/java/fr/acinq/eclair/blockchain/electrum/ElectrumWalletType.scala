@@ -11,6 +11,8 @@ import scala.util.Try
 
 
 object ElectrumWalletType {
+  def computeScriptHash(serialized: ByteVector): ByteVector32 = Crypto.sha256(serialized).reverse
+
   def makeSigningType(tag: String, master: ExtendedPrivateKey, chainHash: ByteVector32): ElectrumWalletType = tag match {
     case EclairWallet.BIP32 => makeSigningType(tag, xPriv32(master, chainHash), chainHash)
     case EclairWallet.BIP44 => makeSigningType(tag, xPriv44(master, chainHash), chainHash)
@@ -24,14 +26,6 @@ object ElectrumWalletType {
     case EclairWallet.BIP44 => new ElectrumWallet44(secrets.asSome, publicKey(secrets.xPriv), chainHash)
     case EclairWallet.BIP49 => new ElectrumWallet49(secrets.asSome, publicKey(secrets.xPriv), chainHash)
     case EclairWallet.BIP84 => new ElectrumWallet84(secrets.asSome, publicKey(secrets.xPriv), chainHash)
-    case _ => throw new RuntimeException
-  }
-
-  def makeWatchingType(tag: String, xPub: ExtendedPublicKey, chainHash: ByteVector32): ElectrumWalletType = tag match {
-    case EclairWallet.BIP32 => new ElectrumWallet32(secrets = None, xPub, chainHash)
-    case EclairWallet.BIP44 => new ElectrumWallet44(secrets = None, xPub, chainHash)
-    case EclairWallet.BIP49 => new ElectrumWallet49(secrets = None, xPub, chainHash)
-    case EclairWallet.BIP84 => new ElectrumWallet84(secrets = None, xPub, chainHash)
     case _ => throw new RuntimeException
   }
 
@@ -84,8 +78,6 @@ abstract class ElectrumWalletType {
   def signTransaction(usableUtxos: Seq[Utxo], tx: Transaction): Transaction
 
   def setUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction
-
-  def computeScriptHash(serialized: ByteVector): ByteVector32 = Crypto.sha256(serialized).reverse
 }
 
 class ElectrumWallet44(val secrets: Option[AccountAndXPrivKey], val xPub: ExtendedPublicKey, val chainHash: ByteVector32) extends ElectrumWalletType {

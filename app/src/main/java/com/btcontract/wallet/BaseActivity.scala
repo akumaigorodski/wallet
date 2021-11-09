@@ -35,13 +35,10 @@ import com.google.zxing.{BarcodeFormat, EncodeHintType}
 import com.journeyapps.barcodescanner.{BarcodeResult, BarcodeView}
 import com.ornach.nobobutton.NoboButton
 import com.softwaremill.quicklens._
-
-import scala.concurrent.duration._
 import com.sparrowwallet.hummingbird.{UR, UREncoder}
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import fr.acinq.eclair.payment.PaymentRequest
 import fr.acinq.eclair.transactions.Transactions
@@ -54,6 +51,7 @@ import rx.lang.scala.{Observable, Subscription}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
@@ -500,29 +498,27 @@ trait BaseActivity extends AppCompatActivity { me =>
     var subscription: Option[Subscription] = None
 
     def activate(bytes: Bytes): Unit = {
-      val encoder = new UREncoder(UR.fromBytes(bytes), 10, 100, 0)
-      val stringToQr: String => Bitmap = source => QRActivity.get(source, qrSize)
-      val updateView: Bitmap => Unit = source => UITask(qrSlideshow setImageBitmap source).run
-      val layoutParams = new LinearLayout.LayoutParams(qrSlideshow.getWidth, qrSlideshow.getWidth)
-      subscription = Observable.interval(1.second).map(_ => encoder.nextPart).map(stringToQr).subscribe(updateView).asSome
-      qrSlideshow.setLayoutParams(layoutParams)
+      val encoder = new UREncoder(UR.fromBytes(bytes), 20, 20, 0)
+      val stringToQr: String => Bitmap = sourceChunk => QRActivity.get(sourceChunk, qrSize)
+      val updateView: Bitmap => Unit = sourceQrCode => UITask(qrSlideshow setImageBitmap sourceQrCode).run
+      subscription = Observable.interval(0.second, 700.millis).map(_ => encoder.nextPart).map(stringToQr).subscribe(updateView).asSome
     }
   }
 
   class ChainReaderView(val host: View) extends HasUrDecoder with HasHostView {
     barcodeReader = host.findViewById(R.id.qrReader).asInstanceOf[BarcodeView]
     val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
+    var onSignedTx: Transaction => Unit = none
     instruction = chainButtonsView.chainText
-    var onPsbt: Psbt => Unit = none
 
     override def barcodeResult(res: BarcodeResult): Unit = handleUR(res.getText)
     override def onError(error: String): Unit = onFail(error)
 
-    override def onUR(ur: UR): Unit = Try {
-      ur.decodeFromRegistry.asInstanceOf[Bytes]
-    } flatMap Psbt.read match {
-      case Success(psbtResult) => onPsbt(psbtResult)
-      case Failure(why) => onError(why.getMessage)
+    override def onUR(ur: UR): Unit = {
+      obtainPsbt(ur).flatMap(extractBip84Tx) match {
+        case Success(signedTx) => onSignedTx(signedTx)
+        case Failure(why) => onError(why.getMessage)
+      }
     }
   }
 
@@ -541,57 +537,76 @@ trait BaseActivity extends AppCompatActivity { me =>
     manager.hintDenom setText getString(dialog_up_to).format(canSend).html
   }
 
-  class CircularSpinnerView(val host: View) extends HasHostView {
-    val progressBar: ProgressBar = host.findViewById(R.id.progressBar).asInstanceOf[ProgressBar]
-  }
+  class CircularSpinnerView(val host: View) extends HasHostView
 
-  class ChainSendView(val fromWallet: ElectrumEclairWallet, badge: Option[String], visibilityRes: Int) {
+  class ChainSendView(val fromWallet: ElectrumEclairWallet, badge: Option[String], visibilityRes: Int) { me =>
     val body: ScrollView = getLayoutInflater.inflate(R.layout.frag_input_on_chain, null).asInstanceOf[ScrollView]
     val manager: RateManager = new RateManager(body, badge, visibilityRes, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
     val chainEditView = new ChainEditView(body.findViewById(R.id.editChain).asInstanceOf[LinearLayout], manager, fromWallet)
-    val chainSlideshowView = new ChainSlideshowView(body findViewById R.id.slideshowChain)
-    val chainConfirmView = new ChainConfirmView(body findViewById R.id.confirmChain)
-    val chainReaderView = new ChainReaderView(body findViewById R.id.readerChain)
-    val circularSpinnerView = new CircularSpinnerView(body)
+    lazy val chainSlideshowView = new ChainSlideshowView(body findViewById R.id.slideshowChain)
+    lazy val circularSpinnerView = new CircularSpinnerView(body findViewById R.id.progressBar)
+    lazy val chainConfirmView = new ChainConfirmView(body findViewById R.id.confirmChain)
+    lazy val chainReaderView = new ChainReaderView(body findViewById R.id.readerChain)
 
-    private[this] val views: List[HasHostView] = List(chainEditView, chainSlideshowView, chainConfirmView, chainReaderView, circularSpinnerView)
-    def switchTo(visibleSection: HasHostView): Unit = for (section <- views) setVis(isVisible = visibleSection == section, section.host)
+    body post UITask {
+      val layoutParams = new LinearLayout.LayoutParams(body.getWidth, body.getWidth)
+      chainSlideshowView.qrSlideshow.setLayoutParams(layoutParams)
+      chainReaderView.barcodeReader.setLayoutParams(layoutParams)
+      circularSpinnerView.host.setLayoutParams(layoutParams)
+    }
 
-    def switchToConfirm(alert: AlertDialog, totalAmount: MilliSatoshi, fee: MilliSatoshi): Unit = ???
+    lazy private val views = List(chainEditView, chainSlideshowView, circularSpinnerView, chainConfirmView, chainReaderView)
+    def switchTo(visibleSection: HasHostView): Unit = for (section <- views) setVis(isVisible = section == visibleSection, section.host)
+    def switchButtons(alert: AlertDialog, on: Boolean): Unit = setVisMany(on -> getPositiveButton(alert), on -> getNegativeButton(alert), on -> getNeutralButton(alert), true -> body)
+    val onDismissListener: DialogInterface.OnDismissListener = new DialogInterface.OnDismissListener { override def onDismiss(dialog: DialogInterface): Unit = haltProcesses }
 
-    def switchToHardwareOutgoing(alert: AlertDialog, response: GenerateTxResponse): Unit = ???
+    def haltProcesses: Unit = {
+      runAnd(chainReaderView.barcodeReader.pause)(chainReaderView.barcodeReader.stopDecoding)
+      for (subscription <- chainSlideshowView.subscription) subscription.unsubscribe
+    }
 
-    def switchToHardwareIncoming(alert: AlertDialog): Unit = ???
+    def switchToEdit(alert: AlertDialog): Unit = {
+      switchButtons(alert, on = true)
+      switchTo(chainEditView)
+      haltProcesses
+    }
 
-    def switchToSpinner: Unit = ???
+    def switchToConfirm(alert: AlertDialog, totalAmount: MilliSatoshi, fee: MilliSatoshi): Unit = {
+      chainConfirmView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
+      chainConfirmView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
+      chainConfirmView.confirmAmount.secondItem setText WalletApp.denom.parsedWithSign(totalAmount, cardIn, cardZero).html
+      chainConfirmView.confirmFee.secondItem setText WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html
+      chainConfirmView.confirmFiat.secondItem setText WalletApp.currentMsatInFiatHuman(totalAmount).html
+      switchButtons(alert, on = false)
+      switchTo(chainConfirmView)
+      haltProcesses
+    }
 
+    def switchToHardwareOutgoing(alert: AlertDialog, psbt: Psbt): Unit = {
+      chainSlideshowView.chainButtonsView.chainNextButton setOnClickListener onButtonTap(me switchToHardwareIncoming alert)
+      chainSlideshowView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
+      chainSlideshowView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
+      runAnd(chainReaderView.barcodeReader.pause)(chainReaderView.barcodeReader.stopDecoding)
+      chainSlideshowView.activate(Psbt write psbt)
+      switchButtons(alert, on = false)
+      switchTo(chainSlideshowView)
+    }
 
-    //    val editChain: LinearLayout = body.findViewById(R.id.editChain).asInstanceOf[LinearLayout]
-//    val inputChain: LinearLayout = editChain.findViewById(R.id.inputChain).asInstanceOf[LinearLayout]
-//    val confirmChain: LinearLayout = body.findViewById(R.id.confirmChain).asInstanceOf[LinearLayout]
-//
-//
-//
-//    val confirmSend: NoboButton = body.findViewById(R.id.confirmSend).asInstanceOf[NoboButton]
-//    val confirmEdit: NoboButton = body.findViewById(R.id.confirmEdit).asInstanceOf[NoboButton]
-//    val cancelSend: NoboButton = body.findViewById(R.id.cancelSend).asInstanceOf[NoboButton]
-//
-//    def switchToConfirm(alert: AlertDialog, amount: MilliSatoshi, fee: MilliSatoshi): Unit = {
-//      confirmAmount.secondItem.setText(WalletApp.denom.parsedWithSign(amount, cardIn, cardZero).html)
-//      confirmFee.secondItem.setText(WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html)
-//      confirmFiat.secondItem.setText(WalletApp.currentMsatInFiatHuman(amount).html)
-//      setVisMany(false -> editChain, true -> confirmChain)
-//      getPositiveButton(alert).setVisibility(View.GONE)
-//      getNegativeButton(alert).setVisibility(View.GONE)
-//      getNeutralButton(alert).setVisibility(View.GONE)
-//    }
-//
-//    def switchToEdit(alert: AlertDialog): Unit = {
-//      setVisMany(true -> editChain, false -> confirmChain)
-//      getPositiveButton(alert).setVisibility(View.VISIBLE)
-//      getNegativeButton(alert).setVisibility(View.VISIBLE)
-//      getNeutralButton(alert).setVisibility(View.VISIBLE)
-//    }
+    def switchToHardwareIncoming(alert: AlertDialog): Unit = {
+      chainReaderView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
+      chainReaderView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
+      runAnd(chainReaderView.barcodeReader decodeContinuous chainReaderView)(chainReaderView.barcodeReader.resume)
+      setVis(isVisible = false, chainReaderView.chainButtonsView.chainNextButton)
+      for (sub <- chainSlideshowView.subscription) sub.unsubscribe
+      switchButtons(alert, on = false)
+      switchTo(chainReaderView)
+    }
+
+    def switchToSpinner(alert: AlertDialog): Unit = {
+      switchButtons(alert, on = false)
+      switchTo(circularSpinnerView)
+      haltProcesses
+    }
   }
 
   // Guards and send/receive helpers

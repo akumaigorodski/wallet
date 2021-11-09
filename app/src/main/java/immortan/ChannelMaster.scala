@@ -126,12 +126,11 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
         val decryptionResults = for (ephemeralKey <- ephemeralKeys) yield IncomingPacket.decrypt(ext.theirAdd, ephemeralKey)
         val goodResultFirst = decryptionResults.zip(ephemeralKeys) sortBy { case res ~ _ if res.isRight => 0 case _ => 1 }
 
-        goodResultFirst.headOption match {
-          case None => CMD_FAIL_MALFORMED_HTLC(routed.onionHash, routed.code, ext.theirAdd)
-          case Some(Left(fail: BadOnion) ~ _) => CMD_FAIL_MALFORMED_HTLC(fail.onionHash, fail.code, ext.theirAdd)
-          case Some(Left(onionFail) ~ secret) => CMD_FAIL_HTLC(Right(onionFail), secret, ext.theirAdd)
-          case Some(Right(packet) ~ secret) => defineResolution(secret, packet)
-        }
+        goodResultFirst.headOption.map {
+          case (Right(packet), secret) => defineResolution(secret, packet)
+          case (Left(fail: BadOnion), _) => CMD_FAIL_MALFORMED_HTLC(fail.onionHash, fail.code, ext.theirAdd)
+          case (Left(onionFail), secret) => CMD_FAIL_HTLC(Right(onionFail), secret, ext.theirAdd)
+        } getOrElse CMD_FAIL_MALFORMED_HTLC(routed.onionHash, routed.code, ext.theirAdd)
 
       case Left(onionFail) => CMD_FAIL_HTLC(Right(onionFail), ext.remoteInfo.nodeSpecificPrivKey, ext.theirAdd)
       case Right(packet) => defineResolution(ext.remoteInfo.nodeSpecificPrivKey, packet)

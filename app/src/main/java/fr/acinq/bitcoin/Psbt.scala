@@ -650,7 +650,7 @@ object Psbt {
 
   private def signNonWitness(priv: PrivateKey, inputIndex: Int, input: PartiallySignedNonWitnessInput, global: Global): Try[(PartiallySignedInput, ByteVector)] = {
     val txIn = global.tx.txIn(inputIndex)
-    val redeemScript = input.redeemScript match {
+    val redeemScript: Try[Seq[ScriptElt]] = input.redeemScript match {
       case Some(script) =>
         // If a redeem script is provided in the partially signed input, the utxo must be a p2sh for that script.
         val p2sh = Script.write(Script.pay2sh(script))
@@ -668,7 +668,7 @@ object Psbt {
   }
 
   private def signWitness(priv: PrivateKey, inputIndex: Int, input: PartiallySignedWitnessInput, global: Global): Try[(PartiallySignedInput, ByteVector)] = {
-    val redeemScript = input.redeemScript match {
+    val redeemScript: Try[Seq[ScriptElt]] = input.redeemScript match {
       case Some(script) =>
         // If a redeem script is provided in the partially signed input, the utxo must be a p2sh for that script (we're using p2sh-embedded segwit).
         val p2sh = Script.write(Script.pay2sh(script))
@@ -830,8 +830,8 @@ object Psbt {
         case DataEntry(key, _) if key.length != 1 => Failure(new IllegalArgumentException("psbt version key must contain exactly 1 byte"))
         case DataEntry(_, value) if value.length != 4 => Failure(new IllegalArgumentException("psbt version must be exactly 4 bytes"))
         case DataEntry(_, value) => Protocol.uint32(value, ByteOrder.LITTLE_ENDIAN) match {
-          case v if v > Version => Failure(new IllegalArgumentException(s"unsupported psbt version: $v"))
-          case v => Success(v)
+          case v if v > Version => Failure(new IllegalArgumentException(s"unsupported psbt version: $v")): Try[Long]
+          case v => Success(v): Try[Long]
         }
       }.getOrElse(Success(0))
       val tx_opt: Try[Transaction] = known.find(_.key.head == 0x00).map {
@@ -839,9 +839,9 @@ object Psbt {
         case DataEntry(_, value) =>
           val tx = Transaction.read(value.toArray, Protocol.PROTOCOL_VERSION | Transaction.SERIALIZE_TRANSACTION_NO_WITNESS)
           if (tx.txIn.exists(input => input.hasWitness || input.signatureScript.nonEmpty)) {
-            Failure(new IllegalArgumentException("psbt tx inputs must have empty scriptSigs and witness"))
+            Failure(new IllegalArgumentException("psbt tx inputs must have empty scriptSigs and witness")): Try[Transaction]
           } else {
-            Success(tx)
+            Success(tx): Try[Transaction]
           }
       }.getOrElse(Failure(new IllegalArgumentException("psbt must contain a transaction")))
       val xpubs_opt: Try[Seq[ExtendedPublicKeyWithMaster]] = trySequence(known.filter(_.key.head == 0x01).map {
@@ -855,14 +855,14 @@ object Psbt {
           val chaincode = ByteVector32(Protocol.bytes(xpub, 32))
           val publicKey = Protocol.bytes(xpub, 33)
           if (value.length != 4 * (depth + 1)) {
-            Failure(new IllegalArgumentException("psbt bip32 xpub must contain the master key fingerprint and derivation path"))
+            Failure(new IllegalArgumentException("psbt bip32 xpub must contain the master key fingerprint and derivation path")): Try[ExtendedPublicKeyWithMaster]
           } else {
             val masterKeyFingerprint = Protocol.uint32(value.take(4), ByteOrder.BIG_ENDIAN)
             val derivationPath = KeyPath((0 until depth).map(i => Protocol.uint32(value.slice(4 * (i + 1), 4 * (i + 2)), ByteOrder.LITTLE_ENDIAN)))
             if (derivationPath.lastChildNumber != childNumber) {
-              Failure(new IllegalArgumentException("psbt xpub last child number mismatch"))
+              Failure(new IllegalArgumentException("psbt xpub last child number mismatch")): Try[ExtendedPublicKeyWithMaster]
             } else {
-              Success(ExtendedPublicKeyWithMaster(prefix, masterKeyFingerprint, ExtendedPublicKey(publicKey, chaincode, depth, derivationPath, parent)))
+              Success(ExtendedPublicKeyWithMaster(prefix, masterKeyFingerprint, ExtendedPublicKey(publicKey, chaincode, depth, derivationPath, parent))): Try[ExtendedPublicKeyWithMaster]
             }
           }
       })
@@ -883,9 +883,9 @@ object Psbt {
         case DataEntry(_, value) =>
           val inputTx = Transaction.read(value.toArray)
           if (inputTx.txid == txIn.outPoint.txid && txIn.outPoint.index < inputTx.txOut.length) {
-            Success(Some(inputTx))
+            Success(Some(inputTx)): Try[Option[Transaction]]
           } else {
-            Failure(new IllegalArgumentException("psbt non-witness utxo does not match psbt outpoint"))
+            Failure(new IllegalArgumentException("psbt non-witness utxo does not match psbt outpoint")): Try[Option[Transaction]]
           }
       }.getOrElse(Success(None))
       val witnessUtxo_opt: Try[Option[TxOut]] = known.find(_.key.head == 0x01).map {

@@ -29,6 +29,7 @@ import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.CurrentBlockCount
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, RBFResponse, WalletReady}
+import fr.acinq.eclair.blockchain.electrum.db.{SigningWallet, WatchingWallet}
 import fr.acinq.eclair.blockchain.electrum.{ElectrumEclairWallet, ElectrumWallet}
 import fr.acinq.eclair.blockchain.fee.FeeratePerByte
 import fr.acinq.eclair.channel._
@@ -1390,16 +1391,31 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     def attempt(alert: AlertDialog): Unit = {
       runFutureProcessOnUI(fromWallet.makeTx(chainPubKeyScript, sendView.manager.resultMsat.truncateToSatoshi, Map.empty, feeView.rate), onFail) { response =>
-        if (fromWallet.ewt.secrets.isDefined) sendView.switchToConfirm(alert, response.pubKeyScriptToAmount.values.head.toMilliSatoshi, response.fee.toMilliSatoshi, process)
-        else sendView.switchToHardwareTxTransport(alert, response, process)
-      }
+        // It is fine to use the first map element here: we send to single address so response may will always have a single element (change not included)
+        val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
+        val totalSendAmount = response.pubKeyScriptToAmount.values.head.toMilliSatoshi
 
-      def process(response: GenerateTxResponse): Unit = {
-        val transactionLabel = sendView.manager.resultExtraInput orElse uri.label orElse uri.message
-        WalletApp.txDescriptions(response.tx.txid) = PlainTxDescription(uri.address :: Nil, transactionLabel)
-        val isSent = Await.result(fromWallet.broadcast(response.tx), atMost = 40.seconds)
-        if (!isSent) onFail(me getString error_btc_broadcast_fail)
-        alert.dismiss
+        def switchToConfirmExt: Unit = {
+          finalSendButton setOnClickListener onButtonTap(process apply response.tx)
+          sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
+        }
+
+        def switchToHardwareOutgoingExt(masterFingerprint: Long): Unit = {
+          val psbt = prepareBip84Psbt(response, masterFingerprint)
+          sendView.switchToHardwareOutgoing(alert, psbt)
+
+          sendView.chainReaderView.onSignedTx = signedTx => UITask {
+            finalSendButton setOnClickListener onButtonTap(process apply signedTx)
+            sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
+            if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
+          }.run
+        }
+
+        fromWallet.info.core match {
+          case hardware: WatchingWallet if hardware.masterFingerprint.isEmpty => alert.dismiss
+          case hardware: WatchingWallet => switchToHardwareOutgoingExt(hardware.masterFingerprint.get)
+          case _: SigningWallet => switchToConfirmExt
+        }
       }
     }
 
@@ -1429,7 +1445,15 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       else mkCheckFormNeutral(attempt, none, switchToLn, builder, dialog_ok, dialog_cancel, lightning_wallet)
     }
 
-    lazy val feeView: FeeView[GenerateTxResponse] = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.chainEditView.host) {
+    lazy val process: Transaction => Unit = signedTx => {
+      val transactionLabel = sendView.manager.resultExtraInput orElse uri.label orElse uri.message
+      WalletApp.txDescriptions(signedTx.txid) = PlainTxDescription(uri.address :: Nil, transactionLabel)
+      val isSent = Await.result(fromWallet.broadcast(signedTx), atMost = 40.seconds)
+      if (!isSent) onFail(me getString error_btc_broadcast_fail)
+      alert.dismiss
+    }
+
+    lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.chainEditView.host) {
       rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget)
 
       worker = new ThrottledWork[String, GenerateTxResponse] {
@@ -1447,6 +1471,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     // Automatically update a candidate transaction each time user changes amount value
     sendView.manager.inputAmount addTextChangedListener onTextChange(feeView.worker.addWork)
+    alert.setOnDismissListener(sendView.onDismissListener)
     feeView.update(feeOpt = None, showIssue = false)
 
     uri.amount foreach { asked =>
@@ -1462,15 +1487,31 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     def attempt(alert: AlertDialog): Unit = {
       runFutureProcessOnUI(fromWallet.makeBatchTx(scriptToAmount, feeView.rate), onFail) { response =>
-        if (fromWallet.ewt.secrets.isDefined) sendView.switchToConfirm(alert, response.pubKeyScriptToAmount.values.head.toMilliSatoshi, response.fee.toMilliSatoshi, process)
-        else sendView.switchToHardwareTxTransport(alert, response, process)
-      }
+        // It is fine to sum the whole map element here: possible change output will never be present in it
+        val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
+        val totalSendAmount = response.pubKeyScriptToAmount.values.sum.toMilliSatoshi
 
-      def process(response: GenerateTxResponse): Unit = {
-        WalletApp.txDescriptions(response.tx.txid) = PlainTxDescription(addressToAmount.values.firstItems.toList)
-        val isSent = Await.result(fromWallet.broadcast(response.tx), atMost = 40.seconds)
-        if (!isSent) onFail(me getString error_btc_broadcast_fail)
-        alert.dismiss
+        def switchToConfirmExt: Unit = {
+          finalSendButton setOnClickListener onButtonTap(process apply response.tx)
+          sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
+        }
+
+        def switchToHardwareOutgoingExt(masterFingerprint: Long): Unit = {
+          val psbt = prepareBip84Psbt(response, masterFingerprint)
+          sendView.switchToHardwareOutgoing(alert, psbt)
+
+          sendView.chainReaderView.onSignedTx = signedTx => UITask {
+            finalSendButton setOnClickListener onButtonTap(process apply signedTx)
+            sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
+            if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
+          }.run
+        }
+
+        fromWallet.info.core match {
+          case hardware: WatchingWallet if hardware.masterFingerprint.isEmpty => alert.dismiss
+          case hardware: WatchingWallet => switchToHardwareOutgoingExt(hardware.masterFingerprint.get)
+          case _: SigningWallet => switchToConfirmExt
+        }
       }
     }
 
@@ -1482,7 +1523,14 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       mkCheckForm(attempt, none, builder, dialog_ok, dialog_cancel)
     }
 
-    lazy val feeView: FeeView[GenerateTxResponse] = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.chainEditView.host) {
+    lazy val process: Transaction => Unit = signedTx => {
+      WalletApp.txDescriptions(signedTx.txid) = PlainTxDescription(addressToAmount.values.firstItems.toList)
+      val isSent = Await.result(fromWallet.broadcast(signedTx), atMost = 40.seconds)
+      if (!isSent) onFail(me getString error_btc_broadcast_fail)
+      alert.dismiss
+    }
+
+    lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.chainEditView.host) {
       rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget)
 
       worker = new ThrottledWork[String, GenerateTxResponse] {
@@ -1506,6 +1554,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     // Hide address facility, we display a list of addresses instead
     setVis(isVisible = false, sendView.chainEditView.inputChain)
+    alert.setOnDismissListener(sendView.onDismissListener)
     feeView.update(feeOpt = None, showIssue = false)
     feeView.worker addWork "MULTI-SEND-INIT-CALL"
   }

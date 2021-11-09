@@ -30,7 +30,7 @@ object Channel {
   implicit val channelContext: ExecutionContextExecutor = scala.concurrent.ExecutionContext fromExecutor Executors.newSingleThreadExecutor
 
   def load(listeners: Set[ChannelListener], bag: ChannelBag): Map[ByteVector32, Channel] = bag.all.map {
-    case data: HasNormalCommitments => data.channelId -> ChannelNormal.make(listeners, data, LNParams.chainWallets, bag)
+    case data: HasNormalCommitments => data.channelId -> ChannelNormal.make(listeners, data, bag)
     case data: HostedCommits => data.channelId -> ChannelHosted.make(listeners, data, bag)
     case _ => throw new RuntimeException
   }.toMap

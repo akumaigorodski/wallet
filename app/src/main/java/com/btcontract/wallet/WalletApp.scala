@@ -202,15 +202,16 @@ object WalletApp {
           ext.copy(wallets = signingWallet :: ext.wallets)
 
         case ext ~ CompleteChainWalletInfo(core: WatchingWallet, persistentWatchingWalletData, lastBalance, label) =>
-          val watchingWallet = ext.makeWatchingWalletParts(core, lastBalance, label)
+          val watchingWallet = ext.makeWatchingWallet84Parts(core, lastBalance, label)
           watchingWallet.walletRef ! persistentWatchingWalletData
           ext.copy(wallets = watchingWallet :: ext.wallets)
       }
 
     LNParams.chainWallets = if (walletExt.wallets.isEmpty) {
-      val params = SigningWallet(EclairWallet.BIP84, isRemovable = false)
-      val label = app.getString(R.string.bitcoin_wallet)
-      walletExt.withNewSigning(params, label)
+      val defaultLabel = app.getString(R.string.bitcoin_wallet)
+      val core = SigningWallet(walletType = EclairWallet.BIP84, isRemovable = false)
+      val wallet = LNParams.chainWallets.makeSigningWalletParts(core, Satoshi(0L), defaultLabel)
+      walletExt.withFreshWallet(wallet)
     } else walletExt
 
     LNParams.feeRates.listeners += new FeeRatesListener {
