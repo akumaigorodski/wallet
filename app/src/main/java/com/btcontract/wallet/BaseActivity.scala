@@ -39,6 +39,7 @@ import com.sparrowwallet.hummingbird.{UR, UREncoder}
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
+import fr.acinq.eclair.blockchain.electrum.db.WatchingWallet
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import fr.acinq.eclair.payment.PaymentRequest
 import fr.acinq.eclair.transactions.Transactions
@@ -128,6 +129,12 @@ trait BaseActivity extends AppCompatActivity { me =>
   def INIT(state: Bundle): Unit
 
   // Helpers
+
+  def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] = wallet.info.core match {
+    case watching: WatchingWallet if watching.masterFingerprint.isDefined => Some(hardware_wallet)
+    case _: WatchingWallet => Some(watching_wallet)
+    case _ => None
+  }
 
   def browse(maybeUri: String): Unit = try {
     me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri)
@@ -854,7 +861,7 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     val removeItem: NoboButton = view.findViewById(R.id.removeItem).asInstanceOf[NoboButton]
 
     val chainLabel: TextView = view.findViewById(R.id.chainLabel).asInstanceOf[TextView]
-    val hardwareWalletNotice: TextView = view.findViewById(R.id.hardwareWalletNotice).asInstanceOf[TextView]
+    val chainWalletNotice: TextView = view.findViewById(R.id.chainWalletNotice).asInstanceOf[TextView]
 
     val chainBalanceWrap: LinearLayout = view.findViewById(R.id.chainBalanceWrap).asInstanceOf[LinearLayout]
     val chainBalanceFiat: TextView = view.findViewById(R.id.chainBalanceFiat).asInstanceOf[TextView]
@@ -867,15 +874,20 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
       chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, btcCardZero).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
 
+      val isRemovable = wallet.info.core.isRemovable
       val isWatchingWallet = wallet.ewt.secrets.isEmpty
       val chainBalanceVisible = wallet.info.lastBalance > 0L.sat
-      val receiveTipVisible = (!wallet.info.core.isRemovable || isWatchingWallet) && !chainBalanceVisible
-      val menuTipVisible = (wallet.info.core.isRemovable && !isWatchingWallet) && !chainBalanceVisible
+      val menuTipVisible = (isRemovable && !isWatchingWallet) && !chainBalanceVisible
+      val receiveTipVisible = (!isRemovable || isWatchingWallet) && !chainBalanceVisible
+      val backgroundRes = if (isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
 
-      host.setVisMany(wallet.info.core.isRemovable -> setItemLabel, wallet.info.core.isRemovable -> removeItem)
-      host.setVisMany(isWatchingWallet -> hardwareWalletNotice, receiveTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip, chainBalanceVisible -> chainBalanceWrap)
-      def onTap: Unit = if (isWatchingWallet) onHardwareWalletTap(wallet) else if (wallet.info.core.isRemovable) onLegacyWalletTap(wallet) else onBuiltInWalletTap(wallet)
-      val backgroundRes = if (wallet.info.core.isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
+      host.setVisMany(isRemovable -> setItemLabel, isRemovable -> removeItem, receiveTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip, chainBalanceVisible -> chainBalanceWrap)
+      def onTap: Unit = if (isWatchingWallet) onHardwareWalletTap(wallet) else if (isRemovable) onLegacyWalletTap(wallet) else onBuiltInWalletTap(wallet)
+
+      host.chainWalletNotice(wallet) foreach { textRes =>
+        host.setVis(isVisible = true, chainWalletNotice)
+        chainWalletNotice.setText(textRes)
+      }
 
       setItemLabel setOnClickListener host.onButtonTap(self onLabelTap wallet)
       removeItem setOnClickListener host.onButtonTap(self onRemoveTap wallet)

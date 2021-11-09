@@ -124,9 +124,11 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
       chainQrCodes.setAdapter(adapter)
     }
 
-    val base = getString(dialog_receive_btc)
-    val hardware = base + "<br>" + getString(hardware_wallet)
-    val text = if (wallet.ewt.secrets.isEmpty) hardware else base
+    val baseText = getString(dialog_receive_btc)
+    val text = chainWalletNotice(wallet) map { textRes =>
+      baseText + "<br>" + getString(textRes)
+    } getOrElse baseText
+
     chainQrCaption.setText(text.html)
   }
 

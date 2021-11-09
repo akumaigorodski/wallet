@@ -10,6 +10,7 @@
     <string name="manual">Leer manual</string>
 
     <string name="hardware_wallet">Hardware wallet</string>
+    <string name="watching_wallet">Watching wallet</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="lightning_wallet">Lightning</string>
