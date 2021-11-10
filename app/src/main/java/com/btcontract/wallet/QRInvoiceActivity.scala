@@ -66,7 +66,7 @@ class QRInvoiceActivity extends QRActivity with ExternalDataChecker { me =>
     }
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
-    case prEx: PaymentRequestExt => LNParams.cm.getPaymentInfoMemo(prEx.pr.paymentHash).map(showInvoice).getOrElse(finish)
+    case prEx: PaymentRequestExt => LNParams.cm.payBag.getPaymentInfo(prEx.pr.paymentHash).foreach(showInvoice)
     case _ => finish
   }
 

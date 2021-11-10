@@ -244,7 +244,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
         currentDetails match {
           case info: LNUrlPayLink => WalletApp.lnUrlPayBag.updDescription(info.description.copy(label = optionalInput), info.domain, info.payString)
-          case info: PaymentInfo => LNParams.cm.updateDescriptionAndCache(info.description.copy(label = optionalInput), info.paymentHash)
+          case info: PaymentInfo => LNParams.cm.payBag.updDescription(info.description.copy(label = optionalInput), info.paymentHash)
           case info: TxInfo => WalletApp.txDataBag.updDescription(info.description.withNewLabel(optionalInput), info.txid)
           case _ =>
         }
@@ -308,7 +308,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         alert.dismiss
 
         runFutureProcessOnUI(LNParams.chainWallets.lnWallet.broadcast(tx), onFail) {
-          case true => LNParams.cm.updateDescriptionAndCache(infoDesc1, info.paymentHash)
+          case true => LNParams.cm.payBag.updDescription(infoDesc1, info.paymentHash)
           case false => onFail(error = me getString error_btc_broadcast_fail)
         }
       }
