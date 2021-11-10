@@ -236,7 +236,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       val (container, extraInputLayout, extraInput) = singleInputPopup
       val builder = titleBodyAsViewBuilder(title = null, body = container)
       mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
-      extraInputLayout.setHint(dialog_set_item_label)
+      extraInputLayout.setHint(dialog_set_label)
       showKeys(extraInput)
 
       def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
@@ -367,7 +367,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       val list = selectorList(adapter)
-      val title = getString(delayed_refunding).asDefView
+      val title = getString(delayed_refunding_ext).asDefView
       titleBodyAsViewBuilder(title, list).show
       list.setDividerHeight(0)
       list.setDivider(null)
@@ -887,7 +887,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         val (container, extraInputLayout, extraInput) = singleInputPopup
         val builder = titleBodyAsViewBuilder(title = null, body = container)
         mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
-        extraInputLayout.setHint(dialog_set_item_label)
+        extraInputLayout.setHint(dialog_set_label)
         showKeys(extraInput)
 
         def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
@@ -1044,9 +1044,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   type GrantResults = Array[Int]
 
-  override def onRequestPermissionsResult(reqCode: Int, permissions: Array[String], results: GrantResults): Unit =
-    if (reqCode == scannerRequestCode && results.nonEmpty && results.head == PackageManager.PERMISSION_GRANTED)
-      bringScanner(null)
+  override def onRequestPermissionsResult(reqCode: Int, permissions: Array[String], results: GrantResults): Unit = {
+    if (reqCode == scannerRequestCode && results.nonEmpty && results.head == PackageManager.PERMISSION_GRANTED) bringScanner(null)
+  }
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
     case bitcoinUri: BitcoinUri if Try(LNParams addressToPubKeyScript bitcoinUri.address).isSuccess =>
@@ -1365,7 +1365,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   def bringSendBitcoinPopup(uri: BitcoinUri, fromWallet: ElectrumEclairWallet): Unit = {
-    val sendView = new ChainSendView(fromWallet, getString(dialog_add_btc_label).asSome, dialog_visibility_private)
+    val sendView = new ChainSendView(fromWallet, getString(dialog_set_label).asSome, dialog_visibility_private)
     val chainPubKeyScript = LNParams.addressToPubKeyScript(uri.address)
 
     def attempt(alert: AlertDialog): Unit = {
@@ -1558,7 +1558,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   def bringWithdrawPopup(data: WithdrawRequest): Unit = lnReceiveGuard(LNParams.cm.all.values, contentWindow) {
     new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = data.maxWithdrawable.msat, initMinReceivable = data.minCanReceive) {
-      override def getManager: RateManager = new RateManager(body, getString(dialog_add_ln_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+      override def getManager: RateManager = new RateManager(body, getString(dialog_set_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
       override def getDescription: PaymentDescription = PaymentDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, invoiceText = new String, meta = data.descriptionOpt)
       override def getTitleText: String = getString(dialog_lnurl_withdraw).format(data.callbackUri.getHost, data.descriptionOpt.map(desc => s"<br><br>$desc") getOrElse new String)
       override def processInvoice(prExt: PaymentRequestExt): Unit = data.requestWithdraw(prExt).foreach(none, onFail)

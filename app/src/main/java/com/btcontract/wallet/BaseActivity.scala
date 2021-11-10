@@ -657,7 +657,7 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   abstract class OffChainSender(val maxSendable: MilliSatoshi, val minSendable: MilliSatoshi) extends HasTypicalChainFee {
     val body: android.view.ViewGroup = getLayoutInflater.inflate(R.layout.frag_input_off_chain, null).asInstanceOf[android.view.ViewGroup]
-    lazy val manager = new RateManager(body, getString(dialog_add_ln_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+    lazy val manager = new RateManager(body, getString(dialog_set_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
     val alert: AlertDialog
 
     val canSendFiatHuman: String = WalletApp.currentMsatInFiatHuman(maxSendable)
