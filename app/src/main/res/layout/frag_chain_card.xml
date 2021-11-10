@@ -58,9 +58,9 @@
                         style="@style/BoundedView"/>
 
                     <TextView
+                        android:visibility="gone"
                         android:layout_marginTop="6dp"
-                        android:id="@+id/hardwareWalletNotice"
-                        android:text="@string/hardware_wallet"
+                        android:id="@+id/chainWalletNotice"
                         style="@style/BoundedView"/>
 
                 </LinearLayout>

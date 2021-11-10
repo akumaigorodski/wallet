@@ -51,7 +51,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
   def process(changeMessage: Any): Unit = scala.concurrent.Future(me doProcess changeMessage)
 
   private val CMDResync = "cmd-resync"
-  private val RESYNC_PERIOD: Long = 1000L * 3600 * 48
+  private val RESYNC_PERIOD: Long = 1000L * 3600 * 72
   // We don't load routing data on every startup but when user (or system) actually needs it
   become(Data(channels = Map.empty, hostedChannels = Map.empty, DirectedGraph.empty), WAITING)
 
@@ -66,7 +66,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
 
   def doProcess(change: Any): Unit = (change, state) match {
     case (CMDStartPeriodicResync, WAITING | OPERATIONAL) if subscription.isEmpty =>
-      val repeat = Rx.repeat(Rx.ioQueue, Rx.incHour, times = 49 to Int.MaxValue by 49)
+      val repeat = Rx.repeat(Rx.ioQueue, Rx.incHour, times = 73 to Int.MaxValue by 73)
       // Resync every RESYNC_PERIOD hours + 1 hour to trigger a full resync, not just PHC resync
       val delay = Rx.initDelay(repeat, getLastTotalResyncStamp, RESYNC_PERIOD, preStartMsec = 100)
       subscription = delay.subscribe(_ => me process CMDResync).asSome

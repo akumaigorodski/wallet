@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
+import com.btcontract.wallet.sheets.HasUrDecoder
 import com.cottacush.android.currencyedittext.CurrencyEditText
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.{BaseTransientBottomBar, Snackbar}
@@ -31,11 +32,14 @@ import com.google.common.cache.{Cache, CacheBuilder}
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.{BarcodeFormat, EncodeHintType}
+import com.journeyapps.barcodescanner.{BarcodeResult, BarcodeView}
 import com.ornach.nobobutton.NoboButton
 import com.softwaremill.quicklens._
+import com.sparrowwallet.hummingbird.{UR, UREncoder}
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
+import fr.acinq.eclair.blockchain.electrum.db.WatchingWallet
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import fr.acinq.eclair.payment.PaymentRequest
 import fr.acinq.eclair.transactions.Transactions
@@ -44,9 +48,11 @@ import immortan._
 import immortan.crypto.Tools._
 import immortan.utils.{Denomination, InputParser, PaymentRequestExt, ThrottledWork}
 import org.apmem.tools.layouts.FlowLayout
+import rx.lang.scala.{Observable, Subscription}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
@@ -89,9 +95,8 @@ trait ChoiceReceiver {
 }
 
 trait BaseActivity extends AppCompatActivity { me =>
-
+  lazy val qrSize: Int = getResources.getDimensionPixelSize(R.dimen.qr_size)
   val nothingUsefulTask: Runnable = UITask(WalletApp.app quickToast error_nothing_useful)
-
   val timer: java.util.Timer = new java.util.Timer
 
   val goTo: Class[_] => Any = target => {
@@ -124,6 +129,12 @@ trait BaseActivity extends AppCompatActivity { me =>
   def INIT(state: Bundle): Unit
 
   // Helpers
+
+  def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] = wallet.info.core match {
+    case watching: WatchingWallet if watching.masterFingerprint.isDefined => Some(hardware_wallet)
+    case _: WatchingWallet => Some(watching_wallet)
+    case _ => None
+  }
 
   def browse(maybeUri: String): Unit = try {
     me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri)
@@ -475,36 +486,133 @@ trait BaseActivity extends AppCompatActivity { me =>
     }
   }
 
-  class ChainSendView {
+  // Chan TX popup for signing and hardware wallets
+
+  class ChainButtonsView(host: View) {
+    val chainText: TextView = host.findViewById(R.id.chainText).asInstanceOf[TextView]
+    val chainNextButton: NoboButton = host.findViewById(R.id.chainNextButton).asInstanceOf[NoboButton]
+    val chainEditButton: NoboButton = host.findViewById(R.id.chainEditButton).asInstanceOf[NoboButton]
+    val chainCancelButton: NoboButton = host.findViewById(R.id.chainCancelButton).asInstanceOf[NoboButton]
+  }
+
+  sealed trait HasHostView {
+    val host: View
+  }
+
+  class ChainSlideshowView(val host: View) extends HasHostView {
+    val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
+    val qrSlideshow: ImageView = host.findViewById(R.id.qrSlideshow).asInstanceOf[ImageView]
+    var subscription: Option[Subscription] = None
+
+    def activate(bytes: Bytes): Unit = {
+      val encoder = new UREncoder(UR.fromBytes(bytes), 20, 20, 0)
+      val stringToQr: String => Bitmap = sourceChunk => QRActivity.get(sourceChunk, qrSize)
+      val updateView: Bitmap => Unit = sourceQrCode => UITask(qrSlideshow setImageBitmap sourceQrCode).run
+      subscription = Observable.interval(0.second, 700.millis).map(_ => encoder.nextPart).map(stringToQr).subscribe(updateView).asSome
+    }
+  }
+
+  class ChainReaderView(val host: View) extends HasUrDecoder with HasHostView {
+    barcodeReader = host.findViewById(R.id.qrReader).asInstanceOf[BarcodeView]
+    val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
+    var onSignedTx: Transaction => Unit = none
+    instruction = chainButtonsView.chainText
+
+    override def barcodeResult(res: BarcodeResult): Unit = handleUR(res.getText)
+    override def onError(error: String): Unit = onFail(error)
+
+    override def onUR(ur: UR): Unit = {
+      obtainPsbt(ur).flatMap(extractBip84Tx) match {
+        case Success(signedTx) => onSignedTx(signedTx)
+        case Failure(why) => onError(why.getMessage)
+      }
+    }
+  }
+
+  class ChainConfirmView(val host: View) extends HasHostView {
+    val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
+    val confirmFiat = new TwoSidedItem(host.findViewById(R.id.confirmFiat), getString(dialog_send_btc_confirm_fiat), new String)
+    val confirmAmount = new TwoSidedItem(host.findViewById(R.id.confirmAmount), getString(dialog_send_btc_confirm_amount), new String)
+    val confirmFee = new TwoSidedItem(host.findViewById(R.id.confirmFee), getString(dialog_send_btc_confirm_fee), new String)
+  }
+
+  class ChainEditView(val host: LinearLayout, manager: RateManager, fromWallet: ElectrumEclairWallet) extends HasHostView {
+    val canSend: String = WalletApp.denom.parsedWithSign(fromWallet.info.lastBalance.toMilliSatoshi, cardIn, cardZero)
+    val canSendFiat: String = WalletApp.currentMsatInFiatHuman(fromWallet.info.lastBalance.toMilliSatoshi)
+    val inputChain: LinearLayout = host.findViewById(R.id.inputChain).asInstanceOf[LinearLayout]
+    manager.hintFiatDenom setText getString(dialog_up_to).format(canSendFiat).html
+    manager.hintDenom setText getString(dialog_up_to).format(canSend).html
+  }
+
+  class CircularSpinnerView(val host: View) extends HasHostView
+
+  class ChainSendView(val fromWallet: ElectrumEclairWallet, badge: Option[String], visibilityRes: Int) { me =>
     val body: ScrollView = getLayoutInflater.inflate(R.layout.frag_input_on_chain, null).asInstanceOf[ScrollView]
+    val manager: RateManager = new RateManager(body, badge, visibilityRes, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+    val chainEditView = new ChainEditView(body.findViewById(R.id.editChain).asInstanceOf[LinearLayout], manager, fromWallet)
+    lazy val chainSlideshowView = new ChainSlideshowView(body findViewById R.id.slideshowChain)
+    lazy val circularSpinnerView = new CircularSpinnerView(body findViewById R.id.progressBar)
+    lazy val chainConfirmView = new ChainConfirmView(body findViewById R.id.confirmChain)
+    lazy val chainReaderView = new ChainReaderView(body findViewById R.id.readerChain)
 
-    val editChain: LinearLayout = body.findViewById(R.id.editChain).asInstanceOf[LinearLayout]
-    val inputChain: LinearLayout = editChain.findViewById(R.id.inputChain).asInstanceOf[LinearLayout]
-    val confirmChain: LinearLayout = body.findViewById(R.id.confirmChain).asInstanceOf[LinearLayout]
+    body post UITask {
+      val layoutParams = new LinearLayout.LayoutParams(body.getWidth, body.getWidth)
+      chainSlideshowView.qrSlideshow.setLayoutParams(layoutParams)
+      chainReaderView.barcodeReader.setLayoutParams(layoutParams)
+      circularSpinnerView.host.setLayoutParams(layoutParams)
+    }
 
-    val confirmFiat = new TwoSidedItem(body.findViewById(R.id.confirmFiat), getString(dialog_send_btc_confirm_fiat), new String)
-    val confirmAmount = new TwoSidedItem(body.findViewById(R.id.confirmAmount), getString(dialog_send_btc_confirm_amount), new String)
-    val confirmFee = new TwoSidedItem(body.findViewById(R.id.confirmFee), getString(dialog_send_btc_confirm_fee), new String)
+    lazy private val views = List(chainEditView, chainSlideshowView, circularSpinnerView, chainConfirmView, chainReaderView)
+    def switchTo(visibleSection: HasHostView): Unit = for (section <- views) setVis(isVisible = section == visibleSection, section.host)
+    def switchButtons(alert: AlertDialog, on: Boolean): Unit = setVisMany(on -> getPositiveButton(alert), on -> getNegativeButton(alert), on -> getNeutralButton(alert), true -> body)
+    val onDismissListener: DialogInterface.OnDismissListener = new DialogInterface.OnDismissListener { override def onDismiss(dialog: DialogInterface): Unit = haltProcesses }
 
-    val confirmSend: NoboButton = body.findViewById(R.id.confirmSend).asInstanceOf[NoboButton]
-    val confirmEdit: NoboButton = body.findViewById(R.id.confirmEdit).asInstanceOf[NoboButton]
-    val cancelSend: NoboButton = body.findViewById(R.id.cancelSend).asInstanceOf[NoboButton]
-
-    def switchToConfirm(alert: AlertDialog, amount: MilliSatoshi, fee: MilliSatoshi): Unit = {
-      confirmAmount.secondItem.setText(WalletApp.denom.parsedWithSign(amount, cardIn, cardZero).html)
-      confirmFee.secondItem.setText(WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html)
-      confirmFiat.secondItem.setText(WalletApp.currentMsatInFiatHuman(amount).html)
-      setVisMany(false -> editChain, true -> confirmChain)
-      getPositiveButton(alert).setVisibility(View.GONE)
-      getNegativeButton(alert).setVisibility(View.GONE)
-      getNeutralButton(alert).setVisibility(View.GONE)
+    def haltProcesses: Unit = {
+      runAnd(chainReaderView.barcodeReader.pause)(chainReaderView.barcodeReader.stopDecoding)
+      for (subscription <- chainSlideshowView.subscription) subscription.unsubscribe
     }
 
     def switchToEdit(alert: AlertDialog): Unit = {
-      setVisMany(true -> editChain, false -> confirmChain)
-      getPositiveButton(alert).setVisibility(View.VISIBLE)
-      getNegativeButton(alert).setVisibility(View.VISIBLE)
-      getNeutralButton(alert).setVisibility(View.VISIBLE)
+      switchButtons(alert, on = true)
+      switchTo(chainEditView)
+      haltProcesses
+    }
+
+    def switchToConfirm(alert: AlertDialog, totalAmount: MilliSatoshi, fee: MilliSatoshi): Unit = {
+      chainConfirmView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
+      chainConfirmView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
+      chainConfirmView.confirmAmount.secondItem setText WalletApp.denom.parsedWithSign(totalAmount, cardIn, cardZero).html
+      chainConfirmView.confirmFee.secondItem setText WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html
+      chainConfirmView.confirmFiat.secondItem setText WalletApp.currentMsatInFiatHuman(totalAmount).html
+      switchButtons(alert, on = false)
+      switchTo(chainConfirmView)
+      haltProcesses
+    }
+
+    def switchToHardwareOutgoing(alert: AlertDialog, psbt: Psbt): Unit = {
+      chainSlideshowView.chainButtonsView.chainNextButton setOnClickListener onButtonTap(me switchToHardwareIncoming alert)
+      chainSlideshowView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
+      chainSlideshowView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
+      runAnd(chainReaderView.barcodeReader.pause)(chainReaderView.barcodeReader.stopDecoding)
+      chainSlideshowView.activate(Psbt write psbt)
+      switchButtons(alert, on = false)
+      switchTo(chainSlideshowView)
+    }
+
+    def switchToHardwareIncoming(alert: AlertDialog): Unit = {
+      chainReaderView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
+      chainReaderView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
+      runAnd(chainReaderView.barcodeReader decodeContinuous chainReaderView)(chainReaderView.barcodeReader.resume)
+      setVis(isVisible = false, chainReaderView.chainButtonsView.chainNextButton)
+      for (sub <- chainSlideshowView.subscription) sub.unsubscribe
+      switchButtons(alert, on = false)
+      switchTo(chainReaderView)
+    }
+
+    def switchToSpinner(alert: AlertDialog): Unit = {
+      switchButtons(alert, on = false)
+      switchTo(circularSpinnerView)
+      haltProcesses
     }
   }
 
@@ -549,7 +657,7 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   abstract class OffChainSender(val maxSendable: MilliSatoshi, val minSendable: MilliSatoshi) extends HasTypicalChainFee {
     val body: android.view.ViewGroup = getLayoutInflater.inflate(R.layout.frag_input_off_chain, null).asInstanceOf[android.view.ViewGroup]
-    lazy val manager = new RateManager(body, getString(dialog_add_ln_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+    lazy val manager = new RateManager(body, getString(dialog_set_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
     val alert: AlertDialog
 
     val canSendFiatHuman: String = WalletApp.currentMsatInFiatHuman(maxSendable)
@@ -667,8 +775,6 @@ trait ChanErrorHandlerActivity extends BaseActivity { me =>
 }
 
 trait QRActivity extends BaseActivity { me =>
-  lazy val qrSize: Int = getResources.getDimensionPixelSize(R.dimen.qr_size)
-
   def shareData(bitmap: Bitmap, bech32: String): Unit = {
     val paymentRequestFilePath = new File(getCacheDir, "images")
     if (!paymentRequestFilePath.isFile) paymentRequestFilePath.mkdirs
@@ -755,7 +861,7 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     val removeItem: NoboButton = view.findViewById(R.id.removeItem).asInstanceOf[NoboButton]
 
     val chainLabel: TextView = view.findViewById(R.id.chainLabel).asInstanceOf[TextView]
-    val hardwareWalletNotice: TextView = view.findViewById(R.id.hardwareWalletNotice).asInstanceOf[TextView]
+    val chainWalletNotice: TextView = view.findViewById(R.id.chainWalletNotice).asInstanceOf[TextView]
 
     val chainBalanceWrap: LinearLayout = view.findViewById(R.id.chainBalanceWrap).asInstanceOf[LinearLayout]
     val chainBalanceFiat: TextView = view.findViewById(R.id.chainBalanceFiat).asInstanceOf[TextView]
@@ -768,15 +874,20 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
       chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, btcCardZero).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
 
-      val isHardwareWallet = wallet.ewt.secrets.isEmpty
-      val showChainBalance = wallet.info.lastBalance > 0L.sat
-      val receiveTipVisible = !wallet.info.core.isRemovable && wallet.info.lastBalance < 1L.sat
-      val menuTipVisible = wallet.info.core.isRemovable && wallet.info.lastBalance < 1L.sat
+      val isRemovable = wallet.info.core.isRemovable
+      val isWatchingWallet = wallet.ewt.secrets.isEmpty
+      val chainBalanceVisible = wallet.info.lastBalance > 0L.sat
+      val menuTipVisible = (isRemovable && !isWatchingWallet) && !chainBalanceVisible
+      val receiveTipVisible = (!isRemovable || isWatchingWallet) && !chainBalanceVisible
+      val backgroundRes = if (isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
 
-      host.setVisMany(wallet.info.core.isRemovable -> setItemLabel, wallet.info.core.isRemovable -> removeItem)
-      host.setVisMany(isHardwareWallet -> hardwareWalletNotice, receiveTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip, showChainBalance -> chainBalanceWrap)
-      def onTap: Unit = if (isHardwareWallet) onHardwareWalletTap(wallet) else if (wallet.info.core.isRemovable) onLegacyWalletTap(wallet) else onBuiltInWalletTap(wallet)
-      val backgroundRes = if (wallet.info.core.isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
+      host.setVisMany(isRemovable -> setItemLabel, isRemovable -> removeItem, receiveTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip, chainBalanceVisible -> chainBalanceWrap)
+      def onTap: Unit = if (isWatchingWallet) onHardwareWalletTap(wallet) else if (isRemovable) onLegacyWalletTap(wallet) else onBuiltInWalletTap(wallet)
+
+      host.chainWalletNotice(wallet) foreach { textRes =>
+        host.setVis(isVisible = true, chainWalletNotice)
+        chainWalletNotice.setText(textRes)
+      }
 
       setItemLabel setOnClickListener host.onButtonTap(self onLabelTap wallet)
       removeItem setOnClickListener host.onButtonTap(self onRemoveTap wallet)

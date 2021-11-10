@@ -19,6 +19,7 @@ package fr.acinq
 import java.security.SecureRandom
 
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
+import fr.acinq.bitcoin.DeterministicWallet.{ExtendedPrivateKey, KeyPath}
 import fr.acinq.bitcoin._
 import scodec.Attempt
 import scodec.bits.{BitVector, ByteVector}
@@ -26,13 +27,8 @@ import scodec.bits.{BitVector, ByteVector}
 import scala.util.{Failure, Success, Try}
 
 
-package object eclair {
-
-  /**
-   * We are using 'new SecureRandom()' instead of 'SecureRandom.getInstanceStrong()' because the latter can hang on Linux
-   * See http://bugs.java.com/view_bug.do?bug_id=6521844 and https://tersesystems.com/2015/12/17/the-right-way-to-use-securerandom/
-   */
-  val secureRandom = new SecureRandom()
+package object eclair { me =>
+  val secureRandom = new SecureRandom
 
   def randomBytes(length: Int): ByteVector = {
     val buffer = new Array[Byte](length)
@@ -40,13 +36,15 @@ package object eclair {
     ByteVector.view(buffer)
   }
 
-  def randomBytes32: ByteVector32 = ByteVector32(randomBytes(32))
+  def randomBytes32: ByteVector32 = ByteVector32(me randomBytes 32)
 
-  def randomBytes64: ByteVector64 = ByteVector64(randomBytes(64))
+  def randomBytes64: ByteVector64 = ByteVector64(me randomBytes 64)
 
   def randomKey: PrivateKey = PrivateKey(randomBytes32)
 
-  lazy val invalidPubKey: PublicKey = PublicKey.fromBin(ByteVector.fromValidHex("02" * 33), checkValid = false)
+  val invalidPubKey: PublicKey = PublicKey.fromBin(ByteVector.fromValidHex("02" * 33), checkValid = false)
+
+  val dummyExtPrivKey: ExtendedPrivateKey = ExtendedPrivateKey(randomBytes32, randomBytes32, depth = 0, KeyPath.Root, parent = 0L)
 
   def toLongId(fundingTxHash: ByteVector32, fundingOutputIndex: Int): ByteVector32 = {
     require(fundingOutputIndex < 65536, "fundingOutputIndex must not be greater than FFFF")
@@ -56,64 +54,9 @@ package object eclair {
   }
 
   def serializationResult(attempt: Attempt[BitVector]): ByteVector = attempt match {
-    case Attempt.Successful(bin) => bin.toByteVector
     case Attempt.Failure(cause) => throw new RuntimeException(s"serialization error: $cause")
+    case Attempt.Successful(bin) => bin.toByteVector
   }
-
-  /**
-   * Converts fee rate in satoshi-per-bytes to fee rate in satoshi-per-kw
-   *
-   * @param feeratePerByte fee rate in satoshi-per-bytes
-   * @return fee rate in satoshi-per-kw
-   */
-  def feerateByte2Kw(feeratePerByte: Long): Long = feerateKB2Kw(feeratePerByte * 1000)
-
-  /**
-   * Converts fee rate in satoshi-per-kw to fee rate in satoshi-per-byte
-   *
-   * @param feeratePerKw fee rate in satoshi-per-kw
-   * @return fee rate in satoshi-per-byte
-   */
-  def feerateKw2Byte(feeratePerKw: Long): Long = feeratePerKw / 250
-
-  /**
-   * why 253 and not 250 since feerate-per-kw is feerate-per-kb / 250 and the minimum relay fee rate is 1000 satoshi/Kb ?
-   *
-   * because bitcoin core uses neither the actual tx size in bytes or the tx weight to check fees, but a "virtual size"
-   * which is (3 * weight) / 4 ...
-   * so we want :
-   * fee > 1000 * virtual size
-   * feerate-per-kw * weight > 1000 * (3 * weight / 4)
-   * feerate_per-kw > 250 + 3000 / (4 * weight)
-   * with a conservative minimum weight of 400, we get a minimum feerate_per-kw of 253
-   *
-   * see https://github.com/ElementsProject/lightning/pull/1251
-   **/
-  val MinimumFeeratePerKw = 253
-
-  /**
-   * minimum relay fee rate, in satoshi per kilo
-   * bitcoin core uses virtual size and not the actual size in bytes, see above
-   **/
-  val MinimumRelayFeeRate = 1000
-
-  /**
-   * Converts fee rate in satoshi-per-kilobytes to fee rate in satoshi-per-kw
-   *
-   * @param feeratePerKB fee rate in satoshi-per-kilobytes
-   * @return fee rate in satoshi-per-kw
-   */
-  def feerateKB2Kw(feeratePerKB: Long): Long = Math.max(feeratePerKB / 4, MinimumFeeratePerKw)
-
-  /**
-   * Converts fee rate in satoshi-per-kw to fee rate in satoshi-per-kilobyte
-   *
-   * @param feeratePerKw fee rate in satoshi-per-kw
-   * @return fee rate in satoshi-per-kilobyte
-   */
-  def feerateKw2KB(feeratePerKw: Long): Long = feeratePerKw * 4
-
-  def isPay2PubkeyHash(address: String): Boolean = address.startsWith("1") || address.startsWith("m") || address.startsWith("n")
 
   def proportionalFee(paymentAmount: MilliSatoshi, proportionalFee: Long): MilliSatoshi = (paymentAmount * proportionalFee) / 1000000
 

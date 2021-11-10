@@ -67,9 +67,12 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
     }
   }
 
-  implicit val signingWalletFmt: JsonFormat[SigningWallet] = taggedJsonFmt(jsonFormat[String, Boolean, SigningWallet](SigningWallet.apply, "walletType", "isRemovable"), tag = "SigningWallet")
+  implicit val signingWalletFmt: JsonFormat[SigningWallet] =
+    taggedJsonFmt(jsonFormat[String, Boolean, SigningWallet](SigningWallet.apply, "walletType", "isRemovable"), tag = "SigningWallet")
 
-  implicit val watchingWalletFmt: JsonFormat[WatchingWallet] = taggedJsonFmt(jsonFormat[String, ExtendedPublicKey, Boolean, WatchingWallet](WatchingWallet.apply, "walletType", "xPub", "isRemovable"), tag = "WatchingWallet")
+  implicit val watchingWalletFmt: JsonFormat[WatchingWallet] =
+    taggedJsonFmt(jsonFormat[String, Option[Long], ExtendedPublicKey, Boolean,
+      WatchingWallet](WatchingWallet.apply, "walletType", "masterFingerprint", "xPub", "isRemovable"), tag = "WatchingWallet")
 
   // PaymentInfo stuff
 

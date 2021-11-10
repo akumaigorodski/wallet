@@ -5,7 +5,6 @@ import fr.acinq.bitcoin.DeterministicWallet._
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.TxConfirmedAt
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.crypto.Generators
 import fr.acinq.eclair.crypto.Sphinx.PacketAndSecrets
@@ -29,9 +28,8 @@ case class InPrincipleNotSendable(localAdd: UpdateAddHtlc) extends LocalReject
 
 
 case class INPUT_INIT_FUNDEE(remoteInfo: RemoteNodeInfo, localParams: LocalParams, remoteInit: Init, channelFeatures: ChannelFeatures, theirOpen: OpenChannel)
-case class INPUT_INIT_FUNDER(remoteInfo: RemoteNodeInfo, temporaryChannelId: ByteVector32, fakeFunding: GenerateTxResponse, pushAmount: MilliSatoshi,
-                             fundingFeeratePerKw: FeeratePerKw, initialFeeratePerKw: FeeratePerKw, localParams: LocalParams, remoteInit: Init,
-                             channelFlags: Byte, channelFeatures: ChannelFeatures)
+case class INPUT_INIT_FUNDER(remoteInfo: RemoteNodeInfo, temporaryChannelId: ByteVector32, fundingAmount: Satoshi, pushAmount: MilliSatoshi, fundingFeeratePerKw: FeeratePerKw,
+                             initialFeeratePerKw: FeeratePerKw, localParams: LocalParams, remoteInit: Init, channelFlags: Byte, channelFeatures: ChannelFeatures)
 
 
 sealed trait BitcoinEvent

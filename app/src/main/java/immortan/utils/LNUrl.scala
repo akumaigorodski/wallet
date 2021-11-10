@@ -92,9 +92,7 @@ sealed trait CallbackLNUrlData extends LNUrlData {
 // LNURL-CHANNEL
 
 sealed trait HasRemoteInfo {
-
   val remoteInfo: RemoteNodeInfo
-
   def cancel: Unit = none
 }
 
@@ -103,13 +101,11 @@ case class HasRemoteInfoWrap(remoteInfo: RemoteNodeInfo) extends HasRemoteInfo
 case class NormalChannelRequest(uri: String, callback: String, k1: String) extends CallbackLNUrlData with HasRemoteInfo {
 
   def requestChannel: Observable[String] = LNUrl.level2DataResponse {
-    callbackUri.buildUpon.appendQueryParameter("remoteid", remoteInfo.nodeSpecificPubKey.toString)
-      .appendQueryParameter("k1", k1).appendQueryParameter("private", "1")
+    callbackUri.buildUpon.appendQueryParameter("remoteid", remoteInfo.nodeSpecificPubKey.toString).appendQueryParameter("k1", k1).appendQueryParameter("private", "1")
   }
 
   override def cancel: Unit = LNUrl.level2DataResponse {
-    callbackUri.buildUpon.appendQueryParameter("remoteid", remoteInfo.nodeSpecificPubKey.toString)
-      .appendQueryParameter("k1", k1).appendQueryParameter("cancel", "1")
+    callbackUri.buildUpon.appendQueryParameter("remoteid", remoteInfo.nodeSpecificPubKey.toString).appendQueryParameter("k1", k1).appendQueryParameter("cancel", "1")
   }.foreach(none, none)
 
   val InputParser.nodeLink(nodeKey, hostAddress, portNumber) = uri

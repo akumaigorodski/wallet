@@ -23,7 +23,7 @@ sealed trait ChainWalletInfo {
 }
 
 case class SigningWallet(walletType: String, isRemovable: Boolean) extends ChainWalletInfo
-case class WatchingWallet(walletType: String, xPub: ExtendedPublicKey, isRemovable: Boolean) extends ChainWalletInfo
+case class WatchingWallet(walletType: String, masterFingerprint: Option[Long], xPub: ExtendedPublicKey, isRemovable: Boolean) extends ChainWalletInfo
 case class CompleteChainWalletInfo(core: ChainWalletInfo, data: ByteVector, lastBalance: Satoshi, label: String)
 
 trait WalletDb {

@@ -1,57 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView
-    style="@style/StandardLinearLayout"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/StandardLinearLayout"
     android:scrollbars="none">
 
     <LinearLayout style="@style/StandardLinearLayout">
-
-        <LinearLayout android:id="@+id/editChain" style="@style/StandardLinearLayout">
-            <include android:id="@+id/inputChain" layout="@layout/frag_input_fiat_converter"/>
+        <LinearLayout style="@style/StandardLinearLayout" android:id="@+id/editChain">
+            <include layout="@layout/frag_input_fiat_converter" android:id="@+id/inputChain"/>
             <include layout="@layout/frag_fees"/>
             <View style="@style/GrayDivider"/>
         </LinearLayout>
 
-        <LinearLayout
-            android:visibility="gone"
-            android:id="@+id/confirmChain"
-            style="@style/StandardLinearLayout">
+        <LinearLayout android:visibility="gone" style="@style/StandardLinearLayout" android:id="@+id/slideshowChain">
+            <ImageView android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/qrSlideshow"/>
+            <include layout="@layout/frag_chain_buttons"/>
+        </LinearLayout>
 
+        <LinearLayout android:visibility="gone" style="@style/StandardLinearLayout" android:id="@+id/readerChain">
+            <com.journeyapps.barcodescanner.BarcodeView android:layout_height="wrap_content" android:layout_width="match_parent" android:id="@+id/qrReader"/>
+            <include layout="@layout/frag_chain_buttons"/>
+        </LinearLayout>
+
+        <LinearLayout android:visibility="gone" style="@style/StandardLinearLayout" android:id="@+id/confirmChain">
             <include layout="@layout/frag_two_sided_item" android:id="@+id/confirmFiat"/>
             <include layout="@layout/frag_two_sided_item" android:id="@+id/confirmAmount"/>
             <include layout="@layout/frag_two_sided_item" android:id="@+id/confirmFee"/>
-
-            <RelativeLayout
-                android:paddingEnd="15dp"
-                android:paddingStart="15dp"
-                android:layout_marginTop="15dp"
-                android:layout_marginBottom="5dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <com.ornach.nobobutton.NoboButton
-                    app:nb_text="@string/dialog_send"
-                    android:layout_centerVertical="true"
-                    android:id="@+id/confirmSend"
-                    style="@style/GreenButton"/>
-
-                <com.ornach.nobobutton.NoboButton
-                    app:nb_drawableResource="@drawable/outline_edit_20_24"
-                    android:layout_toStartOf="@id/cancelSend"
-                    android:layout_centerVertical="true"
-                    android:id="@+id/confirmEdit"
-                    style="@style/GrayButton"/>
-
-                <com.ornach.nobobutton.NoboButton
-                    android:layout_marginStart="5dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    app:nb_text="@string/dialog_cancel"
-                    android:id="@+id/cancelSend"
-                    style="@style/GrayButton"/>
-
-            </RelativeLayout>
+            <include layout="@layout/frag_chain_buttons"/>
         </LinearLayout>
+
+        <ProgressBar
+            android:padding="50dp"
+            android:visibility="gone"
+            android:id="@+id/progressBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="?android:attr/progressBarStyle"/>
+
     </LinearLayout>
 </ScrollView>

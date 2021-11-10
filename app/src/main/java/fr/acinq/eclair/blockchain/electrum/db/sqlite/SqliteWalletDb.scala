@@ -43,8 +43,8 @@ object SqliteWalletDb {
 
   val seqOfTransactionHistoryItemCodec = listOfN[TransactionHistoryItem](uint16, transactionHistoryItemCodec)
 
-  val historyCodec: Codec[Map[ByteVector32, ElectrumWallet.TransactionHistoryItemList]] = Codec[Map[ByteVector32, ElectrumWallet.TransactionHistoryItemList]](
-    (runtimeMap: Map[ByteVector32, ElectrumWallet.TransactionHistoryItemList]) => listOfN(uint16, bytes32 ~ seqOfTransactionHistoryItemCodec).encode(runtimeMap.toList),
+  val historyCodec: Codec[Map[ByteVector32, ElectrumWallet.TxHistoryItemList]] = Codec[Map[ByteVector32, ElectrumWallet.TxHistoryItemList]](
+    (runtimeMap: Map[ByteVector32, ElectrumWallet.TxHistoryItemList]) => listOfN(uint16, bytes32 ~ seqOfTransactionHistoryItemCodec).encode(runtimeMap.toList),
     (wire: BitVector) => listOfN(uint16, bytes32 ~ seqOfTransactionHistoryItemCodec).decode(wire).map(_.map(_.toMap))
   )
 

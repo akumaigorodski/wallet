@@ -43,7 +43,9 @@ case class IncomingRevealed(preimage: ByteVector32, fullTag: FullPaymentTag) ext
 case class IncomingAborted(failure: Option[FailureMessage] = None, fullTag: FullPaymentTag) extends IncomingProcessorData
 
 class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) extends IncomingPaymentProcessor {
+  private val paymentInfoOpt = cm.payBag.getPaymentInfo(fullTag.paymentHash).toOption
   override def becomeShutDown: Unit = become(null, SHUTDOWN)
+
   require(fullTag.tag == PaymentTagTlv.FINAL_INCOMING)
   delayedCMDWorker.replaceWork(CMDTimeout)
   become(null, RECEIVING)
@@ -59,9 +61,9 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
       // Important: when creating new invoice we SPECIFICALLY DO NOT put a preimage into preimage storage
       // we only do that once we reveal a preimage, thus letting us know that we have already revealed it on restart
       // having PaymentStatus.SUCCEEDED in payment db is not enough because that table does not get included in backup
-      lastAmountIn = adds.foldLeft(0L.msat) { case (accumulator, incomingLocal) => accumulator + incomingLocal.add.amountMsat }
+      lastAmountIn = adds.foldLeft(0L.msat) { case (accum, incomingLocal) => accum + incomingLocal.add.amountMsat }
 
-      cm.getPaymentInfoMemo.get(fullTag.paymentHash).toOption match {
+      paymentInfoOpt match {
         case None => cm.getPreimageMemo.get(fullTag.paymentHash).toOption match {
           case Some(preimage) => becomeRevealed(preimage, fullTag.paymentHash.toHex, adds) // Did not ask but fulfill anyway
           case None => becomeAborted(IncomingAborted(None, fullTag), adds) // Did not ask and there is no preimage
@@ -97,9 +99,9 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
       cm.notifyResolvers
 
     case (CMDReleaseHold, null, RECEIVING) =>
-      cm.getPaymentInfoMemo.get(fullTag.paymentHash).toOption match {
-        case Some(info) if isHolding => becomeRevealed(info.preimage, info.description.queryText, adds = Nil)
-        case _ => becomeAborted(IncomingAborted(PaymentTimeout.asSome, fullTag), adds = Nil)
+      paymentInfoOpt.filter(_ => isHolding) match {
+        case Some(info) => becomeRevealed(info.preimage, info.description.queryText, adds = Nil)
+        case None => becomeAborted(IncomingAborted(PaymentTimeout.asSome, fullTag), adds = Nil)
       }
 
       // Actually request adds
@@ -144,9 +146,9 @@ class IncomingPaymentReceiver(val fullTag: FullPaymentTag, cm: ChannelMaster) ex
     cm.payBag.addSearchablePayment(queryText, fullTag.paymentHash)
     cm.payBag.updOkIncoming(lastAmountIn, fullTag.paymentHash)
     cm.payBag.setPreimage(fullTag.paymentHash, preimage)
-
     cm.getPreimageMemo.invalidate(fullTag.paymentHash)
-    cm.getPaymentInfoMemo.invalidate(fullTag.paymentHash)
+
+    // First record things in db, then send out fulfill commands
     become(IncomingRevealed(preimage, fullTag), FINALIZING)
     fulfill(preimage, adds)
   }
@@ -243,9 +245,9 @@ class TrampolinePaymentRelayer(val fullTag: FullPaymentTag, cm: ChannelMaster) e
 
     case (inFlight: InFlightPayments, null, RECEIVING) =>
       val outs = inFlight.out.getOrElse(fullTag, default = Nil)
-      val ins = inFlight.in.getOrElse(fullTag, Nil).asInstanceOf[ReasonableTrampolines]
+      val ins = inFlight.in.getOrElse(fullTag, default = Nil).asInstanceOf[ReasonableTrampolines]
       // We have either just got another incoming notification or restored an app with some parts present
-      lastAmountIn = ins.foldLeft(0L.msat) { case (accumulator, incoming) => accumulator + incoming.add.amountMsat }
+      lastAmountIn = ins.foldLeft(0L.msat) { case (accum, incoming) => accum + incoming.add.amountMsat }
 
       cm.getPreimageMemo.get(fullTag.paymentHash) match {
         case Success(preimage) => becomeFinalRevealed(preimage, ins)

@@ -29,6 +29,7 @@ import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.CurrentBlockCount
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, RBFResponse, WalletReady}
+import fr.acinq.eclair.blockchain.electrum.db.{SigningWallet, WatchingWallet}
 import fr.acinq.eclair.blockchain.electrum.{ElectrumEclairWallet, ElectrumWallet}
 import fr.acinq.eclair.blockchain.fee.FeeratePerByte
 import fr.acinq.eclair.channel._
@@ -71,7 +72,7 @@ object HubActivity {
   var instance: HubActivity = _
 
   def requestHostedChannel: Unit = {
-    val localParams = LNParams.makeChannelParams(LNParams.chainWallets, isFunder = false, LNParams.minChanDustLimit)
+    val localParams = LNParams.makeChannelParams(isFunder = false, LNParams.minChanDustLimit)
     new HCOpenHandler(LNParams.syncParams.motherbase, randomBytes32, localParams.defaultFinalScriptPubKey, LNParams.cm) {
       // Stop automatic HC opening attempts on getting any kind of local/remote error, this won't be triggered on disconnect
       def onFailure(reason: Throwable): Unit = WalletApp.app.prefs.edit.putBoolean(WalletApp.OPEN_HC, false).commit
@@ -235,7 +236,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       val (container, extraInputLayout, extraInput) = singleInputPopup
       val builder = titleBodyAsViewBuilder(title = null, body = container)
       mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
-      extraInputLayout.setHint(dialog_set_item_label)
+      extraInputLayout.setHint(dialog_set_label)
       showKeys(extraInput)
 
       def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
@@ -243,7 +244,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
         currentDetails match {
           case info: LNUrlPayLink => WalletApp.lnUrlPayBag.updDescription(info.description.copy(label = optionalInput), info.domain, info.payString)
-          case info: PaymentInfo => LNParams.cm.updateDescriptionAndCache(info.description.copy(label = optionalInput), info.paymentHash)
+          case info: PaymentInfo => LNParams.cm.payBag.updDescription(info.description.copy(label = optionalInput), info.paymentHash)
           case info: TxInfo => WalletApp.txDataBag.updDescription(info.description.withNewLabel(optionalInput), info.txid)
           case _ =>
         }
@@ -299,16 +300,15 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       val paymentAmount = WalletApp.denom.parsedWithSign(myFulfills.map(_.theirAdd.amountMsat).sum, cardOut, cardZero)
       val closestExpiry = WalletApp.app.plurOrZero(myFulfills.map(_.theirAdd.cltvExpiry).min.toLong - LNParams.blockCount.get, inBlocks)
 
-      def stampProof(stampTx: Transaction)(alert: AlertDialog): Unit = {
+      def stampProof(tx: Transaction)(alert: AlertDialog): Unit = {
         val txOrder = SemanticOrder(id = info.identity, order = Long.MinValue).asSome
         val infoOrder = SemanticOrder(id = info.identity, order = -System.currentTimeMillis).asSome
-        val txDesc = OpReturnTxDescription(myFulfills.map(_.ourPreimage), label = None, semanticOrder = txOrder)
-        val infoDesc1 = info.description.modify(_.proofTxid).setTo(stampTx.txid.toHex.asSome).modify(_.semanticOrder).setTo(infoOrder)
-        WalletApp.txDescriptions += Tuple2(stampTx.txid, txDesc)
+        val infoDesc1 = info.description.modify(_.proofTxid).setTo(tx.txid.toHex.asSome).modify(_.semanticOrder).setTo(infoOrder)
+        WalletApp.txDescriptions(tx.txid) = OpReturnTxDescription(myFulfills.map(_.ourPreimage), label = None, semanticOrder = txOrder)
         alert.dismiss
 
-        runFutureProcessOnUI(LNParams.chainWallets.lnWallet.commit(stampTx, "hc-stamp-tx"), onFail) {
-          case true => LNParams.cm.updateDescriptionAndCache(infoDesc1, info.paymentHash)
+        runFutureProcessOnUI(LNParams.chainWallets.lnWallet.broadcast(tx), onFail) {
+          case true => LNParams.cm.payBag.updDescription(infoDesc1, info.paymentHash)
           case false => onFail(error = me getString error_btc_broadcast_fail)
         }
       }
@@ -367,7 +367,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }
 
       val list = selectorList(adapter)
-      val title = getString(delayed_refunding).asDefView
+      val title = getString(delayed_refunding_ext).asDefView
       titleBodyAsViewBuilder(title, list).show
       list.setDividerHeight(0)
       list.setDivider(null)
@@ -392,7 +392,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       val blockTarget = LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
       val target = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
-      lazy val feeView: FeeView[GenerateTxResponse] = new FeeView[GenerateTxResponse](FeeratePerByte(target), body) {
+      lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(target), body) {
         rate = target
 
         worker = new ThrottledWork[String, GenerateTxResponse] {
@@ -416,9 +416,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         // Only update parent semantic order if it does not already have one, record it BEFORE sending CPFP
         val parentDescWithOrder = info.description.withNewOrderCond(cpfpBumpOrder.copy(order = Long.MinValue).asSome)
         WalletApp.txDataBag.updDescription(parentDescWithOrder, info.txid)
-
-        // On success tx will be recorded in a top level chain events listener
-        // on fail user will be notified right away and nothing will happen
         alert.dismiss
 
         for {
@@ -426,9 +423,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           reponse <- fromWallet.makeCPFP(fromOutPoints.toSet, chainPubKeyScript, feeView.rate)
           bumpDescription = PlainTxDescription(chainAddress :: Nil, None, cpfpBumpOrder.asSome, None, cpfpOf = info.txid.asSome)
           // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions += Tuple2(reponse.tx.txid, bumpDescription)
-          isCommitted <- fromWallet.commit(reponse.tx, "cpfp-bump-tx")
-        } if (isCommitted) {
+          _ = WalletApp.txDescriptions(reponse.tx.txid) = bumpDescription
+          isSent <- fromWallet.broadcast(reponse.tx)
+        } if (isSent) {
           // Parent semantic order is already updated, now we also update CPFP parent info
           WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCpfpBy(reponse.tx.txid), info.txid)
         } else {
@@ -493,8 +490,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       def attempt(alert: AlertDialog): Unit = {
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_BOOST)
         val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
-        // On success tx will be recorded in a top level chain events listener
-        // on fail user will be notified right away and nothing will happen
         alert.dismiss
 
         for {
@@ -502,16 +497,13 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           reponse <- fromWallet.makeRBFBump(info.tx, feeView.rate).map(_.result.right.get)
           bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
           // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions += Tuple2(reponse.tx.txid, bumpDescription)
-          isCommitted <- fromWallet.commit(reponse.tx, "rbf-bump-tx")
-        } if (isCommitted) {
+          _ = WalletApp.txDescriptions(reponse.tx.txid) = bumpDescription
+          isSent <- fromWallet.broadcast(reponse.tx)
+        } if (isSent) {
           val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
           val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
           WalletApp.txDataBag.updDescription(parentDesc, info.txid)
-        } else {
-          // Details should be available in persistent log
-          onFail(me getString error_btc_broadcast_fail)
-        }
+        } else onFail(me getString error_btc_broadcast_fail)
       }
 
       lazy val alert = {
@@ -574,8 +566,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       def attempt(alert: AlertDialog): Unit = {
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_CANCEL)
         val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
-        // On success tx will be recorded in a top level chain events listener
-        // on fail user will be notified right away and nothing will happen
         alert.dismiss
 
         for {
@@ -583,16 +573,13 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           reponse <- fromWallet.makeRBFReroute(info.tx, feeView.rate, changePubKeyScript).map(_.result.right.get)
           bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
           // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions += Tuple2(reponse.tx.txid, bumpDescription)
-          isCommitted <- fromWallet.commit(reponse.tx, "rbf-cancel-tx")
-        } if (isCommitted) {
+          _ = WalletApp.txDescriptions(reponse.tx.txid) = bumpDescription
+          isSent <- fromWallet.broadcast(reponse.tx)
+        } if (isSent) {
           val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
           val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
           WalletApp.txDataBag.updDescription(parentDesc, info.txid)
-        } else {
-          // Details should be available in persistent log
-          onFail(me getString error_btc_broadcast_fail)
-        }
+        } else onFail(me getString error_btc_broadcast_fail)
       }
 
       lazy val alert = {
@@ -886,6 +873,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     searchField.setTag(false)
 
     val chainCards: ChainWalletCards = new ChainWalletCards(me) {
+      def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
       def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
       val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
 
@@ -895,17 +883,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-legacy-tag")
       }
 
-      def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit = {
-        val options = Array(hardware_wallet_receive, hardware_wallet_spend).map(getString)
-        val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
-        new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-hardware-tag")
-      }
-
       def onLabelTap(wallet: ElectrumEclairWallet): Unit = {
         val (container, extraInputLayout, extraInput) = singleInputPopup
         val builder = titleBodyAsViewBuilder(title = null, body = container)
         mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
-        extraInputLayout.setHint(dialog_set_item_label)
+        extraInputLayout.setHint(dialog_set_label)
         showKeys(extraInput)
 
         def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
@@ -1062,13 +1044,13 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   type GrantResults = Array[Int]
 
-  override def onRequestPermissionsResult(reqCode: Int, permissions: Array[String], results: GrantResults): Unit =
-    if (reqCode == scannerRequestCode && results.nonEmpty && results.head == PackageManager.PERMISSION_GRANTED)
-      bringScanner(null)
+  override def onRequestPermissionsResult(reqCode: Int, permissions: Array[String], results: GrantResults): Unit = {
+    if (reqCode == scannerRequestCode && results.nonEmpty && results.head == PackageManager.PERMISSION_GRANTED) bringScanner(null)
+  }
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
     case bitcoinUri: BitcoinUri if Try(LNParams addressToPubKeyScript bitcoinUri.address).isSuccess =>
-      bringSendBitcoinPopup(bitcoinUri, LNParams.chainWallets.lnWallet, new ChainSendView)
+      bringSendBitcoinPopup(bitcoinUri, LNParams.chainWallets.lnWallet)
 
     case addressToAmount: MultiAddressParser.AddressToAmount =>
       val badAmount = addressToAmount.values.secondItems.find(amount => LNParams.chainWallets.params.dustLimit > amount)
@@ -1077,7 +1059,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       (badAmount, badAddress) match {
         case _ ~ Some(nonAddress) => onFail(s"Incorrect Bitcoin address=$nonAddress")
         case Some(dust) ~ _ => onFail(s"Incorrect amount=${dust.toLong}, minimum=${LNParams.chainWallets.params.dustLimit.toLong}")
-        case _ => bringSendMultiBitcoinPopup(addressToAmount, LNParams.chainWallets.lnWallet, new ChainSendView)
+        case _ => bringSendMultiBitcoinPopup(addressToAmount, LNParams.chainWallets.lnWallet)
       }
 
     case info: RemoteNodeInfo =>
@@ -1207,13 +1189,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]
 
   override def onChoiceMade(tag: AnyRef, pos: Int): Unit = (tag, pos) match {
+    case (legacy: ElectrumEclairWallet, 0) if legacy.ewt.secrets.isDefined => transferFromLegacyToModern(legacy)
+    case (legacy: ElectrumEclairWallet, 1) if legacy.ewt.secrets.isDefined => bringBitcoinSpecificScanner(legacy)
     case (CHOICE_RECEIVE_TAG, 0) => goToWithValue(ClassNames.qrChainActivityClass, LNParams.chainWallets.lnWallet)
     case (CHOICE_RECEIVE_TAG, 1) => bringReceivePopup
-
-    case (legacy: ElectrumEclairWallet, 0) if legacy.ewt.secrets.isDefined => transferFromLegacyToModern(legacy)
-    case (legacy: ElectrumEclairWallet, 1) if legacy.ewt.secrets.isDefined => bringLegacyAddressScanner(legacy)
-    case (hardware: ElectrumEclairWallet, 0) => goToWithValue(ClassNames.qrChainActivityClass, hardware)
-    case (_: ElectrumEclairWallet, 1) =>
     case _ =>
   }
 
@@ -1356,10 +1335,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     callScanner(sheet)
   }
 
-  def bringLegacyAddressScanner(legacy: ElectrumEclairWallet): Unit = {
+  def bringBitcoinSpecificScanner(fromWallet: ElectrumEclairWallet): Unit = {
     def resolveLegacyWalletBtcAddressQr: Unit = InputParser.checkAndMaybeErase {
-      case bitcoinUri: BitcoinUri if Try(LNParams addressToPubKeyScript bitcoinUri.address).isSuccess =>
-        bringSendBitcoinPopup(bitcoinUri, legacy, new ChainSendView)
+      case uri: BitcoinUri if Try(LNParams addressToPubKeyScript uri.address).isSuccess =>
+        bringSendBitcoinPopup(uri, fromWallet)
       case _ => nothingUsefulTask.run
     }
 
@@ -1381,46 +1360,56 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     runFutureProcessOnUI(LNParams.chainWallets.lnWallet.getReceiveAddresses, onFail) { addresses =>
       val labelAndMessage = s"?label=${me getString btc_transfer_label}&message=${me getString btc_transfer_message}"
       val uri = BitcoinUri.fromRaw(InputParser.bitcoin + addresses.firstAccountAddress + labelAndMessage)
-      bringSendBitcoinPopup(uri, legacy, new ChainSendView)
+      bringSendBitcoinPopup(uri, legacy)
     }
   }
 
-  def bringSendBitcoinPopup(uri: BitcoinUri, fromWallet: ElectrumEclairWallet, sendView: ChainSendView): Unit = {
-    val manager = new RateManager(sendView.body, getString(dialog_add_btc_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-    val canSend = WalletApp.denom.parsedWithSign(fromWallet.info.lastBalance.toMilliSatoshi, cardIn, cardZero)
-    val canSendFiat = WalletApp.currentMsatInFiatHuman(fromWallet.info.lastBalance.toMilliSatoshi)
+  def bringSendBitcoinPopup(uri: BitcoinUri, fromWallet: ElectrumEclairWallet): Unit = {
+    val sendView = new ChainSendView(fromWallet, getString(dialog_set_label).asSome, dialog_visibility_private)
     val chainPubKeyScript = LNParams.addressToPubKeyScript(uri.address)
 
-    def switchToLn(alert: AlertDialog): Unit = {
-      uri.prExt.foreach(ext => InputParser.value = ext)
-      checkExternalData(noneRunnable)
-      alert.dismiss
-    }
-
     def attempt(alert: AlertDialog): Unit = {
-      runFutureProcessOnUI(fromWallet.makeTx(chainPubKeyScript, manager.resultMsat.truncateToSatoshi, Map.empty, feeView.rate), onFail) { response =>
-        sendView.switchToConfirm(alert, response.pubKeyScriptToAmount.values.head.toMilliSatoshi, response.fee.toMilliSatoshi)
-        sendView.confirmEdit setOnClickListener onButtonTap(sendView switchToEdit alert)
-        sendView.cancelSend setOnClickListener onButtonTap(alert.dismiss)
-        sendView.confirmSend setOnClickListener onButtonTap(proceed)
-      }
+      runFutureProcessOnUI(fromWallet.makeTx(chainPubKeyScript, sendView.manager.resultMsat.truncateToSatoshi, Map.empty, feeView.rate), onFail) { response =>
+        // It is fine to use the first map element here: we send to single address so response may will always have a single element (change not included)
+        val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
+        val totalSendAmount = response.pubKeyScriptToAmount.values.head.toMilliSatoshi
 
-      def proceed: Unit = {
-        // User has confirmed tx sending
-        // Try to send and notify on error
-        alert.dismiss
+        def switchToConfirmExt: Unit = {
+          finalSendButton setOnClickListener onButtonTap(process apply response.tx)
+          sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
+        }
 
-        for {
-          response <- fromWallet.makeTx(chainPubKeyScript, manager.resultMsat.truncateToSatoshi, Map.empty, feeView.rate)
-          knownDescription = PlainTxDescription(uri.address :: Nil, manager.resultExtraInput orElse uri.label orElse uri.message)
-          // Record this description before sending, we won't be able to know a memo and label otherwise
-          _ = WalletApp.txDescriptions += Tuple2(response.tx.txid, knownDescription)
-          committed <- fromWallet.commit(response.tx, "send-tx") if !committed
-        } onFail(me getString error_btc_broadcast_fail)
+        def switchToHardwareOutgoingExt(masterFingerprint: Long): Unit = {
+          val psbt = prepareBip84Psbt(response, masterFingerprint)
+          sendView.switchToHardwareOutgoing(alert, psbt)
+
+          sendView.chainReaderView.onSignedTx = signedTx => UITask {
+            finalSendButton setOnClickListener onButtonTap(process apply signedTx)
+            sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
+            if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
+          }.run
+        }
+
+        fromWallet.info.core match {
+          case hardware: WatchingWallet if hardware.masterFingerprint.isEmpty => alert.dismiss
+          case hardware: WatchingWallet => switchToHardwareOutgoingExt(hardware.masterFingerprint.get)
+          case _: SigningWallet => switchToConfirmExt
+        }
       }
     }
 
     lazy val alert = {
+      def switchToLn(alert: AlertDialog): Unit = {
+        uri.prExt.foreach(ext => InputParser.value = ext)
+        checkExternalData(noneRunnable)
+        alert.dismiss
+      }
+
+      def useMax(alert: AlertDialog): Unit = {
+        val max = fromWallet.info.lastBalance.toMilliSatoshi
+        sendView.manager.updateText(value = max)
+      }
+
       val neutralRes = if (uri.amount.isDefined) -1 else dialog_max
       val label = uri.label.map(label => s"<br><br><b>$label</b>").getOrElse(new String)
       val message = uri.message.map(message => s"<br><i>$message<i>").getOrElse(new String)
@@ -1431,18 +1420,25 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       addFlowChip(title.flow, getString(dialog_send_btc_from).format(fromWallet.info.label), R.drawable.border_yellow)
 
       val builder = titleBodyAsViewBuilder(title.asColoredView(backgroundRes), sendView.body)
-      def useMax(alert: AlertDialog): Unit = manager.updateText(fromWallet.info.lastBalance.toMilliSatoshi)
       if (uri.prExt.isEmpty) mkCheckFormNeutral(attempt, none, useMax, builder, dialog_ok, dialog_cancel, neutralRes)
       else mkCheckFormNeutral(attempt, none, switchToLn, builder, dialog_ok, dialog_cancel, lightning_wallet)
     }
 
-    lazy val feeView: FeeView[GenerateTxResponse] = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.editChain) {
+    lazy val process: Transaction => Unit = signedTx => {
+      val transactionLabel = sendView.manager.resultExtraInput orElse uri.label orElse uri.message
+      WalletApp.txDescriptions(signedTx.txid) = PlainTxDescription(uri.address :: Nil, transactionLabel)
+      val isSent = Await.result(fromWallet.broadcast(signedTx), atMost = 40.seconds)
+      if (!isSent) onFail(me getString error_btc_broadcast_fail)
+      alert.dismiss
+    }
+
+    lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.chainEditView.host) {
       rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget)
 
       worker = new ThrottledWork[String, GenerateTxResponse] {
         // This is a generic sending facility which may send to non-segwit, so always use a safer high dust threshold
-        override def error(exception: Throwable): Unit = update(feeOpt = None, showIssue = manager.resultMsat >= LNParams.chainWallets.params.dustLimit)
-        def work(reason: String): Observable[GenerateTxResponse] = Rx fromFutureOnIo fromWallet.makeTx(chainPubKeyScript, manager.resultMsat.truncateToSatoshi, Map.empty, rate)
+        override def error(exception: Throwable): Unit = update(feeOpt = None, showIssue = sendView.manager.resultMsat >= LNParams.chainWallets.params.dustLimit)
+        def work(reason: String): Observable[GenerateTxResponse] = Rx fromFutureOnIo fromWallet.makeTx(chainPubKeyScript, sendView.manager.resultMsat.truncateToSatoshi, Map.empty, rate)
         def process(reason: String, response: GenerateTxResponse): Unit = update(feeOpt = response.fee.toMilliSatoshi.asSome, showIssue = false)
       }
 
@@ -1452,40 +1448,49 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       }.run
     }
 
-    manager.hintDenom.setText(getString(dialog_up_to).format(canSend).html)
-    manager.hintFiatDenom.setText(getString(dialog_up_to).format(canSendFiat).html)
-    manager.inputAmount addTextChangedListener onTextChange(feeView.worker.addWork)
+    // Automatically update a candidate transaction each time user changes amount value
+    sendView.manager.inputAmount addTextChangedListener onTextChange(feeView.worker.addWork)
+    alert.setOnDismissListener(sendView.onDismissListener)
     feeView.update(feeOpt = None, showIssue = false)
 
-    uri.amount.foreach { asked =>
-      manager.updateText(value = asked)
-      manager.inputAmount.setEnabled(false)
-      manager.fiatInputAmount.setEnabled(false)
+    uri.amount foreach { asked =>
+      sendView.manager.updateText(value = asked)
+      sendView.manager.inputAmount.setEnabled(false)
+      sendView.manager.fiatInputAmount.setEnabled(false)
     }
   }
 
-  def bringSendMultiBitcoinPopup(addressToAmount: MultiAddressParser.AddressToAmount, fromWallet: ElectrumEclairWallet, sendView: ChainSendView): Unit = {
+  def bringSendMultiBitcoinPopup(addressToAmount: MultiAddressParser.AddressToAmount, fromWallet: ElectrumEclairWallet): Unit = {
     val scriptToAmount = addressToAmount.values.firstItems.map(LNParams.addressToPubKeyScript).zip(addressToAmount.values.secondItems).toMap
+    val sendView: ChainSendView = new ChainSendView(fromWallet, badge = None, visibilityRes = -1)
 
     def attempt(alert: AlertDialog): Unit = {
       runFutureProcessOnUI(fromWallet.makeBatchTx(scriptToAmount, feeView.rate), onFail) { response =>
-        sendView.switchToConfirm(alert, response.pubKeyScriptToAmount.values.sum.toMilliSatoshi, response.fee.toMilliSatoshi)
-        sendView.confirmEdit setOnClickListener onButtonTap(sendView switchToEdit alert)
-        sendView.cancelSend setOnClickListener onButtonTap(alert.dismiss)
-        sendView.confirmSend setOnClickListener onButtonTap(proceed)
-      }
+        // It is fine to sum the whole map element here: possible change output will never be present in it
+        val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
+        val totalSendAmount = response.pubKeyScriptToAmount.values.sum.toMilliSatoshi
 
-      def proceed: Unit = {
-        // User has confirmed tx sending
-        // Try to send and notify on error
-        alert.dismiss
+        def switchToConfirmExt: Unit = {
+          finalSendButton setOnClickListener onButtonTap(process apply response.tx)
+          sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
+        }
 
-        for {
-          response <- fromWallet.makeBatchTx(scriptToAmount, feeView.rate)
-          knownDescription = PlainTxDescription(addressToAmount.values.firstItems.toList)
-          _ = WalletApp.txDescriptions += Tuple2(response.tx.txid, knownDescription)
-          committed <- fromWallet.commit(response.tx, "batch-tx") if !committed
-        } onFail(me getString error_btc_broadcast_fail)
+        def switchToHardwareOutgoingExt(masterFingerprint: Long): Unit = {
+          val psbt = prepareBip84Psbt(response, masterFingerprint)
+          sendView.switchToHardwareOutgoing(alert, psbt)
+
+          sendView.chainReaderView.onSignedTx = signedTx => UITask {
+            finalSendButton setOnClickListener onButtonTap(process apply signedTx)
+            sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
+            if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
+          }.run
+        }
+
+        fromWallet.info.core match {
+          case hardware: WatchingWallet if hardware.masterFingerprint.isEmpty => alert.dismiss
+          case hardware: WatchingWallet => switchToHardwareOutgoingExt(hardware.masterFingerprint.get)
+          case _: SigningWallet => switchToConfirmExt
+        }
       }
     }
 
@@ -1497,12 +1502,19 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       mkCheckForm(attempt, none, builder, dialog_ok, dialog_cancel)
     }
 
-    lazy val feeView: FeeView[GenerateTxResponse] = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.editChain) {
+    lazy val process: Transaction => Unit = signedTx => {
+      WalletApp.txDescriptions(signedTx.txid) = PlainTxDescription(addressToAmount.values.firstItems.toList)
+      val isSent = Await.result(fromWallet.broadcast(signedTx), atMost = 40.seconds)
+      if (!isSent) onFail(me getString error_btc_broadcast_fail)
+      alert.dismiss
+    }
+
+    lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.chainEditView.host) {
       rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget)
 
       worker = new ThrottledWork[String, GenerateTxResponse] {
-        def work(reason: String): Observable[GenerateTxResponse] = Rx fromFutureOnIo fromWallet.makeBatchTx(scriptToAmount, rate)
         def process(reason: String, response: GenerateTxResponse): Unit = update(feeOpt = response.fee.toMilliSatoshi.asSome, showIssue = false)
+        def work(reason: String): Observable[GenerateTxResponse] = Rx fromFutureOnIo fromWallet.makeBatchTx(scriptToAmount, rate)
         override def error(exception: Throwable): Unit = update(feeOpt = None, showIssue = true)
       }
 
@@ -1516,15 +1528,18 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       val humanAmount = WalletApp.denom.parsedWithSign(amount.toMilliSatoshi, cardIn, cardZero)
       val parent = getLayoutInflater.inflate(R.layout.frag_two_sided_item, null)
       new TwoSidedItem(parent, address.short.html, humanAmount.html)
-      sendView.editChain.addView(parent, 0)
+      sendView.chainEditView.host.addView(parent, 0)
     }
 
-    setVis(isVisible = false, sendView.inputChain)
+    // Hide address facility, we display a list of addresses instead
+    setVis(isVisible = false, sendView.chainEditView.inputChain)
+    alert.setOnDismissListener(sendView.onDismissListener)
     feeView.update(feeOpt = None, showIssue = false)
     feeView.worker addWork "MULTI-SEND-INIT-CALL"
   }
 
   def bringReceivePopup: Unit = lnReceiveGuard(LNParams.cm.all.values, contentWindow) {
+    val holdPeriodInMinutes: String = getString(popup_hold).format(LNParams.maxHoldSecs / 60)
     new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = Long.MaxValue.msat, initMinReceivable = 0L.msat) {
       override def getManager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
       override def processInvoice(prExt: PaymentRequestExt): Unit = goToWithValue(ClassNames.qrInvoiceActivityClass, prExt)
@@ -1536,14 +1551,14 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         PaymentDescription(split = None, label = None, semanticOrder = None, invoiceText, holdPeriodSec = hold)
       }
 
-      manager.holdPayment.setText(getString(popup_hold).format(LNParams.maxHoldSecs / 60).html)
+      manager.holdPayment.setText(holdPeriodInMinutes.html)
       setVis(isVisible = true, manager.holdPayment)
     }
   }
 
   def bringWithdrawPopup(data: WithdrawRequest): Unit = lnReceiveGuard(LNParams.cm.all.values, contentWindow) {
     new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = data.maxWithdrawable.msat, initMinReceivable = data.minCanReceive) {
-      override def getManager: RateManager = new RateManager(body, getString(dialog_add_ln_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+      override def getManager: RateManager = new RateManager(body, getString(dialog_set_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
       override def getDescription: PaymentDescription = PaymentDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, invoiceText = new String, meta = data.descriptionOpt)
       override def getTitleText: String = getString(dialog_lnurl_withdraw).format(data.callbackUri.getHost, data.descriptionOpt.map(desc => s"<br><br>$desc") getOrElse new String)
       override def processInvoice(prExt: PaymentRequestExt): Unit = data.requestWithdraw(prExt).foreach(none, onFail)
