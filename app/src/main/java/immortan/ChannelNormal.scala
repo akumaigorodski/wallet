@@ -34,7 +34,7 @@ object ChannelNormal {
   }
 }
 
-abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
+abstract class ChannelNormal(bag: ChannelBag) extends Channel {
   def watchConfirmedSpent(cs: NormalCommits, watchConfirmed: Boolean, watchSpent: Boolean): Unit = {
     if (watchConfirmed) LNParams.chainWallets.watcher ! WatchConfirmed(receiver, cs.commitInput.outPoint.txid, cs.commitInput.txOut.publicKeyScript, LNParams.minDepthBlocks, BITCOIN_FUNDING_DEPTHOK)
     if (watchSpent) LNParams.chainWallets.watcher ! WatchSpent(receiver, cs.commitInput.outPoint.txid, cs.commitInput.outPoint.index.toInt, cs.commitInput.txOut.publicKeyScript, BITCOIN_FUNDING_SPENT)
@@ -49,8 +49,8 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
         val ChannelKeys(_, _, fundingKey, revocationKey, _, delayedPaymentKey, htlcKey) = init.localParams.keys
         val emptyUpfrontShutdown: TlvStream[OpenChannelTlv] = TlvStream(ChannelTlv UpfrontShutdownScript ByteVector.empty)
 
-        val open = OpenChannel(LNParams.chainHash, init.temporaryChannelId, init.fakeFunding.pubKeyScriptToAmount.values.head, init.pushAmount, init.localParams.dustLimit, init.localParams.maxHtlcValueInFlightMsat,
-          init.localParams.channelReserve, init.localParams.htlcMinimum, init.initialFeeratePerKw, init.localParams.toSelfDelay, init.localParams.maxAcceptedHtlcs, fundingPubkey = fundingKey.publicKey,
+        val open = OpenChannel(LNParams.chainHash, init.temporaryChannelId, init.fundingAmount, init.pushAmount, init.localParams.dustLimit, init.localParams.maxHtlcValueInFlightMsat,
+          init.localParams.channelReserve, init.localParams.htlcMinimum, init.initialFeeratePerKw, init.localParams.toSelfDelay, init.localParams.maxAcceptedHtlcs, fundingKey.publicKey,
           revocationBasepoint = revocationKey.publicKey, paymentBasepoint = init.localParams.walletStaticPaymentBasepoint, delayedPaymentBasepoint = delayedPaymentKey.publicKey,
           htlcBasepoint = htlcKey.publicKey, init.localParams.keys.commitmentPoint(index = 0L), init.channelFlags, emptyUpfrontShutdown)
 
@@ -77,17 +77,17 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel { me =>
             realFunding.pubKeyScriptToAmount.values.head, wait.initFunder.pushAmount, wait.initFunder.initialFeeratePerKw,
             realFunding.tx.hash, fundingOutputIndex, wait.remoteFirstPerCommitmentPoint)
 
-        require(fundingOutputIndex >= 0)
-        require(realFunding.fee == wait.initFunder.fakeFunding.fee)
-        require(realFunding.pubKeyScriptToAmount.values.head == localCommitTx.input.txOut.amount)
-        require(realFunding.pubKeyScriptToAmount.keys.head == localCommitTx.input.txOut.publicKeyScript)
-        require(realFunding.pubKeyScriptToAmount.size == 1)
+        require(fundingOutputIndex >= 0, "Funding input is missing")
+        require(realFunding.pubKeyScriptToAmount.values.head == localCommitTx.input.txOut.amount, "Commit and funding tx amounts differ")
+        require(realFunding.pubKeyScriptToAmount.keys.head == localCommitTx.input.txOut.publicKeyScript, "Commit and funding tx scripts differ")
+        require(realFunding.pubKeyScriptToAmount.size == 1, "Funding spends to multiple destinations, should only be channel one")
 
         val localSigOfRemoteTx = Transactions.sign(remoteCommitTx, wait.initFunder.localParams.keys.fundingKey.privateKey, TxOwner.Remote, wait.initFunder.channelFeatures.commitmentFormat)
         val fundingCreated = FundingCreated(wait.initFunder.temporaryChannelId, realFunding.tx.hash, fundingOutputIndex, localSigOfRemoteTx)
+        val remoteCommit = RemoteCommit(index = 0L, remoteSpec, remoteCommitTx.tx.txid, wait.remoteFirstPerCommitmentPoint)
 
-        val data1 = DATA_WAIT_FOR_FUNDING_SIGNED(wait.initFunder.remoteInfo, channelId = toLongId(realFunding.tx.hash, fundingOutputIndex), wait.initFunder.localParams,
-          wait.remoteParams, realFunding.tx, realFunding.fee, localSpec, localCommitTx, RemoteCommit(index = 0L, remoteSpec, remoteCommitTx.tx.txid, wait.remoteFirstPerCommitmentPoint),
+        val data1 = DATA_WAIT_FOR_FUNDING_SIGNED(wait.initFunder.remoteInfo, channelId = toLongId(realFunding.tx.hash, fundingOutputIndex),
+          wait.initFunder.localParams, wait.remoteParams, realFunding.tx, realFunding.fee, localSpec, localCommitTx, remoteCommit,
           wait.lastSent.channelFlags, wait.initFunder.channelFeatures, fundingCreated)
 
         BECOME(data1, WAIT_FOR_ACCEPT)

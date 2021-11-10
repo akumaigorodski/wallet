@@ -28,7 +28,14 @@
 
         <!-- Features and actions -->
 
-        <org.apmem.tools.layouts.FlowLayout android:layout_marginBottom="5dp" android:layout_marginTop="25dp" style="@style/BoundedView" f:layout_newLine="true">
+        <org.apmem.tools.layouts.FlowLayout
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="25dp"
+            android:id="@+id/featuresList"
+            style="@style/BoundedView"
+            android:visibility="gone"
+            f:layout_newLine="true">
+
             <TextView style="@style/ChipTextGrayMargin" android:id="@+id/ChannelRangeQueriesExtended"/>
             <TextView style="@style/ChipTextGrayMargin" android:id="@+id/OptionDataLossProtect"/>
             <TextView style="@style/ChipTextGrayMargin" android:id="@+id/BasicMultiPartPayment"/>
@@ -43,7 +50,8 @@
             style="@style/BoundedView"
             android:layout_marginTop="25dp"
             android:text="@string/rpa_no_feature_support"
-            android:id="@+id/viewNoFeatureSupport"/>
+            android:id="@+id/viewNoFeatureSupport"
+            android:visibility="gone"/>
 
         <!-- Actions -->
 

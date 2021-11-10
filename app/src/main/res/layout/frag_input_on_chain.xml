@@ -29,6 +29,7 @@
         </LinearLayout>
 
         <ProgressBar
+            android:padding="50dp"
             android:visibility="gone"
             android:id="@+id/progressBar"
             android:layout_width="match_parent"

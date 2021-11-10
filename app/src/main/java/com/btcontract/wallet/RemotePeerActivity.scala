@@ -2,26 +2,32 @@ package com.btcontract.wallet
 
 import android.os.Bundle
 import android.view.View
-import android.widget.{LinearLayout, ProgressBar, TextView}
+import android.widget.{LinearLayout, TextView}
 import androidx.appcompat.app.AlertDialog
 import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.R.string._
 import com.ornach.nobobutton.NoboButton
+import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin._
 import fr.acinq.eclair.Features._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
-import fr.acinq.eclair.blockchain.fee.FeeratePerByte
-import fr.acinq.eclair.channel.Commitments
+import fr.acinq.eclair.blockchain.electrum.db.{SigningWallet, WatchingWallet}
+import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
+import fr.acinq.eclair.channel.{Commitments, DATA_WAIT_FOR_FUNDING_CONFIRMED, DATA_WAIT_FOR_FUNDING_INTERNAL}
+import fr.acinq.eclair.transactions.Scripts
 import fr.acinq.eclair.wire._
 import immortan._
 import immortan.crypto.Tools._
 import immortan.fsm.{HCOpenHandler, NCFundeeOpenHandler, NCFunderOpenHandler}
 import immortan.utils._
+import org.apmem.tools.layouts.FlowLayout
 import rx.lang.scala.Observable
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 
 object RemotePeerActivity {
@@ -45,6 +51,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
   private[this] lazy val peerNodeKey = findViewById(R.id.peerNodeKey).asInstanceOf[TextView]
   private[this] lazy val peerIpAddress = findViewById(R.id.peerIpAddress).asInstanceOf[TextView]
 
+  private[this] lazy val featuresList = findViewById(R.id.featuresList).asInstanceOf[FlowLayout]
   private[this] lazy val viewNoFeatureSupport = findViewById(R.id.viewNoFeatureSupport).asInstanceOf[TextView]
   private[this] lazy val viewYesFeatureSupport = findViewById(R.id.viewYesFeatureSupport).asInstanceOf[LinearLayout]
   private[this] lazy val optionHostedChannel = findViewById(R.id.optionHostedChannel).asInstanceOf[NoboButton]
@@ -112,6 +119,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
 
       setVis(isVisible = !criticalSupportAvailable, viewNoFeatureSupport)
       setVis(isVisible = theirInitSupports(HostedChannels), optionHostedChannel)
+      setVis(isVisible = true, featuresList)
     }.run
   }
 
@@ -131,17 +139,14 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
     CommsTower.listenNative(listeners, info.remoteInfo)
   }
 
+  override def onBackPressed: Unit = whenBackPressed.run
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
     case remoteInfo: RemoteNodeInfo => me activateInfo HasRemoteInfoWrap(remoteInfo)
-    case normalChannel: NormalChannelRequest => me activateInfo normalChannel
-    case hostedChannel: HostedChannelRequest => me activateInfo hostedChannel
+    case hasRemoteInfo: HasRemoteInfo => me activateInfo hasRemoteInfo
     case _ => whenNone.run
   }
 
-  override def onBackPressed: Unit =
-    whenBackPressed.run
-
-  def INIT(state: Bundle): Unit =
+  def INIT(state: Bundle): Unit = {
     if (WalletApp.isAlive && LNParams.isOperational) {
       setContentView(R.layout.activity_remote_peer)
       checkExternalData(whenBackPressed)
@@ -149,6 +154,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       WalletApp.freePossiblyUsedResouces
       me exitTo ClassNames.mainActivityClass
     }
+  }
 
   // BUTTON ACTIONS
 
@@ -156,48 +162,105 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
     new NCFundeeOpenHandler(hasInfo.remoteInfo, theirOpen, LNParams.cm) {
       override def onEstablished(cs: Commitments, chan: ChannelNormal): Unit = implant(cs, chan)
       override def onFailure(reason: Throwable): Unit = revertAndInform(reason)
+      stopAcceptingIncomingOffers
     }
-
-    stopAcceptingIncomingOffers
   }
 
-  def fundNewChannel(view: View, fromWallet: ElectrumEclairWallet): Unit = {
+  def doFundNewChannel(fromWallet: ElectrumEclairWallet): Unit = {
     val sendView: ChainSendView = new ChainSendView(fromWallet, badge = None, visibilityRes = -1)
 
+    def makeFunding(fundingAmount: Satoshi, feeratePerKw: FeeratePerKw, local: PublicKey, remote: PublicKey): Future[GenerateTxResponse] =
+      fromWallet.makeFundingTx(Script.write(Script pay2wsh Scripts.multiSig2of2(local, remote).toList), fundingAmount, feeratePerKw)
+
+    def makeFakeFunding(amount: Satoshi, feeratePerKw: FeeratePerKw): Future[GenerateTxResponse] =
+      makeFunding(amount, feeratePerKw, randomKey.publicKey, randomKey.publicKey)
+
+    def makeRealFunding(data: DATA_WAIT_FOR_FUNDING_INTERNAL, amount: Satoshi): Future[GenerateTxResponse] =
+      makeFunding(amount, data.initFunder.fundingFeeratePerKw, data.lastSent.fundingPubkey, data.remoteParams.fundingPubKey)
+
+    def doFundRunnable(channel: ChannelNormal, response: GenerateTxResponse): Runnable = UITask {
+      // At this point we have a real signed funding, relay it to channel and indicate progress
+      sendView.switchToSpinner(alert)
+      channel process response
+    }
+
     def attempt(alert: AlertDialog): Unit = {
-//      runFutureProcessOnUI(NCFunderOpenHandler.makeFunding(fromWallet, sendView.manager.resultMsat.truncateToSatoshi, feeView.rate), onFail) { fakeResponse =>
-//        if (fromWallet.ewt.secrets.isDefined) sendView.switchToConfirm(alert, fakeResponse.pubKeyScriptToAmount.values.head.toMilliSatoshi, fakeResponse.fee.toMilliSatoshi, process)
-//        else sendView.switchToSpinner
-//      }
-//
-//      def process(fakeFundingResponse: GenerateTxResponse): Unit = {
-//        new NCFunderOpenHandler(hasInfo.remoteInfo, fakeFundingResponse, feeView.rate, LNParams.cm) {
-//          override def onEstablished(commitments: Commitments, chan: ChannelNormal): Unit = implant(commitments, chan)
-//          override def onFailure(reason: Throwable): Unit = revertAndInform(reason)
-//        }
-//
-//        stopAcceptingIncomingOffers
-//        alert.dismiss
-//      }
+      def revertInformDismiss(reason: Throwable): Unit = runAnd(alert.dismiss)(me revertAndInform reason)
+      runFutureProcessOnUI(makeFakeFunding(sendView.manager.resultMsat.truncateToSatoshi, feeView.rate), revertInformDismiss) { fakeResponse =>
+        // It is fine to use the first map element here: we send to single address so response may will always have a single element (change not included)
+        // For signing wallet fake response sends to random p2wsh, for watching wallet fake response is also signed with random private key (needs another update)
+        val totalFundAmount = fakeResponse.pubKeyScriptToAmount.values.head.toMilliSatoshi
+        val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
+
+        def processLocalFunding: Unit = {
+          new NCFunderOpenHandler(hasInfo.remoteInfo, fundingAmount = totalFundAmount.truncateToSatoshi, feeView.rate, LNParams.cm) {
+            override def onChanPersisted(data: DATA_WAIT_FOR_FUNDING_CONFIRMED, chan: ChannelNormal): Unit = implantAndBroadcast(data, fromWallet, chan)
+            override def onFailure(reason: Throwable): Unit = revertInformDismiss(reason)
+
+            override def onAwaitFunding(data: DATA_WAIT_FOR_FUNDING_INTERNAL): Unit =
+              makeRealFunding(data, amount = totalFundAmount.truncateToSatoshi) onComplete {
+                case Failure(reason) => makeChanListener.onException(reason, freshChannel, data)
+                case Success(signedTx) => doFundRunnable(freshChannel, signedTx).run
+              }
+          }
+
+          sendView.switchToSpinner(alert)
+          stopAcceptingIncomingOffers
+        }
+
+        def processHardwareFunding(masterFingerprint: Long): Unit = {
+          new NCFunderOpenHandler(hasInfo.remoteInfo, fundingAmount = totalFundAmount.truncateToSatoshi, feeView.rate, LNParams.cm) {
+            override def onChanPersisted(data: DATA_WAIT_FOR_FUNDING_CONFIRMED, chan: ChannelNormal): Unit = implantAndBroadcast(data, fromWallet, chan)
+            override def onFailure(reason: Throwable): Unit = revertInformDismiss(reason)
+
+            override def onAwaitFunding(data: DATA_WAIT_FOR_FUNDING_INTERNAL): Unit =
+              runFutureProcessOnUI(makeRealFunding(data, totalFundAmount.truncateToSatoshi), revertInformDismiss) { fakeSigResponse =>
+                // At this point real p2wsh is known, but tx is still signed with random private key, we need HW to properly sign it
+                val psbt = prepareBip84Psbt(fakeSigResponse, masterFingerprint)
+                sendView.switchToHardwareOutgoing(alert, psbt)
+
+                sendView.chainReaderView.onSignedTx = signedTx => UITask {
+                  val realSigReponse = fakeSigResponse.withReplacedTx(signedTx)
+                  if (realSigReponse.tx.txOut.toSet != fakeSigResponse.tx.txOut.toSet) disconnectListenersAndFinish
+                  finalSendButton setOnClickListener onButtonTap(doFundRunnable(freshChannel, realSigReponse).run)
+                  sendView.switchToConfirm(alert, totalFundAmount, realSigReponse.fee.toMilliSatoshi)
+                }.run
+              }
+          }
+
+          sendView.switchToSpinner(alert)
+          stopAcceptingIncomingOffers
+        }
+
+        def switchToConfirmExt: Unit = {
+          finalSendButton setOnClickListener onButtonTap(processLocalFunding)
+          sendView.switchToConfirm(alert, totalFundAmount, fakeResponse.fee.toMilliSatoshi)
+        }
+
+        fromWallet.info.core match {
+          case hardware: WatchingWallet if hardware.masterFingerprint.isEmpty => disconnectListenersAndFinish
+          case hardware: WatchingWallet => processHardwareFunding(hardware.masterFingerprint.get)
+          case _: SigningWallet => switchToConfirmExt
+        }
+      }
     }
 
     lazy val alert = {
-      def setMax(alert1: AlertDialog): Unit = sendView.manager.updateText(fromWallet.info.lastBalance.toMilliSatoshi)
-      val builder = titleBodyAsViewBuilder(getString(rpa_open_nc).asColoredView(R.color.cardBitcoinModern), sendView.manager.content)
+      val fundTitle = new TitleView(me getString rpa_open_nc)
+      val backgroundRes = if (fromWallet.info.core.isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
+      addFlowChip(fundTitle.flow, getString(dialog_send_btc_from).format(fromWallet.info.label), R.drawable.border_yellow)
+      def setMax(fundAlert: AlertDialog): Unit = sendView.manager.updateText(fromWallet.info.lastBalance.toMilliSatoshi)
+      val builder = titleBodyAsViewBuilder(fundTitle.asColoredView(backgroundRes), sendView.manager.content)
       mkCheckFormNeutral(attempt, none, setMax, builder, dialog_ok, dialog_cancel, dialog_max)
     }
 
-    lazy val feeView: FeeView[GenerateTxResponse] = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.body) {
+    lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.body) {
       rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget)
 
       worker = new ThrottledWork[String, GenerateTxResponse] {
-        def process(reason: String, result: GenerateTxResponse): Unit = update(feeOpt = result.fee.toMilliSatoshi.asSome, showIssue = false)
+        def process(reason: String, responseResult: GenerateTxResponse): Unit = update(feeOpt = responseResult.fee.toMilliSatoshi.asSome, showIssue = false)
+        def work(reason: String): Observable[GenerateTxResponse] = Rx fromFutureOnIo makeFakeFunding(sendView.manager.resultMsat.truncateToSatoshi, rate)
         override def error(exc: Throwable): Unit = update(feeOpt = None, showIssue = sendView.manager.resultMsat >= LNParams.minChanDustLimit)
-
-        def work(reason: String): Observable[GenerateTxResponse] = Rx fromFutureOnIo {
-          val fundingAmount = sendView.manager.resultMsat.truncateToSatoshi
-          NCFunderOpenHandler.makeFunding(fromWallet, fundingAmount, rate)
-        }
       }
 
       override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
@@ -211,12 +274,13 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
     feeView.update(feeOpt = None, showIssue = false)
   }
 
-  def requestHostedChannel(view: View): Unit = askHostedChannel(randomBytes32)
+  def fundNewChannel(view: View): Unit = doFundNewChannel(LNParams.chainWallets.lnWallet)
   def sharePeerSpecificNodeId(view: View): Unit = share(hasInfo.remoteInfo.nodeSpecificPubKey.toString)
+  def requestHostedChannel(view: View): Unit = askHostedChannel(randomBytes32)
 
   def askHostedChannel(secret: ByteVector32): Unit = {
     val builder = new AlertDialog.Builder(me).setTitle(rpa_request_hc).setMessage(getString(rpa_hc_warn).html)
-    mkCheckForm(doAskHostedChannel, setVis(isVisible = criticalSupportAvailable, viewYesFeatureSupport), builder, dialog_ok, dialog_cancel)
+    mkCheckForm(doAskHostedChannel, none, builder, dialog_ok, dialog_cancel)
 
     def doAskHostedChannel(alert: AlertDialog): Unit = {
       // Switch view first since HC may throw immediately
@@ -225,8 +289,8 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       alert.dismiss
 
       // We only need local params to extract defaultFinalScriptPubKey
-      val localParams = LNParams.makeChannelParams(isFunder = false, LNParams.minChanDustLimit)
-      new HCOpenHandler(hasInfo.remoteInfo, secret, localParams.defaultFinalScriptPubKey, LNParams.cm) {
+      val params = LNParams.makeChannelParams(isFunder = false, LNParams.minChanDustLimit)
+      new HCOpenHandler(hasInfo.remoteInfo, secret, params.defaultFinalScriptPubKey, LNParams.cm) {
         def onEstablished(cs: Commitments, channel: ChannelHosted): Unit = implant(cs, channel)
         def onFailure(reason: Throwable): Unit = revertAndInform(reason)
       }
@@ -243,6 +307,11 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
   def stopAcceptingIncomingOffers: Unit = {
     CommsTower.listenNative(Set(incomingIgnoringListener), hasInfo.remoteInfo)
     CommsTower.rmListenerNative(hasInfo.remoteInfo, incomingAcceptingListener)
+  }
+
+  def implantAndBroadcast(data: DATA_WAIT_FOR_FUNDING_CONFIRMED, fromWallet: ElectrumEclairWallet, freshChannel: Channel): Unit = {
+    data.fundingTx.foreach(fromWallet.broadcast)
+    implant(data.commitments, freshChannel)
   }
 
   def implant(cs: Commitments, freshChannel: Channel): Unit = {

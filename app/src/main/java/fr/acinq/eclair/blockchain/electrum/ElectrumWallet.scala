@@ -266,6 +266,7 @@ object ElectrumWallet {
   sealed trait Response
 
   sealed trait GenerateTxResponse extends Response {
+    def withReplacedTx(tx: Transaction): GenerateTxResponse
     val pubKeyScriptToAmount: Map[ByteVector, Satoshi]
     val data: ElectrumData
     val tx: Transaction
@@ -282,10 +283,14 @@ object ElectrumWallet {
   }
 
   case class CompleteTransaction(pubKeyScriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw, sequenceFlag: Long) extends Request
-  case class CompleteTransactionResponse(pubKeyScriptToAmount: Map[ByteVector, Satoshi], data: ElectrumData, tx: Transaction, fee: Satoshi) extends GenerateTxResponse
+  case class CompleteTransactionResponse(pubKeyScriptToAmount: Map[ByteVector, Satoshi], data: ElectrumData, tx: Transaction, fee: Satoshi) extends GenerateTxResponse {
+    override def withReplacedTx(tx1: Transaction): CompleteTransactionResponse = copy(tx = tx1)
+  }
 
   case class SendAll(publicKeyScript: ByteVector, pubKeyScriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw, sequenceFlag: Long, fromOutpoints: Set[OutPoint], extraUtxos: List[TxOut] = Nil) extends Request
-  case class SendAllResponse(pubKeyScriptToAmount: Map[ByteVector, Satoshi], data: ElectrumData, tx: Transaction, fee: Satoshi) extends GenerateTxResponse
+  case class SendAllResponse(pubKeyScriptToAmount: Map[ByteVector, Satoshi], data: ElectrumData, tx: Transaction, fee: Satoshi) extends GenerateTxResponse {
+    override def withReplacedTx(tx1: Transaction): SendAllResponse = copy(tx = tx1)
+  }
 
   case class RBFBump(tx: Transaction, feeRatePerKw: FeeratePerKw, sequenceFlag: Long) extends Request
   case class RBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, publicKeyScript: ByteVector, sequenceFlag: Long) extends Request

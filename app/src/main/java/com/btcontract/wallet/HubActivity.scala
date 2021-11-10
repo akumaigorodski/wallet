@@ -392,7 +392,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       val blockTarget = LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
       val target = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
-      lazy val feeView: FeeView[GenerateTxResponse] = new FeeView[GenerateTxResponse](FeeratePerByte(target), body) {
+      lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(target), body) {
         rate = target
 
         worker = new ThrottledWork[String, GenerateTxResponse] {
@@ -416,9 +416,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         // Only update parent semantic order if it does not already have one, record it BEFORE sending CPFP
         val parentDescWithOrder = info.description.withNewOrderCond(cpfpBumpOrder.copy(order = Long.MinValue).asSome)
         WalletApp.txDataBag.updDescription(parentDescWithOrder, info.txid)
-
-        // On success tx will be recorded in a top level chain events listener
-        // on fail user will be notified right away and nothing will happen
         alert.dismiss
 
         for {
@@ -493,8 +490,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       def attempt(alert: AlertDialog): Unit = {
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_BOOST)
         val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
-        // On success tx will be recorded in a top level chain events listener
-        // on fail user will be notified right away and nothing will happen
         alert.dismiss
 
         for {
@@ -508,10 +503,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
           val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
           WalletApp.txDataBag.updDescription(parentDesc, info.txid)
-        } else {
-          // Details should be available in persistent log
-          onFail(me getString error_btc_broadcast_fail)
-        }
+        } else onFail(me getString error_btc_broadcast_fail)
       }
 
       lazy val alert = {
@@ -574,8 +566,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       def attempt(alert: AlertDialog): Unit = {
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_CANCEL)
         val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
-        // On success tx will be recorded in a top level chain events listener
-        // on fail user will be notified right away and nothing will happen
         alert.dismiss
 
         for {
@@ -589,10 +579,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
           val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
           WalletApp.txDataBag.updDescription(parentDesc, info.txid)
-        } else {
-          // Details should be available in persistent log
-          onFail(me getString error_btc_broadcast_fail)
-        }
+        } else onFail(me getString error_btc_broadcast_fail)
       }
 
       lazy val alert = {
