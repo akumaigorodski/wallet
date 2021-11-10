@@ -358,7 +358,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       addFlowChip(footer.flow, getString(chan_open_scan), R.drawable.border_blue, _ => scanNodeQr)
       if (LNParams.isMainnet) addFlowChip(footer.flow, getString(chan_open_lnbig), R.drawable.border_blue, _ => me browse "https://lnbig.com/#/open-channel")
       if (LNParams.isMainnet) addFlowChip(footer.flow, getString(chan_open_bitrefill), R.drawable.border_blue, _ => me browse "https://www.bitrefill.com/buy/lightning-channel")
-      if (LNParams.isMainnet && LNParams.cm.allHostedCommits.isEmpty && LNParams.currentBlockDay > 0) addFlowChip(footer.flow, getString(rpa_request_hc), R.drawable.border_yellow, _ => requestHostedChannel)
+      if (LNParams.isMainnet && LNParams.cm.allHostedCommits.isEmpty) addFlowChip(footer.flow, getString(rpa_request_hc), R.drawable.border_yellow, _ => requestHostedChannel)
       chanList.addFooterView(footer.view)
       chanList.setAdapter(chanAdapter)
       chanList.setDividerHeight(0)
