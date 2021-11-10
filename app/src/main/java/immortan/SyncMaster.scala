@@ -149,14 +149,9 @@ case class SyncWorker(master: CanBeRepliedTo, keyPair: KeyPair, remoteInfo: Remo
         CommsTower.sendMany(nextBatch, pair)
       }
 
-    case (update: ChannelUpdate, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenButShouldBeExcluded(update) =>
-      become(d1.copy(excluded = d1.excluded + update.core), GOSSIP_SYNC)
-
-    case (update: ChannelUpdate, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenAndNotExcluded(update.shortChannelId) =>
-      become(d1.copy(updates = d1.updates + update.lite), GOSSIP_SYNC)
-
-    case (ann: ChannelAnnouncement, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenShortIds.contains(ann.shortChannelId) =>
-      become(d1.copy(announces = d1.announces + ann.lite), GOSSIP_SYNC)
+    case (update: ChannelUpdate, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenButShouldBeExcluded(update) => become(d1.copy(excluded = d1.excluded + update.core), GOSSIP_SYNC)
+    case (update: ChannelUpdate, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenAndNotExcluded(update.shortChannelId) => become(d1.copy(updates = d1.updates + update.lite), GOSSIP_SYNC)
+    case (ann: ChannelAnnouncement, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenShortIds.contains(ann.shortChannelId) => become(d1.copy(announces = d1.announces + ann.lite), GOSSIP_SYNC)
 
     case (_: ReplyShortChannelIdsEnd, data1: SyncWorkerGossipData, GOSSIP_SYNC) =>
       // We have completed current chunk, inform master and either continue or complete
@@ -166,14 +161,9 @@ case class SyncWorker(master: CanBeRepliedTo, keyPair: KeyPair, remoteInfo: Remo
 
     // PHC_SYNC
 
-    case (worker: CommsTower.Worker, _: SyncWorkerPHCData, PHC_SYNC) =>
-      worker.handler process QueryPublicHostedChannels(LNParams.chainHash)
-
-    case (ann: ChannelAnnouncement, d1: SyncWorkerPHCData, PHC_SYNC) if d1.isAcceptable(ann) && d1.phcMaster.isAcceptable(ann) =>
-      become(d1.withNewAnnounce(ann.lite), PHC_SYNC)
-
-    case (update: ChannelUpdate, d1: SyncWorkerPHCData, PHC_SYNC) if d1.isUpdateAcceptable(update) =>
-      become(d1.withNewUpdate(update.lite), PHC_SYNC)
+    case (worker: CommsTower.Worker, _: SyncWorkerPHCData, PHC_SYNC) => worker.handler process QueryPublicHostedChannels(LNParams.chainHash)
+    case (ann: ChannelAnnouncement, d1: SyncWorkerPHCData, PHC_SYNC) if d1.isAcceptable(ann) && d1.phcMaster.isAcceptable(ann) => become(d1.withNewAnnounce(ann.lite), PHC_SYNC)
+    case (update: ChannelUpdate, d1: SyncWorkerPHCData, PHC_SYNC) if d1.isUpdateAcceptable(update) => become(d1.withNewUpdate(update.lite), PHC_SYNC)
 
     case (_: ReplyPublicHostedChannelsEnd, completeSyncData: SyncWorkerPHCData, PHC_SYNC) =>
       // Peer has informed us that there is no more PHC gossip left, inform master and shut down
