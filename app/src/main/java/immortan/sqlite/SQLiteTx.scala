@@ -39,6 +39,11 @@ class SQLiteTx(val db: DBInterface) {
     ChannelMaster.next(ChannelMaster.txDbStream)
   }
 
+  def removeByPub(xPub: ExtendedPublicKey): Unit = {
+    db.change(TxTable.killByPubSql, xPub.publicKey.toString)
+    ChannelMaster.next(ChannelMaster.txDbStream)
+  }
+
   def txSummary: Try[TxSummary] =
     db.select(TxTable.selectSummarySql).headTry { rc =>
       TxSummary(fees = Satoshi(rc long 0), received = Satoshi(rc long 1), sent = Satoshi(rc long 2), count = rc long 3)

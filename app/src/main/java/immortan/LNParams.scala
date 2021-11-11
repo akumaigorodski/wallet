@@ -174,6 +174,7 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
   def withoutWallet(wallet: ElectrumEclairWallet): WalletExt = {
     require(wallet.info.core.isRemovable, "Wallet is not removable")
     params.walletDb.remove(pub = wallet.ewt.xPub.publicKey)
+    params.txDb.removeByPub(xPub = wallet.ewt.xPub)
     val wallets1 = wallets diff List(wallet)
     wallet.walletRef ! PoisonPill
     copy(wallets = wallets1)

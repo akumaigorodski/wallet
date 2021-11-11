@@ -188,7 +188,7 @@ object WalletApp {
       override def initConnect: Unit = if (ensureTor) app.checkTorProxy(restartApplication)(super.initConnect) else super.initConnect
     }
 
-    val params = WalletParameters(extDataBag, chainWalletBag, dustLimit = 546L.sat)
+    val params = WalletParameters(extDataBag, chainWalletBag, txDataBag, dustLimit = 546L.sat)
     val pool = LNParams.loggedActor(Props(classOf[ElectrumClientPool], LNParams.blockCount, LNParams.chainHash, LNParams.ec), "connection-pool")
     val sync = LNParams.loggedActor(Props(classOf[ElectrumChainSync], pool, params.headerDb, LNParams.chainHash), "chain-sync")
     val watcher = LNParams.loggedActor(Props(classOf[ElectrumWatcher], LNParams.blockCount, pool), "channel-watcher")

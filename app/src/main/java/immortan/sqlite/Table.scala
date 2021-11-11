@@ -271,6 +271,10 @@ object TxTable extends Table {
 
   val updateDescriptionSql = s"UPDATE $table SET $description = ? WHERE $txid = ?"
 
+  // Removing
+
+  val killByPubSql = s"DELETE FROM $table WHERE $pub = ?"
+
   def createStatements: Seq[String] = {
     val createTable = s"""CREATE TABLE IF NOT EXISTS $table(
       $IDAUTOINC, $rawTx TEXT NOT NULL, $txid TEXT NOT NULL $UNIQUE, $pub TEXT NOT NULL, $depth INTEGER NOT NULL, $receivedSat INTEGER NOT NULL,
