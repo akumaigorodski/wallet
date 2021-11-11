@@ -9,7 +9,6 @@ import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin._
 import fr.acinq.eclair.Features._
 import fr.acinq.eclair._
-import fr.acinq.eclair.blockchain.EclairWallet
 import fr.acinq.eclair.blockchain.electrum._
 import fr.acinq.eclair.blockchain.electrum.db.{CompleteChainWalletInfo, SigningWallet, WatchingWallet}
 import fr.acinq.eclair.channel.{ChannelKeys, LocalParams, PersistentChannelData}
@@ -146,6 +145,8 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
 
   lazy val lnWallet: ElectrumEclairWallet = wallets.find(_.isBuiltIn).get
 
+  lazy val usableWallets: List[ElectrumEclairWallet] = wallets.filter(wallet => wallet.isBuiltIn || wallet.hasFingerprint)
+
   def findByPubKey(pub: PublicKey): Option[ElectrumEclairWallet] = wallets.find(_.ewt.xPub.publicKey == pub)
 
   def makeSigningWalletParts(core: SigningWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
@@ -179,7 +180,7 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
   }
 
   def withNewLabel(label: String)(wallet1: ElectrumEclairWallet): WalletExt = {
-    require(wallet1.info.core.isRemovable, "Can not re-label a default chain wallet")
+    require(!wallet1.isBuiltIn, "Can not re-label a default built in chain wallet")
     def sameXPub(wallet: ElectrumEclairWallet): Boolean = wallet.ewt.xPub == wallet1.ewt.xPub
     params.walletDb.updateLabel(label, pub = wallet1.ewt.xPub.publicKey)
     me.modify(_.wallets.eachWhere(sameXPub).info.label).setTo(label)

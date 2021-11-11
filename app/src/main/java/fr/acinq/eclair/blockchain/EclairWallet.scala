@@ -42,11 +42,9 @@ trait EclairWallet {
 
   def doubleSpent(tx: Transaction): Future[DepthAndDoubleSpent]
 
-  def isWatching: Boolean
-
-  def isHardware: Boolean
-
-  def isSigning: Boolean
+  def hasFingerprint: Boolean
 
   def isBuiltIn: Boolean
+
+  def isSigning: Boolean
 }

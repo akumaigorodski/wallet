@@ -68,7 +68,6 @@ object WalletApp {
   final val USE_AUTH = "useAuth"
   final val FIAT_CODE = "fiatCode"
   final val ENSURE_TOR = "ensureTor"
-  final val SHOW_TOOLTIP = "showTooltip"
   final val CAP_LN_FEE_TO_CHAIN = "capLNFeeToChain"
   final val LAST_TOTAL_GOSSIP_SYNC = "lastTotalGossipSync"
   final val LAST_NORMAL_GOSSIP_SYNC = "lastNormalGossipSync"
@@ -79,7 +78,6 @@ object WalletApp {
   def useAuth: Boolean = app.prefs.getBoolean(USE_AUTH, false)
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
   def ensureTor: Boolean = app.prefs.getBoolean(ENSURE_TOR, false)
-  def showTooltip: Boolean = app.prefs.getBoolean(SHOW_TOOLTIP, true)
   def capLNFeeToChain: Boolean = app.prefs.getBoolean(CAP_LN_FEE_TO_CHAIN, false)
   def showRateUs: Boolean = app.prefs.getBoolean(SHOW_RATE_US, true)
   def openHc: Boolean = app.prefs.getBoolean(OPEN_HC, true)

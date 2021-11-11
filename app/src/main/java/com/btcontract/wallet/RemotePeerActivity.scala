@@ -229,17 +229,16 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
         if (fromWallet.isSigning) {
           finalSendButton setOnClickListener onButtonTap(processLocalFunding)
           sendView.switchToConfirm(alert, totalFundAmount, fakeResponse.fee.toMilliSatoshi)
-        } else if (fromWallet.isHardware) processHardwareFunding(fromWallet.info.core.masterFingerprint.get)
+        } else if (fromWallet.hasFingerprint) processHardwareFunding(fromWallet.info.core.masterFingerprint.get)
         else disconnectListenersAndFinish
       }
     }
 
     lazy val alert = {
       val fundTitle = new TitleView(me getString rpa_open_nc)
-      val backgroundRes = if (fromWallet.info.core.isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
+      val builder = titleBodyAsViewBuilder(fundTitle asColoredView chainWalletBackground(fromWallet), sendView.manager.content)
       addFlowChip(fundTitle.flow, getString(dialog_send_btc_from).format(fromWallet.info.label), R.drawable.border_yellow)
       def setMax(fundAlert: AlertDialog): Unit = sendView.manager.updateText(fromWallet.info.lastBalance.toMilliSatoshi)
-      val builder = titleBodyAsViewBuilder(fundTitle.asColoredView(backgroundRes), sendView.manager.content)
       mkCheckFormNeutral(attempt, none, setMax, builder, dialog_ok, dialog_cancel, dialog_max)
     }
 

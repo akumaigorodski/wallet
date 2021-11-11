@@ -85,11 +85,9 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
     response <- (walletRef ? tx).mapTo[IsDoubleSpentResponse]
   } yield (response.depth, response.isDoubleSpent)
 
-  def isWatching: Boolean = ewt.secrets.isEmpty
+  override def hasFingerprint: Boolean = info.core.masterFingerprint.nonEmpty
 
-  def isHardware: Boolean = info.core.masterFingerprint.nonEmpty
+  override def isBuiltIn: Boolean = isSigning && info.core.walletType == BIP84
 
-  def isSigning: Boolean = ewt.secrets.nonEmpty
-
-  def isBuiltIn: Boolean = isSigning && info.core.walletType == EclairWallet.BIP84
+  override def isSigning: Boolean = ewt.secrets.nonEmpty
 }

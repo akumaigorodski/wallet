@@ -45,7 +45,7 @@ import fr.acinq.eclair.transactions.Transactions
 import fr.acinq.eclair.wire.ChannelReestablish
 import immortan._
 import immortan.crypto.Tools._
-import immortan.utils.{Denomination, InputParser, PaymentRequestExt, ThrottledWork}
+import immortan.utils._
 import org.apmem.tools.layouts.FlowLayout
 import rx.lang.scala.{Observable, Subscription}
 
@@ -129,7 +129,15 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   // Helpers
 
-  def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] = if (wallet.isHardware) Some(hardware_wallet) else if (wallet.isWatching) Some(watching_wallet) else None
+  def titleViewFromUri(uri: BitcoinUri): TitleView = {
+    val label = uri.label.map(label => s"<br><br><b>$label</b>").getOrElse(new String)
+    val message = uri.message.map(message => s"<br><i>$message<i>").getOrElse(new String)
+    val caption = getString(dialog_send_btc).format(uri.address.short, label + message)
+    new TitleView(caption)
+  }
+
+  def chainWalletBackground(wallet: ElectrumEclairWallet): Int = if (wallet.isBuiltIn) R.color.cardBitcoinModern else R.color.cardBitcoinLegacy
+  def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] = if (wallet.hasFingerprint) Some(hardware_wallet) else if (!wallet.isSigning) Some(watching_wallet) else None
   def browse(maybeUri: String): Unit = try me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri) catch { case exception: Throwable => me onFail exception }
 
   def bringRateDialog(view: View): Unit = {
@@ -833,14 +841,14 @@ class ItemsWithMemory[T <: TransactionDetails] {
 abstract class ChainWalletCards(host: BaseActivity) { self =>
   private var cardViews: List[ChainCard] = Nil
 
-  def init(walletExt: WalletExt): Unit = {
-    cardViews = List.fill(walletExt.wallets.size)(new ChainCard)
+  def init(wallets: List[ElectrumEclairWallet] = Nil): Unit = {
+    cardViews = List.fill(wallets.size)(new ChainCard)
     cardViews.map(_.view).foreach(holder.addView)
   }
 
-  def update(walletExt: WalletExt): Unit = {
+  def update(wallets: List[ElectrumEclairWallet] = Nil): Unit = {
     // We have old views but updated wallet objects, redraw UI to show an updated data
-    cardViews.zip(walletExt.wallets) foreach { case card ~ wallet => card updateView wallet }
+    cardViews.zip(wallets) foreach { case card ~ wallet => card updateView wallet }
   }
 
   class ChainCard {
@@ -867,23 +875,22 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
 
       val chainBalanceVisible = wallet.info.lastBalance > 0L.sat
-      val plusTipVisible = (wallet.isBuiltIn || wallet.isWatching) && !chainBalanceVisible
-      val menuTipVisible = !(wallet.isBuiltIn || wallet.isWatching) && !chainBalanceVisible
-      val backgroundRes = if (wallet.isBuiltIn) R.color.cardBitcoinModern else R.color.cardBitcoinLegacy
+      val plusTipVisible = (wallet.isBuiltIn || !wallet.isSigning) && !chainBalanceVisible
+      val menuTipVisible = !(wallet.isBuiltIn || !wallet.isSigning) && !chainBalanceVisible
 
       host.setVisMany(wallet.info.core.isRemovable -> setItemLabel, wallet.info.core.isRemovable -> removeItem)
       host.setVisMany(chainBalanceVisible -> chainBalanceWrap, plusTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip)
-      def onCardTap: Unit = if (wallet.isWatching) onWatchingWalletTap(wallet) else if (wallet.isBuiltIn) onBuiltInWalletTap(wallet) else onLegacyWalletTap(wallet)
+      def onCardTap: Unit = if (!wallet.isSigning) onWatchingWalletTap(wallet) else if (wallet.isBuiltIn) onBuiltInWalletTap(wallet) else onLegacyWalletTap(wallet)
 
       host.chainWalletNotice(wallet) foreach { textRes =>
         host.setVis(isVisible = true, chainWalletNotice)
         chainWalletNotice.setText(textRes)
       }
 
+      chainContainer setBackgroundResource host.chainWalletBackground(wallet)
       setItemLabel setOnClickListener host.onButtonTap(self onLabelTap wallet)
       removeItem setOnClickListener host.onButtonTap(self onRemoveTap wallet)
       chainWrap setOnClickListener host.onButtonTap(onCardTap)
-      chainContainer setBackgroundResource backgroundRes
       chainLabel setText wallet.info.label
     }
   }

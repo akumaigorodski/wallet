@@ -6,7 +6,7 @@ import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.graphics.{Bitmap, BitmapFactory}
 import android.os.Bundle
-import android.view.{Gravity, View, ViewGroup}
+import android.view.{View, ViewGroup}
 import android.widget._
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
@@ -42,7 +42,6 @@ import immortan.fsm._
 import immortan.sqlite.SQLiteData
 import immortan.utils.ImplicitJsonFormats._
 import immortan.utils._
-import io.github.douglasjunior.androidSimpleTooltip.SimpleTooltip
 import org.apmem.tools.layouts.FlowLayout
 import org.ndeftools.Message
 import org.ndeftools.util.activity.NfcReaderActivity
@@ -275,9 +274,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     def ractOnTap: Unit = currentDetails match {
       case info: DelayedRefunds => showPending(info)
       case info: LNUrlPayLink => doCallPayLink(info)
-      case info: PaymentInfo if info.isIncoming && PaymentStatus.PENDING == info.status && !LNParams.cm.inProcessors.get(info.fullTag).exists(info.isActivelyHolding) =>
-        // Intercept normal flow and show payment request if this is an incoming payment which is still pending and not being actively held at the moment
-        goToWithValue(ClassNames.qrInvoiceActivityClass, info.prExt)
       case info: TransactionDetails =>
         TransitionManager.beginDelayedTransition(contentWindow)
         if (extraInfo.getVisibility == View.VISIBLE) collapse(info)
@@ -909,7 +905,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       // Remove all existing cards and place new ones
       LNParams.synchronized(LNParams.chainWallets = ext1)
       chainCards.holder.removeAllViewsInLayout
-      chainCards.init(ext1)
+      chainCards.init(ext1.wallets)
       updateView
     }
 
@@ -933,7 +929,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       setVisMany(allChannels.nonEmpty -> channelStateIndicators, allChannels.nonEmpty -> totalLightningBalance, allChannels.isEmpty -> addChannelTip)
       // We have updated chain wallet balances at this point because listener in WalletApp gets called first
-      chainCards.update(LNParams.chainWallets)
+      chainCards.update(LNParams.chainWallets.wallets)
 
       val hideAll = localInCount + trampolineCount + localOutCount == 0
       inFlightIncoming setAlpha { if (hideAll) 0F else if (localInCount > 0) 1F else 0.3F }
@@ -1241,14 +1237,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       itemsList.setDivider(null)
 
       // Fill wallet list with wallet card views here
-      walletCards.chainCards.init(LNParams.chainWallets)
+      walletCards.chainCards.init(LNParams.chainWallets.wallets)
       walletCards.updateView
-
-      if (WalletApp.showTooltip) try {
-        WalletApp.app.prefs.edit.putBoolean(WalletApp.SHOW_TOOLTIP, false).commit
-        val tip = new SimpleTooltip.Builder(me).anchorView(walletCards.chainCards.holder).gravity(Gravity.TOP)
-        tip.text(me getString swipe_right).transparentOverlay(false).animated(true).build.show
-      } catch none
 
       runInFutureProcessOnUI(loadRecent, none) { _ =>
         // We suggest user to rate us if: no rate attempt has been made before, LN payments were successful, user has been using an app for certain period
@@ -1379,7 +1369,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         if (fromWallet.isSigning) {
           finalSendButton setOnClickListener onButtonTap(process apply response.tx)
           sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
-        } else if (fromWallet.isHardware) {
+        } else if (fromWallet.hasFingerprint) {
           sendView.chainReaderView.onSignedTx = signedTx => UITask {
             finalSendButton setOnClickListener onButtonTap(process apply signedTx)
             sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
@@ -1405,16 +1395,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         sendView.manager.updateText(value = max)
       }
 
+      val title = titleViewFromUri(uri)
       val neutralRes = if (uri.amount.isDefined) -1 else dialog_max
-      val label = uri.label.map(label => s"<br><br><b>$label</b>").getOrElse(new String)
-      val message = uri.message.map(message => s"<br><i>$message<i>").getOrElse(new String)
-      val caption = getString(dialog_send_btc).format(uri.address.short, label + message)
-
-      val title = new TitleView(caption)
-      val backgroundRes = if (fromWallet.info.core.isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
+      val builder = titleBodyAsViewBuilder(title asColoredView chainWalletBackground(fromWallet), sendView.body)
       addFlowChip(title.flow, getString(dialog_send_btc_from).format(fromWallet.info.label), R.drawable.border_yellow)
-
-      val builder = titleBodyAsViewBuilder(title.asColoredView(backgroundRes), sendView.body)
       if (uri.prExt.isEmpty) mkCheckFormNeutral(attempt, none, useMax, builder, dialog_ok, dialog_cancel, neutralRes)
       else mkCheckFormNeutral(attempt, none, switchToLn, builder, dialog_ok, dialog_cancel, lightning_wallet)
     }
@@ -1468,7 +1452,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         if (fromWallet.isSigning) {
           finalSendButton setOnClickListener onButtonTap(process apply response.tx)
           sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
-        } else if (fromWallet.isHardware) {
+        } else if (fromWallet.hasFingerprint) {
           sendView.chainReaderView.onSignedTx = signedTx => UITask {
             finalSendButton setOnClickListener onButtonTap(process apply signedTx)
             sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
@@ -1484,9 +1468,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     lazy val alert = {
       val title = new TitleView(me getString dialog_send_btc_many)
-      val backgroundRes = if (fromWallet.info.core.isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
+      val builder = titleBodyAsViewBuilder(title asColoredView chainWalletBackground(fromWallet), sendView.body)
       addFlowChip(title.flow, getString(dialog_send_btc_from).format(fromWallet.info.label), R.drawable.border_yellow)
-      val builder = titleBodyAsViewBuilder(title.asColoredView(backgroundRes), sendView.body)
       mkCheckForm(attempt, none, builder, dialog_ok, dialog_cancel)
     }
 
