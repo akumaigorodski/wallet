@@ -207,10 +207,9 @@
 
     <string name="popup_prior_chain_balance"><![CDATA[<b>saldo&#160;anterior</b>&#160;%1$s]]></string>
     <string name="popup_ln_fee"><![CDATA[<b>taxa</b>&#160;%1$s,&#160;<b>econom</b>&#160;%2$s]]></string>
+    <string name="popup_fiat"><![CDATA[<b>fiat&#160;value</b>&#160;%1$s&#160;(%2$s)]]></string>
     <string name="popup_chain_fee"><![CDATA[<b>taxa&#160;chain</b>&#160;%1$s]]></string>
     <string name="popup_hash"><![CDATA[<b>hash</b>&#160;%1$s]]></string>
-    <string name="popup_then"><![CDATA[<b>então</b>&#160;%1$s]]></string>
-    <string name="popup_now"><![CDATA[<b>agora</b>&#160;%1$s]]></string>
 
     <!-- /special tx/payment descriptions -->
 

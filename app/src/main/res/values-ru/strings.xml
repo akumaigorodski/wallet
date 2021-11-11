@@ -207,10 +207,9 @@
 
     <string name="popup_prior_chain_balance"><![CDATA[<b>прежний&#160;баланс</b>&#160;%1$s]]></string>
     <string name="popup_ln_fee"><![CDATA[<b>сбор</b>&#160;%1$s,&#160;<b>эконом</b>&#160;%2$s]]></string>
+    <string name="popup_fiat"><![CDATA[<b>в&#160;фиате</b>&#160;%1$s&#160;(%2$s)]]></string>
     <string name="popup_chain_fee"><![CDATA[<b>комиссия</b>&#160;%1$s]]></string>
     <string name="popup_hash"><![CDATA[<b>хэш</b>&#160;%1$s]]></string>
-    <string name="popup_then"><![CDATA[<b>тогда</b>&#160;%1$s]]></string>
-    <string name="popup_now"><![CDATA[<b>сейчас</b>&#160;%1$s]]></string>
 
     <!-- /special tx/payment descriptions -->
 
