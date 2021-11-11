@@ -39,7 +39,6 @@ import com.sparrowwallet.hummingbird.{UR, UREncoder}
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
-import fr.acinq.eclair.blockchain.electrum.db.WatchingWallet
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import fr.acinq.eclair.payment.PaymentRequest
 import fr.acinq.eclair.transactions.Transactions
@@ -130,15 +129,8 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   // Helpers
 
-  def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] = wallet.info.core match {
-    case watching: WatchingWallet if watching.masterFingerprint.isDefined => Some(hardware_wallet)
-    case _: WatchingWallet => Some(watching_wallet)
-    case _ => None
-  }
-
-  def browse(maybeUri: String): Unit = try {
-    me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri)
-  } catch { case exception: Throwable => me onFail exception }
+  def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] = if (wallet.isHardware) Some(hardware_wallet) else if (wallet.isWatching) Some(watching_wallet) else None
+  def browse(maybeUri: String): Unit = try me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri) catch { case exception: Throwable => me onFail exception }
 
   def bringRateDialog(view: View): Unit = {
     val marketUri = Uri.parse(s"market://details?id=$getPackageName")
@@ -874,15 +866,14 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
       chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, btcCardZero).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
 
-      val isRemovable = wallet.info.core.isRemovable
-      val isWatchingWallet = wallet.ewt.secrets.isEmpty
       val chainBalanceVisible = wallet.info.lastBalance > 0L.sat
-      val menuTipVisible = (isRemovable && !isWatchingWallet) && !chainBalanceVisible
-      val receiveTipVisible = (!isRemovable || isWatchingWallet) && !chainBalanceVisible
-      val backgroundRes = if (isRemovable) R.color.cardBitcoinLegacy else R.color.cardBitcoinModern
+      val plusTipVisible = (wallet.isBuiltIn || wallet.isWatching) && !chainBalanceVisible
+      val menuTipVisible = !(wallet.isBuiltIn || wallet.isWatching) && !chainBalanceVisible
+      val backgroundRes = if (wallet.isBuiltIn) R.color.cardBitcoinModern else R.color.cardBitcoinLegacy
 
-      host.setVisMany(isRemovable -> setItemLabel, isRemovable -> removeItem, receiveTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip, chainBalanceVisible -> chainBalanceWrap)
-      def onTap: Unit = if (isWatchingWallet) onHardwareWalletTap(wallet) else if (isRemovable) onLegacyWalletTap(wallet) else onBuiltInWalletTap(wallet)
+      host.setVisMany(wallet.info.core.isRemovable -> setItemLabel, wallet.info.core.isRemovable -> removeItem)
+      host.setVisMany(chainBalanceVisible -> chainBalanceWrap, plusTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip)
+      def onCardTap: Unit = if (wallet.isWatching) onWatchingWalletTap(wallet) else if (wallet.isBuiltIn) onBuiltInWalletTap(wallet) else onLegacyWalletTap(wallet)
 
       host.chainWalletNotice(wallet) foreach { textRes =>
         host.setVis(isVisible = true, chainWalletNotice)
@@ -891,7 +882,7 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
 
       setItemLabel setOnClickListener host.onButtonTap(self onLabelTap wallet)
       removeItem setOnClickListener host.onButtonTap(self onRemoveTap wallet)
-      chainWrap setOnClickListener host.onButtonTap(onTap)
+      chainWrap setOnClickListener host.onButtonTap(onCardTap)
       chainContainer setBackgroundResource backgroundRes
       chainLabel setText wallet.info.label
     }
@@ -899,7 +890,7 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
 
   def onLegacyWalletTap(wallet: ElectrumEclairWallet): Unit
   def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit
-  def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit
+  def onWatchingWalletTap(wallet: ElectrumEclairWallet): Unit
 
   def onLabelTap(wallet: ElectrumEclairWallet): Unit
   def onRemoveTap(wallet: ElectrumEclairWallet): Unit

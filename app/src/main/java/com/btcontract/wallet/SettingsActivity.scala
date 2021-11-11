@@ -107,8 +107,8 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
             val wallet = LNParams.chainWallets.makeSigningWalletParts(core, Satoshi(0L), label = core.walletType)
             HubActivity.instance.walletCards.resetChainCards(LNParams.chainWallets withFreshWallet wallet)
           } else {
-            val updatedWallets = LNParams.chainWallets.findSigningByTag(core.walletType).map(LNParams.chainWallets.withoutWallet)
-            updatedWallets.foreach(wallets => HubActivity.instance.walletCards resetChainCards wallets)
+            val affectedWallet = LNParams.chainWallets.wallets.find(wallet => wallet.isSigning && wallet.info.core.walletType == core.walletType)
+            affectedWallet.map(LNParams.chainWallets.withoutWallet).foreach(HubActivity.instance.walletCards.resetChainCards)
           }
         }
       }

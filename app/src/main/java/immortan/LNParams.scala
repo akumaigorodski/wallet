@@ -144,11 +144,9 @@ object LNParams {
 
 case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, sync: ActorRef, pool: ActorRef, watcher: ActorRef, params: WalletParameters) extends CanBeShutDown { me =>
 
-  def findSigningByTag(tag: String): Option[ElectrumEclairWallet] = wallets.filter(_.ewt.secrets.isDefined).find(_.info.core.walletType == tag)
+  lazy val lnWallet: ElectrumEclairWallet = wallets.find(_.isBuiltIn).get
 
   def findByPubKey(pub: PublicKey): Option[ElectrumEclairWallet] = wallets.find(_.ewt.xPub.publicKey == pub)
-
-  lazy val lnWallet: ElectrumEclairWallet = findSigningByTag(EclairWallet.BIP84).get
 
   def makeSigningWalletParts(core: SigningWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
     val ewt = ElectrumWalletType.makeSigningType(tag = core.walletType, master = LNParams.secret.keys.master, chainHash = LNParams.chainHash)

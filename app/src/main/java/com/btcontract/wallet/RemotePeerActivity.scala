@@ -13,7 +13,6 @@ import fr.acinq.eclair.Features._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
-import fr.acinq.eclair.blockchain.electrum.db.{SigningWallet, WatchingWallet}
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import fr.acinq.eclair.channel.{Commitments, DATA_WAIT_FOR_FUNDING_CONFIRMED, DATA_WAIT_FOR_FUNDING_INTERNAL}
 import fr.acinq.eclair.transactions.Scripts
@@ -192,7 +191,10 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
         val totalFundAmount = fakeResponse.pubKeyScriptToAmount.values.head.toMilliSatoshi
         val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
 
-        def processLocalFunding: Unit = {
+        sendView.switchToSpinner(alert)
+        stopAcceptingIncomingOffers
+
+        def processLocalFunding: Unit =
           new NCFunderOpenHandler(hasInfo.remoteInfo, fundingAmount = totalFundAmount.truncateToSatoshi, feeView.rate, LNParams.cm) {
             override def onChanPersisted(data: DATA_WAIT_FOR_FUNDING_CONFIRMED, chan: ChannelNormal): Unit = implantAndBroadcast(data, fromWallet, chan)
             override def onFailure(reason: Throwable): Unit = revertInformDismiss(reason)
@@ -204,11 +206,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
               }
           }
 
-          sendView.switchToSpinner(alert)
-          stopAcceptingIncomingOffers
-        }
-
-        def processHardwareFunding(masterFingerprint: Long): Unit = {
+        def processHardwareFunding(masterFingerprint: Long): Unit =
           new NCFunderOpenHandler(hasInfo.remoteInfo, fundingAmount = totalFundAmount.truncateToSatoshi, feeView.rate, LNParams.cm) {
             override def onChanPersisted(data: DATA_WAIT_FOR_FUNDING_CONFIRMED, chan: ChannelNormal): Unit = implantAndBroadcast(data, fromWallet, chan)
             override def onFailure(reason: Throwable): Unit = revertInformDismiss(reason)
@@ -228,20 +226,11 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
               }
           }
 
-          sendView.switchToSpinner(alert)
-          stopAcceptingIncomingOffers
-        }
-
-        def switchToConfirmExt: Unit = {
+        if (fromWallet.isSigning) {
           finalSendButton setOnClickListener onButtonTap(processLocalFunding)
           sendView.switchToConfirm(alert, totalFundAmount, fakeResponse.fee.toMilliSatoshi)
-        }
-
-        fromWallet.info.core match {
-          case hardware: WatchingWallet if hardware.masterFingerprint.isEmpty => disconnectListenersAndFinish
-          case hardware: WatchingWallet => processHardwareFunding(hardware.masterFingerprint.get)
-          case _: SigningWallet => switchToConfirmExt
-        }
+        } else if (fromWallet.isHardware) processHardwareFunding(fromWallet.info.core.masterFingerprint.get)
+        else disconnectListenersAndFinish
       }
     }
 

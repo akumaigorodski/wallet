@@ -29,7 +29,6 @@ import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.CurrentBlockCount
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, RBFResponse, WalletReady}
-import fr.acinq.eclair.blockchain.electrum.db.{SigningWallet, WatchingWallet}
 import fr.acinq.eclair.blockchain.electrum.{ElectrumEclairWallet, ElectrumWallet}
 import fr.acinq.eclair.blockchain.fee.FeeratePerByte
 import fr.acinq.eclair.channel._
@@ -65,6 +64,7 @@ object HubActivity {
   val allItems = List(txInfos, paymentInfos, relayedPreimageInfos, lnUrlPayLinks)
   // Run clear up method once on app start, do not re-run it every time this activity gets restarted
   lazy val markAsFailedOnce: Unit = LNParams.cm.markAsFailed(paymentInfos.lastItems, LNParams.cm.allInChannelOutgoing)
+  val disaplyThreshold: Long = System.currentTimeMillis
 
   var lastHostedReveals: Map[ByteVector32, RevealedLocalFulfills] = Map.empty
   var lastInChannelOutgoing: Map[FullPaymentTag, OutgoingAdds] = Map.empty
@@ -119,7 +119,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   lazy val walletCards = new WalletCardsViewHolder
   private[this] val viewBinderHelper = new ViewBinderHelper
   private[this] val CHOICE_RECEIVE_TAG: String = "choiceReceiveTag"
-  private[this] val disaplyThreshold: Long = System.currentTimeMillis
   var openListItems = Set.empty[String]
 
   // PAYMENT LIST
@@ -660,8 +659,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           }
 
         case info: TxInfo =>
+          val belongsToSigningWallet = LNParams.chainWallets.findByPubKey(info.pubKey).exists(_.isSigning)
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
-          val belongsToSigningWallet = LNParams.chainWallets.findByPubKey(info.pubKey).exists(_.ewt.secrets.isDefined)
           val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
           val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.cpfpOf.isEmpty
           val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.canBeCPFPd
@@ -876,7 +875,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     searchField.setTag(false)
 
     val chainCards: ChainWalletCards = new ChainWalletCards(me) {
-      def onHardwareWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
+      def onWatchingWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
       def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
       val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
 
@@ -1193,8 +1192,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]
 
   override def onChoiceMade(tag: AnyRef, pos: Int): Unit = (tag, pos) match {
-    case (legacy: ElectrumEclairWallet, 0) if legacy.ewt.secrets.isDefined => transferFromLegacyToModern(legacy)
-    case (legacy: ElectrumEclairWallet, 1) if legacy.ewt.secrets.isDefined => bringBitcoinSpecificScanner(legacy)
+    case (legacy: ElectrumEclairWallet, 0) if legacy.isSigning => transferFromLegacyToModern(legacy)
+    case (legacy: ElectrumEclairWallet, 1) if legacy.isSigning => bringBitcoinSpecificScanner(legacy)
     case (CHOICE_RECEIVE_TAG, 0) => goToWithValue(ClassNames.qrChainActivityClass, LNParams.chainWallets.lnWallet)
     case (CHOICE_RECEIVE_TAG, 1) => bringReceivePopup
     case _ =>
@@ -1377,27 +1376,20 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
         val totalSendAmount = response.pubKeyScriptToAmount.values.head.toMilliSatoshi
 
-        def switchToConfirmExt: Unit = {
+        if (fromWallet.isSigning) {
           finalSendButton setOnClickListener onButtonTap(process apply response.tx)
           sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
-        }
-
-        def switchToHardwareOutgoingExt(masterFingerprint: Long): Unit = {
-          val psbt = prepareBip84Psbt(response, masterFingerprint)
-          sendView.switchToHardwareOutgoing(alert, psbt)
-
+        } else if (fromWallet.isHardware) {
           sendView.chainReaderView.onSignedTx = signedTx => UITask {
             finalSendButton setOnClickListener onButtonTap(process apply signedTx)
             sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
             if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
           }.run
-        }
 
-        fromWallet.info.core match {
-          case hardware: WatchingWallet if hardware.masterFingerprint.isEmpty => alert.dismiss
-          case hardware: WatchingWallet => switchToHardwareOutgoingExt(hardware.masterFingerprint.get)
-          case _: SigningWallet => switchToConfirmExt
-        }
+          val masterFingerprint = fromWallet.info.core.masterFingerprint.get
+          val psbt = prepareBip84Psbt(response, masterFingerprint)
+          sendView.switchToHardwareOutgoing(alert, psbt)
+        } else alert.dismiss
       }
     }
 
@@ -1473,27 +1465,20 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
         val totalSendAmount = response.pubKeyScriptToAmount.values.sum.toMilliSatoshi
 
-        def switchToConfirmExt: Unit = {
+        if (fromWallet.isSigning) {
           finalSendButton setOnClickListener onButtonTap(process apply response.tx)
           sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
-        }
-
-        def switchToHardwareOutgoingExt(masterFingerprint: Long): Unit = {
-          val psbt = prepareBip84Psbt(response, masterFingerprint)
-          sendView.switchToHardwareOutgoing(alert, psbt)
-
+        } else if (fromWallet.isHardware) {
           sendView.chainReaderView.onSignedTx = signedTx => UITask {
             finalSendButton setOnClickListener onButtonTap(process apply signedTx)
             sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
             if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
           }.run
-        }
 
-        fromWallet.info.core match {
-          case hardware: WatchingWallet if hardware.masterFingerprint.isEmpty => alert.dismiss
-          case hardware: WatchingWallet => switchToHardwareOutgoingExt(hardware.masterFingerprint.get)
-          case _: SigningWallet => switchToConfirmExt
-        }
+          val masterFingerprint = fromWallet.info.core.masterFingerprint.get
+          val psbt = prepareBip84Psbt(response, masterFingerprint)
+          sendView.switchToHardwareOutgoing(alert, psbt)
+        } else alert.dismiss
       }
     }
 

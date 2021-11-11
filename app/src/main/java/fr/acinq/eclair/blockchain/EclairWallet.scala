@@ -41,4 +41,12 @@ trait EclairWallet {
   def broadcast(tx: Transaction): Future[Boolean]
 
   def doubleSpent(tx: Transaction): Future[DepthAndDoubleSpent]
+
+  def isWatching: Boolean
+
+  def isHardware: Boolean
+
+  def isSigning: Boolean
+
+  def isBuiltIn: Boolean
 }
