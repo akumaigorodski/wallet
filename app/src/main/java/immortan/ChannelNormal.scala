@@ -233,11 +233,10 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel {
         }
 
 
-      case (some: HasNormalCommitments, cmd: CMD_CLOSE, OPEN | SLEEPING | WAIT_FUNDING_DONE) if cmd.force =>
-        // Unconditionally force-close channel right away if user explicitly asks for this
-        spendLocalCurrent(some)
+      case (negs: DATA_NEGOTIATING, _: CMD_CLOSE, _) if negs.bestUnpublishedClosingTxOpt.nonEmpty => handleMutualClose(negs.bestUnpublishedClosingTxOpt.get, negs)
+      case (some: HasNormalCommitments, cmd: CMD_CLOSE, OPEN | SLEEPING | WAIT_FUNDING_DONE) if cmd.force => spendLocalCurrent(some)
 
-        
+
       // We may schedule shutdown while channel is offline
       case (norm: DATA_NORMAL, cmd: CMD_CLOSE, OPEN | SLEEPING) =>
         val localScriptPubKey = cmd.scriptPubKey.getOrElse(norm.commitments.localParams.defaultFinalScriptPubKey)
@@ -399,7 +398,7 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel {
 
           val proposed = ClosingTxProposed(closingTx.tx, closingSignedMsg)
           val closingTxProposed1 = negs.closingTxProposed match { case prev :+ current => prev :+ (current :+ proposed) map identity }
-          val negs1 = negs.copy(bestUnpublishedClosingTxOpt = Some(signedClosingTx), closingTxProposed = closingTxProposed1)
+          val negs1 = negs.copy(bestUnpublishedClosingTxOpt = signedClosingTx.asSome, closingTxProposed = closingTxProposed1)
 
           if (lastLocalClosingFee contains nextClosingFee) {
             // Next computed fee is the same than the one we previously sent
