@@ -536,7 +536,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     var subscription: Option[Subscription] = None
 
     def activate(bytes: Bytes): Unit = {
-      val encoder = new UREncoder(UR.fromBytes(bytes), 20, 20, 0)
+      val encoder = new UREncoder(UR.fromBytes(bytes), 50, 50, 0)
       val stringToQr: String => Bitmap = sourceChunk => QRActivity.get(sourceChunk, qrSize)
       val updateView: Bitmap => Unit = sourceQrCode => UITask(qrSlideshow setImageBitmap sourceQrCode).run
       subscription = Observable.interval(0.second, 700.millis).map(_ => encoder.nextPart).map(stringToQr).subscribe(updateView).asSome
