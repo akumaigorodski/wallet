@@ -415,7 +415,7 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     def bigDecimalFrom(input: CurrencyEditText): BigDecimal = BigDecimal(input.getNumericValueBigDecimal)
     def resultExtraInput: Option[String] = Option(extraInput.getText.toString).map(trimmed).filter(_.nonEmpty)
-    def resultMsat: MilliSatoshi = (bigDecimalFrom(inputAmount) * SatDenomination.factor).toLong.msat
+    def resultMsat: MilliSatoshi = (bigDecimalFrom(inputAmount) * WalletApp.denom.factor).toLong.msat
 
     def updatedFiatFromBtc: String =
       WalletApp.msatInFiat(rates, fiatCode)(resultMsat)
