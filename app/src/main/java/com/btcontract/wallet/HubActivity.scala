@@ -951,6 +951,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     override def onChainMasterSelected(event: InetSocketAddress): Unit = UITask {
+      TransitionManager.beginDelayedTransition(walletCards.view)
       setVis(isVisible = false, walletCards.offlineIndicator)
     }.run
 
@@ -963,6 +964,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }.run
 
     override def onChainSyncEnded(localTip: Long): Unit = UITask {
+      TransitionManager.beginDelayedTransition(walletCards.view)
       setVis(isVisible = false, walletCards.chainSyncIndicator)
     }.run
 

@@ -270,6 +270,7 @@
     <string name="settings_ln_fee_cap_enabled"><![CDATA[La tarifa máxima de LN es como máximo <strong>%1$s</strong> del pago pero <b>nunca más alta</b> que la tarifa promedio chain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_expensive_omitted">Las rutas costosas fueron omitidas, elimina el límite de tarifa de LN si quieres que se permitan rutas mas costosas</string>
 
+    <string name="settings_btc_unit">Unidad de Bitcoin</string>
     <string name="settings_fiat_currency">Moneda fiduciaria</string>
     <string name="settings_custom_electrum_host_port">host:port</string>
     <string name="settings_custom_electrum_disabled">Configura nodo Electrum personalizado</string>

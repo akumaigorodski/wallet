@@ -269,7 +269,8 @@
     <string name="settings_ln_fee_cap_disabled"><![CDATA[Максимальная LN-комиссия составит <strong>%1$s</strong> от платежа и <b>может превысить</b> текущую среднюю комиссию на цепи в размере <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[Максимальная LN-комиссия составит <strong>%1$s</strong> от платежа, но <b>никогда не превысит</b> текущую среднюю комиссию на цепи в размере <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_expensive_omitted">Дорогие маршруты были исключены: отключите лимит по LN-комиссиям в настройках чтобы попробовать более дорогие маршруты</string>
-    
+
+    <string name="settings_btc_unit">Единицы Биткойна</string>
     <string name="settings_fiat_currency">Фиатная валюта</string>
     <string name="settings_custom_electrum_host_port">хост:порт</string>
     <string name="settings_custom_electrum_disabled">Установка узла Electrum</string>

@@ -269,7 +269,8 @@
     <string name="settings_ln_fee_cap_disabled"><![CDATA[Max LN fee is at most <strong>%1$s</strong> of payment and <b>may get higher</b> than current average chain fee of <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[Max LN fee is at most <strong>%1$s</strong> of payment but <b>never higher</b> than current average chain fee of <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_expensive_omitted">Expensive routes were omitted, remove LN fee limit in settings if you would like to allow more expensive routes</string>
-    
+
+    <string name="settings_btc_unit">Bitcoin units</string>
     <string name="settings_fiat_currency">Fiat currency</string>
     <string name="settings_custom_electrum_host_port">host:port</string>
     <string name="settings_custom_electrum_disabled">Set custom Electrum node</string>

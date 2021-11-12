@@ -12,12 +12,14 @@ import com.btcontract.wallet.sheets.{BaseChoiceBottomSheet, PairingData}
 import com.btcontract.wallet.utils.{LocalBackup, OnListItemClickListener}
 import com.google.android.material.snackbar.Snackbar
 import fr.acinq.bitcoin.Satoshi
+import fr.acinq.eclair.MilliSatoshi
 import fr.acinq.eclair.blockchain.EclairWallet
 import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.eclair.blockchain.electrum.db.{SigningWallet, WatchingWallet}
 import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
 import fr.acinq.eclair.wire.{Domain, NodeAddress}
 import immortan.crypto.Tools._
+import immortan.utils.{BtcDenomination, SatDenomination}
 import immortan.{ChannelMaster, LNParams}
 
 import scala.util.Success
@@ -27,12 +29,15 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
   lazy private[this] val settingsContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
   private[this] val fiatSymbols = LNParams.fiatRates.universallySupportedSymbols.toList.sorted
   private[this] val CHOICE_FIAT_DENOMINATION_TAG = "choiceFiatDenominationTag"
+  private[this] val CHOICE_BTC_DENOMINATON_TAG = "choiceBtcDenominationTag"
+  private[this] val units = List(SatDenomination, BtcDenomination)
 
   override def onResume: Unit = {
     storeLocalBackup.updateView
     chainWallets.updateView
     electrum.updateView
     setFiat.updateView
+    setBtc.updateView
 
     useFingerprint.updateView
     enforceTor.updateView
@@ -47,6 +52,13 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
       WalletApp.app.prefs.edit.putString(WalletApp.FIAT_CODE, fiatCode).commit
       ChannelMaster.next(ChannelMaster.stateUpdateStream)
       setFiat.updateView
+
+
+    case CHOICE_BTC_DENOMINATON_TAG =>
+      WalletApp.app.prefs.edit.putString(WalletApp.BTC_DENOM, units(pos).sign).commit
+      ChannelMaster.next(ChannelMaster.stateUpdateStream)
+      capLnFees.updateView
+      setBtc.updateView
 
     case _ =>
   }
@@ -211,6 +223,24 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     }
   }
 
+  lazy private[this] val setBtc = new SettingsHolder {
+    settingsTitle.setText(settings_btc_unit)
+    setVis(isVisible = false, settingsCheck)
+
+    view setOnClickListener onButtonTap {
+      val options = for (unit <- units) yield unit.parsedWithSign(MilliSatoshi(526800020L), cardIn, cardZero).html
+      val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options.toArray)
+      new sheets.ChoiceBottomSheet(list, CHOICE_BTC_DENOMINATON_TAG, me).show(getSupportFragmentManager, "unused-tag")
+    }
+
+    override def updateView: Unit = {
+      val short = WalletApp.denom.sign.toUpperCase
+      val isSatDenom = WalletApp.denom == SatDenomination
+      val text = if (isSatDenom) s"Satoshi ($short)" else s"Bitcoin (BTC, $short)"
+      settingsInfo.setText(text)
+    }
+  }
+
   lazy private[this] val useFingerprint: SettingsHolder = new SettingsHolder { self =>
     private def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.mainLayout), me) {
       def onHardwareUnavailable: Unit = WalletApp.app.quickToast(R.string.settings_auth_not_available)
@@ -302,6 +332,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
       settingsContainer.addView(addHardware.view)
       settingsContainer.addView(electrum.view)
       settingsContainer.addView(setFiat.view)
+      settingsContainer.addView(setBtc.view)
 
       settingsContainer.addView(useFingerprint.view)
       settingsContainer.addView(enforceTor.view)
