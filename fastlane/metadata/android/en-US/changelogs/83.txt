@@ -1,0 +1,2 @@
+* Add support for Watched and Hardware wallets.
+* Implement spending and channel funding from Hardware wallets.
