@@ -1,5 +1,6 @@
 package com.btcontract.wallet
 
+import java.net.InetSocketAddress
 import java.util.TimerTask
 
 import android.content.pm.PackageManager
@@ -11,7 +12,6 @@ import android.widget._
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.TransitionManager
-import com.androidstudy.networkmanager.{Monitor, Tovuti}
 import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.HubActivity._
@@ -944,19 +944,19 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   private var statusSubscription = Option.empty[Subscription]
   private var inFinalizedSubscription = Option.empty[Subscription]
 
-  private val netListener = new Monitor.ConnectivityListener {
-    override def onConnectivityChanged(ct: Int, isConnected: Boolean, isFast: Boolean): Unit = UITask {
-      // This will make channels SLEEPING right away instead of a bit later when we receive no Pong
-      if (!isConnected) CommsTower.workers.values.foreach(_.disconnect)
-      setVis(!isConnected, walletCards.offlineIndicator)
-    }.run
-  }
-
   private val chainListener = new WalletEventsListener {
-    override def onChainTipKnown(event: CurrentBlockCount): Unit =
-      // Only try if we have not unsuccessfully tried already, are on mainnet, wallet is fresh
-      if (WalletApp.openHc && LNParams.isMainnet && LNParams.cm.allHostedCommits.isEmpty)
-        HubActivity.requestHostedChannel
+    override def onChainTipKnown(currentBlockCount: CurrentBlockCount): Unit = {
+      val openHc = WalletApp.openHc && LNParams.isMainnet && LNParams.cm.allHostedCommits.isEmpty
+      if (openHc) HubActivity.requestHostedChannel
+    }
+
+    override def onChainMasterSelected(event: InetSocketAddress): Unit = UITask {
+      setVis(isVisible = false, walletCards.offlineIndicator)
+    }.run
+
+    override def onChainDisconnected: Unit = UITask {
+      setVis(isVisible = true, walletCards.offlineIndicator)
+    }.run
 
     override def onChainSyncStarted(localTip: Long, remoteTip: Long): Unit = UITask {
       setVis(isVisible = remoteTip - localTip > 2016 * 4, walletCards.chainSyncIndicator)
@@ -967,7 +967,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }.run
 
     override def onWalletReady(event: WalletReady): Unit = {
-      // Update wallet cards and payment list since both may change
       ChannelMaster.next(ChannelMaster.statusUpdateStream)
       ChannelMaster.next(ChannelMaster.txDbStream)
     }
@@ -1030,7 +1029,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     try for (channel <- LNParams.cm.all.values) channel.listeners -= me catch none
     try LNParams.cm.localPaymentListeners remove extraOutgoingListener catch none
     try LNParams.fiatRates.listeners -= fiatRatesListener catch none
-    Tovuti.from(me).stop
     super.onDestroy
   }
 
@@ -1207,13 +1205,14 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def INIT(state: Bundle): Unit = {
     if (WalletApp.isAlive && LNParams.isOperational) {
       setContentView(com.btcontract.wallet.R.layout.activity_hub)
+      // User may kill an activity but not an app so check if we are still connected here
+      setVis(isVisible = WalletApp.currentChainNode.isEmpty, walletCards.offlineIndicator)
       instance = me
 
       for (channel <- LNParams.cm.all.values) channel.listeners += me
       LNParams.cm.localPaymentListeners add extraOutgoingListener
       LNParams.fiatRates.listeners += fiatRatesListener
       LNParams.chainWallets.catcher ! chainListener
-      Tovuti.from(me).monitor(netListener)
 
       bottomActionBar post UITask {
         bottomBlurringArea.setHeightTo(bottomActionBar)

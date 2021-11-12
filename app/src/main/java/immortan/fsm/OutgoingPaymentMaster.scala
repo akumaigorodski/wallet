@@ -258,7 +258,7 @@ case class OutgoingPaymentSenderData(cmd: SendMultiPart, parts: Map[ByteVector, 
   def withLocalFailure(reason: String, amount: MilliSatoshi): OutgoingPaymentSenderData = copy(failures = LocalFailure(reason, amount) +: failures)
   def withoutPartId(failedPartId: ByteVector): OutgoingPaymentSenderData = copy(parts = parts - failedPartId)
   def usedRoutesAsString: String = inFlightParts.map(_.route.asString).mkString("\n\n")
-  def failuresAsString: String = failures.map(_.asString).mkString("\n\n")
+  def failuresAsString: String = failures.reverse.map(_.asString).mkString("\n\n")
 
   lazy val inFlightParts: Iterable[InFlightInfo] = parts.values.flatMap { case wait: WaitForRouteOrInFlight => wait.flight case _ => None }
   lazy val successfulUpdates: Iterable[ChannelUpdateExt] = inFlightParts.flatMap(_.route.routedPerChannelHop).toMap.values.map(_.edge.updExt)
