@@ -63,11 +63,11 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
   }
 
   def editAddress(bu: BitcoinUri): Unit = {
-    val max: MilliSatoshi = Btc(21000000L).toMilliSatoshi
-    val canReceiveFiatHuman: String = WalletApp.currentMsatInFiatHuman(max)
-    val canReceiveHuman: String = WalletApp.denom.parsedWithSign(max, cardIn, cardZero)
-    val body: ViewGroup = getLayoutInflater.inflate(R.layout.frag_input_off_chain, null).asInstanceOf[ViewGroup]
-    lazy val manager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+    val maxMsat = Btc(21000000L).toMilliSatoshi
+    val canReceiveFiatHuman = WalletApp.currentMsatInFiatHuman(maxMsat)
+    val canReceiveHuman = WalletApp.denom.parsedWithSign(maxMsat, cardIn, cardZero)
+    val body = getLayoutInflater.inflate(R.layout.frag_input_off_chain, null).asInstanceOf[ViewGroup]
+    lazy val manager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
     mkCheckForm(proceed, none, titleBodyAsViewBuilder(getString(dialog_receive_btc).asColoredView(R.color.cardBitcoinModern), manager.content), dialog_ok, dialog_cancel)
     manager.hintFiatDenom.setText(getString(dialog_up_to).format(canReceiveFiatHuman).html)
     manager.hintDenom.setText(getString(dialog_up_to).format(canReceiveHuman).html)

@@ -871,17 +871,14 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     searchField.setTag(false)
 
     val chainCards: ChainWalletCards = new ChainWalletCards(me) {
-      def onWatchingWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
-      def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.qrChainActivityClass, wallet)
       val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
 
-      def onLegacyWalletTap(wallet: ElectrumEclairWallet): Unit = {
-        val options = Array(dialog_legacy_transfer_btc, dialog_legacy_send_btc).map(getString)
-        val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
-        new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-legacy-tag")
-      }
+      override def onWalletTap(wallet: ElectrumEclairWallet): Unit =
+        if (wallet.isBuiltIn) goToWithValue(ClassNames.qrChainActivityClass, wallet)
+        else if (wallet.isSigning) bringLegacyWalletMenuSpendOptions(wallet)
+        else goToWithValue(ClassNames.qrChainActivityClass, wallet)
 
-      def onLabelTap(wallet: ElectrumEclairWallet): Unit = {
+      override def onLabelTap(wallet: ElectrumEclairWallet): Unit = {
         val (container, extraInputLayout, extraInput) = singleInputPopup
         val builder = titleBodyAsViewBuilder(title = null, body = container)
         mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
@@ -889,13 +886,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         showKeys(extraInput)
 
         def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-          LNParams.chainWallets.findByPubKey(pub = wallet.ewt.xPub.publicKey)
-            .map(LNParams.chainWallets withNewLabel extraInput.getText.toString)
-            .foreach(resetChainCards)
+          val withnewLabel: ElectrumEclairWallet => WalletExt = LNParams.chainWallets.withNewLabel(extraInput.getText.toString)
+          LNParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).map(withnewLabel).foreach(resetChainCards)
         }
       }
 
-      def onRemoveTap(wallet: ElectrumEclairWallet): Unit = {
+      override def onRemoveTap(wallet: ElectrumEclairWallet): Unit = {
         def proceed: Unit = LNParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).map(LNParams.chainWallets.withoutWallet).foreach(resetChainCards)
         mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, new AlertDialog.Builder(me).setMessage(confirm_remove_item), dialog_ok, dialog_cancel)
       }
@@ -1049,16 +1045,30 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
     case bitcoinUri: BitcoinUri if Try(LNParams addressToPubKeyScript bitcoinUri.address).isSuccess =>
-      bringSendBitcoinPopup(bitcoinUri, LNParams.chainWallets.lnWallet)
 
-    case addressToAmount: MultiAddressParser.AddressToAmount =>
-      val badAmount = addressToAmount.values.secondItems.find(amount => LNParams.chainWallets.params.dustLimit > amount)
-      val badAddress = addressToAmount.values.firstItems.find(address => Try(LNParams addressToPubKeyScript address).isFailure)
+      if (LNParams.chainWallets.usableWallets.size == 1) {
+        // We have a single built-in wallet, no need to choose
+        bringSendBitcoinPopup(bitcoinUri, LNParams.chainWallets.lnWallet)
+      } else bringChainWalletChooser(me titleViewFromUri bitcoinUri) { wallet =>
+        // We have wallet candidates to spend from here
+        bringSendBitcoinPopup(bitcoinUri, wallet)
+      }
 
-      (badAmount, badAddress) match {
-        case _ ~ Some(nonAddress) => onFail(s"Incorrect Bitcoin address=$nonAddress")
-        case Some(dust) ~ _ => onFail(s"Incorrect amount=${dust.toLong}, minimum=${LNParams.chainWallets.params.dustLimit.toLong}")
-        case _ => bringSendMultiBitcoinPopup(addressToAmount, LNParams.chainWallets.lnWallet)
+    case a2a: MultiAddressParser.AddressToAmount =>
+      val dustAmount = a2a.values.secondItems.find(amount => LNParams.chainWallets.params.dustLimit > amount)
+      val badAddress = a2a.values.firstItems.find(address => Try(LNParams addressToPubKeyScript address).isFailure)
+
+      if (dustAmount.nonEmpty) {
+        val minimum = LNParams.chainWallets.params.dustLimit.toLong
+        onFail(s"Incorrect amount=${dustAmount.get.toLong}, minimum=$minimum")
+      } else if (badAddress.nonEmpty) {
+        onFail(s"Incorrect Bitcoin address=${badAddress.get}")
+      } else if (LNParams.chainWallets.usableWallets.size == 1) {
+        // We have a single built-in wallet, no need to choose one
+        bringSendMultiBitcoinPopup(a2a, LNParams.chainWallets.lnWallet)
+      } else bringChainWalletChooser(me getString dialog_send_btc_many) { wallet =>
+        // We have wallet candidates to spend from here
+        bringSendMultiBitcoinPopup(a2a, wallet)
       }
 
     case info: RemoteNodeInfo =>
@@ -1334,8 +1344,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       case _ => nothingUsefulTask.run
     }
 
+    val instruction = getString(scan_btc_address).asSome
     def onData: Runnable = UITask(resolveLegacyWalletBtcAddressQr)
-    val sheet = new sheets.OnceBottomSheet(me, getString(scan_btc_address).asSome, onData)
+    val sheet = new sheets.OnceBottomSheet(me, instruction, onData)
     callScanner(sheet)
   }
 
@@ -1343,6 +1354,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val options = Array(dialog_receive_btc, dialog_receive_ln).map(getString).map(_.html)
     val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
     new sheets.ChoiceBottomSheet(list, CHOICE_RECEIVE_TAG, me).show(getSupportFragmentManager, "unused-tag")
+  }
+
+  private def bringLegacyWalletMenuSpendOptions(wallet: ElectrumEclairWallet): Unit = {
+    val options = Array(dialog_legacy_transfer_btc, dialog_legacy_send_btc).map(getString)
+    val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
+    new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-legacy-tag")
   }
 
   def goToStatPage(view: View): Unit = goTo(ClassNames.chanActivityClass)
@@ -1371,9 +1388,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
         } else if (fromWallet.hasFingerprint) {
           sendView.chainReaderView.onSignedTx = signedTx => UITask {
+            if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
             finalSendButton setOnClickListener onButtonTap(process apply signedTx)
             sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
-            if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
           }.run
 
           val masterFingerprint = fromWallet.info.core.masterFingerprint.get
@@ -1397,7 +1414,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       val title = titleViewFromUri(uri)
       val neutralRes = if (uri.amount.isDefined) -1 else dialog_max
-      val builder = titleBodyAsViewBuilder(title asColoredView chainWalletBackground(fromWallet), sendView.body)
+      val builder = titleBodyAsViewBuilder(title.asColoredView(me chainWalletBackground fromWallet), sendView.body)
       addFlowChip(title.flow, getString(dialog_send_btc_from).format(fromWallet.info.label), R.drawable.border_yellow)
       if (uri.prExt.isEmpty) mkCheckFormNeutral(attempt, none, useMax, builder, dialog_ok, dialog_cancel, neutralRes)
       else mkCheckFormNeutral(attempt, none, switchToLn, builder, dialog_ok, dialog_cancel, lightning_wallet)
@@ -1454,9 +1471,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
         } else if (fromWallet.hasFingerprint) {
           sendView.chainReaderView.onSignedTx = signedTx => UITask {
+            if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
             finalSendButton setOnClickListener onButtonTap(process apply signedTx)
             sendView.switchToConfirm(alert, totalSendAmount, response.fee.toMilliSatoshi)
-            if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
           }.run
 
           val masterFingerprint = fromWallet.info.core.masterFingerprint.get
@@ -1468,7 +1485,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     lazy val alert = {
       val title = new TitleView(me getString dialog_send_btc_many)
-      val builder = titleBodyAsViewBuilder(title asColoredView chainWalletBackground(fromWallet), sendView.body)
+      val builder = titleBodyAsViewBuilder(title.asColoredView(me chainWalletBackground fromWallet), sendView.body)
       addFlowChip(title.flow, getString(dialog_send_btc_from).format(fromWallet.info.label), R.drawable.border_yellow)
       mkCheckForm(attempt, none, builder, dialog_ok, dialog_cancel)
     }

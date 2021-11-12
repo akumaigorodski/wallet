@@ -244,7 +244,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
   }
 
   override def onDestroy: Unit = {
-    try for (channel <- LNParams.cm.all.values) channel.listeners -= me catch none
+    try LNParams.cm.all.values.foreach(_.listeners -= me) catch none
     updateSubscription.foreach(_.unsubscribe)
     super.onDestroy
   }
@@ -253,11 +253,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     case (cs: NormalCommits, 0) => me share ChanActivity.getDetails(cs, cs.commitInput.outPoint.txid.toString)
     case (nc: HostedCommits, 0) => me share ChanActivity.getDetails(nc, fundingTxid = "n/a")
     case (hc: HostedCommits, 1) => me share ChanActivity.getHcState(hc)
-
-    case (cs: NormalCommits, 1) =>
-      val builder = confirmationBuilder(cs, getString(confirm_ln_normal_chan_close_wallet).html)
-      def proceed: Unit = for (chan <- me getChanByCommits cs) chan process CMD_CLOSE(None, force = false)
-      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
+    case (cs: NormalCommits, 1) => closeNcToWallet(cs)
 
     case (hc: HostedCommits, 2) =>
       val builder = confirmationBuilder(hc, getString(confirm_ln_hosted_chan_drain).html)
@@ -272,6 +268,14 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     case (CMDException(reason, _: CMD_CLOSE), _, data: HasNormalCommitments) => chanError(data.channelId, reason, data.commitments.remoteInfo)
     case (CMDException(reason, _: CMD_HOSTED_STATE_OVERRIDE), _, hc: HostedCommits) => chanError(hc.channelId, reason, hc.remoteInfo)
   }
+
+  def closeNcToWallet(cs: NormalCommits): Unit =
+    bringChainWalletChooser(normalChanActions.tail.head.toString) { wallet =>
+      runFutureProcessOnUI(wallet.getReceiveAddresses, onFail) { addressResponse =>
+        val pubKeyScript = LNParams.addressToPubKeyScript(addressResponse.firstAccountAddress)
+        for (chan <- me getChanByCommits cs) chan process CMD_CLOSE(pubKeyScript.asSome, force = false)
+      }
+    }
 
   def closeNcToAddress(cs: NormalCommits): Unit = {
     def confirmResolve(bitcoinUri: BitcoinUri): Unit = {

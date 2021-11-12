@@ -9,6 +9,7 @@
     <string name="password">Senha</string>
     <string name="manual">Ler manual</string>
 
+    <string name="choose_wallet">Choose a wallet</string>
     <string name="hardware_wallet">Hardware wallet</string>
     <string name="watching_wallet">Watching wallet</string>
 
@@ -421,7 +422,6 @@
     <!-- action confirmations -->
 
     <string name="confirm_remove_item">&#9888; Você quer remover este item?</string>
-    <string name="confirm_ln_normal_chan_close_wallet">&#9888; Você quer fechar este canal e enviar uma transação de reembolso de volta para a carteira on-chain?</string>
     <string name="confirm_ln_normal_chan_close_address"><![CDATA[&#9888; Você quer fechar este canal para o seguinte endereço?<br><br><b>%1$s</b>]]></string>
     <string name="confirm_ln_normal_chan_force_close">&#9888; Você quer fechar este canal à força?\n\nObserve que levará algum tempo para o reembolso e as taxas serão mais altas.</string>
     <string name="confirm_ln_hosted_chan_remove">&#9888; Você deseja remover este canal virtual?\n\nObserve que você pode sempre trazê-lo de volta conectando-se ao node do servidor.</string>

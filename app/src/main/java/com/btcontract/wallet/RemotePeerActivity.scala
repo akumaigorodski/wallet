@@ -236,7 +236,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
 
     lazy val alert = {
       val fundTitle = new TitleView(me getString rpa_open_nc)
-      val builder = titleBodyAsViewBuilder(fundTitle asColoredView chainWalletBackground(fromWallet), sendView.manager.content)
+      val builder = titleBodyAsViewBuilder(fundTitle.asColoredView(me chainWalletBackground fromWallet), sendView.manager.content)
       addFlowChip(fundTitle.flow, getString(dialog_send_btc_from).format(fromWallet.info.label), R.drawable.border_yellow)
       def setMax(fundAlert: AlertDialog): Unit = sendView.manager.updateText(fromWallet.info.lastBalance.toMilliSatoshi)
       mkCheckFormNeutral(attempt, none, setMax, builder, dialog_ok, dialog_cancel, dialog_max)
@@ -262,8 +262,18 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
     feeView.update(feeOpt = None, showIssue = false)
   }
 
-  def fundNewChannel(view: View): Unit = doFundNewChannel(LNParams.chainWallets.lnWallet)
+  def fundNewChannel(view: View): Unit = {
+    if (LNParams.chainWallets.usableWallets.size == 1) {
+      // We have a single built-in wallet, no need to choose
+      doFundNewChannel(LNParams.chainWallets.lnWallet)
+    } else bringChainWalletChooser(me getString rpa_open_nc) { wallet =>
+      // We have wallet candidates to spend from here
+      doFundNewChannel(wallet)
+    }
+  }
+
   def sharePeerSpecificNodeId(view: View): Unit = share(hasInfo.remoteInfo.nodeSpecificPubKey.toString)
+
   def requestHostedChannel(view: View): Unit = askHostedChannel(randomBytes32)
 
   def askHostedChannel(secret: ByteVector32): Unit = {

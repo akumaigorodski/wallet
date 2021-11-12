@@ -17,6 +17,7 @@ import android.view.{View, ViewGroup, WindowManager}
 import android.widget._
 import androidx.appcompat.app.{AlertDialog, AppCompatActivity}
 import androidx.appcompat.widget.AppCompatButton
+import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.{ContextCompat, FileProvider}
 import androidx.recyclerview.widget.RecyclerView
@@ -24,6 +25,7 @@ import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.sheets.HasUrDecoder
+import com.chauthai.swipereveallayout.SwipeRevealLayout
 import com.cottacush.android.currencyedittext.CurrencyEditText
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.{BaseTransientBottomBar, Snackbar}
@@ -129,11 +131,40 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   // Helpers
 
+  def bringChainWalletChooser(title: TitleView)(onWalletSelected: ElectrumEclairWallet => Unit): Unit = {
+    val cardsContainer = getLayoutInflater.inflate(R.layout.frag_linear_layout, null).asInstanceOf[LinearLayout]
+    val alert = mkCheckForm(_.dismiss, none, titleBodyAsViewBuilder(title.view, cardsContainer), dialog_cancel, -1)
+    addFlowChip(title.flow, getString(choose_wallet), R.drawable.border_gray)
+
+    val chooser: ChainWalletCards = new ChainWalletCards(me) {
+      override def onWalletTap(wallet: ElectrumEclairWallet): Unit = {
+        onWalletSelected(wallet)
+        alert.dismiss
+      }
+
+      override def onRemoveTap(wallet: ElectrumEclairWallet): Unit = alert.dismiss
+      override def onLabelTap(wallet: ElectrumEclairWallet): Unit = alert.dismiss
+      val holder: LinearLayout = cardsContainer
+    }
+
+    chooser.init(LNParams.chainWallets.usableWallets)
+    chooser.update(LNParams.chainWallets.usableWallets)
+    chooser.unPad(LNParams.chainWallets.usableWallets)
+  }
+
   def titleViewFromUri(uri: BitcoinUri): TitleView = {
     val label = uri.label.map(label => s"<br><br><b>$label</b>").getOrElse(new String)
     val message = uri.message.map(message => s"<br><i>$message<i>").getOrElse(new String)
     val caption = getString(dialog_send_btc).format(uri.address.short, label + message)
-    new TitleView(caption)
+    val title = new TitleView(caption)
+
+    for (amount <- uri.amount) {
+      val amountHuman = WalletApp.denom.parsedWithSign(amount, cardIn, cardZero)
+      val requested = getString(dialog_ln_requested).format(amountHuman)
+      addFlowChip(title.flow, requested, R.drawable.border_yellow)
+    }
+
+    title
   }
 
   def chainWalletBackground(wallet: ElectrumEclairWallet): Int = if (wallet.isBuiltIn) R.color.cardBitcoinModern else R.color.cardBitcoinLegacy
@@ -846,16 +877,16 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     cardViews.map(_.view).foreach(holder.addView)
   }
 
-  def update(wallets: List[ElectrumEclairWallet] = Nil): Unit = {
-    // We have old views but updated wallet objects, redraw UI to show an updated data
-    cardViews.zip(wallets) foreach { case card ~ wallet => card updateView wallet }
-  }
+  def update(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.zip(wallets).foreach { case (card, wallet) => card updateView wallet }
+
+  def unPad(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.foreach(_.unPad)
 
   class ChainCard {
-    val view: View = host.getLayoutInflater.inflate(R.layout.frag_chain_card, null)
-    val chainContainer: View = view.findViewById(R.id.chainContainer).asInstanceOf[View]
-    val chainWrap: View = view.findViewById(R.id.chainWrap).asInstanceOf[View]
+    val view: SwipeRevealLayout = host.getLayoutInflater.inflate(R.layout.frag_chain_card, null).asInstanceOf[SwipeRevealLayout]
+    val chainPaddingWrap: LinearLayout = view.findViewById(R.id.chainPaddingWrap).asInstanceOf[LinearLayout]
+    val chainWrap: CardView = view.findViewById(R.id.chainWrap).asInstanceOf[CardView]
 
+    val chainContainer: View = view.findViewById(R.id.chainContainer).asInstanceOf[View]
     val setItemLabel: NoboButton = view.findViewById(R.id.setItemLabel).asInstanceOf[NoboButton]
     val coinControl: NoboButton = view.findViewById(R.id.coinControl).asInstanceOf[NoboButton]
     val removeItem: NoboButton = view.findViewById(R.id.removeItem).asInstanceOf[NoboButton]
@@ -870,6 +901,12 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     val receiveBitcoinTip: ImageView = view.findViewById(R.id.receiveBitcoinTip).asInstanceOf[ImageView]
     val showMenuTip: ImageView = view.findViewById(R.id.showMenuTip).asInstanceOf[ImageView]
 
+    def unPad: Unit = {
+      chainPaddingWrap.setPadding(0, 0, 0, 0)
+      chainWrap.setRadius(0F)
+      view.setLockDrag(true)
+    }
+
     def updateView(wallet: ElectrumEclairWallet): Unit = {
       chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, btcCardZero).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
@@ -880,26 +917,22 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
 
       host.setVisMany(wallet.info.core.isRemovable -> setItemLabel, wallet.info.core.isRemovable -> removeItem)
       host.setVisMany(chainBalanceVisible -> chainBalanceWrap, plusTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip)
-      def onCardTap: Unit = if (!wallet.isSigning) onWatchingWalletTap(wallet) else if (wallet.isBuiltIn) onBuiltInWalletTap(wallet) else onLegacyWalletTap(wallet)
 
       host.chainWalletNotice(wallet) foreach { textRes =>
         host.setVis(isVisible = true, chainWalletNotice)
         chainWalletNotice.setText(textRes)
       }
 
-      chainContainer setBackgroundResource host.chainWalletBackground(wallet)
+      chainContainer.setBackgroundResource(host chainWalletBackground wallet)
       setItemLabel setOnClickListener host.onButtonTap(self onLabelTap wallet)
       removeItem setOnClickListener host.onButtonTap(self onRemoveTap wallet)
-      chainWrap setOnClickListener host.onButtonTap(onCardTap)
+      chainWrap setOnClickListener host.onButtonTap(self onWalletTap wallet)
       chainLabel setText wallet.info.label
     }
   }
 
-  def onLegacyWalletTap(wallet: ElectrumEclairWallet): Unit
-  def onBuiltInWalletTap(wallet: ElectrumEclairWallet): Unit
-  def onWatchingWalletTap(wallet: ElectrumEclairWallet): Unit
-
   def onLabelTap(wallet: ElectrumEclairWallet): Unit
   def onRemoveTap(wallet: ElectrumEclairWallet): Unit
+  def onWalletTap(wallet: ElectrumEclairWallet): Unit
   def holder: LinearLayout
 }

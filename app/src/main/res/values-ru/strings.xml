@@ -9,6 +9,7 @@
     <string name="password">Пароль кошелька</string>
     <string name="manual">Читать инструкцию</string>
 
+    <string name="choose_wallet">Выберите кошелек</string>
     <string name="hardware_wallet">Аппаратный кошелек</string>
     <string name="watching_wallet">Watching wallet</string>
 
@@ -425,7 +426,6 @@
     <!-- action confirmations -->
 
     <string name="confirm_remove_item">&#9888; Хотите удалить этот элемент?</string>
-    <string name="confirm_ln_normal_chan_close_wallet">&#9888; Хотите закрыть этот канал и вернуть остаток в Биткойн-кошелек?</string>
     <string name="confirm_ln_normal_chan_close_address"><![CDATA[&#9888; Хотите закрыть этот канал и вернуть остаток на этот адрес?<br><br><b>%1$s</b>]]></string>
     <string name="confirm_ln_normal_chan_force_close">&#9888; Хотите принудительно закрыть этот канал?\n\nЗаметьте, что такое закрытие приведет к задержке возврата средств и более высоким комиссиям.</string>
     <string name="confirm_ln_hosted_chan_remove">&#9888; Хотите удалить этот hosted-канал?\n\nЗаметьте, что вы всегда сможете его восстановить при подключении к удаленному hosted-узлу.</string>
