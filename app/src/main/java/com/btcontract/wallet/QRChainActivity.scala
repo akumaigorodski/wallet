@@ -51,7 +51,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
       }
 
       holder.qrLabel setText visibleText.html
-      runInFutureProcessOnUI(QRActivity.get(bu.address.toUpperCase, qrSize), onFail) { qrBitmap =>
+      runInFutureProcessOnUI(QRActivity.get(bu.address, qrSize), onFail) { qrBitmap =>
         def share: Unit = runInFutureProcessOnUI(shareData(qrBitmap, contentToShare), onFail)(none)
         holder.qrCopy setOnClickListener onButtonTap(WalletApp.app copy contentToShare)
         holder.qrCode setOnClickListener onButtonTap(WalletApp.app copy contentToShare)
