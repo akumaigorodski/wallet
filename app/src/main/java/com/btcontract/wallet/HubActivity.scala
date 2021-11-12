@@ -225,10 +225,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     // MENU BUTTONS
 
-    def doCallPayLink(info: LNUrlPayLink): Unit = {
-      InputParser.value = info.payLink.get
-      checkExternalData(noneRunnable)
-    }
+    def doViewInvoice(info: PaymentInfo): Unit = goToWithValue(ClassNames.qrInvoiceActivityClass, info.prExt)
+    def doCallPayLink(info: LNUrlPayLink): Unit = runAnd(InputParser.value = info.payLink.get)(me checkExternalData noneRunnable)
 
     def doSetItemLabel: Unit = {
       val (container, extraInputLayout, extraInput) = singleInputPopup
@@ -635,6 +633,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
           addFlowChip(extraInfo, getString(popup_fiat).format(s"<font color=$cardIn>$fiatNow</font>", fiatThen), R.drawable.border_gray)
           addFlowChip(extraInfo, getString(popup_prior_chain_balance) format WalletApp.denom.parsedWithSign(info.balanceSnapshot, cardIn, cardZero), R.drawable.border_gray)
+          if (info.isIncoming && info.status == PaymentStatus.PENDING) addFlowChip(extraInfo, getString(popup_view_invoice), R.drawable.border_blue, _ => self doViewInvoice info)
           if (!info.isIncoming && shouldDisplayFee) addFlowChip(extraInfo, getString(popup_ln_fee).format(offChainFeePaid, onChainFeeSaved), R.drawable.border_gray)
           if (shouldRetry) addFlowChip(extraInfo, getString(popup_retry), R.drawable.border_yellow, _ => self retry info)
 
@@ -1530,7 +1529,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val holdPeriodInMinutes: String = getString(popup_hold).format(LNParams.maxHoldSecs / 60)
     new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = Long.MaxValue.msat, initMinReceivable = 0L.msat) {
       override def getManager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-      override def processInvoice(prExt: PaymentRequestExt): Unit = goToWithValue(ClassNames.qrInvoiceActivityClass, prExt)
+      override def processInvoice(payRequestExt: PaymentRequestExt): Unit = goToWithValue(ClassNames.qrInvoiceActivityClass, payRequestExt)
       override def getTitleText: String = getString(dialog_receive_ln)
 
       override def getDescription: PaymentDescription = {

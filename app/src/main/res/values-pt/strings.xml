@@ -198,6 +198,7 @@
     <string name="tx_state_double_spent">falhou</string>
 
     <string name="popup_retry">Tente novamente</string>
+    <string name="popup_view_invoice">View invoice</string>
     <string name="popup_run_action"><![CDATA[executar&#160;ação&#160;]]></string>
     <string name="popup_proof_stamp"><![CDATA[share&#160;prova&#160;]]></string>
     <string name="popup_to_address"><![CDATA[<b>endereço</b>&#160;%1$s]]></string>

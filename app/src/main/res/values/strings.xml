@@ -198,8 +198,9 @@
     <string name="tx_state_double_spent">failed</string>
 
     <string name="popup_retry">Retry payment</string>
+    <string name="popup_view_invoice">View invoice</string>
     <string name="popup_run_action"><![CDATA[run&#160;payment&#160;action]]></string>
-    <string name="popup_proof_stamp"><![CDATA[share&#160;payment&#160;proof&#160;stamp]]></string>
+    <string name="popup_proof_stamp"><![CDATA[share&#160;proof&#160;stamp]]></string>
     <string name="popup_to_address"><![CDATA[<b>address</b>&#160;%1$s]]></string>
     <string name="popup_ln_payee"><![CDATA[<b>payee</b>&#160;%1$s]]></string>
     <string name="popup_ln_node"><![CDATA[<b>node</b>&#160;%1$s]]></string>

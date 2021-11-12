@@ -198,8 +198,9 @@
     <string name="tx_state_double_spent">отменен</string>
 
     <string name="popup_retry">Повторить попытку</string>
+    <string name="popup_view_invoice">Получить инвойс</string>
     <string name="popup_run_action"><![CDATA[запустить&#160;экшн&#160;]]></string>
-    <string name="popup_proof_stamp"><![CDATA[крипто-печать&#160;]]></string>
+    <string name="popup_proof_stamp"><![CDATA[крипто&#160;печать]]></string>
     <string name="popup_to_address"><![CDATA[<b>адрес</b>&#160;%1$s]]></string>
     <string name="popup_ln_payee"><![CDATA[<b>получатель</b>&#160;%1$s]]></string>
     <string name="popup_ln_node"><![CDATA[<b>узел</b>&#160;%1$s]]></string>
