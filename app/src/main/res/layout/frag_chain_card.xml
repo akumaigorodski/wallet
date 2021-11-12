@@ -16,11 +16,11 @@
             android:id="@+id/setItemLabel"
             style="@style/GrayButton"/>
 
-        <com.ornach.nobobutton.NoboButton
-            android:layout_marginStart="15dp"
-            app:nb_drawableResource="@drawable/outline_filter_list_20_24"
-            android:id="@+id/coinControl"
-            style="@style/GrayButton"/>
+<!--        <com.ornach.nobobutton.NoboButton-->
+<!--            android:layout_marginStart="15dp"-->
+<!--            app:nb_drawableResource="@drawable/outline_filter_list_20_24"-->
+<!--            android:id="@+id/coinControl"-->
+<!--            style="@style/GrayButton"/>-->
 
         <com.ornach.nobobutton.NoboButton
             android:layout_marginStart="15dp"

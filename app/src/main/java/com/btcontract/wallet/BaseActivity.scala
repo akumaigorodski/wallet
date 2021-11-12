@@ -888,7 +888,7 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
 
     val chainContainer: View = view.findViewById(R.id.chainContainer).asInstanceOf[View]
     val setItemLabel: NoboButton = view.findViewById(R.id.setItemLabel).asInstanceOf[NoboButton]
-    val coinControl: NoboButton = view.findViewById(R.id.coinControl).asInstanceOf[NoboButton]
+//    val coinControl: NoboButton = view.findViewById(R.id.coinControl).asInstanceOf[NoboButton]
     val removeItem: NoboButton = view.findViewById(R.id.removeItem).asInstanceOf[NoboButton]
 
     val chainLabel: TextView = view.findViewById(R.id.chainLabel).asInstanceOf[TextView]
