@@ -209,7 +209,7 @@ class SyncParams {
   val maxPHCCapacity: MilliSatoshi = MilliSatoshi(100000000000000L) // PHC can not be larger than 1000 BTC
   val minPHCCapacity: MilliSatoshi = MilliSatoshi(1000000000L) // PHC can not be smaller than 0.01 BTC
   val minNormalChansForPHC = 5 // How many normal chans a node must have to be eligible for PHCs
-  val maxPHCPerNode = 2 // How many PHCs a node can have in total
+  val maxPHCPerNode = 3 // How many PHCs a node can have in total
 
   val minCapacity: MilliSatoshi = MilliSatoshi(600000000L) // 600k sat
   val maxNodesToSyncFrom = 2 // How many disjoint peers to use for majority sync
