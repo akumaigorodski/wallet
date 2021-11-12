@@ -213,7 +213,7 @@ object WalletApp {
     LNParams.chainWallets = if (walletExt.wallets.isEmpty) {
       val defaultLabel = app.getString(R.string.bitcoin_wallet)
       val core = SigningWallet(walletType = EclairWallet.BIP84, isRemovable = false)
-      val wallet = LNParams.chainWallets.makeSigningWalletParts(core, Satoshi(0L), defaultLabel)
+      val wallet = walletExt.makeSigningWalletParts(core, Satoshi(0L), defaultLabel)
       walletExt.withFreshWallet(wallet)
     } else walletExt
 
