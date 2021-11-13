@@ -28,7 +28,7 @@
                 android:background="@drawable/border_yellow"
                 android:layout_toStartOf="@id/offlineIndicator"
                 android:layout_centerVertical="true"
-                android:id="@+id/chainSyncIndicator"
+                android:id="@+id/syncIndicator"
                 android:text="SYNC"/>
 
             <TextView
@@ -199,68 +199,69 @@
             android:visibility="gone"
             android:maxLines="4"/>
 
-        <!-- Button and search bar -->
-
-        <RelativeLayout
-            android:layout_marginTop="15dp"
-            android:layout_marginBottom="-5dp"
-            android:layout_marginStart="15dp"
-            android:layout_marginEnd="15dp"
-            android:id="@+id/listCaption"
-            style="@style/FillingView">
-
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/toggleGroup"
-                style="@style/BoundedView">
-
-                <com.google.android.material.button.MaterialButton
-                    card_view:icon="@drawable/ic_logo_bitcoin_24dp"
-                    android:id="@+id/bitcoinPayments"
-                    card_view:iconGravity="start"
-                    card_view:iconPadding="0dp"
-                    style="@style/ToggleButton"
-                    card_view:iconSize="18dp"/>
-
-                <com.google.android.material.button.MaterialButton
-                    card_view:icon="@drawable/ic_logo_lightning_24dp"
-                    android:id="@+id/lightningPayments"
-                    card_view:iconGravity="start"
-                    card_view:iconPadding="0dp"
-                    style="@style/ToggleButton"
-                    card_view:iconSize="18dp"/>
-
-                <com.google.android.material.button.MaterialButton
-                    card_view:icon="@drawable/baseline_swap_horiz_18"
-                    android:id="@+id/relayedPayments"
-                    card_view:iconGravity="start"
-                    card_view:iconPadding="0dp"
-                    style="@style/ToggleButton"
-                    card_view:iconSize="18dp"
-                    android:visibility="gone"/>
-
-                <com.google.android.material.button.MaterialButton
-                    card_view:icon="@drawable/baseline_storefront_24"
-                    android:id="@+id/payMarketLinks"
-                    card_view:iconGravity="start"
-                    card_view:iconPadding="0dp"
-                    style="@style/ToggleButton"
-                    card_view:iconSize="18dp"
-                    android:visibility="gone"/>
-
-            </com.google.android.material.button.MaterialButtonToggleGroup>
-
-            <ImageButton
-                android:padding="6dp"
-                android:onClick="bringSearch"
-                android:tint="@color/colorAccent"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:src="@drawable/ic_search_white_24dp"
-                android:background="?android:selectableItemBackground"
-                style="@style/BoundedView"/>
-
-        </RelativeLayout>
     </LinearLayout>
+
+    <!-- Button and search bar -->
+
+    <RelativeLayout
+        android:layout_marginTop="15dp"
+        android:layout_marginBottom="-5dp"
+        android:layout_marginStart="15dp"
+        android:layout_marginEnd="15dp"
+        android:id="@+id/listCaption"
+        style="@style/FillingView">
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggleGroup"
+            style="@style/BoundedView">
+
+            <com.google.android.material.button.MaterialButton
+                card_view:icon="@drawable/ic_logo_bitcoin_24dp"
+                android:id="@+id/bitcoinPayments"
+                card_view:iconGravity="start"
+                card_view:iconPadding="0dp"
+                style="@style/ToggleButton"
+                card_view:iconSize="18dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                card_view:icon="@drawable/ic_logo_lightning_24dp"
+                android:id="@+id/lightningPayments"
+                card_view:iconGravity="start"
+                card_view:iconPadding="0dp"
+                style="@style/ToggleButton"
+                card_view:iconSize="18dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                card_view:icon="@drawable/baseline_swap_horiz_18"
+                android:id="@+id/relayedPayments"
+                card_view:iconGravity="start"
+                card_view:iconPadding="0dp"
+                style="@style/ToggleButton"
+                card_view:iconSize="18dp"
+                android:visibility="gone"/>
+
+            <com.google.android.material.button.MaterialButton
+                card_view:icon="@drawable/baseline_storefront_24"
+                android:id="@+id/payMarketLinks"
+                card_view:iconGravity="start"
+                card_view:iconPadding="0dp"
+                style="@style/ToggleButton"
+                card_view:iconSize="18dp"
+                android:visibility="gone"/>
+
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <ImageButton
+            android:padding="6dp"
+            android:onClick="bringSearch"
+            android:tint="@color/colorAccent"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/ic_search_white_24dp"
+            android:background="?android:selectableItemBackground"
+            style="@style/BoundedView"/>
+
+    </RelativeLayout>
 
     <!-- Search field -->
 

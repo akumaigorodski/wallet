@@ -273,7 +273,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       case info: DelayedRefunds => showPending(info)
       case info: LNUrlPayLink => doCallPayLink(info)
       case info: TransactionDetails =>
-        TransitionManager.beginDelayedTransition(contentWindow)
+        TransitionManager.beginDelayedTransition(itemsList)
         if (extraInfo.getVisibility == View.VISIBLE) collapse(info)
         else expand(info)
     }
@@ -846,8 +846,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val totalBalance: TextView = view.findViewById(R.id.totalBalance).asInstanceOf[TextView]
     val totalFiatBalance: TextView = view.findViewById(R.id.totalFiatBalance).asInstanceOf[TextView]
     val fiatUnitPriceAndChange: TextView = view.findViewById(R.id.fiatUnitPriceAndChange).asInstanceOf[TextView]
-    val chainSyncIndicator: TextView = view.findViewById(R.id.chainSyncIndicator).asInstanceOf[TextView]
     val offlineIndicator: TextView = view.findViewById(R.id.offlineIndicator).asInstanceOf[TextView]
+    val syncIndicator: TextView = view.findViewById(R.id.syncIndicator).asInstanceOf[TextView]
 
     val totalLightningBalance: TextView = view.findViewById(R.id.totalLightningBalance).asInstanceOf[TextView]
     val channelStateIndicators: RelativeLayout = view.findViewById(R.id.channelStateIndicators).asInstanceOf[RelativeLayout]
@@ -905,19 +905,18 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     def updateView: Unit = {
-      TransitionManager.beginDelayedTransition(view)
       val allChannels = LNParams.cm.all.values.take(8)
+      val lnBalance = Channel.totalBalance(LNParams.cm.all.values)
       val localInCount = LNParams.cm.inProcessors.count { case (fullTag, _) => fullTag.tag == PaymentTagTlv.FINAL_INCOMING }
       val trampolineCount = LNParams.cm.inProcessors.count { case (fullTag, _) => fullTag.tag == PaymentTagTlv.TRAMPLOINE_ROUTED }
       val localOutCount = LNParams.cm.opm.data.payments.count { case (fullTag, _) => fullTag.tag == PaymentTagTlv.LOCALLY_SENT }
       val change = LNParams.fiatRates.info.pctDifference(WalletApp.fiatCode).map(_ + "<br>").getOrElse(new String)
       val unitPriceAndChange = s"<small>$change</small>${WalletApp currentMsatInFiatHuman 100000000000L.msat}"
-      fiatUnitPriceAndChange.setText(unitPriceAndChange.html)
 
+      TransitionManager.beginDelayedTransition(defaultHeader)
+      fiatUnitPriceAndChange.setText(unitPriceAndChange.html)
       totalFiatBalance.setText(WalletApp.currentMsatInFiatHuman(BaseActivity.totalBalance).html)
       totalBalance.setText(WalletApp.denom.parsedWithSign(BaseActivity.totalBalance, cardIn, totalZero).html)
-
-      val lnBalance = Channel.totalBalance(LNParams.cm.all.values)
       totalLightningBalance.setText(WalletApp.denom.parsedWithSign(lnBalance, cardIn, lnCardZero).html)
       lnBalanceFiat.setText(WalletApp currentMsatInFiatHuman lnBalance)
       channelIndicator.createIndicators(allChannels.toArray)
@@ -951,7 +950,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     override def onChainMasterSelected(event: InetSocketAddress): Unit = UITask {
-      TransitionManager.beginDelayedTransition(walletCards.view)
+      TransitionManager.beginDelayedTransition(walletCards.defaultHeader)
       setVis(isVisible = false, walletCards.offlineIndicator)
     }.run
 
@@ -960,12 +959,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }.run
 
     override def onChainSyncStarted(localTip: Long, remoteTip: Long): Unit = UITask {
-      setVis(isVisible = remoteTip - localTip > 2016 * 4, walletCards.chainSyncIndicator)
+      setVis(isVisible = remoteTip - localTip > 2016 * 4, walletCards.syncIndicator)
     }.run
 
     override def onChainSyncEnded(localTip: Long): Unit = UITask {
-      TransitionManager.beginDelayedTransition(walletCards.view)
-      setVis(isVisible = false, walletCards.chainSyncIndicator)
+      TransitionManager.beginDelayedTransition(walletCards.defaultHeader)
+      setVis(isVisible = false, walletCards.syncIndicator)
     }.run
 
     override def onWalletReady(event: WalletReady): Unit = {
@@ -1297,18 +1296,16 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def bringSearch(view: View): Unit = {
     walletCards.searchField.setTag(true)
     TransitionManager.beginDelayedTransition(contentWindow)
-    walletCards.searchField.setVisibility(View.VISIBLE)
-    walletCards.defaultHeader.setVisibility(View.GONE)
+    setVisMany(true -> walletCards.searchField, false -> walletCards.defaultHeader, false -> walletCards.listCaption)
     showKeys(walletCards.searchField)
   }
 
   def rmSearch(view: View): Unit = {
     walletCards.searchField.setTag(false)
     walletCards.searchField.setText(new String)
-    WalletApp.app.hideKeys(walletCards.searchField)
     TransitionManager.beginDelayedTransition(contentWindow)
-    walletCards.defaultHeader.setVisibility(View.VISIBLE)
-    walletCards.searchField.setVisibility(View.GONE)
+    setVisMany(false -> walletCards.searchField, true -> walletCards.defaultHeader, hasItems -> walletCards.listCaption)
+    WalletApp.app.hideKeys(walletCards.searchField)
   }
 
   def bringSendOptions(view: View): Unit = {
@@ -1356,13 +1353,14 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     new sheets.ChoiceBottomSheet(list, CHOICE_RECEIVE_TAG, me).show(getSupportFragmentManager, "unused-tag")
   }
 
-  private def bringLegacyWalletMenuSpendOptions(wallet: ElectrumEclairWallet): Unit = {
+  def bringLegacyWalletMenuSpendOptions(wallet: ElectrumEclairWallet): Unit = {
     val options = Array(dialog_legacy_transfer_btc, dialog_legacy_send_btc).map(getString)
     val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
     new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-legacy-tag")
   }
 
   def goToStatPage(view: View): Unit = goTo(ClassNames.chanActivityClass)
+
   def goToSettingsPage(view: View): Unit = goTo(ClassNames.settingsActivityClass)
 
   def transferFromLegacyToModern(legacy: ElectrumEclairWallet): Unit = {
@@ -1650,8 +1648,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     if (lnUrlPayLinks.lastDelta > 0) walletCards.payMarketLinks.setText(s"+${lnUrlPayLinks.lastDelta}")
     if (paymentInfos.lastDelta > 0) walletCards.lightningPayments.setText(s"+${paymentInfos.lastDelta}")
     if (relayedPreimageInfos.lastDelta > 0) walletCards.relayedPayments.setText(s"+${relayedPreimageInfos.lastDelta}")
-    setVisMany(relayedPreimageInfos.lastItems.nonEmpty -> walletCards.relayedPayments, lnUrlPayLinks.lastItems.nonEmpty -> walletCards.payMarketLinks)
-    setVisMany(!hasItems -> walletCards.recoveryPhrase, hasItems -> walletCards.listCaption)
+    setVis(isVisible = relayedPreimageInfos.lastItems.nonEmpty, walletCards.relayedPayments)
+    setVis(isVisible = lnUrlPayLinks.lastItems.nonEmpty, walletCards.payMarketLinks)
+    setVis(isVisible = hasItems && !isSearchOn, walletCards.listCaption)
+    setVis(isVisible = !hasItems, walletCards.recoveryPhrase)
     paymentsAdapter.notifyDataSetChanged
   }
 
