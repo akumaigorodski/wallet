@@ -11,8 +11,6 @@ import scala.util.Try
 
 
 object ElectrumWalletType {
-  def computeScriptHash(serialized: ByteVector): ByteVector32 = Crypto.sha256(serialized).reverse
-
   def makeSigningType(tag: String, master: ExtendedPrivateKey, chainHash: ByteVector32): ElectrumWalletType = tag match {
     case EclairWallet.BIP32 => makeSigningType(tag, xPriv32(master, chainHash), chainHash)
     case EclairWallet.BIP44 => makeSigningType(tag, xPriv44(master, chainHash), chainHash)

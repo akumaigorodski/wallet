@@ -412,15 +412,15 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         alert.dismiss
 
         for {
-          (depth, false) <- fromWallet.doubleSpent(info.tx) if depth < 1
-          reponse <- fromWallet.makeCPFP(fromOutPoints.toSet, chainPubKeyScript, feeView.rate)
+          check <- fromWallet.doubleSpent(info.tx) if check.depth < 1 && !check.isDoubleSpent
+          cpfpResponse <- fromWallet.makeCPFP(fromOutPoints.toSet, chainPubKeyScript, feeView.rate)
           bumpDescription = PlainTxDescription(chainAddress :: Nil, None, cpfpBumpOrder.asSome, None, cpfpOf = info.txid.asSome)
           // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions(reponse.tx.txid) = bumpDescription
-          isSent <- fromWallet.broadcast(reponse.tx)
+          _ = WalletApp.txDescriptions(cpfpResponse.tx.txid) = bumpDescription
+          isSent <- fromWallet.broadcast(cpfpResponse.tx)
         } if (isSent) {
           // Parent semantic order is already updated, now we also update CPFP parent info
-          WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCpfpBy(reponse.tx.txid), info.txid)
+          WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCpfpBy(cpfpResponse.tx.txid), info.txid)
         } else {
           // We revert the whole description back since CPFP has failed
           WalletApp.txDataBag.updDescription(info.description, info.txid)
@@ -486,12 +486,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         alert.dismiss
 
         for {
-          (depth, false) <- fromWallet.doubleSpent(info.tx) if depth < 1
-          reponse <- fromWallet.makeRBFBump(info.tx, feeView.rate).map(_.result.right.get)
+          check <- fromWallet.doubleSpent(info.tx) if check.depth < 1 && !check.isDoubleSpent
+          rbfBumpResponse <- fromWallet.makeRBFBump(info.tx, feeView.rate).map(_.result.right.get)
           bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
           // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions(reponse.tx.txid) = bumpDescription
-          isSent <- fromWallet.broadcast(reponse.tx)
+          _ = WalletApp.txDescriptions(rbfBumpResponse.tx.txid) = bumpDescription
+          isSent <- fromWallet.broadcast(rbfBumpResponse.tx)
         } if (isSent) {
           val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
           val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
@@ -562,12 +562,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         alert.dismiss
 
         for {
-          (depth, false) <- fromWallet.doubleSpent(info.tx) if depth < 1
-          reponse <- fromWallet.makeRBFReroute(info.tx, feeView.rate, changePubKeyScript).map(_.result.right.get)
+          check <- fromWallet.doubleSpent(info.tx) if check.depth < 1 && !check.isDoubleSpent
+          rbfReroute <- fromWallet.makeRBFReroute(info.tx, feeView.rate, changePubKeyScript).map(_.result.right.get)
           bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
           // Record this description before sending, otherwise we won't be able to know a memo, label and semantic order
-          _ = WalletApp.txDescriptions(reponse.tx.txid) = bumpDescription
-          isSent <- fromWallet.broadcast(reponse.tx)
+          _ = WalletApp.txDescriptions(rbfReroute.tx.txid) = bumpDescription
+          isSent <- fromWallet.broadcast(rbfReroute.tx)
         } if (isSent) {
           val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
           val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
@@ -1268,9 +1268,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         for {
           txInfo <- txInfos.lastItems if !txInfo.isDoubleSpent && !txInfo.isConfirmed
           relatedChainWallet <- LNParams.chainWallets.findByPubKey(pub = txInfo.pubKey)
-          (depth, doubleSpent) <- relatedChainWallet.doubleSpent(tx = txInfo.tx)
-          if depth != txInfo.depth || doubleSpent != txInfo.isDoubleSpent
-        } WalletApp.txDataBag.updStatus(txInfo.txid, depth, doubleSpent)
+          res <- relatedChainWallet.doubleSpent(txInfo.tx) if res.depth != txInfo.depth || res.isDoubleSpent != txInfo.isDoubleSpent
+        } WalletApp.txDataBag.updStatus(txInfo.txid, res.depth, updatedStamp = res.stamp, res.isDoubleSpent)
       }
 
       val relayEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.relayDbStream, window).doOnNext(_ => reloadRelayedPreimageInfos)

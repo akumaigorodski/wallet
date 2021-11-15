@@ -1,8 +1,7 @@
 package fr.acinq.eclair.blockchain
 
 import fr.acinq.bitcoin.{ByteVector32, OutPoint, Satoshi, Transaction, TxIn}
-import fr.acinq.eclair.blockchain.EclairWallet._
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, GetCurrentReceiveAddressesResponse, RBFResponse}
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet._
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import scodec.bits.ByteVector
 
@@ -10,7 +9,6 @@ import scala.concurrent.Future
 
 
 object EclairWallet {
-  type DepthAndDoubleSpent = (Long, Boolean)
   final val OPT_IN_FULL_RBF = TxIn.SEQUENCE_FINAL - 2
   final val MAX_RECEIVE_ADDRESSES = 10
 
@@ -40,7 +38,7 @@ trait EclairWallet {
 
   def broadcast(tx: Transaction): Future[Boolean]
 
-  def doubleSpent(tx: Transaction): Future[DepthAndDoubleSpent]
+  def doubleSpent(tx: Transaction): Future[IsDoubleSpentResponse]
 
   def hasFingerprint: Boolean
 

@@ -34,8 +34,8 @@ class SQLiteTx(val db: DBInterface) {
     updateDescriptionSqlPQ.close
   }
 
-  def updStatus(txid: ByteVector32, depth: Long, doubleSpent: Boolean): Unit = {
-    db.change(TxTable.updStatusSql, depth: JLong, if (doubleSpent) 1L: JLong else 0L: JLong, System.currentTimeMillis: JLong /* UPDATED */, txid.toHex)
+  def updStatus(txid: ByteVector32, depth: Long, updatedStamp: Long, doubleSpent: Boolean): Unit = {
+    db.change(TxTable.updStatusSql, depth: JLong, if (doubleSpent) 1L: JLong else 0L: JLong, updatedStamp: JLong, txid.toHex)
     ChannelMaster.next(ChannelMaster.txDbStream)
   }
 
@@ -50,12 +50,12 @@ class SQLiteTx(val db: DBInterface) {
     }
 
   def addTx(tx: Transaction, depth: Long, received: Satoshi, sent: Satoshi, feeOpt: Option[Satoshi], xPub: ExtendedPublicKey,
-            description: TxDescription, isIncoming: Long, balanceSnap: MilliSatoshi, fiatRateSnap: Fiat2Btc): Unit = {
+            description: TxDescription, isIncoming: Long, balanceSnap: MilliSatoshi, fiatRateSnap: Fiat2Btc, stamp: Long): Unit = {
 
     val newSqlPQ = db.makePreparedQuery(TxTable.newSql)
-    db.change(newSqlPQ, tx.toString, tx.txid.toHex, xPub.publicKey.toString /* WHICH WALLET TYPE IS IT COMING FROM */, depth: JLong, received.toLong: JLong,
-      sent.toLong: JLong, feeOpt.map(_.toLong: JLong).getOrElse(0L: JLong), System.currentTimeMillis: JLong /* SEEN */, System.currentTimeMillis: JLong /* UPDATED */,
-      description.toJson.compactPrint, balanceSnap.toLong: JLong, fiatRateSnap.toJson.compactPrint, isIncoming: JLong, 0L: JLong)
+    db.change(newSqlPQ, tx.toString, tx.txid.toHex, xPub.publicKey.toString /* WHICH WALLET IS IT FROM */, depth: JLong,
+      received.toLong: JLong, sent.toLong: JLong, feeOpt.map(_.toLong: JLong).getOrElse(0L: JLong), stamp: JLong /* SEEN */, stamp: JLong /* UPDATED */,
+      description.toJson.compactPrint, balanceSnap.toLong: JLong, fiatRateSnap.toJson.compactPrint, isIncoming: JLong, 0L: JLong /* NOT DOUBLE SPENT YET */)
     ChannelMaster.next(ChannelMaster.txDbStream)
     newSqlPQ.close
   }

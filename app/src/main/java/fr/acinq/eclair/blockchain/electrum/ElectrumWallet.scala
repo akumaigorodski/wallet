@@ -141,9 +141,8 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
 
       data.computeTransactionDelta(tx) map { case TransactionDelta(_, feeOpt, received, sent) =>
         for (pendingTx <- data.pendingTransactions) self ! GetTransactionResponse(pendingTx, contextOpt)
-        context.system.eventStream publish data.transactionReceived(tx, feeOpt, received, sent, ewt.xPub)
-        val data2 = data1.copy(transactions = data.transactions.updated(tx.txid, tx), pendingTransactions = Nil)
-        stay using persistAndNotify(data2.withOverridingTxids)
+        context.system.eventStream publish data.transactionReceived(tx, feeOpt, received, sent, ewt.xPub, params.headerDb)
+        stay using persistAndNotify(data1.copy(transactions = data.transactions.updated(tx.txid, tx), pendingTransactions = Nil).withOverridingTxids)
       } getOrElse {
         // We are currently missing parents for this transaction
         val data2 = data1.copy(pendingTransactions = data.pendingTransactions :+ tx)
@@ -186,9 +185,10 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
         spendingBlockHeight <- data.proofs.get(spendingTxid).map(_.blockHeight)
       } yield data.computeDepth(spendingBlockHeight) > 0
 
-      val depth = data.computeTransactionDepth(tx.txid)
+      val depth = data.depth(tx.txid)
+      val stamp = data.timestamp(tx.txid, params.headerDb)
       val isDoubleSpent = doubleSpendTrials.contains(true)
-      stay replying IsDoubleSpentResponse(tx, depth, isDoubleSpent)
+      stay replying IsDoubleSpentResponse(tx, depth, stamp, isDoubleSpent)
 
     case Event(GetCurrentReceiveAddresses, data) =>
       val changeKey = data.firstUnusedChangeKey.getOrElse(data.changeKeys.head)
@@ -299,10 +299,10 @@ object ElectrumWallet {
 
   case class ChainFor(target: ActorRef) extends Request
 
-  case class IsDoubleSpentResponse(tx: Transaction, depth: Long, isDoubleSpent: Boolean) extends Response
+  case class IsDoubleSpentResponse(tx: Transaction, depth: Long, stamp: Long, isDoubleSpent: Boolean) extends Response
 
   sealed trait WalletEvent { val xPub: ExtendedPublicKey }
-  case class TransactionReceived(tx: Transaction, depth: Long, received: Satoshi, sent: Satoshi, walletAddreses: List[String], xPub: ExtendedPublicKey, feeOpt: Option[Satoshi] = None) extends WalletEvent
+  case class TransactionReceived(tx: Transaction, depth: Long, stamp: Long, received: Satoshi, sent: Satoshi, walletAddreses: List[String], xPub: ExtendedPublicKey, feeOpt: Option[Satoshi] = None) extends WalletEvent
   case class WalletReady(balance: Satoshi, height: Long, heightsCode: Int, xPub: ExtendedPublicKey) extends WalletEvent
 }
 
@@ -372,7 +372,13 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
 
   def toPersistent: PersistentData = PersistentData(accountKeys.length, changeKeys.length, status, transactions, overriddenPendingTxids, history, proofs, pendingTransactions)
 
-  def computeTransactionDepth(txid: ByteVector32): Int = proofs.get(txid).map(_.blockHeight).map(computeDepth).getOrElse(0)
+  def timestamp(txid: ByteVector32, headerDb: HeaderDb): Long = {
+    val blockHeight = proofs.get(txid).map(_.blockHeight).getOrElse(default = 0)
+    val stampOpt = blockchain.getHeader(blockHeight) orElse headerDb.getHeader(blockHeight)
+    stampOpt.map(_.time * 1000L).getOrElse(System.currentTimeMillis)
+  }
+
+  def depth(txid: ByteVector32): Int = proofs.get(txid).map(_.blockHeight).map(computeDepth).getOrElse(0)
 
   def computeDepth(txHeight: Int): Int = if (txHeight <= 0L) 0 else blockchain.height - txHeight + 1
 
@@ -380,9 +386,9 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
 
   lazy val balance: GetBalanceResponse = GetBalanceResponse(utxos.map(_.item.value.sat).sum)
 
-  def transactionReceived(tx: Transaction, feeOpt: Option[Satoshi], received: Satoshi, sent: Satoshi, xPub: ExtendedPublicKey): TransactionReceived = {
+  def transactionReceived(tx: Transaction, feeOpt: Option[Satoshi], received: Satoshi, sent: Satoshi, xPub: ExtendedPublicKey, headerDb: HeaderDb): TransactionReceived = {
     val walletAddresses = tx.txOut.filter(isMine).map(_.publicKeyScript).flatMap(publicScriptMap.get).map(ewt.textAddress).toList
-    TransactionReceived(tx, computeTransactionDepth(tx.txid), received, sent, walletAddresses, xPub, feeOpt)
+    TransactionReceived(tx, depth(tx.txid), timestamp(tx.txid, headerDb), received, sent, walletAddresses, xPub, feeOpt)
   }
 
   def computeTransactionDelta(tx: Transaction): Option[TransactionDelta] = {
@@ -433,7 +439,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
     rbfReroute(reroute.publicKeyScript, delta.spentUtxos, reroute.feeRatePerKw, dustLimit, reroute.sequenceFlag)
   } getOrElse RBFResponse(PARENTS_MISSING.asLeft)
 
-  private def rbfReroute(publicKeyScript: ByteVector, spentUtxos: Seq[Utxo], feeRatePerKw: FeeratePerKw, dustLimit: Satoshi, sequenceFlag: Long) = {
+  def rbfReroute(publicKeyScript: ByteVector, spentUtxos: Seq[Utxo], feeRatePerKw: FeeratePerKw, dustLimit: Satoshi, sequenceFlag: Long): RBFResponse = {
     spendAll(publicKeyScript, strictPubKeyScriptsToAmount = Map.empty, usableInUtxos = spentUtxos, extraOutUtxos = Nil, feeRatePerKw, dustLimit, sequenceFlag) match {
       case Success(response) => RBFResponse(response.asRight)
       case _ => RBFResponse(GENERATION_FAIL.asLeft)
