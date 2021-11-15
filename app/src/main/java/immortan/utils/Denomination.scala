@@ -1,7 +1,6 @@
 package immortan.utils
 
 import java.text._
-
 import fr.acinq.eclair._
 
 
@@ -14,19 +13,17 @@ object Denomination {
   formatFiatPrecise setDecimalFormatSymbols symbols
   formatFiat setDecimalFormatSymbols symbols
 
-  def satCeil(msat: MilliSatoshi): MilliSatoshi = (1000L * (msat.toLong / 1000D).ceil).toLong.msat
-
   def btcBigDecimal2MSat(btc: BigDecimal): MilliSatoshi = (btc * BtcDenomination.factor).toLong.msat
 
-  def mast2BtcBigDecimal(msat: MilliSatoshi): BigDecimal = BigDecimal(msat.toLong) / BtcDenomination.factor
+  def msat2BtcBigDecimal(msat: MilliSatoshi): BigDecimal = BigDecimal(msat.toLong) / BtcDenomination.factor
 }
 
 trait Denomination { me =>
   def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String
 
-  def fromMsat(amount: MilliSatoshi): BigDecimal = BigDecimal(amount.toLong) / factor
+  def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String
 
-  def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
+  def fromMsat(amount: MilliSatoshi): BigDecimal = BigDecimal(amount.toLong) / factor
 
   def directedWithSign(incoming: MilliSatoshi, outgoing: MilliSatoshi,
                        inColor: String, outColor: String, zeroColor: String,
@@ -49,19 +46,19 @@ object SatDenomination extends Denomination { me =>
   val factor = 1000L
   val sign = "sat"
 
-  def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = {
-    // Zero color is not used in SAT denomination since it has no decimal parts
-    val basicFormatted = fmt.format(me fromMsat msat)
-    s"<font color=$mainColor>$basicFormatted</font>"
-  }
+  def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
+
+  def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = s"<font color=$mainColor>" + fmt.format(me fromMsat msat) + "</font>"
 }
 
 object BtcDenomination extends Denomination { me =>
   val fmt: DecimalFormat = new DecimalFormat("##0.00000000")
-  val factor = 100000000000L
-  val sign = "\u20BF"
-
   fmt.setDecimalFormatSymbols(Denomination.symbols)
+  val factor = 100000000000L
+  val sign = "btc"
+
+  def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = parsed(msat, mainColor, zeroColor)
+
   def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = {
     // Alpha channel does not work on Android when set as HTML attribute
     // hence zero color is supplied to match different backgrounds well

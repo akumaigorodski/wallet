@@ -234,7 +234,7 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel {
 
 
       case (negs: DATA_NEGOTIATING, _: CMD_CLOSE, _) if negs.bestUnpublishedClosingTxOpt.nonEmpty => handleMutualClose(negs.bestUnpublishedClosingTxOpt.get, negs)
-      case (some: HasNormalCommitments, cmd: CMD_CLOSE, OPEN | SLEEPING | WAIT_FUNDING_DONE) if cmd.force => spendLocalCurrent(some)
+      case (some: HasNormalCommitments, cmd: CMD_CLOSE, OPEN | SLEEPING | WAIT_FUNDING_DONE | CLOSING) if cmd.force => spendLocalCurrent(some, cmd)
 
 
       // We may schedule shutdown while channel is offline
@@ -693,9 +693,10 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel {
     doPublish(closingTx)
   }
 
-  private def spendLocalCurrent(data1: HasNormalCommitments): Unit = data1 match {
-    case alreadyClosing: DATA_CLOSING if alreadyClosing.futureRemoteCommitPublished.isDefined =>
-    case _: DATA_WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT =>
+  private def spendLocalCurrent(data1: HasNormalCommitments, cmd: Command): Unit = data1 match {
+    case _: DATA_WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT => throw CMDException(CMD_CLOSE.AWAITING_REMOTE_FORCE_CLOSE, cmd)
+    case closing: DATA_CLOSING if closing.futureRemoteCommitPublished.isDefined => throw CMDException(CMD_CLOSE.AWAITING_REMOTE_FORCE_CLOSE, cmd)
+    case closing: DATA_CLOSING if closing.localCommitPublished.isDefined => throw CMDException(CMD_CLOSE.ALREADY_IN_PROGRESS, cmd)
 
     case _ =>
       val commitTx = data1.commitments.localCommit.publishableTxs.commitTx.tx

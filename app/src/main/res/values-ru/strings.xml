@@ -391,6 +391,7 @@
     <string name="ln_info_close_coop">Кооперативное закрытие</string>
     <string name="ln_info_close_local">Закрыто с нашей стороны</string>
     <string name="ln_info_close_remote">Закрыто удаленным узлом</string>
+    <string name="ln_info_await_close">Ожидается форс-закрытие&#8230;</string>
     <string name="ln_info_shutdown">Канал закрывается&#8230;</string>
     <string name="ln_info_opening">Открытие&#8230;</string>
 

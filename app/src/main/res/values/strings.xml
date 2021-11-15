@@ -387,6 +387,7 @@
     <string name="ln_info_close_coop">Cooperative closing</string>
     <string name="ln_info_close_local">Force-closed locally</string>
     <string name="ln_info_close_remote">Force-closed remotely</string>
+    <string name="ln_info_await_close">Awaiting force-close&#8230;</string>
     <string name="ln_info_shutdown">Shutting down&#8230;</string>
     <string name="ln_info_opening">Opening&#8230;</string>
 

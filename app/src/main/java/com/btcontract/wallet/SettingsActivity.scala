@@ -236,7 +236,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     override def updateView: Unit = {
       val short = WalletApp.denom.sign.toUpperCase
       val isSatDenom = WalletApp.denom == SatDenomination
-      val text = if (isSatDenom) s"Satoshi ($short)" else s"Bitcoin (BTC, $short)"
+      val text = if (isSatDenom) s"Satoshi ($short)" else s"Bitcoin ($short)"
       settingsInfo.setText(text)
     }
   }

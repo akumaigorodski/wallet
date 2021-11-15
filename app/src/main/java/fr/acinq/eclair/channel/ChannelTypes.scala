@@ -82,6 +82,7 @@ case class CMD_ADD_HTLC(fullTag: FullPaymentTag, firstAmount: MilliSatoshi, cltv
 }
 
 object CMD_CLOSE {
+  final val AWAITING_REMOTE_FORCE_CLOSE = "awaiting-remote-force-close"
   final val INVALID_CLOSING_PUBKEY = "invalid-closing-pubkey"
   final val ALREADY_IN_PROGRESS = "already-in-progress"
   final val CHANNEL_BUSY = "channel-busy"

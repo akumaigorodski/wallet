@@ -151,7 +151,16 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
         if (tempFeeMismatch) extraInfoText.setText(ln_info_fee_mismatch)
         visibleExcept(goneRes = -1)
       } else {
-        val closeInfoRes = chan.data match { case c: DATA_CLOSING => closedBy(c) case _ => ln_info_shutdown }
+        val closeInfoRes = chan.data match {
+          case _: DATA_WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT => ln_info_await_close
+          case close: DATA_CLOSING if close.remoteCommitPublished.nonEmpty => ln_info_close_remote
+          case close: DATA_CLOSING if close.nextRemoteCommitPublished.nonEmpty => ln_info_close_remote
+          case close: DATA_CLOSING if close.futureRemoteCommitPublished.nonEmpty => ln_info_close_remote
+          case close: DATA_CLOSING if close.mutualClosePublished.nonEmpty => ln_info_close_coop
+          case _: DATA_CLOSING => ln_info_close_local
+          case _ => ln_info_shutdown
+        }
+
         channelCard setOnClickListener bringChanOptions(normalChanActions.take(2), cs)
         visibleExcept(R.id.progressBars, R.id.canReceive, R.id.canSend)
         extraInfoText.setText(getString(closeInfoRes).html)
@@ -391,14 +400,6 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
   private def sumOrNothing(amt: MilliSatoshi, mainColor: String): String = {
     if (0L.msat != amt) WalletApp.denom.parsedWithSign(amt, mainColor, cardZero)
     else getString(chan_nothing)
-  }
-
-  private def closedBy(cd: DATA_CLOSING): Int = {
-    if (cd.remoteCommitPublished.nonEmpty) ln_info_close_remote
-    else if (cd.nextRemoteCommitPublished.nonEmpty) ln_info_close_remote
-    else if (cd.futureRemoteCommitPublished.nonEmpty) ln_info_close_remote
-    else if (cd.mutualClosePublished.nonEmpty) ln_info_close_coop
-    else ln_info_close_local
   }
 
   private def peerInfo(info: RemoteNodeInfo): String = s"<strong>${info.nodeId.toString.take(16).humanFour}</strong><br>${info.address.toString}"

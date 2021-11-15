@@ -238,8 +238,7 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     val inPrincipleUsableChans = chans.filter(Channel.isOperational)
     val sendableNoFee = opm.getSendable(inPrincipleUsableChans, maxFee = 0L.msat).values.sum
     val theoreticMaxFee = LNParams.maxOffChainFeeAboveRatio.max(sendableNoFee * LNParams.maxOffChainFeeRatio)
-    // Subtract max theoretical fee from EACH channel since ANY channel MAY use ALL of fee reserve
-    opm.getSendable(inPrincipleUsableChans, maxFee = theoreticMaxFee).values.sum
+    sendableNoFee - theoreticMaxFee
   }
 
   def makeSendCmd(prExt: PaymentRequestExt, toSend: MilliSatoshi, allowedChans: Seq[Channel], typicalChainTxFee: MilliSatoshi, capLNFeeToChain: Boolean): SendMultiPart = {
