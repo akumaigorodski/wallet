@@ -383,7 +383,7 @@ object Helpers {
 
     def findTimedOutHtlc(tx: Transaction, hash160: ByteVector, htlcs: Seq[UpdateAddHtlc], extractPaymentHash: PartialFunction[ScriptWitness, ByteVector], timeoutTxs: Seq[Transaction] = Nil): Option[UpdateAddHtlc] = {
       val matchingTxs = timeoutTxs.filter(_.lockTime == tx.lockTime).filter(_.txIn.map(_.witness).collect(extractPaymentHash) contains hash160).sortBy(tx => tx.txOut.map(_.amount.toLong).sum -> tx.txid.toHex)
-      val matchingHtlcs = htlcs.filter(add => add.cltvExpiry.toLong == tx.lockTime && ripemd160(add.paymentHash) == hash160).sortBy(add => add.amountMsat.toLong -> add.id)
+      val matchingHtlcs = htlcs.filter(add => add.cltvExpiry.underlying == tx.lockTime && ripemd160(add.paymentHash) == hash160).sortBy(add => add.amountMsat.toLong -> add.id)
       matchingHtlcs.zip(matchingTxs).collectFirst { case (add, timeoutTx) if timeoutTx.txid == tx.txid => add }
     }
 

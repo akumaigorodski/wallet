@@ -1,10 +1,5 @@
 package immortan.crypto
 
-import java.io.ByteArrayInputStream
-import java.nio.charset.StandardCharsets
-import java.nio.{ByteBuffer, ByteOrder}
-import java.util.concurrent.TimeUnit
-
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.sparrowwallet.hummingbird.UR
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
@@ -25,6 +20,10 @@ import immortan.utils.{FeeRatesInfo, ThrottledWork}
 import rx.lang.scala.Observable
 import scodec.bits.ByteVector
 
+import java.io.ByteArrayInputStream
+import java.nio.charset.StandardCharsets
+import java.nio.{ByteBuffer, ByteOrder}
+import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.language.implicitConversions
@@ -83,10 +82,10 @@ object Tools {
     Crypto.sha256(nodesCombined)
   }
 
-  def hostedShortChanId(pubkey1: ByteVector, pubkey2: ByteVector): ShortChannelId = {
+  def hostedShortChanId(pubkey1: ByteVector, pubkey2: ByteVector): Long = {
     val stream = new ByteArrayInputStream(hostedNodesCombined(pubkey1, pubkey2).toArray)
     def getChunk: Long = Protocol.uint64(stream, ByteOrder.BIG_ENDIAN)
-    ShortChannelId(List.fill(8)(getChunk).sum)
+    List.fill(8)(getChunk).sum
   }
 
   def mkFakeLocalEdge(from: PublicKey, toPeer: PublicKey): GraphEdge = {
@@ -94,7 +93,7 @@ object Tools {
     // Parameters do not matter except that it must point to real peer
 
     val zeroCltvDelta = CltvExpiryDelta(0)
-    val randomShortChannelId = ShortChannelId(secureRandom.nextLong)
+    val randomShortChannelId = secureRandom.nextLong
     val fakeDesc = ChannelDesc(randomShortChannelId, from, to = toPeer)
     val fakeHop = ExtraHop(from, randomShortChannelId, MilliSatoshi(0L), 0L, zeroCltvDelta)
     GraphEdge(updExt = RouteCalculation.toFakeUpdate(fakeHop), desc = fakeDesc)

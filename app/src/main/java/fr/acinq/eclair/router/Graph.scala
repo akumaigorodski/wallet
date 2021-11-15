@@ -17,6 +17,7 @@
 package fr.acinq.eclair.router
 
 import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.bitcoin.Satoshi
 import fr.acinq.eclair._
 import fr.acinq.eclair.router.Graph.GraphStructure.{DirectedGraph, GraphEdge}
 import fr.acinq.eclair.router.Router._
@@ -168,9 +169,9 @@ object Graph {
 
     val AVG_BLOCK_INTERVAL_MSEC: Long = 10 * 60 * 1000L
 
-    val CAPACITY_CHANNEL_LOW: MilliSatoshi = fr.acinq.bitcoin.MilliBtc(10).toMilliSatoshi
+    val CAPACITY_CHANNEL_LOW: MilliSatoshi = Satoshi(100000).toMilliSatoshi
 
-    val CAPACITY_CHANNEL_HIGH: MilliSatoshi = fr.acinq.bitcoin.Btc(10).toMilliSatoshi
+    val CAPACITY_CHANNEL_HIGH: MilliSatoshi = Satoshi(1000000000).toMilliSatoshi
 
     val CLTV_LOW = 9
 
@@ -191,7 +192,7 @@ object Graph {
         val blockNum = ShortChannelId.blockHeight(edge.desc.shortChannelId)
         val ageFactor = normalize(BLOCK_300K_STAMP_MSEC + (blockNum - BLOCK_300K) * AVG_BLOCK_INTERVAL_MSEC, BLOCK_300K_STAMP_MSEC, latestBlockExpectedStampMsecs)
         val capFactor = 1 - normalize(edge.updExt.capacity.toLong, CAPACITY_CHANNEL_LOW.toLong, CAPACITY_CHANNEL_HIGH.toLong)
-        val cltvFactor = normalize(edge.updExt.update.cltvExpiryDelta.toInt, CLTV_LOW, CLTV_HIGH)
+        val cltvFactor = normalize(edge.updExt.update.cltvExpiryDelta.underlying, CLTV_LOW, CLTV_HIGH)
         ageFactor + capFactor + cltvFactor + successFactor
       } else {
         // Minimize all heuristics except success rate on assisted and hosted channels
@@ -270,8 +271,7 @@ object Graph {
 
       def apply(edges: GraphEdges): DirectedGraph = empty.addEdges(edges)
 
-      def makeGraph(channels: Map[ShortChannelId, PublicChannel] = Map.empty): DirectedGraph = {
-        // Initialize the map with the appropriate size to avoid resizing during the graph initialization
+      def makeGraph(channels: Map[Long, PublicChannel] = Map.empty): DirectedGraph = {
         val mutableMap = new DefaultHashMap[PublicKey, GraphEdges](Nil, channels.size + 1)
 
         channels.values.foreach { channel =>
@@ -285,7 +285,7 @@ object Graph {
           channel.update2Opt.foreach { update2 =>
             val desc2 = Router.getDesc(update2.update, channel.ann)
             val edges1 = mutableMap.getOrDefaultValue(desc2.to)
-            val edges2 =GraphEdge(desc2, update2) :: edges1
+            val edges2 = GraphEdge(desc2, update2) :: edges1
             mutableMap.put(desc2.to, edges2)
           }
         }

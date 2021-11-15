@@ -44,14 +44,13 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
       // Serialized data may become big with much usage
       // Deserialzie it in this dedicated thread to not slow down UI
 
-      val persisted = persistentDataCodec.decode(raw.toBitVector).require.value
+      val persisted = Try(persistentDataCodec.decode(raw.toBitVector).require.value).getOrElse(params.emptyPersistentData)
       val firstAccountKeys = for (idx <- math.max(persisted.accountKeysCount - 1000, 0) until persisted.accountKeysCount) yield derivePublicKey(ewt.accountMaster, idx)
       val firstChangeKeys = for (idx <- math.max(persisted.changeKeysCount - 1000, 0) until persisted.changeKeysCount) yield derivePublicKey(ewt.changeMaster, idx)
 
-      stay using ElectrumData(ewt, Blockchain(ewt.chainHash, checkpoints = Vector.empty, headersMap = Map.empty, bestchain = Vector.empty),
-        firstAccountKeys.toVector, firstChangeKeys.toVector, persisted.status, persisted.transactions, persisted.overriddenPendingTxids,
-        persisted.history, persisted.proofs, pendingHistoryRequests = Set.empty, pendingHeadersRequests = Set.empty,
-        pendingTransactionRequests = Set.empty, pendingTransactions = persisted.pendingTransactions)
+      stay using ElectrumData(ewt, Blockchain(ewt.chainHash, checkpoints = Vector.empty, headersMap = Map.empty, bestchain = Vector.empty), firstAccountKeys.toVector, firstChangeKeys.toVector,
+        persisted.excludedOutPoints, persisted.status, persisted.transactions, persisted.overriddenPendingTxids, persisted.history, persisted.proofs, pendingHistoryRequests = Set.empty,
+        pendingHeadersRequests = Set.empty, pendingTransactionRequests = Set.empty, pendingTransactions = persisted.pendingTransactions)
 
     case Event(blockchain1: Blockchain, data) =>
       for (scriptHash <- data.accountKeyMap.keys) client ! ElectrumClient.ScriptHashSubscription(scriptHash, self)
@@ -137,20 +136,23 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
       stay using persistAndNotify(data1)
 
     case Event(GetTransactionResponse(tx, contextOpt), data) =>
-      val data1 = data.copy(pendingTransactionRequests = data.pendingTransactionRequests - tx.txid)
+      val clearedExcludedOutPoints: List[OutPoint] = data.excludedOutPoints diff tx.txIn.map(_.outPoint)
+      // Even though we have excluded some utxos in this wallet user may still spend them from other wallet, so clear excluded outpoints here
+      val data1 = data.copy(pendingTransactionRequests = data.pendingTransactionRequests - tx.txid, excludedOutPoints = clearedExcludedOutPoints)
 
       data.computeTransactionDelta(tx) map { case TransactionDelta(_, feeOpt, received, sent) =>
         for (pendingTx <- data.pendingTransactions) self ! GetTransactionResponse(pendingTx, contextOpt)
         context.system.eventStream publish data.transactionReceived(tx, feeOpt, received, sent, ewt.xPub, params.headerDb)
-        stay using persistAndNotify(data1.copy(transactions = data.transactions.updated(tx.txid, tx), pendingTransactions = Nil).withOverridingTxids)
+        val data2 = data1.copy(transactions = data.transactions.updated(tx.txid, tx), pendingTransactions = Nil)
+        stay using persistAndNotify(data2.withOverridingTxids)
       } getOrElse {
-        // We are currently missing parents for this transaction
+        // We are currently missing parents for this transaction, keep waiting
         val data2 = data1.copy(pendingTransactions = data.pendingTransactions :+ tx)
         stay using persistAndNotify(data2)
       }
 
-    case Event(ServerError(GetTransaction(txid, _), error), data) if data.pendingTransactionRequests.contains(txid) =>
-      log.error(s"Electrum server cannot find history for txid $txid with error $error")
+    case Event(ServerError(gt: GetTransaction, _), data) if data.pendingTransactionRequests.contains(gt.txid) =>
+      // Something is wrong with this client, better disconnect from it
       goto(DISCONNECTED) replying PoisonPill
 
     case Event(response @ GetMerkleResponse(txid, _, height, _, _), data) =>
@@ -170,7 +172,9 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
           val data1 = data.copy(pendingHeadersRequests = data.pendingHeadersRequests + request)
           stay using data1.copy(pendingMerkleResponses = data1.pendingMerkleResponses + response)
 
-        case _ => stay using data.copy(transactions = data.transactions - txid) replying PoisonPill
+        case _ =>
+          // Something is wrong with this client, better disconnect from it
+          stay using data.copy(transactions = data.transactions - txid) replying PoisonPill
       }
 
     case Event(bc: ElectrumClient.BroadcastTransaction, _) =>
@@ -196,6 +200,10 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
       stay replying GetCurrentReceiveAddressesResponse(sortredAccountKeys, changeKey, ewt)
 
     case Event(ElectrumClient.ElectrumDisconnected, data) => goto(DISCONNECTED) using data.reset
+
+    case Event(ProvideExcludedOutPoints(excluded), data) =>
+      val data1 = data.copy(excludedOutPoints = excluded)
+      stay using persistAndNotify(data1)
 
     case Event(GetBalance, data) => stay replying data.balance
 
@@ -277,6 +285,8 @@ object ElectrumWallet {
   case object GetBalance extends Request
   case class GetBalanceResponse(totalBalance: Satoshi) extends Response
 
+  case class ProvideExcludedOutPoints(excludedOutPoints: List[OutPoint] = Nil) extends Request
+
   case object GetCurrentReceiveAddresses extends Request
   case class GetCurrentReceiveAddressesResponse(keys: List[ExtendedPublicKey], changeKey: ExtendedPublicKey, ewt: ElectrumWalletType) extends Response {
     def firstAccountAddress: String = ewt.textAddress(keys.head)
@@ -303,7 +313,7 @@ object ElectrumWallet {
 
   sealed trait WalletEvent { val xPub: ExtendedPublicKey }
   case class TransactionReceived(tx: Transaction, depth: Long, stamp: Long, received: Satoshi, sent: Satoshi, walletAddreses: List[String], xPub: ExtendedPublicKey, feeOpt: Option[Satoshi] = None) extends WalletEvent
-  case class WalletReady(balance: Satoshi, height: Long, heightsCode: Int, xPub: ExtendedPublicKey) extends WalletEvent
+  case class WalletReady(balance: Satoshi, height: Long, heightsCode: Int, xPub: ExtendedPublicKey, excludedOutPoints: List[OutPoint] = Nil) extends WalletEvent
 }
 
 case class Utxo(key: ExtendedPublicKey, item: ElectrumClient.UnspentItem)
@@ -317,9 +327,10 @@ case class WalletParameters(headerDb: HeaderDb, walletDb: WalletDb, txDb: SQLite
   lazy val emptyPersistentDataBytes: ByteVector = persistentDataCodec.encode(emptyPersistentData).require.toByteVector
 }
 
-case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, accountKeys: Vector[ExtendedPublicKey], changeKeys: Vector[ExtendedPublicKey],
-                        status: Map[ByteVector32, String] = Map.empty, transactions: Map[ByteVector32, Transaction] = Map.empty, overriddenPendingTxids: Map[ByteVector32, ByteVector32] = Map.empty,
-                        history: Map[ByteVector32, TxHistoryItemList] = Map.empty, proofs: Map[ByteVector32, GetMerkleResponse] = Map.empty, pendingHistoryRequests: Set[ByteVector32] = Set.empty,
+case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain,
+                        accountKeys: Vector[ExtendedPublicKey], changeKeys: Vector[ExtendedPublicKey], excludedOutPoints: List[OutPoint],
+                        status: Map[ByteVector32, String], transactions: Map[ByteVector32, Transaction], overriddenPendingTxids: Map[ByteVector32, ByteVector32],
+                        history: Map[ByteVector32, TxHistoryItemList], proofs: Map[ByteVector32, GetMerkleResponse], pendingHistoryRequests: Set[ByteVector32] = Set.empty,
                         pendingTransactionRequests: Set[ByteVector32] = Set.empty, pendingHeadersRequests: Set[GetHeaders] = Set.empty, pendingTransactions: List[Transaction] = Nil,
                         pendingMerkleResponses: Set[GetMerkleResponse] = Set.empty, lastReadyMessage: Option[WalletReady] = None) { me =>
 
@@ -330,7 +341,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
   lazy val accountKeyMap: Map[ByteVector32, ExtendedPublicKey] = for (Tuple2(serialized, key) <- publicScriptAccountMap) yield (computeScriptHash(serialized), key)
   lazy val changeKeyMap: Map[ByteVector32, ExtendedPublicKey] = for (Tuple2(serialized, key) <- publicScriptChangeMap) yield (computeScriptHash(serialized), key)
 
-  lazy val currentReadyMessage: WalletReady = WalletReady(balance.totalBalance, blockchain.tip.height, proofs.hashCode + transactions.hashCode, ewt.xPub)
+  lazy val currentReadyMessage: WalletReady = WalletReady(balance.totalBalance, blockchain.tip.height, proofs.hashCode + transactions.hashCode, ewt.xPub, excludedOutPoints)
 
   lazy val firstUnusedAccountKeys: immutable.Iterable[ExtendedPublicKey] = accountKeyMap.collect {
     case (nonExistentScriptHash, privKey) if !status.contains(nonExistentScriptHash) => privKey
@@ -342,7 +353,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
     changeKeys.collectFirst { case unusedChangeKey if !usedChangeNumbers.contains(unusedChangeKey.path.lastChildNumber) => unusedChangeKey }
   }
 
-  lazy val utxos: Seq[Utxo] = {
+  lazy val unExcludedUtxos: Seq[Utxo] = {
     history.toSeq.flatMap { case (scriptHash, historyItems) =>
       accountKeyMap.get(scriptHash) orElse changeKeyMap.get(scriptHash) map { key =>
         // We definitely have a private key generated for corresponding scriptHash here
@@ -355,22 +366,23 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
           unspent = ElectrumClient.UnspentItem(item.txHash, index, txOut.amount.toLong, item.height)
         } yield Utxo(key, unspent)
 
-        // Find all transactions that send to or receive from this script hash
-        val outPoints = historyItems.map(_.txHash).flatMap(transactions.get).flatMap(_.txIn).map(_.outPoint)
-        // Because we may have unconfirmed UTXOs that are spend by unconfirmed transactions
+        // Find all out points which spend from this script hash and make sure unspents do not contain them
+        val outPoints = historyItems.map(_.txHash).flatMap(transactions.get).flatMap(_.txIn).map(_.outPoint).toSet
         unspents.filterNot(utxo => outPoints contains utxo.item.outPoint)
       } getOrElse Nil
     }
   }
 
+  lazy val utxos: Seq[Utxo] = unExcludedUtxos.filterNot(utxo => excludedOutPoints contains utxo.item.outPoint)
+
   // Remove status for each script hash for which we have pending requests, this will make us query script hash history for these script hashes again when we reconnect
   def reset: ElectrumData = copy(status = status -- pendingHistoryRequests, pendingHistoryRequests = Set.empty, pendingTransactionRequests = Set.empty, pendingHeadersRequests = Set.empty, lastReadyMessage = None)
+
+  def toPersistent: PersistentData = PersistentData(accountKeys.length, changeKeys.length, status, transactions, overriddenPendingTxids, history, proofs, pendingTransactions, excludedOutPoints)
 
   def isTxKnown(txid: ByteVector32): Boolean = transactions.contains(txid) || pendingTransactionRequests.contains(txid) || pendingTransactions.exists(_.txid == txid)
 
   def isMine(txIn: TxIn): Boolean = ewt.extractPubKeySpentFrom(txIn).map(ewt.computePublicKeyScript).map(Script.write).exists(publicScriptMap.contains)
-
-  def toPersistent: PersistentData = PersistentData(accountKeys.length, changeKeys.length, status, transactions, overriddenPendingTxids, history, proofs, pendingTransactions)
 
   def timestamp(txid: ByteVector32, headerDb: HeaderDb): Long = {
     val blockHeight = proofs.get(txid).map(_.blockHeight).getOrElse(default = 0)
@@ -510,6 +522,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain, account
   }
 }
 
-case class PersistentData(accountKeysCount: Int, changeKeysCount: Int, status: Map[ByteVector32, String] = Map.empty, transactions: Map[ByteVector32, Transaction] = Map.empty,
-                          overriddenPendingTxids: Map[ByteVector32, ByteVector32] = Map.empty, history: Map[ByteVector32, TxHistoryItemList] = Map.empty,
-                          proofs: Map[ByteVector32, GetMerkleResponse] = Map.empty, pendingTransactions: List[Transaction] = Nil)
+case class PersistentData(accountKeysCount: Int, changeKeysCount: Int, status: Map[ByteVector32, String] = Map.empty,
+                          transactions: Map[ByteVector32, Transaction] = Map.empty, overriddenPendingTxids: Map[ByteVector32, ByteVector32] = Map.empty,
+                          history: Map[ByteVector32, TxHistoryItemList] = Map.empty, proofs: Map[ByteVector32, GetMerkleResponse] = Map.empty,
+                          pendingTransactions: List[Transaction] = Nil, excludedOutPoints: List[OutPoint] = Nil)

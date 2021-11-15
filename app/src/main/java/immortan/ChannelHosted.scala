@@ -85,8 +85,8 @@ abstract class ChannelHosted extends Channel { me =>
 
     case (hc: HostedCommits, CurrentBlockCount(tip), OPEN | SLEEPING) =>
       // Keep in mind that we may have many outgoing HTLCs which have the same preimage
-      val sentExpired = hc.allOutgoing.filter(tip > _.cltvExpiry.toLong).groupBy(_.paymentHash)
-      val hasReceivedRevealedExpired = hc.revealedFulfills.exists(tip > _.theirAdd.cltvExpiry.toLong)
+      val sentExpired = hc.allOutgoing.filter(tip > _.cltvExpiry.underlying).groupBy(_.paymentHash)
+      val hasReceivedRevealedExpired = hc.revealedFulfills.exists(tip > _.theirAdd.cltvExpiry.underlying)
 
       if (hasReceivedRevealedExpired) {
         // We have incoming payments for which we have revealed a preimage but they are still unresolved and completely expired

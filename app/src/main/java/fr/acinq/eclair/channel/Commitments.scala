@@ -94,8 +94,8 @@ case class NormalCommits(channelFlags: Byte, channelId: ByteVector32, channelFea
 
     if (!localParams.isFunder) {
       val commitFees = commitTxFeeMsat(localParams.dustLimit, reduced, channelFeatures.commitmentFormat)
-      val oneMoreHtlc = htlcOutputFee(reduced.feeratePerKw, channelFeatures.commitmentFormat) * localParams.maxAcceptedHtlcs
-      reduced.toRemote - localParams.channelReserve - commitFees - oneMoreHtlc
+      val manyMoreHtlc = htlcOutputFee(reduced.feeratePerKw, channelFeatures.commitmentFormat) * localParams.maxAcceptedHtlcs
+      reduced.toRemote - localParams.channelReserve - commitFees - manyMoreHtlc
     } else reduced.toRemote - localParams.channelReserve
   }
 

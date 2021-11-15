@@ -19,7 +19,7 @@ case class ChannelUpdateExt(update: ChannelUpdate, crc32: Long, score: Long, use
 }
 
 object Router {
-  case class ChannelDesc(shortChannelId: ShortChannelId, from: PublicKey, to: PublicKey)
+  case class ChannelDesc(shortChannelId: Long, from: PublicKey, to: PublicKey)
 
   case class RouterConf(initRouteMaxLength: Int, routeMaxCltv: CltvExpiryDelta = CltvExpiryDelta(2016), maxChannelFailures: Int = 4, maxStrangeNodeFailures: Int = 6, maxRemoteAttempts: Int = 10)
 
@@ -77,7 +77,7 @@ object Router {
 
   case class RouteFound(route: Route, fullTag: FullPaymentTag, partId: ByteVector) extends RouteResponse
 
-  case class Data(channels: Map[ShortChannelId, PublicChannel], hostedChannels: Map[ShortChannelId, PublicChannel], graph: DirectedGraph)
+  case class Data(channels: Map[Long, PublicChannel], hostedChannels: Map[Long, PublicChannel], graph: DirectedGraph)
 
   def getDesc(cu: ChannelUpdate, ann: ChannelAnnouncement): ChannelDesc = {
     if (Announcements isNode1 cu.channelFlags) ChannelDesc(cu.shortChannelId, ann.nodeId1, ann.nodeId2)

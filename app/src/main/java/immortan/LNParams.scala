@@ -1,7 +1,5 @@
 package immortan
 
-import java.util.concurrent.atomic.AtomicLong
-
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.util.Timeout
 import com.softwaremill.quicklens._
@@ -24,6 +22,7 @@ import immortan.sqlite._
 import immortan.utils._
 import scodec.bits.{ByteVector, HexStringSyntax}
 
+import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.util.Try
@@ -249,11 +248,11 @@ trait NetworkBag {
   def addChannelAnnouncement(ca: ChannelAnnouncement, newSqlPQ: PreparedQuery)
   def addChannelUpdateByPosition(cu: ChannelUpdate, newSqlPQ: PreparedQuery, updSqlPQ: PreparedQuery)
   // When adding an excluded channel we disregard an update position: channel as a whole is always excluded
-  def addExcludedChannel(shortId: ShortChannelId, untilStamp: Long, newSqlPQ: PreparedQuery)
-  def removeChannelUpdate(shortId: ShortChannelId, killSqlPQ: PreparedQuery)
+  def addExcludedChannel(shortId: Long, untilStamp: Long, newSqlPQ: PreparedQuery)
+  def removeChannelUpdate(shortId: Long, killSqlPQ: PreparedQuery)
 
   def addChannelUpdateByPosition(cu: ChannelUpdate)
-  def removeChannelUpdate(shortId: ShortChannelId)
+  def removeChannelUpdate(shortId: Long)
 
   def listChannelAnnouncements: Iterable[ChannelAnnouncement]
   def listChannelUpdates: Iterable[ChannelUpdateExt]
@@ -261,7 +260,7 @@ trait NetworkBag {
   def listExcludedChannels: Set[Long]
 
   def incrementScore(cu: ChannelUpdateExt)
-  def getRoutingData: Map[ShortChannelId, PublicChannel]
+  def getRoutingData: Map[Long, PublicChannel]
   def removeGhostChannels(ghostIds: ShortChanIdSet, oneSideIds: ShortChanIdSet)
   def processCompleteHostedData(pure: CompleteHostedRoutingData)
   def processPureData(data: PureRoutingData)
@@ -334,9 +333,9 @@ trait ChannelBag {
   def delete(channelId: ByteVector32)
 
   def htlcInfos(commitNumer: Long): Iterable[ChannelBag.Hash160AndCltv]
-  def putHtlcInfo(sid: ShortChannelId, commitNumber: Long, paymentHash: ByteVector32, cltvExpiry: CltvExpiry)
-  def putHtlcInfos(htlcs: Seq[DirectedHtlc], sid: ShortChannelId, commitNumber: Long)
-  def rmHtlcInfos(sid: ShortChannelId)
+  def putHtlcInfo(sid: Long, commitNumber: Long, paymentHash: ByteVector32, cltvExpiry: CltvExpiry)
+  def putHtlcInfos(htlcs: Seq[DirectedHtlc], sid: Long, commitNumber: Long)
+  def rmHtlcInfos(sid: Long)
 
   def channelTxFeesSummary: Try[ChannelTxFeesSummary]
   def addChannelTxFee(feePaid: Satoshi, idenitifer: String, tag: String)

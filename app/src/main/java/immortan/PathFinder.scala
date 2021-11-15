@@ -1,22 +1,19 @@
 package immortan
 
-import java.util.concurrent.{Executors, TimeUnit}
-
-import com.google.common.cache.CacheBuilder
 import fr.acinq.bitcoin.Crypto
 import fr.acinq.eclair.router.Graph.GraphStructure.{DirectedGraph, GraphEdge}
 import fr.acinq.eclair.router.RouteCalculation.handleRouteRequest
 import fr.acinq.eclair.router.Router.{Data, PublicChannel, RouteRequest}
 import fr.acinq.eclair.router.{ChannelUpdateExt, Router}
 import fr.acinq.eclair.wire.ChannelUpdate
-import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi, ShortChannelId, nodeFee}
+import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi, nodeFee}
 import immortan.PathFinder._
 import immortan.crypto.Tools._
 import immortan.crypto.{CanBeRepliedTo, StateMachine}
 import immortan.utils.{Rx, Statistics}
 import rx.lang.scala.Subscription
 
-import scala.collection.JavaConverters._
+import java.util.concurrent.Executors
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
@@ -39,8 +36,7 @@ object PathFinder {
 }
 
 abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) extends StateMachine[Data] { me =>
-  private val extraEdges = CacheBuilder.newBuilder.expireAfterWrite(1, TimeUnit.DAYS).maximumSize(5000).build[ShortChannelId, GraphEdge]
-  val extraEdgesMap: mutable.Map[ShortChannelId, GraphEdge] = extraEdges.asMap.asScala
+  val extraEdges: mutable.Map[Long, GraphEdge] = mutable.Map.empty
 
   var listeners: Set[CanBeRepliedTo] = Set.empty
   var subscription: Option[Subscription] = None
@@ -99,7 +95,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
     case (CMDLoadGraph, WAITING) =>
       val normalShortIdToPubChan = normalBag.getRoutingData
       val hostedShortIdToPubChan = hostedBag.getRoutingData
-      val searchGraph1 = DirectedGraph.makeGraph(normalShortIdToPubChan ++ hostedShortIdToPubChan).addEdges(extraEdgesMap.values)
+      val searchGraph1 = DirectedGraph.makeGraph(normalShortIdToPubChan ++ hostedShortIdToPubChan).addEdges(extraEdges.values)
       become(Data(normalShortIdToPubChan, hostedShortIdToPubChan, searchGraph1), OPERATIONAL)
       if (data.channels.nonEmpty) listeners.foreach(_ process NotifyOperational)
 
@@ -135,7 +131,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
 
       // Then reconstruct graph with new PHC data
       val hostedShortIdToPubChan = hostedBag.getRoutingData
-      val searchGraph = DirectedGraph.makeGraph(data.channels ++ hostedShortIdToPubChan).addEdges(extraEdgesMap.values)
+      val searchGraph = DirectedGraph.makeGraph(data.channels ++ hostedShortIdToPubChan).addEdges(extraEdges.values)
       become(Data(data.channels, hostedShortIdToPubChan, searchGraph), OPERATIONAL)
       updateLastTotalResyncStamp(System.currentTimeMillis)
       listeners.foreach(_ process phcPure)
@@ -152,7 +148,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       val oneSideShortIds = normalBag.listChannelsWithOneUpdate
       val ghostIds = normalShortIdToPubChan.keySet.diff(sync.provenShortIds)
       val normalShortIdToPubChan1 = normalShortIdToPubChan -- ghostIds -- oneSideShortIds
-      val searchGraph = DirectedGraph.makeGraph(normalShortIdToPubChan1 ++ data.hostedChannels).addEdges(extraEdgesMap.values)
+      val searchGraph = DirectedGraph.makeGraph(normalShortIdToPubChan1 ++ data.hostedChannels).addEdges(extraEdges.values)
       become(Data(normalShortIdToPubChan1, data.hostedChannels, searchGraph), OPERATIONAL)
       // Update normal checkpoint, if PHC sync fails this time we'll jump to it next time
       updateLastNormalResyncStamp(System.currentTimeMillis)
@@ -180,8 +176,8 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       become(data1, OPERATIONAL)
 
     case (cu: ChannelUpdate, OPERATIONAL) =>
-      // Last chance: if it's not a known public update then maybe it's a private one
-      Option(extraEdges getIfPresent cu.shortChannelId).foreach { extEdge =>
+      extraEdges.get(cu.shortChannelId).foreach { extEdge =>
+        // Last chance: not a known public update, maybe it's a private one
         val edge1 = extEdge.copy(updExt = extEdge.updExt withNewUpdate cu)
         val data1 = resolveKnownDesc(storeOpt = None, edge1)
         become(data1, OPERATIONAL)
@@ -242,7 +238,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
   def nodeIdFromUpdate(cu: ChannelUpdate): Option[Crypto.PublicKey] =
     data.channels.get(cu.shortChannelId).map(_.ann getNodeIdSameSideAs cu) orElse
       data.hostedChannels.get(cu.shortChannelId).map(_.ann getNodeIdSameSideAs cu) orElse
-      extraEdgesMap.get(cu.shortChannelId).map(_.desc.from)
+      extraEdges.get(cu.shortChannelId).map(_.desc.from)
 
   def attemptPHCSync: Unit = {
     if (LNParams.syncParams.phcSyncNodes.nonEmpty) {
@@ -254,7 +250,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
   def getAvgHopParams: AvgHopParams = {
     val sample = data.channels.values.toVector.flatMap(pc => pc.update1Opt ++ pc.update2Opt)
     val noFeeOutliers = Statistics.removeExtremeOutliers(sample)(_.update.feeProportionalMillionths)
-    val cltvExpiryDelta = CltvExpiryDelta(Statistics.meanBy(noFeeOutliers)(_.update.cltvExpiryDelta.toInt).toInt)
+    val cltvExpiryDelta = CltvExpiryDelta(Statistics.meanBy(noFeeOutliers)(_.update.cltvExpiryDelta.underlying).toInt)
     val proportional = Statistics.meanBy(noFeeOutliers)(_.update.feeProportionalMillionths).toLong
     val base = MilliSatoshi(Statistics.meanBy(noFeeOutliers)(_.update.feeBaseMsat).toLong)
     AvgHopParams(cltvExpiryDelta, proportional, base, noFeeOutliers.size)

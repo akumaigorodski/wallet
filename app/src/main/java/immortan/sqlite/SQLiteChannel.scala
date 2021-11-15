@@ -1,14 +1,13 @@
 package immortan.sqlite
 
-import java.lang.{Long => JLong}
-
 import fr.acinq.bitcoin.{ByteVector32, Crypto, Satoshi}
+import fr.acinq.eclair.CltvExpiry
 import fr.acinq.eclair.channel.PersistentChannelData
 import fr.acinq.eclair.transactions.DirectedHtlc
 import fr.acinq.eclair.wire.ChannelCodecs
-import fr.acinq.eclair.{CltvExpiry, ShortChannelId}
 import immortan.ChannelBag
 
+import java.lang.{Long => JLong}
 import scala.util.Try
 
 
@@ -38,15 +37,14 @@ class SQLiteChannel(val db: DBInterface, channelTxFeesDb: DBInterface) extends C
       ChannelBag.Hash160AndCltv(hash160, cltvExpiry)
     }
 
-  override def putHtlcInfo(sid: ShortChannelId, commitNumber: Long, paymentHash: ByteVector32, cltvExpiry: CltvExpiry): Unit =
-    db.change(HtlcInfoTable.newSql, sid.toLong: JLong, commitNumber: JLong, Crypto.ripemd160(paymentHash).toArray, cltvExpiry.toLong: JLong)
+  override def putHtlcInfo(sid: Long, commitNumber: Long, paymentHash: ByteVector32, cltvExpiry: CltvExpiry): Unit =
+    db.change(HtlcInfoTable.newSql, sid: JLong, commitNumber: JLong, Crypto.ripemd160(paymentHash).toArray, cltvExpiry.underlying: JLong)
 
-  override def putHtlcInfos(htlcs: Seq[DirectedHtlc], sid: ShortChannelId, commitNumber: Long): Unit = db txWrap {
+  override def putHtlcInfos(htlcs: Seq[DirectedHtlc], sid: Long, commitNumber: Long): Unit = db txWrap {
     for (htlc <- htlcs) putHtlcInfo(sid, commitNumber, htlc.add.paymentHash, htlc.add.cltvExpiry)
   }
 
-  override def rmHtlcInfos(sid: ShortChannelId): Unit =
-    db.change(HtlcInfoTable.killSql, sid.toLong: JLong)
+  override def rmHtlcInfos(sid: Long): Unit = db.change(HtlcInfoTable.killSql, sid: JLong)
 
   // Channel related tx fees
 

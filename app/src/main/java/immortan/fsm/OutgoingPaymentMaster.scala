@@ -49,8 +49,8 @@ case class UnreadableRemoteFailure(route: Route) extends PaymentFailure {
 }
 
 case class RemoteFailure(packet: Sphinx.DecryptedFailurePacket, route: Route) extends PaymentFailure {
-  def originChannelId: String = route.getEdgeForNode(packet.originNode).map(_.updExt.update.shortChannelId.toString).getOrElse("unknown channel")
-  override def asString: String = s"- ${packet.failureMessage.message} at $originChannelId: ${route.asString}"
+  private def originChannelId = route.getEdgeForNode(packet.originNode).map(_.updExt.update.shortChannelId).map(ShortChannelId.asString)
+  override def asString: String = s"- ${packet.failureMessage.message} at ${originChannelId getOrElse "n/a"}: ${route.asString}"
 }
 
 // Master commands and data
@@ -329,7 +329,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
     case (found: RouteFound, PENDING) =>
       data.parts.values.collectFirst {
         case wait: WaitForRouteOrInFlight if wait.flight.isEmpty && wait.partId == found.partId =>
-          val chainExpiry = data.cmd.chainExpiry match { case Right(delta) => delta.toCltvExpiry(LNParams.blockCount.get + 1) case Left(absolute) => absolute }
+          val chainExpiry = data.cmd.chainExpiry.fold(fb = _.toCltvExpiry(LNParams.blockCount.get + 1L), fa = identity)
           val finalPayload = Onion.createMultiPartPayload(wait.amount, data.cmd.split.totalSum, chainExpiry, data.cmd.outerPaymentSecret, data.cmd.onionTlvs, data.cmd.userCustomTlvs)
           val (firstAmount, firstExpiry, onion) = OutgoingPacket.buildPacket(Sphinx.PaymentPacket)(wait.onionKey, fullTag.paymentHash, found.route.hops, finalPayload)
           val cmdAdd = CMD_ADD_HTLC(fullTag, firstAmount, firstExpiry, PacketAndSecrets(onion.packet, onion.sharedSecrets), finalPayload)

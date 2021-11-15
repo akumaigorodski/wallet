@@ -22,7 +22,7 @@ import fr.acinq.eclair.crypto.Sphinx
 import fr.acinq.eclair.payment.PaymentRequest
 import fr.acinq.eclair.wire.CommonCodecs._
 import fr.acinq.eclair.wire.TlvCodecs._
-import fr.acinq.eclair.{CltvExpiry, MilliSatoshi, ShortChannelId, UInt64}
+import fr.acinq.eclair.{CltvExpiry, MilliSatoshi, UInt64}
 import scodec.bits.{BitVector, ByteVector}
 
 /**
@@ -134,7 +134,7 @@ object OnionTlv {
   case class OutgoingCltv(cltv: CltvExpiry) extends OnionTlv
 
   /** Id of the channel to use to forward a payment to the next node. */
-  case class OutgoingChannelId(shortChannelId: ShortChannelId) extends OnionTlv
+  case class OutgoingChannelId(shortChannelId: Long) extends OnionTlv
 
   /**
     * Bolt 11 payment details (only included for the last node).
@@ -220,7 +220,7 @@ object Onion {
 
   sealed trait ChannelRelayPayload extends RelayPayload with PaymentPacket {
     /** Id of the channel to use to forward a payment to the next node. */
-    val outgoingChannelId: ShortChannelId
+    val outgoingChannelId: Long
   }
 
   /** Per-hop payload for a final node. */
@@ -232,7 +232,7 @@ object Onion {
     val paymentPreimage: Option[ByteVector32]
   }
 
-  case class RelayLegacyPayload(outgoingChannelId: ShortChannelId, amountToForward: MilliSatoshi, outgoingCltv: CltvExpiry) extends ChannelRelayPayload with LegacyFormat
+  case class RelayLegacyPayload(outgoingChannelId: Long, amountToForward: MilliSatoshi, outgoingCltv: CltvExpiry) extends ChannelRelayPayload with LegacyFormat
 
   case class ChannelRelayTlvPayload(records: TlvStream[OnionTlv]) extends ChannelRelayPayload with TlvFormat {
     override val amountToForward = records.get[AmountToForward].get.amount
@@ -241,7 +241,7 @@ object Onion {
   }
 
   object ChannelRelayTlvPayload {
-    def apply(outgoingChannelId: ShortChannelId, amountToForward: MilliSatoshi, outgoingCltv: CltvExpiry): ChannelRelayTlvPayload =
+    def apply(outgoingChannelId: Long, amountToForward: MilliSatoshi, outgoingCltv: CltvExpiry): ChannelRelayTlvPayload =
       ChannelRelayTlvPayload(TlvStream(OnionTlv.AmountToForward(amountToForward), OnionTlv.OutgoingCltv(outgoingCltv), OnionTlv.OutgoingChannelId(outgoingChannelId)))
   }
 
@@ -250,23 +250,17 @@ object Onion {
     val outgoingCltv = records.get[OutgoingCltv].get.cltv
     val outgoingNodeId = records.get[OutgoingNodeId].get.nodeId
     // The following fields are only included in the trampoline-to-legacy case.
-    val totalAmount = records.get[PaymentData].map(_.totalAmount match {
-      case MilliSatoshi(0) => amountToForward
-      case totalAmount => totalAmount
-    }).getOrElse(amountToForward)
+    val totalAmount = records.get[PaymentData].map(_.totalAmount).filter(_.toLong != 0L).getOrElse(amountToForward)
     val paymentSecret = records.get[PaymentData].map(_.secret)
     val invoiceFeatures = records.get[InvoiceFeatures].map(_.features)
     val invoiceRoutingInfo = records.get[InvoiceRoutingInfo].map(_.extraHops)
   }
 
   case class FinalTlvPayload(records: TlvStream[OnionTlv]) extends FinalPayload with TlvFormat {
-    override val amount = records.get[AmountToForward].get.amount
+    override val amount: MilliSatoshi = records.get[AmountToForward].get.amount
     override val expiry = records.get[OutgoingCltv].get.cltv
     override val paymentSecret = records.get[PaymentData].get.secret
-    override val totalAmount = records.get[PaymentData].map(_.totalAmount match {
-      case MilliSatoshi(0) => amount
-      case totalAmount => totalAmount
-    }).getOrElse(amount)
+    override val totalAmount = records.get[PaymentData].map(_.totalAmount).filter(_.toLong != 0L).getOrElse(amount)
     override val paymentPreimage = records.get[KeySend].map(_.paymentPreimage)
   }
 
@@ -320,9 +314,9 @@ object OnionCodecs {
 
   private val amountToForward: Codec[AmountToForward] = ("amount_msat" | ltmillisatoshi).as[AmountToForward]
 
-  private val outgoingCltv: Codec[OutgoingCltv] = ("cltv" | ltu32).xmap(cltv => OutgoingCltv(CltvExpiry(cltv)), (c: OutgoingCltv) => c.cltv.toLong)
+  private val outgoingCltv: Codec[OutgoingCltv] = ("cltv" | ltu32).xmap(cltv => OutgoingCltv(CltvExpiry(cltv)), (c: OutgoingCltv) => c.cltv.underlying)
 
-  private val outgoingChannelId: Codec[OutgoingChannelId] = variableSizeBytesLong(varintoverflow, "short_channel_id" | shortchannelid).as[OutgoingChannelId]
+  private val outgoingChannelId: Codec[OutgoingChannelId] = variableSizeBytesLong(varintoverflow, "short_channel_id" | int64).as[OutgoingChannelId]
 
   private val paymentData: Codec[PaymentData] = variableSizeBytesLong(varintoverflow, ("payment_secret" | bytes32) :: ("total_msat" | tmillisatoshi)).as[PaymentData]
 
@@ -351,7 +345,7 @@ object OnionCodecs {
 
   private val legacyRelayPerHopPayloadCodec: Codec[RelayLegacyPayload] = (
     ("realm" | constant(ByteVector.fromByte(0))) ::
-      ("short_channel_id" | shortchannelid) ::
+      ("short_channel_id" | int64) ::
       ("amt_to_forward" | millisatoshi) ::
       ("outgoing_cltv_value" | cltvExpiry) ::
       ("unused_with_v0_version_on_header" | ignore(8 * 12))).as[RelayLegacyPayload]

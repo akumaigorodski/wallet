@@ -307,18 +307,14 @@ object WalletApp {
   // Fiat conversion
 
   def currentRate(rates: Fiat2Btc, code: String): Try[Double] = Try(rates apply code)
-
-  def msatInFiat(rates: Fiat2Btc, code: String)(msat: MilliSatoshi): Try[Double] =
-    currentRate(rates, code).map(perBtc => msat.toLong * perBtc / BtcDenomination.factor)
+  val currentMsatInFiatHuman: MilliSatoshi => String = msat => msatInFiatHuman(LNParams.fiatRates.info.rates, fiatCode, msat, formatFiat)
+  def msatInFiat(rates: Fiat2Btc, code: String)(msat: MilliSatoshi): Try[Double] = currentRate(rates, code).map(perBtc => msat.toLong * perBtc / BtcDenomination.factor)
 
   def msatInFiatHuman(rates: Fiat2Btc, code: String, msat: MilliSatoshi, decimalFormat: DecimalFormat): String = {
     val fiatAmount = msatInFiat(rates, code)(msat).map(f = decimalFormat.format).getOrElse(default = "?")
     val formatted = LNParams.fiatRates.customFiatSymbols.get(code).map(symbol => s"$symbol$fiatAmount")
     formatted.getOrElse(s"$fiatAmount $code")
   }
-
-  val currentMsatInFiatHuman: MilliSatoshi => String = msat =>
-    msatInFiatHuman(LNParams.fiatRates.info.rates, fiatCode, msat, formatFiat)
 }
 
 object Vibrator {

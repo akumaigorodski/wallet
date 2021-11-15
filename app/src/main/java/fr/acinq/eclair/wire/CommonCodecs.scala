@@ -60,8 +60,8 @@ object CommonCodecs {
 
   val feeratePerKw: Codec[FeeratePerKw] = uint32.xmapc(l => FeeratePerKw(Satoshi(l)))(_.toLong)
 
-  val cltvExpiry: Codec[CltvExpiry] = uint32.xmapc(CltvExpiry)((_: CltvExpiry).toLong)
-  val cltvExpiryDelta: Codec[CltvExpiryDelta] = uint16.xmapc(CltvExpiryDelta)((_: CltvExpiryDelta).toInt)
+  val cltvExpiry: Codec[CltvExpiry] = uint32.xmapc(CltvExpiry)(_.underlying)
+  val cltvExpiryDelta: Codec[CltvExpiryDelta] = uint16.xmapc(CltvExpiryDelta)(_.underlying)
 
   // this is needed because some millisatoshi values are encoded on 32 bits in the BOLTs
   // this codec will fail if the amount does not fit on 32 bits
@@ -129,8 +129,6 @@ object CommonCodecs {
   // in the list but rather the  number of bytes of the encoded list. The rationale is once we've read this
   // number of bytes we can just skip to the next field
   val listofnodeaddresses: Codec[List[NodeAddress]] = variableSizeBytes(uint16, list(nodeaddress))
-
-  val shortchannelid: Codec[ShortChannelId] = int64.xmap(l => ShortChannelId(l), s => s.toLong)
 
   val privateKey: Codec[PrivateKey] = Codec[PrivateKey](
     (priv: PrivateKey) => bytes(32).encode(priv.value),

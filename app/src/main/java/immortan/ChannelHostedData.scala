@@ -46,10 +46,13 @@ case class HostedCommits(remoteInfo: RemoteNodeInfo, localSpec: CommitmentSpec, 
 
   lazy val availableForSend: MilliSatoshi = nextLocalSpec.toLocal
 
+  override def ourBalance: MilliSatoshi = availableForSend
+
   def nextLocalUnsignedLCSS(blockDay: Long): LastCrossSignedState =
-    LastCrossSignedState(lastCrossSignedState.isHost, lastCrossSignedState.refundScriptPubKey, lastCrossSignedState.initHostedChannel, blockDay = blockDay,
-      localBalanceMsat = nextLocalSpec.toLocal, remoteBalanceMsat = nextLocalSpec.toRemote, nextTotalLocal, nextTotalRemote, nextLocalSpec.incomingAdds.toList.sortBy(_.id),
-      nextLocalSpec.outgoingAdds.toList.sortBy(_.id), localSigOfRemote = ByteVector64.Zeroes, remoteSigOfLocal = ByteVector64.Zeroes)
+    LastCrossSignedState(lastCrossSignedState.isHost, lastCrossSignedState.refundScriptPubKey, lastCrossSignedState.initHostedChannel,
+      blockDay = blockDay, localBalanceMsat = nextLocalSpec.toLocal, remoteBalanceMsat = nextLocalSpec.toRemote, nextTotalLocal, nextTotalRemote,
+      nextLocalSpec.incomingAdds.toList.sortBy(_.id), nextLocalSpec.outgoingAdds.toList.sortBy(_.id), localSigOfRemote = ByteVector64.Zeroes,
+      remoteSigOfLocal = ByteVector64.Zeroes)
 
   def addLocalProposal(update: UpdateMessage): HostedCommits = copy(nextLocalUpdates = nextLocalUpdates :+ update)
   def addRemoteProposal(update: UpdateMessage): HostedCommits = copy(nextRemoteUpdates = nextRemoteUpdates :+ update)

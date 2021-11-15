@@ -1,20 +1,20 @@
 package fr.acinq.eclair.wire
 
-import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
-import java.nio.ByteOrder
-import java.nio.charset.StandardCharsets
-
 import com.google.common.base.Charsets
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, Protocol, Satoshi}
+import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
 import fr.acinq.eclair.router.Announcements
-import fr.acinq.eclair._
 import immortan.crypto.Tools
 import immortan.{ChannelMaster, LNParams}
 import scodec.DecodeResult
 import scodec.bits.ByteVector
+
+import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
+import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
 
 
 sealed trait LightningMessage extends Serializable
@@ -102,10 +102,10 @@ case class RevokeAndAck(channelId: ByteVector32, perCommitmentSecret: PrivateKey
 
 case class UpdateFee(channelId: ByteVector32, feeratePerKw: FeeratePerKw) extends HasChannelId with UpdateMessage
 
-case class AnnouncementSignatures(channelId: ByteVector32, shortChannelId: ShortChannelId, nodeSignature: ByteVector64, bitcoinSignature: ByteVector64) extends HasChannelId
+case class AnnouncementSignatures(channelId: ByteVector32, shortChannelId: Long, nodeSignature: ByteVector64, bitcoinSignature: ByteVector64) extends HasChannelId
 
 case class ChannelAnnouncement(nodeSignature1: ByteVector64, nodeSignature2: ByteVector64, bitcoinSignature1: ByteVector64, bitcoinSignature2: ByteVector64, features: Features,
-                               chainHash: ByteVector32, shortChannelId: ShortChannelId, nodeId1: PublicKey, nodeId2: PublicKey, bitcoinKey1: PublicKey, bitcoinKey2: PublicKey,
+                               chainHash: ByteVector32, shortChannelId: Long, nodeId1: PublicKey, nodeId2: PublicKey, bitcoinKey1: PublicKey, bitcoinKey2: PublicKey,
                                unknownFields: ByteVector = ByteVector.empty) extends LightningMessage {
 
   def getNodeIdSameSideAs(cu: ChannelUpdate): PublicKey = if (cu.position == ChannelUpdate.POSITION1NODE) nodeId1 else nodeId2
@@ -191,13 +191,13 @@ object ChannelUpdate {
 }
 
 case class UpdateCore(position: java.lang.Integer,
-                      shortChannelId: ShortChannelId, feeBase: MilliSatoshi, feeProportionalMillionths: Long,
+                      shortChannelId: Long, feeBase: MilliSatoshi, feeProportionalMillionths: Long,
                       cltvExpiryDelta: CltvExpiryDelta, htlcMaximumMsat: Option[MilliSatoshi] = None) {
 
   def noPosition: UpdateCore = copy(position = 0)
 }
 
-case class ChannelUpdate(signature: ByteVector64, chainHash: ByteVector32, shortChannelId: ShortChannelId, timestamp: Long, messageFlags: Byte, channelFlags: Byte,
+case class ChannelUpdate(signature: ByteVector64, chainHash: ByteVector32, shortChannelId: Long, timestamp: Long, messageFlags: Byte, channelFlags: Byte,
                          cltvExpiryDelta: CltvExpiryDelta, htlcMinimumMsat: MilliSatoshi, feeBaseMsat: MilliSatoshi, feeProportionalMillionths: Long,
                          htlcMaximumMsat: Option[MilliSatoshi], unknownFields: ByteVector = ByteVector.empty) extends LightningMessage {
 
@@ -218,7 +218,7 @@ object EncodingType {
   case object COMPRESSED_ZLIB extends EncodingType
 }
 
-case class EncodedShortChannelIds(encoding: EncodingType, array: List[ShortChannelId] = Nil)
+case class EncodedShortChannelIds(encoding: EncodingType, array: List[Long] = Nil)
 
 case class QueryShortChannelIds(chainHash: ByteVector32, shortChannelIds: EncodedShortChannelIds, tlvStream: TlvStream[QueryShortChannelIdsTlv] = TlvStream.empty) extends LightningMessage
 

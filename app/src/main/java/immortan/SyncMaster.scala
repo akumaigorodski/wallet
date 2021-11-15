@@ -1,11 +1,8 @@
 package immortan
 
-import java.util.concurrent.Executors
-
 import com.softwaremill.quicklens._
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.eclair.Features.ChannelRangeQueriesExtended
-import fr.acinq.eclair.ShortChannelId
 import fr.acinq.eclair.router.Router.Data
 import fr.acinq.eclair.router.{Announcements, Sync}
 import fr.acinq.eclair.wire.QueryShortChannelIdsTlv.QueryFlagType._
@@ -16,6 +13,7 @@ import immortan.crypto.Tools._
 import immortan.crypto.{CanBeRepliedTo, StateMachine, Tools}
 import immortan.utils.Rx
 
+import java.util.concurrent.Executors
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
@@ -33,9 +31,9 @@ object SyncMaster {
   final val CMDGetGossip = "cmd-get-gossip"
   final val CMDShutdown = "cmd-shut-down"
 
-  type ConfirmedBySet = Set[PublicKey]
-  type ShortChanIdSet = Set[ShortChannelId]
   type PositionSet = Set[java.lang.Integer]
+  type ConfirmedBySet = Set[PublicKey]
+  type ShortChanIdSet = Set[Long]
 }
 
 sealed trait SyncWorkerData
@@ -43,7 +41,7 @@ sealed trait SyncWorkerData
 case class SyncWorkerShortIdsData(ranges: List[ReplyChannelRange] = Nil, from: Int) extends SyncWorkerData {
   // This class contains a list of shortId ranges collected from a single remote peer, we need to make sure all of them are sound, that is, TLV data is of same size as main data
   def isHolistic: Boolean = ranges.forall(rng => rng.shortChannelIds.array.size == rng.timestamps.timestamps.size && rng.timestamps.timestamps.size == rng.checksums.checksums.size)
-  lazy val allShortIds: Seq[ShortChannelId] = ranges.flatMap(_.shortChannelIds.array)
+  lazy val allShortIds: Seq[Long] = ranges.flatMap(_.shortChannelIds.array)
 }
 
 case class SyncWorkerGossipData(syncMaster: SyncMaster,
@@ -61,9 +59,9 @@ case class CMDGossipComplete(sync: SyncWorker)
 
 case class SyncWorkerPHCData(phcMaster: PHCSyncMaster,
                              updates: Set[ChannelUpdate],
+                             expectedPositions: Map[Long, PositionSet] = Map.empty,
                              nodeIdToShortIds: Map[PublicKey, ShortChanIdSet] = Map.empty,
-                             expectedPositions: Map[ShortChannelId, PositionSet] = Map.empty,
-                             announces: Map[ShortChannelId, ChannelAnnouncement] = Map.empty) extends SyncWorkerData {
+                             announces: Map[Long, ChannelAnnouncement] = Map.empty) extends SyncWorkerData {
 
   def withNewAnnounce(ann: ChannelAnnouncement): SyncWorkerPHCData = {
     val expectedPositions1 = expectedPositions.updated(ann.shortChannelId, ChannelUpdate.fullSet)
@@ -218,7 +216,7 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
 
   def hasCapacityIssues(update: ChannelUpdate): Boolean = update.htlcMaximumMsat.forall(cap => cap < LNParams.syncParams.minCapacity || cap <= update.htlcMinimumMsat)
   def provenButShouldBeExcluded(update: ChannelUpdate): Boolean = provenShortIds.contains(update.shortChannelId) && hasCapacityIssues(update)
-  def provenAndNotExcluded(shortId: ShortChannelId): Boolean = provenShortIds.contains(shortId) && !excluded.contains(shortId.id)
+  def provenAndNotExcluded(shortId: Long): Boolean = provenShortIds.contains(shortId) && !excluded.contains(shortId)
 
   implicit val context: ExecutionContextExecutor = ExecutionContext fromExecutor Executors.newSingleThreadExecutor
   def process(changeMessage: Any): Unit = scala.concurrent.Future(me doProcess changeMessage)
@@ -249,7 +247,7 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
       if (data2.ranges.size == data2.totalRanges) {
         // Collected enough channel ranges to start gossip
         val goodRanges = data2.ranges.values.filter(_.isHolistic)
-        val accum = mutable.Map.empty[ShortChannelId, Int] withDefaultValue 0
+        val accum = mutable.Map.empty[Long, Int].withDefaultValue(0)
         goodRanges.flatMap(_.allShortIds).foreach(shortId => accum(shortId) += 1)
         // IMPORTANT: provenShortIds variable MUST be set BEFORE filtering out queries because `reply2Query` uses this data
         provenShortIds = accum.collect { case (shortId, confs) if confs > LNParams.syncParams.acceptThreshold => shortId }.toSet
@@ -338,7 +336,7 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
     } yield QueryShortChannelIds(LNParams.chainHash, shortChannelIds, TlvStream(tlv))
   }
 
-  private def computeFlag(shortlId: ShortChannelId, theirTimestamps: ReplyChannelRangeTlv.Timestamps, theirChecksums: ReplyChannelRangeTlv.Checksums) =
+  private def computeFlag(shortlId: Long, theirTimestamps: ReplyChannelRangeTlv.Timestamps, theirChecksums: ReplyChannelRangeTlv.Checksums) =
     if (routerData.channels contains shortlId) {
       val (stamps, checksums) = Sync.getChannelDigestInfo(routerData.channels)(shortlId)
       val shouldRequestUpdate1 = Sync.shouldRequestUpdate(stamps.timestamp1, checksums.checksum1, theirTimestamps.timestamp1, theirChecksums.checksum1)

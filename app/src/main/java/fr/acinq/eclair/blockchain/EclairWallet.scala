@@ -36,9 +36,11 @@ trait EclairWallet {
 
   def makeRBFReroute(tx: Transaction, feeRatePerKw: FeeratePerKw, pubKeyScript: ByteVector): Future[RBFResponse]
 
-  def broadcast(tx: Transaction): Future[Boolean]
+  def provideExcludedOutpoints(excludedOutPoints: List[OutPoint] = Nil): Unit
 
   def doubleSpent(tx: Transaction): Future[IsDoubleSpentResponse]
+
+  def broadcast(tx: Transaction): Future[Boolean]
 
   def hasFingerprint: Boolean
 

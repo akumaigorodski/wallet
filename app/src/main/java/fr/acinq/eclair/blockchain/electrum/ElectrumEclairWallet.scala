@@ -81,6 +81,8 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
     (walletRef ? rbfReroute).mapTo[RBFResponse]
   }
 
+  override def provideExcludedOutpoints(excludedOutPoints: List[OutPoint] = Nil): Unit = walletRef ! ProvideExcludedOutPoints(excludedOutPoints)
+
   override def doubleSpent(tx: Transaction): Future[IsDoubleSpentResponse] = (walletRef ? tx).mapTo[IsDoubleSpentResponse]
 
   override def hasFingerprint: Boolean = info.core.masterFingerprint.nonEmpty

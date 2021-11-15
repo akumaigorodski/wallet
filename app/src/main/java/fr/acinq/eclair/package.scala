@@ -116,11 +116,9 @@ package object eclair { me =>
     // @formatter:on
   }
 
-  implicit class ToMilliSatoshiConversion(amount: BtcAmount) {
-    // @formatter:off
-    def toMilliSatoshi: MilliSatoshi = MilliSatoshi.toMilliSatoshi(amount)
+  implicit class ToMilliSatoshiConversion(amount: Satoshi) {
+    def toMilliSatoshi: MilliSatoshi = MilliSatoshi(amount.toLong * 1000L)
     def +(other: MilliSatoshi): MilliSatoshi = amount.toMilliSatoshi + other
     def -(other: MilliSatoshi): MilliSatoshi = amount.toMilliSatoshi - other
-    // @formatter:on
   }
 }

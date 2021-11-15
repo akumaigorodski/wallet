@@ -16,8 +16,6 @@
 
 package fr.acinq.eclair.transactions
 
-import java.nio.ByteOrder
-
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey, ripemd160}
 import fr.acinq.bitcoin.Script._
 import fr.acinq.bitcoin.SigVersion._
@@ -29,6 +27,7 @@ import fr.acinq.eclair.transactions.Scripts._
 import fr.acinq.eclair.wire.UpdateAddHtlc
 import scodec.bits.ByteVector
 
+import java.nio.ByteOrder
 import scala.util.Try
 
 /**
@@ -393,7 +392,7 @@ object Transactions {
         version = 2,
         txIn = TxIn(input.outPoint, ByteVector.empty, getHtlcTxInputSequence(commitmentFormat)) :: Nil,
         txOut = TxOut(amount, pay2wsh(toLocalDelayed(localRevocationPubkey, toLocalDelay, localDelayedPaymentPubkey))) :: Nil,
-        lockTime = htlc.cltvExpiry.toLong)))
+        lockTime = htlc.cltvExpiry.underlying)))
     }
   }
 
@@ -502,7 +501,7 @@ object Transactions {
           version = 2,
           txIn = TxIn(input.outPoint, ByteVector.empty, getHtlcTxInputSequence(commitmentFormat)) :: Nil,
           txOut = TxOut(Satoshi(0), localFinalScriptPubKey) :: Nil,
-          lockTime = htlc.cltvExpiry.toLong)
+          lockTime = htlc.cltvExpiry.underlying)
         val weight = addSigs(ClaimHtlcTimeoutTx(input, tx), PlaceHolderSig).tx.weight()
         val fee = weight2fee(feeratePerKw, weight)
         val amount = input.txOut.amount - fee
@@ -578,7 +577,7 @@ object Transactions {
         // unsigned transaction
         val tx = Transaction(
           version = 2,
-          txIn = TxIn(input.outPoint, ByteVector.empty, toLocalDelay.toInt) :: Nil,
+          txIn = TxIn(input.outPoint, ByteVector.empty, toLocalDelay.underlying) :: Nil,
           txOut = TxOut(Satoshi(0), localFinalScriptPubKey) :: Nil,
           lockTime = 0)
         // compute weight with a dummy 73 bytes signature (the largest you can get)

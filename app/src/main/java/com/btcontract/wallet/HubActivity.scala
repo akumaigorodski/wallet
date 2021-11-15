@@ -291,7 +291,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       val myFulfills = dangerousHCRevealed(info.fullTag)
       val title = getString(error_hc_dangerous_state).asColoredView(R.color.buttonRed)
       val paymentAmount = WalletApp.denom.parsedWithSign(myFulfills.map(_.theirAdd.amountMsat).sum, cardOut, cardZero)
-      val closestExpiry = WalletApp.app.plurOrZero(myFulfills.map(_.theirAdd.cltvExpiry).min.toLong - LNParams.blockCount.get, inBlocks)
+      val closestExpiry = WalletApp.app.plurOrZero(myFulfills.map(_.theirAdd.cltvExpiry.underlying).min - LNParams.blockCount.get, inBlocks)
 
       def stampProof(tx: Transaction)(alert: AlertDialog): Unit = {
         val txOrder = SemanticOrder(id = info.identity, order = Long.MinValue).asSome
@@ -647,7 +647,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
             addFlowChip(extraInfo, getString(popup_run_action), R.drawable.border_green, _ => run)
           }
 
-          lastInChannelOutgoing.get(info.fullTag).map(_.maxBy(_.cltvExpiry).cltvExpiry.toLong - LNParams.blockCount.get) match {
+          lastInChannelOutgoing.get(info.fullTag).map(_.maxBy(_.cltvExpiry.underlying).cltvExpiry.underlying - LNParams.blockCount.get) match {
             case Some(left) if left > 0 => addFlowChip(extraInfo, WalletApp.app.plurOrZero(left, expiresInBlocks), R.drawable.border_gray)
             case Some(left) if left <= 0 => addFlowChip(extraInfo, expiresInBlocks.head, R.drawable.border_red)
             case None => // Either incoming or not in channels

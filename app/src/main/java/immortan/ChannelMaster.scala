@@ -1,7 +1,5 @@
 package immortan
 
-import java.util.concurrent.atomic.AtomicLong
-
 import com.google.common.cache.LoadingCache
 import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
@@ -22,6 +20,7 @@ import immortan.fsm._
 import immortan.utils.{PaymentRequestExt, Rx}
 import rx.lang.scala.Subject
 
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.Try
@@ -55,7 +54,7 @@ object ChannelMaster {
 
   def dangerousHCRevealed(allRevealed: Map[ByteVector32, RevealedLocalFulfills], tip: Long, hash: ByteVector32): Iterable[LocalFulfill] = {
     // Of all incoming payments inside of HCs for which we have revealed a preimage, find those which are dangerously close to expiration, but not expired yet, but not hopelessly close
-    allRevealed.getOrElse(hash, Iterable.empty).filter(tip >= _.theirAdd.cltvExpiry.toLong - LNParams.hcFulfillSafetyBlocks).filter(tip <= _.theirAdd.cltvExpiry.toLong - 3)
+    allRevealed.getOrElse(hash, Iterable.empty).filter(tip >= _.theirAdd.cltvExpiry.underlying - LNParams.hcFulfillSafetyBlocks).filter(tip <= _.theirAdd.cltvExpiry.underlying - 3)
   }
 }
 
@@ -237,25 +236,19 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
   def maxSendable(chans: Iterable[Channel] = Nil): MilliSatoshi = {
     val inPrincipleUsableChans = chans.filter(Channel.isOperational)
     val sendableNoFee = opm.getSendable(inPrincipleUsableChans, maxFee = 0L.msat).values.sum
-    val theoreticMaxFee = LNParams.maxOffChainFeeAboveRatio.max(sendableNoFee * LNParams.maxOffChainFeeRatio)
-    sendableNoFee - theoreticMaxFee
+    sendableNoFee - LNParams.maxOffChainFeeAboveRatio.max(sendableNoFee * LNParams.maxOffChainFeeRatio)
   }
 
-  def makeSendCmd(prExt: PaymentRequestExt, toSend: MilliSatoshi, allowedChans: Seq[Channel], typicalChainTxFee: MilliSatoshi, capLNFeeToChain: Boolean): SendMultiPart = {
+  def makeSendCmd(prExt: PaymentRequestExt, toSend: MilliSatoshi, allowedChans: Seq[Channel], typicalChainFee: MilliSatoshi, capLNFeeToChain: Boolean): SendMultiPart = {
     val fullTag = FullPaymentTag(paymentHash = prExt.pr.paymentHash, paymentSecret = prExt.pr.paymentSecret.get, tag = PaymentTagTlv.LOCALLY_SENT)
     val extraEdges = RouteCalculation.makeExtraEdges(prExt.pr.routingInfo, target = prExt.pr.nodeId)
+    val maxFee = toSend * LNParams.maxOffChainFeeRatio
 
-    val feeReserve = toSend * LNParams.maxOffChainFeeRatio match {
-      case percent if percent < LNParams.maxOffChainFeeAboveRatio => LNParams.maxOffChainFeeAboveRatio
-      case percent if percent > typicalChainTxFee && capLNFeeToChain => typicalChainTxFee
-      case percent => percent
-    }
-
-    val split = SplitInfo(totalSum = 0L.msat, toSend)
     // Supply relative cltv expiry in case if we initiate a payment when chain tip is not yet known
     val chainExpiry = Right(prExt.pr.minFinalCltvExpiryDelta getOrElse LNParams.minInvoiceExpiryDelta)
     // An assumption is that toSend is at most maxSendable so max theoretically possible off-chain fee is already counted in, so we can send amount + fee
-    SendMultiPart(fullTag, chainExpiry, split, LNParams.routerConf, targetNodeId = prExt.pr.nodeId, feeReserve, allowedChans, fullTag.paymentSecret, extraEdges)
+    val feeReserve = if (maxFee < LNParams.maxOffChainFeeAboveRatio) LNParams.maxOffChainFeeAboveRatio else if (maxFee > typicalChainFee && capLNFeeToChain) typicalChainFee else maxFee
+    SendMultiPart(fullTag, chainExpiry, SplitInfo(totalSum = 0L.msat, toSend), LNParams.routerConf, targetNodeId = prExt.pr.nodeId, feeReserve, allowedChans, fullTag.paymentSecret, extraEdges)
   }
 
   def makePrExt(toReceive: MilliSatoshi, description: PaymentDescription, allowedChans: Seq[ChanAndCommits], hash: ByteVector32, secret: ByteVector32): PaymentRequestExt = {

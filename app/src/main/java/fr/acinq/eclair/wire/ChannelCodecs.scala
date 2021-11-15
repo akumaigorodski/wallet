@@ -254,13 +254,13 @@ object ChannelCodecs {
 
   val DATA_WAIT_FOR_FUNDING_LOCKED_Codec = {
     (commitmentsCodec withContext "commitments") ::
-      (shortchannelid withContext "shortChannelId") ::
+      (int64 withContext "shortChannelId") ::
       (lengthDelimited(fundingLockedCodec) withContext "lastSent")
   }.as[DATA_WAIT_FOR_FUNDING_LOCKED]
 
   val DATA_NORMAL_Codec = {
     (commitmentsCodec withContext "commitments") ::
-      (shortchannelid withContext "shortChannelId") ::
+      (int64 withContext "shortChannelId") ::
       (bool8 withContext "feeUpdateRequired") ::
       (listOfN(uint16, varsizebinarydata) withContext "extParams") ::
       (optional(bool8, lengthDelimited(shutdownCodec)) withContext "localShutdown") ::

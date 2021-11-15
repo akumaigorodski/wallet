@@ -153,7 +153,7 @@ object LightningMessageCodecs {
 
   val announcementSignaturesCodec = {
     ("channelId" | bytes32) ::
-      ("shortChannelId" | shortchannelid) ::
+      ("shortChannelId" | int64) ::
       ("nodeSignature" | bytes64) ::
       ("bitcoinSignature" | bytes64)
   }.as[AnnouncementSignatures]
@@ -161,7 +161,7 @@ object LightningMessageCodecs {
   val channelAnnouncementWitnessCodec =
     ("features" | featuresCodec) ::
       ("chainHash" | bytes32) ::
-      ("shortChannelId" | shortchannelid) ::
+      ("shortChannelId" | int64) ::
       ("nodeId1" | publicKey) ::
       ("nodeId2" | publicKey) ::
       ("bitcoinKey1" | publicKey) ::
@@ -189,7 +189,7 @@ object LightningMessageCodecs {
 
   val channelUpdateChecksumCodec =
     ("chainHash" | bytes32) ::
-      ("shortChannelId" | shortchannelid) ::
+      ("shortChannelId" | int64) ::
       (("messageFlags" | byte) >>:~ { messageFlags =>
         ("channelFlags" | byte) ::
           ("cltvExpiryDelta" | cltvExpiryDelta) ::
@@ -201,7 +201,7 @@ object LightningMessageCodecs {
 
   val channelUpdateWitnessCodec =
     ("chainHash" | bytes32) ::
-      ("shortChannelId" | shortchannelid) ::
+      ("shortChannelId" | int64) ::
       ("timestamp" | uint32) ::
       (("messageFlags" | byte) >>:~ { messageFlags =>
         ("channelFlags" | byte) ::
@@ -220,10 +220,10 @@ object LightningMessageCodecs {
       .\(0) {
         case a@EncodedShortChannelIds(_, Nil) => a // empty list is always encoded with encoding type 'uncompressed' for compatibility with other implementations
         case a@EncodedShortChannelIds(EncodingType.UNCOMPRESSED, _) => a
-      }((provide[EncodingType](EncodingType.UNCOMPRESSED) :: list(shortchannelid)).as[EncodedShortChannelIds])
+      }((provide[EncodingType](EncodingType.UNCOMPRESSED) :: list(int64)).as[EncodedShortChannelIds])
       .\(1) {
         case a@EncodedShortChannelIds(EncodingType.COMPRESSED_ZLIB, _) => a
-      }((provide[EncodingType](EncodingType.COMPRESSED_ZLIB) :: zlib(list(shortchannelid))).as[EncodedShortChannelIds])
+      }((provide[EncodingType](EncodingType.COMPRESSED_ZLIB) :: zlib(list(int64))).as[EncodedShortChannelIds])
 
 
   val queryShortChannelIdsCodec = {

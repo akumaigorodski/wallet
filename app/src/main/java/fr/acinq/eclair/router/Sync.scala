@@ -36,7 +36,7 @@ object Sync {
     theirsIsMoreRecent && (areDifferent || oursIsAlmostStale) && !theirsIsStale
   }
 
-  def getChannelDigestInfo(channels: Map[ShortChannelId, PublicChannel])(shortChannelId: ShortChannelId): (ReplyChannelRangeTlv.Timestamps, ReplyChannelRangeTlv.Checksums) = {
+  def getChannelDigestInfo(channels: Map[Long, PublicChannel])(shortChannelId: Long): (ReplyChannelRangeTlv.Timestamps, ReplyChannelRangeTlv.Checksums) = {
     val c = channels(shortChannelId)
     val timestamp1 = c.update1Opt.map(_.update.timestamp).getOrElse(0L)
     val timestamp2 = c.update2Opt.map(_.update.timestamp).getOrElse(0L)

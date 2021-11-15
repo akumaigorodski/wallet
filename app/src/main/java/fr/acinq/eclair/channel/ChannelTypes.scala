@@ -97,13 +97,16 @@ case object CMD_CHECK_FEERATE extends Command
 case object CMD_SIGN extends Command
 
 
-trait ChannelData
+trait ChannelData {
+  def ourBalance: MilliSatoshi = 0L.msat
+}
 
 trait PersistentChannelData extends ChannelData {
   def channelId: ByteVector32
 }
 
 sealed trait HasNormalCommitments extends PersistentChannelData {
+  override def ourBalance: MilliSatoshi = commitments.latestReducedRemoteSpec.toRemote
   override def channelId: ByteVector32 = commitments.channelId
   def withNewCommits(cs: NormalCommits): HasNormalCommitments
   def commitments: NormalCommits
@@ -161,11 +164,11 @@ final case class DATA_WAIT_FOR_FUNDING_CONFIRMED(commitments: NormalCommits, fun
   override def withNewCommits(cs: NormalCommits): HasNormalCommitments = copy(commitments = cs)
 }
 
-final case class DATA_WAIT_FOR_FUNDING_LOCKED(commitments: NormalCommits, shortChannelId: ShortChannelId, lastSent: FundingLocked) extends ChannelData with HasNormalCommitments {
+final case class DATA_WAIT_FOR_FUNDING_LOCKED(commitments: NormalCommits, shortChannelId: Long, lastSent: FundingLocked) extends ChannelData with HasNormalCommitments {
   override def withNewCommits(cs: NormalCommits): HasNormalCommitments = copy(commitments = cs)
 }
 
-final case class DATA_NORMAL(commitments: NormalCommits, shortChannelId: ShortChannelId, feeUpdateRequired: Boolean = false, extParams: List[ByteVector] = Nil,
+final case class DATA_NORMAL(commitments: NormalCommits, shortChannelId: Long, feeUpdateRequired: Boolean = false, extParams: List[ByteVector] = Nil,
                              localShutdown: Option[Shutdown] = None, remoteShutdown: Option[Shutdown] = None) extends ChannelData with HasNormalCommitments {
 
   override def withNewCommits(cs: NormalCommits): HasNormalCommitments = copy(commitments = cs)
