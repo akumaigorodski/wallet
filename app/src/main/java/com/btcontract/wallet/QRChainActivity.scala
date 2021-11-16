@@ -26,6 +26,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
   lazy private[this] val chainQrCodes = findViewById(R.id.chainQrCodes).asInstanceOf[RecyclerView]
   lazy private[this] val chainQrMore = findViewById(R.id.chainQrMore).asInstanceOf[NoboButton]
 
+  private[this] var wallet: ElectrumEclairWallet = _
   private[this] var allAddresses: List[BitcoinUri] = Nil
   private[this] var addresses: List[BitcoinUri] = Nil
 
@@ -51,7 +52,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
       }
 
       holder.qrLabel setText visibleText.html
-      runInFutureProcessOnUI(QRActivity.get(bu.address, qrSize), onFail) { qrBitmap =>
+      runInFutureProcessOnUI(QRActivity.get(contentToShare, qrSize), onFail) { qrBitmap =>
         def share: Unit = runInFutureProcessOnUI(shareData(qrBitmap, contentToShare), onFail)(none)
         holder.qrCopy setOnClickListener onButtonTap(WalletApp.app copy contentToShare)
         holder.qrCode setOnClickListener onButtonTap(WalletApp.app copy contentToShare)
@@ -68,7 +69,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     val canReceiveHuman = WalletApp.denom.parsedWithSign(maxMsat, cardIn, cardZero)
     val body = getLayoutInflater.inflate(R.layout.frag_input_off_chain, null).asInstanceOf[ViewGroup]
     lazy val manager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-    mkCheckForm(proceed, none, titleBodyAsViewBuilder(getString(dialog_receive_btc).asColoredView(R.color.cardBitcoinModern), manager.content), dialog_ok, dialog_cancel)
+    mkCheckForm(proceed, none, titleBodyAsViewBuilder(getString(dialog_receive_btc).asColoredView(me chainWalletBackground wallet), manager.content), dialog_ok, dialog_cancel)
     manager.hintFiatDenom.setText(getString(dialog_up_to).format(canReceiveFiatHuman).html)
     manager.hintDenom.setText(getString(dialog_up_to).format(canReceiveHuman).html)
     bu.amount.foreach(manager.updateText)
@@ -99,7 +100,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     }
   }
 
-  def showCode(wallet: ElectrumEclairWallet): Unit = {
+  def showCode: Unit = {
     runFutureProcessOnUI(wallet.getReceiveAddresses, onFail) { response =>
       val layoutManager = new CarouselLayoutManager(CarouselLayoutManager.HORIZONTAL, false)
       layoutManager.setPostLayoutListener(new CarouselZoomPostLayoutListener)
@@ -124,16 +125,14 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
       chainQrCodes.setAdapter(adapter)
     }
 
-    val baseText = getString(dialog_receive_btc)
     val text = chainWalletNotice(wallet) map { textRes =>
-      baseText + "<br>" + getString(textRes)
-    } getOrElse baseText
-
+      getString(dialog_receive_btc) + "<br>" + getString(textRes)
+    } getOrElse getString(dialog_receive_btc)
     chainQrCaption.setText(text.html)
   }
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
-    case wallet: ElectrumEclairWallet => showCode(wallet)
+    case chainWallet: ElectrumEclairWallet => runAnd(wallet = chainWallet)(showCode)
     case _ => finish
   }
 }

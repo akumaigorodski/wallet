@@ -1,5 +1,7 @@
 package immortan.sqlite
 
+import java.lang.{Integer => JInt, Long => JLong}
+
 import fr.acinq.bitcoin.ByteVector64
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.eclair._
@@ -9,8 +11,6 @@ import fr.acinq.eclair.wire.{ChannelAnnouncement, ChannelUpdate}
 import immortan.SyncMaster.ShortChanIdSet
 import immortan._
 import scodec.bits.ByteVector
-
-import java.lang.{Integer => JInt, Long => JLong}
 
 
 class SQLiteNetwork(val db: DBInterface, val updateTable: ChannelUpdateTable, val announceTable: ChannelAnnouncementTable, val excludedTable: ExcludedChannelTable) extends NetworkBag {

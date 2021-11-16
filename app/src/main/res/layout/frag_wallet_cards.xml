@@ -29,6 +29,7 @@
                 android:layout_toStartOf="@id/offlineIndicator"
                 android:layout_centerVertical="true"
                 android:id="@+id/syncIndicator"
+                android:visibility="gone"
                 android:text="SYNC"/>
 
             <TextView
@@ -45,7 +46,8 @@
                 android:background="@drawable/border_green"
                 android:layout_toStartOf="@id/settingsButton"
                 android:layout_centerVertical="true"
-                android:id="@+id/rateTeaser"/>
+                android:id="@+id/rateTeaser"
+                android:visibility="gone"/>
 
             <ImageButton
                 android:padding="6dp"

@@ -1,5 +1,7 @@
 package immortan
 
+import java.util.concurrent.Executors
+
 import fr.acinq.bitcoin.Crypto
 import fr.acinq.eclair.router.Graph.GraphStructure.{DirectedGraph, GraphEdge}
 import fr.acinq.eclair.router.RouteCalculation.handleRouteRequest
@@ -13,7 +15,6 @@ import immortan.crypto.{CanBeRepliedTo, StateMachine}
 import immortan.utils.{Rx, Statistics}
 import rx.lang.scala.Subscription
 
-import java.util.concurrent.Executors
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 

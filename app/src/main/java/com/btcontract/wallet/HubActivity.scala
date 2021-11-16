@@ -1206,8 +1206,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def INIT(state: Bundle): Unit = {
     if (WalletApp.isAlive && LNParams.isOperational) {
       setContentView(com.btcontract.wallet.R.layout.activity_hub)
-      // User may kill an activity but not an app so check if we are still connected here
-      setVis(isVisible = WalletApp.currentChainNode.isEmpty, walletCards.offlineIndicator)
       instance = me
 
       for (channel <- LNParams.cm.all.values) channel.listeners += me
@@ -1252,6 +1250,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       runInFutureProcessOnUI(loadRecent, none) { _ =>
         // We suggest user to rate us if: no rate attempt has been made before, LN payments were successful, user has been using an app for certain period
         setVis(WalletApp.showRateUs && paymentInfos.lastItems.forall(_.status == PaymentStatus.SUCCEEDED) && allInfos.size > 4 && allInfos.size < 8, walletCards.rateTeaser)
+        // User may kill an activity but not an app and on getting back there won't be a chain listener event, so check connectivity once again here
+        setVis(isVisible = WalletApp.currentChainNode.isEmpty, walletCards.offlineIndicator)
         walletCards.searchField addTextChangedListener onTextChange(searchWorker.addWork)
         runAnd(updateLnCaches)(paymentAdapterDataChanged.run)
         markAsFailedOnce
