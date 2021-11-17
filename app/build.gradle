@@ -17,8 +17,8 @@ android {
         targetSdkVersion 30
         minSdkVersion 21
 
-        versionName '2.3.18'
-        versionCode 85
+        versionName '2.4.18'
+        versionCode 86
 
         ndk {
             abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
