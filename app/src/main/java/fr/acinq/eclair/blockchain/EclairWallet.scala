@@ -20,6 +20,8 @@ object EclairWallet {
 }
 
 trait EclairWallet {
+  def getData: Future[GetDataResponse]
+
   def getReceiveAddresses: Future[GetCurrentReceiveAddressesResponse]
 
   def makeFundingTx(pubkeyScript: ByteVector, amount: Satoshi, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse]

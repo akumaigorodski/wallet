@@ -83,22 +83,14 @@ object HubActivity {
       RemotePeerActivity.implantNewChannel(cs, channel)
     }
   }
+
+  def dangerousHCRevealed(fullTag: FullPaymentTag): List[LocalFulfill] = ChannelMaster.dangerousHCRevealed(lastHostedReveals, LNParams.blockCount.get, fullTag.paymentHash).toList
+  def itemsToTags: Map[Int, String] = Map(R.id.bitcoinPayments -> "bitcoinPayments", R.id.lightningPayments -> "lightningPayments", R.id.relayedPayments -> "relayedPayments", R.id.payMarketLinks -> "payMarketLinks")
+  def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(incoming = amount, outgoing = 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
+  def hasItems: Boolean = allItems.exists(_.lastItems.nonEmpty)
 }
 
 class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener { me =>
-  private def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(incoming = amount, outgoing = 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
-  private def dangerousHCRevealed(fullTag: FullPaymentTag): List[LocalFulfill] = ChannelMaster.dangerousHCRevealed(lastHostedReveals, LNParams.blockCount.get, fullTag.paymentHash).toList
-  private def itemsToTags = Map(R.id.bitcoinPayments -> "bitcoinPayments", R.id.lightningPayments -> "lightningPayments", R.id.relayedPayments -> "relayedPayments", R.id.payMarketLinks -> "payMarketLinks")
-  private def hasItems: Boolean = allItems.exists(_.lastItems.nonEmpty)
-
-  private def updateLnCaches: Unit = {
-    // Calling these functions on each payment card would be too much computation, hence they are cached
-    lastHostedReveals = LNParams.cm.allHostedCommits.flatMap(_.revealedFulfills).groupBy(_.theirAdd.paymentHash)
-    lastInChannelOutgoing = LNParams.cm.allInChannelOutgoing
-  }
-
-  // Resource references must be lazy
-
   private[this] lazy val expiresInBlocks = getResources.getStringArray(R.array.expires_in_blocks)
   private[this] lazy val partsInFlight = getResources.getStringArray(R.array.parts_in_flight)
   private[this] lazy val pctCollected = getResources.getStringArray(R.array.pct_collected)
@@ -119,6 +111,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   private[this] val viewBinderHelper = new ViewBinderHelper
   private[this] val CHOICE_RECEIVE_TAG: String = "choiceReceiveTag"
   var openListItems = Set.empty[String]
+
+  private def updateLnCaches: Unit = {
+    // Calling these functions on each payment card would be too much computation, hence they are cached
+    lastHostedReveals = LNParams.cm.allHostedCommits.flatMap(_.revealedFulfills).groupBy(_.theirAdd.paymentHash)
+    lastInChannelOutgoing = LNParams.cm.allInChannelOutgoing
+  }
 
   // PAYMENT LIST
 
@@ -871,6 +869,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
     val chainCards: ChainWalletCards = new ChainWalletCards(me) {
       val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
+      override def onCoinControlTap(wallet: ElectrumEclairWallet): Unit = goToWithValue(ClassNames.coinControlActivityClass, wallet)
 
       override def onWalletTap(wallet: ElectrumEclairWallet): Unit =
         if (wallet.isBuiltIn) goToWithValue(ClassNames.qrChainActivityClass, wallet)

@@ -278,13 +278,14 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     case (CMDException(reason, _: CMD_HOSTED_STATE_OVERRIDE), _, hc: HostedCommits) => chanError(hc.channelId, reason, hc.remoteInfo)
   }
 
-  def closeNcToWallet(cs: NormalCommits): Unit =
+  def closeNcToWallet(cs: NormalCommits): Unit = {
     bringChainWalletChooser(normalChanActions.tail.head.toString) { wallet =>
       runFutureProcessOnUI(wallet.getReceiveAddresses, onFail) { addressResponse =>
         val pubKeyScript = LNParams.addressToPubKeyScript(addressResponse.firstAccountAddress)
         for (chan <- me getChanByCommits cs) chan process CMD_CLOSE(pubKeyScript.asSome, force = false)
       }
     }
+  }
 
   def closeNcToAddress(cs: NormalCommits): Unit = {
     def confirmResolve(bitcoinUri: BitcoinUri): Unit = {

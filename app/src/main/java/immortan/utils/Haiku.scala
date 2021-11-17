@@ -3,7 +3,8 @@ package immortan.utils
 import java.io.ByteArrayInputStream
 import java.nio.ByteOrder
 
-import fr.acinq.bitcoin.{ByteVector32, Protocol}
+import fr.acinq.bitcoin.Protocol
+import scodec.bits.ByteVector
 
 
 object Haiku {
@@ -41,7 +42,7 @@ object Haiku {
 
   val divisor: Long = Long.MaxValue / adjs.size
 
-  def name(data: ByteVector32): String = {
+  def name(data: ByteVector): String = {
     val stream = new ByteArrayInputStream(data.toArray)
     val adj: Long = math.abs(Protocol.uint64(stream, ByteOrder.BIG_ENDIAN) / divisor)
     val noun: Long = math.abs(Protocol.uint64(stream, ByteOrder.BIG_ENDIAN) / divisor)

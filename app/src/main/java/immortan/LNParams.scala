@@ -151,14 +151,14 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
   def makeSigningWalletParts(core: SigningWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
     val ewt = ElectrumWalletType.makeSigningType(tag = core.walletType, master = LNParams.secret.keys.master, chainHash = LNParams.chainHash)
     val walletRef = LNParams.loggedActor(Props(classOf[ElectrumWallet], pool, sync, params, ewt), core.walletType + "-signing-wallet")
-    val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label)
+    val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label, isCoinControlOn = false)
     ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
   }
 
   def makeWatchingWallet84Parts(core: WatchingWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
     val ewt: ElectrumWallet84 = new ElectrumWallet84(secrets = None, xPub = core.xPub, chainHash = LNParams.chainHash)
     val walletRef = LNParams.loggedActor(Props(classOf[ElectrumWallet], pool, sync, params, ewt), core.walletType + "-watching-wallet")
-    val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label)
+    val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label, isCoinControlOn = false)
     ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
   }
 

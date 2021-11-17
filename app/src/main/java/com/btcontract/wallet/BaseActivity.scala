@@ -141,8 +141,9 @@ trait BaseActivity extends AppCompatActivity { me =>
         alert.dismiss
       }
 
-      override def onRemoveTap(wallet: ElectrumEclairWallet): Unit = alert.dismiss
       override def onLabelTap(wallet: ElectrumEclairWallet): Unit = alert.dismiss
+      override def onRemoveTap(wallet: ElectrumEclairWallet): Unit = alert.dismiss
+      override def onCoinControlTap(wallet: ElectrumEclairWallet): Unit = alert.dismiss
       val holder: LinearLayout = cardsContainer
     }
 
@@ -535,7 +536,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     var subscription: Option[Subscription] = None
 
     def activate(bytes: Bytes): Unit = {
-      val encoder = new UREncoder(UR.fromBytes(bytes), 50, 50, 0)
+      val encoder = new UREncoder(UR.fromBytes(bytes), 10, 100, 0)
       val stringToQr: String => Bitmap = sourceChunk => QRActivity.get(sourceChunk, qrSize)
       val updateView: Bitmap => Unit = sourceQrCode => UITask(qrSlideshow setImageBitmap sourceQrCode).run
       subscription = Observable.interval(0.second, 700.millis).map(_ => encoder.nextPart).map(stringToQr).subscribe(updateView).asSome
@@ -886,6 +887,7 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     val chainWrap: CardView = view.findViewById(R.id.chainWrap).asInstanceOf[CardView]
 
     val chainContainer: View = view.findViewById(R.id.chainContainer).asInstanceOf[View]
+    val coinControlOn: ImageView = view.findViewById(R.id.coinControlOn).asInstanceOf[ImageView]
     val setItemLabel: NoboButton = view.findViewById(R.id.setItemLabel).asInstanceOf[NoboButton]
     val coinControl: NoboButton = view.findViewById(R.id.coinControl).asInstanceOf[NoboButton]
     val removeItem: NoboButton = view.findViewById(R.id.removeItem).asInstanceOf[NoboButton]
@@ -914,8 +916,8 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
       val plusTipVisible = (wallet.isBuiltIn || !wallet.isSigning) && !chainBalanceVisible
       val menuTipVisible = !(wallet.isBuiltIn || !wallet.isSigning) && !chainBalanceVisible
 
-      host.setVisMany(wallet.info.core.isRemovable -> setItemLabel, wallet.info.core.isRemovable -> removeItem)
       host.setVisMany(chainBalanceVisible -> chainBalanceWrap, plusTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip)
+      host.setVisMany(wallet.info.core.isRemovable -> setItemLabel, wallet.info.core.isRemovable -> removeItem, wallet.info.isCoinControlOn -> coinControlOn)
 
       host.chainWalletNotice(wallet) foreach { textRes =>
         host.setVis(isVisible = true, chainWalletNotice)
@@ -924,6 +926,7 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
 
       chainContainer.setBackgroundResource(host chainWalletBackground wallet)
       setItemLabel setOnClickListener host.onButtonTap(self onLabelTap wallet)
+      coinControl setOnClickListener host.onButtonTap(self onCoinControlTap wallet)
       removeItem setOnClickListener host.onButtonTap(self onRemoveTap wallet)
       chainWrap setOnClickListener host.onButtonTap(self onWalletTap wallet)
       chainLabel setText wallet.info.label
@@ -932,6 +935,7 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
 
   def onLabelTap(wallet: ElectrumEclairWallet): Unit
   def onRemoveTap(wallet: ElectrumEclairWallet): Unit
+  def onCoinControlTap(wallet: ElectrumEclairWallet): Unit
   def onWalletTap(wallet: ElectrumEclairWallet): Unit
   def holder: LinearLayout
 }

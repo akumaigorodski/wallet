@@ -26,6 +26,6 @@ class SQLiteChainWallet(val db: DBInterface) extends WalletDb {
 
   def listWallets: Iterable[CompleteChainWalletInfo] = db.select(ChainWalletTable.selectSql).iterable { rc =>
     CompleteChainWalletInfo(to[ChainWalletInfo](rc string ChainWalletTable.info), rc byteVec ChainWalletTable.data,
-      Satoshi(rc long ChainWalletTable.lastBalance), rc string ChainWalletTable.label)
+      Satoshi(rc long ChainWalletTable.lastBalance), rc string ChainWalletTable.label, isCoinControlOn = false)
   }
 }

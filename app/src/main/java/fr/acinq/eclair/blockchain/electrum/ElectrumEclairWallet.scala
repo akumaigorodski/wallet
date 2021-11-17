@@ -25,14 +25,16 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
 
   private def isInChain(error: fr.acinq.eclair.blockchain.bitcoind.rpc.Error): Boolean = error.message.toLowerCase.contains("already in block chain")
 
+  override def getData: Future[GetDataResponse] = (walletRef ? GetData).mapTo[GetDataResponse]
+
   override def getReceiveAddresses: Future[GetCurrentReceiveAddressesResponse] = (walletRef ? GetCurrentReceiveAddresses).mapTo[GetCurrentReceiveAddressesResponse]
 
   override def makeFundingTx(pubkeyScript: ByteVector, amount: Satoshi, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
     val completeTx = CompleteTransaction(pubKeyScriptToAmount = Map(pubkeyScript -> amount), feeRatePerKw, sequenceFlag = TxIn.SEQUENCE_FINAL)
     val sendAll = SendAll(pubkeyScript, pubKeyScriptToAmount = Map.empty, feeRatePerKw, sequenceFlag = TxIn.SEQUENCE_FINAL, fromOutpoints = Set.empty)
 
-    (walletRef ? GetBalance).mapTo[GetBalanceResponse] flatMap { chainBalance =>
-      val command = if (chainBalance.totalBalance == amount) sendAll else completeTx
+    getData.flatMap { response =>
+      val command = if (response.data.balance == amount) sendAll else completeTx
       (walletRef ? command).mapTo[GenerateTxResponseTry].map(_.get)
     }
   }
@@ -60,8 +62,8 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
   override def makeTx(pubKeyScript: ByteVector, amount: Satoshi, prevScriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
     val sendAll = SendAll(pubKeyScript, prevScriptToAmount, feeRatePerKw, OPT_IN_FULL_RBF, fromOutpoints = Set.empty)
 
-    (walletRef ? GetBalance).mapTo[GetBalanceResponse].map(_.totalBalance == prevScriptToAmount.values.sum + amount) flatMap {
-      case false => makeBatchTx(scriptToAmount = prevScriptToAmount.updated(pubKeyScript, amount), feeRatePerKw)
+    getData.map(_.data.balance == prevScriptToAmount.values.sum + amount).flatMap {
+      case false => makeBatchTx(prevScriptToAmount.updated(pubKeyScript, amount), feeRatePerKw)
       case true => (walletRef ? sendAll).mapTo[GenerateTxResponseTry].map(_.get)
     }
   }

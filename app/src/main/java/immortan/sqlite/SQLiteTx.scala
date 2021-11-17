@@ -18,6 +18,12 @@ case class TxSummary(fees: Satoshi, received: Satoshi, sent: Satoshi, count: Lon
 class SQLiteTx(val db: DBInterface) {
   def listRecentTxs(limit: Int): RichCursor = db.select(TxTable.selectRecentSql, limit.toString)
 
+  def listAllDescriptions: Map[String, TxDescription] =
+    db.select(TxTable.selectRecentSql, 10000.toString).iterable { rc =>
+      val description = to[TxDescription](rc string TxTable.description)
+      (rc string TxTable.txid, description)
+    }.toMap
+
   def addSearchableTransaction(search: String, txid: ByteVector32): Unit = {
     val newVirtualSqlPQ = db.makePreparedQuery(TxTable.newVirtualSql)
     db.change(newVirtualSqlPQ, search.toLowerCase, txid.toHex)

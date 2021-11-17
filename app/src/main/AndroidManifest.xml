@@ -144,5 +144,11 @@
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
+        <activity
+            android:launchMode="singleTask"
+            android:name="CoinControlActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"/>
+
     </application>
 </manifest>

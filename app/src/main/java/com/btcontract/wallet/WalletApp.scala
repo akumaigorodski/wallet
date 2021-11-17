@@ -199,12 +199,12 @@ object WalletApp {
 
     val walletExt: WalletExt =
       (WalletExt(wallets = Nil, catcher, sync, pool, watcher, params) /: chainWalletBag.listWallets) {
-        case ext ~ CompleteChainWalletInfo(core: SigningWallet, persistentSigningWalletData, lastBalance, label) =>
+        case ext ~ CompleteChainWalletInfo(core: SigningWallet, persistentSigningWalletData, lastBalance, label, false) =>
           val signingWallet = ext.makeSigningWalletParts(core, lastBalance, label)
           signingWallet.walletRef ! persistentSigningWalletData
           ext.copy(wallets = signingWallet :: ext.wallets)
 
-        case ext ~ CompleteChainWalletInfo(core: WatchingWallet, persistentWatchingWalletData, lastBalance, label) =>
+        case ext ~ CompleteChainWalletInfo(core: WatchingWallet, persistentWatchingWalletData, lastBalance, label, false) =>
           val watchingWallet = ext.makeWatchingWallet84Parts(core, lastBalance, label)
           watchingWallet.walletRef ! persistentWatchingWalletData
           ext.copy(wallets = watchingWallet :: ext.wallets)
@@ -237,8 +237,10 @@ object WalletApp {
       override def onWalletReady(event: WalletReady): Unit = LNParams.synchronized {
         // Wallet is already persisted so our only job at this point is to update runtime
         def sameXPub(wallet: ElectrumEclairWallet): Boolean = wallet.ewt.xPub == event.xPub
-        val ext1 = LNParams.chainWallets.modify(_.wallets.eachWhere(sameXPub).info.lastBalance)
-        LNParams.chainWallets = ext1.setTo(event.balance)
+        LNParams.chainWallets = LNParams.chainWallets.modify(_.wallets.eachWhere(sameXPub).info) using { info =>
+          // Coin control is always disabled on start, we update it later with animation to make it noticeable
+          info.copy(lastBalance = event.balance, isCoinControlOn = event.excludedOutPoints.nonEmpty)
+        }
       }
 
       override def onChainMasterSelected(event: InetSocketAddress): Unit = currentChainNode = event.asSome

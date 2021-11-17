@@ -28,7 +28,7 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
     setTimer(KEY_REFILL, KEY_REFILL, 200.millis, repeat = false)
     if (data.lastReadyMessage contains data.currentReadyMessage) return data
     val data1 = data.copy(lastReadyMessage = data.currentReadyMessage.asSome)
-    params.walletDb.persist(data1.toPersistent, data1.balance.totalBalance, ewt.xPub.publicKey)
+    params.walletDb.persist(data1.toPersistent, data1.balance, ewt.xPub.publicKey)
     context.system.eventStream.publish(data1.currentReadyMessage)
     data1
   }
@@ -205,7 +205,7 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
       val data1 = data.copy(excludedOutPoints = excluded)
       stay using persistAndNotify(data1)
 
-    case Event(GetBalance, data) => stay replying data.balance
+    case Event(GetData, data) => stay replying GetDataResponse(data)
 
     case Event(CompleteTransaction(pubKeyScriptToAmount, feeRatePerKw, sequenceFlag), data) =>
       val txOuts = for (Tuple2(script, amount) <- pubKeyScriptToAmount) yield TxOut(amount, script)
@@ -282,8 +282,8 @@ object ElectrumWallet {
     val fee: Satoshi
   }
 
-  case object GetBalance extends Request
-  case class GetBalanceResponse(totalBalance: Satoshi) extends Response
+  case object GetData extends Request
+  case class GetDataResponse(data: ElectrumData) extends Response
 
   case class ProvideExcludedOutPoints(excludedOutPoints: List[OutPoint] = Nil) extends Request
 
@@ -313,7 +313,7 @@ object ElectrumWallet {
 
   sealed trait WalletEvent { val xPub: ExtendedPublicKey }
   case class TransactionReceived(tx: Transaction, depth: Long, stamp: Long, received: Satoshi, sent: Satoshi, walletAddreses: List[String], xPub: ExtendedPublicKey, feeOpt: Option[Satoshi] = None) extends WalletEvent
-  case class WalletReady(balance: Satoshi, height: Long, heightsCode: Int, xPub: ExtendedPublicKey, excludedOutPoints: List[OutPoint] = Nil) extends WalletEvent
+  case class WalletReady(balance: Satoshi, height: Long, heightsCode: Int, xPub: ExtendedPublicKey, unExcludedUtxos: Seq[Utxo], excludedOutPoints: List[OutPoint] = Nil) extends WalletEvent
 }
 
 case class Utxo(key: ExtendedPublicKey, item: ElectrumClient.UnspentItem)
@@ -341,7 +341,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain,
   lazy val accountKeyMap: Map[ByteVector32, ExtendedPublicKey] = for (Tuple2(serialized, key) <- publicScriptAccountMap) yield (computeScriptHash(serialized), key)
   lazy val changeKeyMap: Map[ByteVector32, ExtendedPublicKey] = for (Tuple2(serialized, key) <- publicScriptChangeMap) yield (computeScriptHash(serialized), key)
 
-  lazy val currentReadyMessage: WalletReady = WalletReady(balance.totalBalance, blockchain.tip.height, proofs.hashCode + transactions.hashCode, ewt.xPub, excludedOutPoints)
+  lazy val currentReadyMessage: WalletReady = WalletReady(balance, blockchain.tip.height, proofs.hashCode + transactions.hashCode, ewt.xPub, unExcludedUtxos, excludedOutPoints)
 
   lazy val firstUnusedAccountKeys: immutable.Iterable[ExtendedPublicKey] = accountKeyMap.collect {
     case (nonExistentScriptHash, privKey) if !status.contains(nonExistentScriptHash) => privKey
@@ -396,7 +396,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain,
 
   def isMine(txOut: TxOut): Boolean = publicScriptMap.contains(txOut.publicKeyScript)
 
-  lazy val balance: GetBalanceResponse = GetBalanceResponse(utxos.map(_.item.value.sat).sum)
+  lazy val balance: Satoshi = utxos.foldLeft(0L.sat)(_ + _.item.value.sat)
 
   def transactionReceived(tx: Transaction, feeOpt: Option[Satoshi], received: Satoshi, sent: Satoshi, xPub: ExtendedPublicKey, headerDb: HeaderDb): TransactionReceived = {
     val walletAddresses = tx.txOut.filter(isMine).map(_.publicKeyScript).flatMap(publicScriptMap.get).map(ewt.textAddress).toList
