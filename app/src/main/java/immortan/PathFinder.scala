@@ -8,7 +8,7 @@ import fr.acinq.eclair.router.RouteCalculation.handleRouteRequest
 import fr.acinq.eclair.router.Router.{Data, PublicChannel, RouteRequest}
 import fr.acinq.eclair.router.{ChannelUpdateExt, Router}
 import fr.acinq.eclair.wire.ChannelUpdate
-import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi, nodeFee}
+import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi}
 import immortan.PathFinder._
 import immortan.crypto.Tools._
 import immortan.crypto.{CanBeRepliedTo, StateMachine}
@@ -29,10 +29,7 @@ object PathFinder {
   val WAITING = 0
   val OPERATIONAL = 1
 
-  case class AvgHopParams(cltvExpiryDelta: CltvExpiryDelta, feeProportionalMillionths: Long, feeBaseMsat: MilliSatoshi, sampleSize: Long) {
-    def avgHopFee(amount: MilliSatoshi): MilliSatoshi = nodeFee(feeBaseMsat, feeProportionalMillionths, amount)
-  }
-
+  case class AvgHopParams(cltvExpiryDelta: CltvExpiryDelta, feeProportionalMillionths: Long, feeBaseMsat: MilliSatoshi, sampleSize: Long)
   case class FindRoute(sender: CanBeRepliedTo, request: RouteRequest)
 }
 
@@ -103,7 +100,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
     case (CMDResync, OPERATIONAL) if System.currentTimeMillis - getLastNormalResyncStamp > RESYNC_PERIOD =>
       val setupData = SyncMasterShortIdData(LNParams.syncParams.syncNodes, getExtraNodes, Set.empty, Map.empty, LNParams.syncParams.maxNodesToSyncFrom)
 
-      val normalSync = new SyncMaster(normalBag.listExcludedChannels, data) { self =>
+      val normalSync = new SyncMaster(normalBag.listExcludedChannels, routerData = data) { self =>
         def onShortIdsSyncComplete(state: SyncMasterShortIdData): Unit = listeners.foreach(_ process state)
         def onChunkSyncComplete(pure: PureRoutingData): Unit = me process pure
         def onTotalSyncComplete: Unit = me process self

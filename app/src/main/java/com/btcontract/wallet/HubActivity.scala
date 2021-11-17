@@ -205,8 +205,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val meta: TextView = swipeWrap.findViewById(R.id.meta).asInstanceOf[TextView]
 
     val linkContainer: RelativeLayout = swipeWrap.findViewById(R.id.linkContainer).asInstanceOf[RelativeLayout]
-    val marketItems: FlowLayout = swipeWrap.findViewById(R.id.marketItems).asInstanceOf[FlowLayout]
     val marketLabel: TextView = swipeWrap.findViewById(R.id.marketLabel).asInstanceOf[TextView]
+    val marketInfo: TextView = swipeWrap.findViewById(R.id.marketInfo).asInstanceOf[TextView]
     val linkImage: ImageView = swipeWrap.findViewById(R.id.linkImage).asInstanceOf[ImageView]
     val linkImageWrap: View = swipeWrap.findViewById(R.id.linkImageWrap)
     itemView.setTag(this)
@@ -725,10 +725,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         swipeWrap.setLockDrag(true)
 
       case info: LNUrlPayLink =>
-        marketItems.removeAllViewsInLayout
-        setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.description.label.isDefined -> marketLabel, false -> labelIcon, true -> linkContainer, false -> nonLinkContainer, true -> removeItem)
-        addFlowChip(marketItems, marketLinkCaption(info), R.drawable.border_gray, _ => self doCallPayLink info).setCompoundDrawablesWithIntrinsicBounds(marketLinkIcon(info), null, null, null)
-        for (lastComment <- info.lastComment) addFlowChip(marketItems, lastComment, R.drawable.border_blue)
+        marketInfo.setText(marketLinkCaption(info).html)
+        marketInfo.setCompoundDrawablesWithIntrinsicBounds(marketLinkIcon(info), null, null, null)
+        setVisMany(info.imageBytes.isDefined -> linkImageWrap, info.description.label.isDefined -> marketLabel)
+        setVisMany(false -> labelIcon, true -> linkContainer, false -> nonLinkContainer, true -> removeItem)
         linkContainer setBackgroundResource paymentBackground(info.description.fullTag)
         info.imageBytes.map(payLinkImageMemo.get).foreach(linkImage.setImageBitmap)
         info.description.label.foreach(marketLabel.setText)
