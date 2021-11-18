@@ -24,7 +24,7 @@ class SyncSpec {
   }
 
   def run(dbName: String, makeSnapshot: Boolean): Unit = {
-    val (normalStore, _) = DBSpec.getNetworkStores(dbName)
+    val (normalStore, _, dbInterface) = DBSpec.getNetworkStores(dbName)
 
     LNParams.chainHash = Block.LivenetGenesisBlock.hash
     LNParams.ourInit = LNParams.createInit
@@ -68,6 +68,9 @@ class SyncSpec {
         println(s"Making graph took ${System.currentTimeMillis - a3} msec")
         assert(data2.nonEmpty)
 
+        dbInterface.base.execSQL("VACUUM")
+        normalStore.clearDataTables
+        println(s"Cleared data tables")
         val dataBaseFile = new File(WalletApp.app.getDatabasePath(dbName).getPath)
         val plainBytes = ByteVector(Files toByteArray dataBaseFile)
         println(s"Size of graph db is ${plainBytes.size}")

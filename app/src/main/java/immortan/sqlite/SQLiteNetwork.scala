@@ -128,8 +128,7 @@ class SQLiteNetwork(val db: DBInterface, val updateTable: ChannelUpdateTable, va
   def processCompleteHostedData(pure: CompleteHostedRoutingData): Unit = db txWrap {
     // Unlike normal channels here we allow one-sided-update channels to be used for now
     // First, clear out everything in hosted channel databases
-    db.change(announceTable.killAllSql)
-    db.change(updateTable.killAllSql)
+    clearDataTables
 
     val addChannelAnnouncementNewSqlPQ = db.makePreparedQuery(announceTable.newSql)
     val addChannelUpdateByPositionNewSqlPQ = db.makePreparedQuery(updateTable.newSql)
@@ -145,5 +144,10 @@ class SQLiteNetwork(val db: DBInterface, val updateTable: ChannelUpdateTable, va
 
     // And finally remove announces without any updates
     db.change(announceTable.killNotPresentInChans)
+  }
+
+  def clearDataTables: Unit = {
+    db.change(announceTable.killAllSql)
+    db.change(updateTable.killAllSql)
   }
 }
