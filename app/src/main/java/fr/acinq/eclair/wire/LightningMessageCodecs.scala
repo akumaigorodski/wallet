@@ -479,7 +479,7 @@ object LightningMessageCodecs {
 
   val trampolineOnCodec = {
     (millisatoshi withContext "minimumMsat") ::
-      (millisatoshi withContext "maximumMsat") ::
+      (mapCodec(int64, millisatoshi) withContext "routable") ::
       (uint32 withContext "feeProportionalMillionths") ::
       (double withContext "exponent") ::
       (double withContext "logExponent") ::

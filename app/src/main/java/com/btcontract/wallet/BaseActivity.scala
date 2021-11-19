@@ -654,9 +654,9 @@ trait BaseActivity extends AppCompatActivity { me =>
     case _ if !LNParams.cm.all.values.exists(Channel.isOperational) => snack(container, getString(error_ln_waiting).html, dialog_ok, _.dismiss)
     case _ if !prExt.pr.features.allowPaymentSecret => snack(container, getString(error_ln_send_no_secret).html, dialog_ok, _.dismiss)
 
-    case _ if LNParams.cm.sortedSendable(LNParams.cm.all.values).last.commits.availableForSend < LNParams.minPayment =>
-      val reserve = -LNParams.cm.sortedSendable(LNParams.cm.all.values).head.commits.availableForSend
-      val reserveHuman = WalletApp.denom.parsedWithSign(reserve, cardIn, cardZero)
+    case _ if LNParams.cm.operationalCncs(LNParams.cm.all.values).maxBy(_.commits.availableForSend).commits.availableForSend < LNParams.minPayment =>
+      val smallestReserve = -LNParams.cm.operationalCncs(LNParams.cm.all.values).minBy(_.commits.availableForSend).commits.availableForSend
+      val reserveHuman = WalletApp.denom.parsedWithSign(smallestReserve, cardIn, cardZero)
       val msg = getString(error_ln_send_reserve).format(reserveHuman).html
       snack(container, msg, dialog_ok, _.dismiss)
 

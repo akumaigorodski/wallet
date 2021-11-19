@@ -156,8 +156,8 @@ object Features {
     val mandatory = 32974
   }
 
-  case object TrampolineRouting extends Feature {
-    val rfcName = "Trampoline routing"
+  case object PrivateRouting extends Feature {
+    val rfcName = "Private routing"
     val mandatory = 33174
   }
 
@@ -168,7 +168,7 @@ object Features {
 
   val knownFeatures: Set[Feature] =
     Set(ChannelRangeQueriesExtended, OptionDataLossProtect, BasicMultiPartPayment,
-      ChannelRangeQueries, VariableLengthOnion, InitialRoutingSync, TrampolineRouting,
+      ChannelRangeQueries, VariableLengthOnion, InitialRoutingSync, PrivateRouting,
       ShutdownAnySegwit, TrampolinePayment, StaticRemoteKey, HostedChannels,
       ResizeableHostedChannels, PaymentSecret, ChainSwap, Wumbo)
 

@@ -373,7 +373,9 @@ sealed trait HasRelayFee {
   def cltvExpiryDelta: CltvExpiryDelta
 }
 
-case class TrampolineOn(minimumMsat: MilliSatoshi, maximumMsat: MilliSatoshi, feeProportionalMillionths: Long, exponent: Double, logExponent: Double, cltvExpiryDelta: CltvExpiryDelta) extends TrampolineStatus with HasRelayFee {
+case class TrampolineOn(minimumMsat: MilliSatoshi, routable: Map[Long, MilliSatoshi], feeProportionalMillionths: Long,
+                        exponent: Double, logExponent: Double, cltvExpiryDelta: CltvExpiryDelta) extends TrampolineStatus with HasRelayFee {
+
   def relayFee(amount: MilliSatoshi): MilliSatoshi = trampolineFee(proportionalFee(amount, feeProportionalMillionths).toLong, exponent, logExponent)
 }
 
