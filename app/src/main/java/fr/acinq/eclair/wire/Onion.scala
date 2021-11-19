@@ -157,7 +157,7 @@ object OnionTlv {
     * Invoice routing hints. Only included for intermediate trampoline nodes when they should convert to a legacy payment
     * because the final recipient doesn't support trampoline.
     */
-  case class InvoiceRoutingInfo(extraHops: List[List[PaymentRequest.ExtraHop]]) extends OnionTlv
+  case class InvoiceRoutingInfo(extraHops: List[PaymentRequest.ExtraHops]) extends OnionTlv
 
   /** An encrypted trampoline onion packet. */
   case class TrampolineOnion(packet: OnionRoutingPacket) extends OnionTlv

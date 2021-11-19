@@ -5,7 +5,6 @@ import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, Protocol, Satoshi}
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
 import fr.acinq.eclair.router.Announcements
 import immortan.crypto.Tools
 import immortan.{ChannelMaster, LNParams}
@@ -369,6 +368,19 @@ sealed trait TrampolineStatus extends LightningMessage
 
 case object TrampolineUndesired extends TrampolineStatus
 
-case class TrampolineOn(minimumMsat: MilliSatoshi, maximumMsat: MilliSatoshi, feeBaseMsat: MilliSatoshi,
-                        feeProportionalMillionths: Long, exponent: Double, logExponent: Double,
-                        cltvExpiryDelta: CltvExpiryDelta) extends TrampolineStatus
+sealed trait HasRelayFee {
+  def relayFee(amount: MilliSatoshi): MilliSatoshi
+  def cltvExpiryDelta: CltvExpiryDelta
+}
+
+case class TrampolineOn(minimumMsat: MilliSatoshi, maximumMsat: MilliSatoshi, feeProportionalMillionths: Long, exponent: Double, logExponent: Double, cltvExpiryDelta: CltvExpiryDelta) extends TrampolineStatus with HasRelayFee {
+  def relayFee(amount: MilliSatoshi): MilliSatoshi = trampolineFee(proportionalFee(amount, feeProportionalMillionths).toLong, exponent, logExponent)
+}
+
+case class AvgHopParams(cltvExpiryDelta: CltvExpiryDelta, feeProportionalMillionths: Long, feeBaseMsat: MilliSatoshi, sampleSize: Long) extends HasRelayFee {
+  def relayFee(amount: MilliSatoshi): MilliSatoshi = nodeFee(feeBaseMsat, feeProportionalMillionths, amount)
+}
+
+case class ExtraHop(nodeId: PublicKey, shortChannelId: Long, feeBase: MilliSatoshi, feeProportionalMillionths: Long, cltvExpiryDelta: CltvExpiryDelta) extends HasRelayFee {
+  def relayFee(amount: MilliSatoshi): MilliSatoshi = nodeFee(feeBase, feeProportionalMillionths, amount)
+}

@@ -3,11 +3,12 @@ package immortan
 import java.util.concurrent.Executors
 
 import fr.acinq.bitcoin.Crypto
+import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.eclair.router.Graph.GraphStructure.{DirectedGraph, GraphEdge}
 import fr.acinq.eclair.router.RouteCalculation.handleRouteRequest
 import fr.acinq.eclair.router.Router.{Data, PublicChannel, RouteRequest}
 import fr.acinq.eclair.router.{ChannelUpdateExt, Router}
-import fr.acinq.eclair.wire.ChannelUpdate
+import fr.acinq.eclair.wire._
 import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi}
 import immortan.PathFinder._
 import immortan.crypto.Tools._
@@ -20,17 +21,25 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 
 object PathFinder {
-  val NotifyRejected = "path-finder-notify-rejected"
+  val NotifyNotReady = "path-finder-notify-not-ready"
   val NotifyOperational = "path-finder-notify-operational"
   val CMDStartPeriodicResync = "cmd-start-periodic-resync"
-  val CMDRequestSyncProgress = "smd-request-sync-progress"
+  val CMDRequestSyncProgress = "cmd-request-sync-progress"
   val CMDLoadGraph = "cmd-load-graph"
 
   val WAITING = 0
   val OPERATIONAL = 1
 
-  case class AvgHopParams(cltvExpiryDelta: CltvExpiryDelta, feeProportionalMillionths: Long, feeBaseMsat: MilliSatoshi, sampleSize: Long)
-  case class FindRoute(sender: CanBeRepliedTo, request: RouteRequest)
+  sealed trait PathFinderRequest { val sender: CanBeRepliedTo }
+  case class FindRoute(sender: CanBeRepliedTo, request: RouteRequest) extends PathFinderRequest
+  case class GetPayeeInferredHopFees(sender: CanBeRepliedTo, payee: PublicKey) extends PathFinderRequest
+  case class GetAverageExpectedHopFees(sender: CanBeRepliedTo) extends PathFinderRequest
+
+  case class ExpectedRouteFees(hops: List[HasRelayFee] = Nil) {
+    private def accumulate(accumulator: MilliSatoshi, hop: HasRelayFee) = accumulator + hop.relayFee(accumulator)
+    def totalWithFee(amount: MilliSatoshi): MilliSatoshi = hops.reverse.foldLeft(amount)(accumulate)
+    def totalCltvDelta: CltvExpiryDelta = hops.map(_.cltvExpiryDelta).reduce(_ + _)
+  }
 }
 
 abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) extends StateMachine[Data] { me =>
@@ -65,24 +74,37 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       val delay = Rx.initDelay(repeat, getLastTotalResyncStamp, RESYNC_PERIOD, preStartMsec = 100)
       subscription = delay.subscribe(_ => me process CMDResync).asSome
 
-    case (fr: FindRoute, OPERATIONAL) if data.channels.isEmpty =>
+    case (request: PathFinderRequest, OPERATIONAL) if data.channels.isEmpty =>
       // Graph is loaded but empty: likely a first launch or synchronizing
-      fr.sender process NotifyRejected
+      request.sender process NotifyNotReady
+
+    case (calc: GetAverageExpectedHopFees, OPERATIONAL) =>
+      // Calculate average single hop params for the entire visible routing graph
+      val sample = data.channels.values.toVector.flatMap(pc => pc.update1Opt ++ pc.update2Opt)
+      val noFeeOutliers = Statistics.removeExtremeOutliers(sample)(_.update.feeProportionalMillionths)
+      calc.sender process getAvgHopParams(noFeeOutliers)
+
+    case (calc: GetPayeeInferredHopFees, OPERATIONAL) =>
+      // Calculate expected params for final payee hop based on graph
+      data.graph.vertices.getOrElse(calc.payee, Nil).map(_.updExt) match {
+        case Nil => calc.sender process GetAverageExpectedHopFees(calc.sender)
+        case hops => calc.sender process getSkewedFeeLastHopParams(hops)
+      }
 
     case (fr: FindRoute, OPERATIONAL) =>
       // Search through single pre-selected local channel
       val augmentedGraph = data.graph replaceEdge fr.request.localEdge
       fr.sender process handleRouteRequest(augmentedGraph, fr.request)
 
-    case (fr: FindRoute, WAITING) if debugMode =>
+    case (request: PathFinderRequest, WAITING) if debugMode =>
       // Do not proceed, just inform the sender
-      fr.sender process NotifyRejected
+      request.sender process NotifyNotReady
 
-    case (fr: FindRoute, WAITING) =>
-      // We need a loaded routing data to search for path properly
-      // load that data while notifying sender if it's absent
-      fr.sender process NotifyRejected
+    case (request: PathFinderRequest, WAITING) =>
+      // We need a loaded routing data to process these requests
+      // load that data before proceeding if it's absent
       me process CMDLoadGraph
+      me process request
 
     case (CMDResync, WAITING) =>
       // We need a loaded routing data to sync properly
@@ -183,7 +205,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
 
     case (edge: GraphEdge, WAITING | OPERATIONAL) if !data.channels.contains(edge.desc.shortChannelId) =>
       // We add assisted routes to graph as if they are normal channels, also rememeber them to refill later if graph gets reloaded
-      // these edges will be private most of the time, but they also may be public yet not visible to us for some reason
+      // these edges will be private most of the time, but they also may be public but yet not visible to us for some reason
       val data1 = data.copy(graph = data.graph replaceEdge edge)
       extraEdges.put(edge.updExt.update.shortChannelId, edge)
       become(data1, state)
@@ -245,12 +267,21 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
     } else updateLastTotalResyncStamp(System.currentTimeMillis)
   }
 
-  def getAvgHopParams: AvgHopParams = {
-    val sample = data.channels.values.toVector.flatMap(pc => pc.update1Opt ++ pc.update2Opt)
-    val noFeeOutliers = Statistics.removeExtremeOutliers(sample)(_.update.feeProportionalMillionths)
-    val cltvExpiryDelta = CltvExpiryDelta(Statistics.meanBy(noFeeOutliers)(_.update.cltvExpiryDelta.underlying).toInt)
-    val proportional = Statistics.meanBy(noFeeOutliers)(_.update.feeProportionalMillionths).toLong
-    val base = MilliSatoshi(Statistics.meanBy(noFeeOutliers)(_.update.feeBaseMsat).toLong)
-    AvgHopParams(cltvExpiryDelta, proportional, base, noFeeOutliers.size)
+  def getAvgHopParams(sample: Seq[ChannelUpdateExt] = Nil): AvgHopParams = {
+    val cltvMean = Statistics.meanBy(sample)(_.update.cltvExpiryDelta.underlying).toInt
+    val cltvDeltaToFrequency = sample.groupBy(_.update.cltvExpiryDelta.underlying).mapValues(_.size)
+    val (cltvMode, _) = cltvDeltaToFrequency.maxBy(identity)(Statistics.InverseIntTupleComparator)
+
+    val proportional = Statistics.meanBy(sample)(_.update.feeProportionalMillionths).toLong
+    val base = MilliSatoshi(Statistics.meanBy(sample)(_.update.feeBaseMsat.underlying).toLong)
+    // For avergage hop we take max(mean, mode) to ensure we don't exlude too many routes by cltv
+    AvgHopParams(CltvExpiryDelta(cltvMean max cltvMode), proportional, base, sample.size)
+  }
+
+  def getSkewedFeeLastHopParams(lastHopSample: Seq[ChannelUpdateExt] = Nil): AvgHopParams = {
+    val AvgHopParams(cltvDelta, proportional, base, sampleSize) = getAvgHopParams(sample = lastHopSample)
+    val stdDev = Statistics.stdDevBy(lastHopSample, proportional)(_.update.feeProportionalMillionths).toLong
+    // For last payee hop we add 1 SD to calculated fees to ensure we don't exclude too many final channels
+    AvgHopParams(cltvDelta, proportional + stdDev, base, sampleSize)
   }
 }

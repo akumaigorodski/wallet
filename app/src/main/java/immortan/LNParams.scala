@@ -37,7 +37,7 @@ object LNParams {
 
   val failedChanRecoveryMsec: Double = 300000D // Failed-at-amount channels are fully recovered and their original capacity can be tried again after this much time
 
-  val maxCltvExpiryDelta: CltvExpiryDelta = CltvExpiryDelta(1008) // A relative expiry per single channel hop can not exceed this much blocks
+  val maxCltvExpiryDelta: CltvExpiryDelta = CltvExpiryDelta(2016) // A relative expiry of the whole route can not exceed this much blocks
   val maxToLocalDelay: CltvExpiryDelta = CltvExpiryDelta(2016) // We ask peer to delay their payment for this long in case of force-close
   val maxFundingSatoshis: Satoshi = Satoshi(10000000000L) // Proposed channels of capacity more than this are not allowed
   val maxReserveToFundingRatio: Double = 0.02 // %
@@ -78,9 +78,7 @@ object LNParams {
   var fiatRates: FiatRates = _
   var feeRates: FeeRates = _
 
-  var trampoline =
-    TrampolineOn(minPayment, maximumMsat = 1000000000L.msat, feeBaseMsat = 10000L.msat,
-      feeProportionalMillionths = 1000L, exponent = 0.0, logExponent = 0.0, minRoutingCltvExpiryDelta)
+  var trampoline: TrampolineOn = TrampolineOn(minPayment, maximumMsat = 1000000000L.msat, feeProportionalMillionths = 1000L, exponent = 0.0, logExponent = 0.0, minRoutingCltvExpiryDelta)
 
   // Last known chain tip (zero is unknown)
   val blockCount: AtomicLong = new AtomicLong(0L)

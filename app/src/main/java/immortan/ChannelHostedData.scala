@@ -74,18 +74,18 @@ case class HostedCommits(remoteInfo: RemoteNodeInfo, localSpec: CommitmentSpec, 
   def receiveAdd(add: UpdateAddHtlc): HostedCommits = {
     val commits1: HostedCommits = addRemoteProposal(add)
     // We do not check whether total incoming amount exceeds maxHtlcValueInFlightMsat becase we always accept up to channel capacity
-    if (commits1.nextLocalSpec.incomingAdds.size > lastCrossSignedState.initHostedChannel.maxAcceptedHtlcs) throw ChannelTransitionFail(channelId)
-    if (commits1.nextLocalSpec.toRemote < 0L.msat) throw ChannelTransitionFail(channelId)
-    if (add.id != nextTotalRemote + 1) throw ChannelTransitionFail(channelId)
+    if (commits1.nextLocalSpec.incomingAdds.size > lastCrossSignedState.initHostedChannel.maxAcceptedHtlcs) throw ChannelTransitionFail(channelId, add)
+    if (commits1.nextLocalSpec.toRemote < 0L.msat) throw ChannelTransitionFail(channelId, add)
+    if (add.id != nextTotalRemote + 1) throw ChannelTransitionFail(channelId, add)
     commits1
   }
 
   // Relaxed constraints for receiveng preimages over HCs: we look at nextLocalSpec, not localSpec
   def makeRemoteFulfill(fulfill: UpdateFulfillHtlc): RemoteFulfill = nextLocalSpec.findOutgoingHtlcById(fulfill.id) match {
-    case Some(ourAdd) if ourAdd.add.paymentHash != fulfill.paymentHash => throw ChannelTransitionFail(channelId)
-    case _ if postErrorOutgoingResolvedIds.contains(fulfill.id) => throw ChannelTransitionFail(channelId)
+    case Some(ourAdd) if ourAdd.add.paymentHash != fulfill.paymentHash => throw ChannelTransitionFail(channelId, fulfill)
+    case _ if postErrorOutgoingResolvedIds.contains(fulfill.id) => throw ChannelTransitionFail(channelId, fulfill)
     case Some(ourAdd) => RemoteFulfill(ourAdd.add, fulfill.paymentPreimage)
-    case None => throw ChannelTransitionFail(channelId)
+    case None => throw ChannelTransitionFail(channelId, fulfill)
   }
 
   def withResize(resize: ResizeChannel): HostedCommits =

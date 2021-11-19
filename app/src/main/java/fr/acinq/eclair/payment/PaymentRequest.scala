@@ -19,6 +19,7 @@ package fr.acinq.eclair.payment
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{Base58, Base58Check, Bech32, Block, ByteVector32, ByteVector64, Crypto}
 import fr.acinq.eclair.payment.PaymentRequest._
+import fr.acinq.eclair.wire.ExtraHop
 import fr.acinq.eclair.{CltvExpiryDelta, FeatureSupport, Features, MilliSatoshi, MilliSatoshiLong}
 import scodec.bits.{BitVector, ByteOrdering, ByteVector}
 import scodec.codecs.{list, ubyte}
@@ -265,17 +266,6 @@ object PaymentRequest {
       case remaining => BitVector.fill(5 - remaining)(high = false) ++ nonPadded
     }
   }
-
-  /**
-   * Extra hop contained in RoutingInfoTag
-   *
-   * @param nodeId                    start of the channel
-   * @param shortChannelId            channel id
-   * @param feeBase                   node fixed fee
-   * @param feeProportionalMillionths node proportional fee
-   * @param cltvExpiryDelta           node cltv expiry delta
-   */
-  case class ExtraHop(nodeId: PublicKey, shortChannelId: Long, feeBase: MilliSatoshi, feeProportionalMillionths: Long, cltvExpiryDelta: CltvExpiryDelta)
 
   /**
    * Routing Info

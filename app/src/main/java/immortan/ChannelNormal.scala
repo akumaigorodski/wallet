@@ -197,8 +197,8 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel {
         val sentExpiredRouted = norm.commitments.allOutgoing.exists(add => tip > add.cltvExpiry.underlying && add.fullTag.tag == PaymentTagTlv.TRAMPLOINE_ROUTED)
         val threshold = Transactions.receivedHtlcTrimThreshold(norm.commitments.remoteParams.dustLimit, norm.commitments.remoteCommit.spec, norm.commitments.channelFeatures.commitmentFormat)
         val largeReceivedRevealed = norm.commitments.revealedFulfills.filter(_.theirAdd.amountMsat > threshold * LNParams.minForceClosableIncomingHtlcAmountToFeeRatio)
-        val expiredReceivedRevealed = largeReceivedRevealed.exists(tip > _.theirAdd.cltvExpiry.underlying - LNParams.ncFulfillSafetyBlocks)
-        if (sentExpiredRouted || expiredReceivedRevealed) throw ChannelTransitionFail(norm.channelId)
+        val expiredReceivedRevealed = largeReceivedRevealed.exists(localFulfill => tip > localFulfill.theirAdd.cltvExpiry.underlying - LNParams.ncFulfillSafetyBlocks)
+        if (sentExpiredRouted || expiredReceivedRevealed) throw ExpiredHtlcInNormalChannel(norm.channelId, sentExpiredRouted, expiredReceivedRevealed)
 
 
       case (some: HasNormalCommitments, remoteInfo: RemoteNodeInfo, SLEEPING) if some.commitments.remoteInfo.nodeId == remoteInfo.nodeId =>
@@ -377,17 +377,17 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel {
 
       case (norm: DATA_NORMAL, remote: Shutdown, OPEN) =>
         val isTheirFinalScriptPubkeyValid = Closing.isValidFinalScriptPubkey(remote.scriptPubKey)
-        if (!isTheirFinalScriptPubkeyValid) throw ChannelTransitionFail(norm.commitments.channelId)
-        if (norm.commitments.remoteHasUnsignedOutgoingHtlcs) throw ChannelTransitionFail(norm.commitments.channelId)
-        if (norm.commitments.remoteHasUnsignedOutgoingUpdateFee) throw ChannelTransitionFail(norm.commitments.channelId)
+        if (!isTheirFinalScriptPubkeyValid) throw ChannelTransitionFail(norm.commitments.channelId, remote)
+        if (norm.commitments.remoteHasUnsignedOutgoingHtlcs) throw ChannelTransitionFail(norm.commitments.channelId, remote)
+        if (norm.commitments.remoteHasUnsignedOutgoingUpdateFee) throw ChannelTransitionFail(norm.commitments.channelId, remote)
         if (norm.commitments.localHasUnsignedOutgoingHtlcs) BECOME(norm.copy(remoteShutdown = remote.asSome), OPEN)
         else maybeStartNegotiations(norm, remote)
 
       // NEGOTIATIONS
 
       case (negs: DATA_NEGOTIATING, remote: ClosingSigned, OPEN) =>
+        val signedClosingTx = Closing.checkClosingSignature(negs.commitments, negs.localShutdown.scriptPubKey, negs.remoteShutdown.scriptPubKey, remote)
         val firstClosingFee = Closing.firstClosingFee(negs.commitments, negs.localShutdown.scriptPubKey, negs.remoteShutdown.scriptPubKey, LNParams.feeRates.info.onChainFeeConf)
-        val signedClosingTx = Closing.checkClosingSignature(negs.commitments, negs.localShutdown.scriptPubKey, negs.remoteShutdown.scriptPubKey, remote.feeSatoshis, remote.signature)
         if (negs.closingTxProposed.last.lastOption.map(_.localClosingSigned.feeSatoshis).contains(remote.feeSatoshis) || negs.closingTxProposed.flatten.size >= LNParams.maxNegotiationIterations) {
           val negs1 = negs.copy(bestUnpublishedClosingTxOpt = signedClosingTx.asSome)
           handleMutualClose(signedClosingTx, negs1)
@@ -461,7 +461,7 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel {
             if (norm.commitments.localParams.keys.commitmentSecret(rs.nextRemoteRevocationNumber - 1) == rs.yourLastPerCommitmentSecret) {
               CommsTower.workers.get(norm.commitments.remoteInfo.nodeSpecificPair).foreach(_ requestRemoteForceClose norm.channelId)
               StoreBecomeSend(DATA_WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT(norm.commitments, rs), CLOSING)
-            } else throw ChannelTransitionFail(norm.commitments.channelId)
+            } else throw ChannelTransitionFail(norm.commitments.channelId, reestablish)
 
           case rs if !Helpers.checkRemoteCommit(norm, rs.nextLocalCommitmentNumber) =>
             // If NextRemoteRevocationNumber is more than one more our remote commitment index, it means that either we are using an outdated commitment, or they are lying
@@ -482,8 +482,8 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel {
                 val localNextPerCommitmentPoint = norm.commitments.localParams.keys.commitmentPoint(norm.commitments.localCommit.index + 1)
                 sendQueue :+= RevokeAndAck(norm.channelId, localPerCommitmentSecret, localNextPerCommitmentPoint)
               } else if (norm.commitments.localCommit.index != rs.nextRemoteRevocationNumber) {
-                // Sync has failed, no sense to continue normally
-                throw ChannelTransitionFail(norm.channelId)
+                // Sync has failed, no sense to continue normally, force-close it
+                throw ChannelTransitionFail(norm.channelId, reestablish)
               }
 
             norm.commitments.remoteNextCommitInfo match {
@@ -496,8 +496,8 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel {
                 if (norm.commitments.localCommit.index > waitingForRevocation.sentAfterLocalCommitIndex) resendRevocation
 
               case _ =>
-                // Sync has failed, no sense to continue normally
-                throw ChannelTransitionFail(norm.channelId)
+                // Sync has failed, no sense to continue normally, force-close it
+                throw ChannelTransitionFail(norm.channelId, reestablish)
             }
 
             BECOME(data1 = norm, state1 = OPEN)

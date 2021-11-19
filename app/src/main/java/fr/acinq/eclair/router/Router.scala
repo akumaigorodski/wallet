@@ -21,7 +21,7 @@ case class ChannelUpdateExt(update: ChannelUpdate, crc32: Long, score: Long, use
 object Router {
   case class ChannelDesc(shortChannelId: Long, from: PublicKey, to: PublicKey)
 
-  case class RouterConf(initRouteMaxLength: Int, routeMaxCltv: CltvExpiryDelta = CltvExpiryDelta(2016), maxChannelFailures: Int = 4, maxStrangeNodeFailures: Int = 6, maxRemoteAttempts: Int = 10)
+  case class RouterConf(initRouteMaxLength: Int, routeMaxCltv: CltvExpiryDelta, maxChannelFailures: Int = 4, maxStrangeNodeFailures: Int = 4, maxRemoteAttempts: Int = 6)
 
   case class PublicChannel(update1Opt: Option[ChannelUpdateExt], update2Opt: Option[ChannelUpdateExt], ann: ChannelAnnouncement) {
     def getChannelUpdateSameSideAs(cu: ChannelUpdate): Option[ChannelUpdateExt] = if (cu.position == ChannelUpdate.POSITION1NODE) update1Opt else update2Opt

@@ -9,11 +9,11 @@ import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.crypto.ChaCha20Poly1305
-import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
 import fr.acinq.eclair.router.Graph.GraphStructure.GraphEdge
 import fr.acinq.eclair.router.RouteCalculation
 import fr.acinq.eclair.router.Router.ChannelDesc
 import fr.acinq.eclair.transactions.CommitmentSpec
+import fr.acinq.eclair.wire.ExtraHop
 import immortan.crypto.Noise.KeyPair
 import immortan.crypto.Tools.runAnd
 import immortan.utils.{FeeRatesInfo, ThrottledWork}

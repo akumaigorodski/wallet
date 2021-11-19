@@ -1,19 +1,3 @@
-/*
- * Copyright 2019 ACINQ SAS
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package fr.acinq.eclair.router
 
 import fr.acinq.bitcoin.Crypto.PublicKey
@@ -27,13 +11,6 @@ import scala.collection.mutable
 
 
 object Graph {
-  /**
-   * The cumulative weight of a set of edges (path in the graph).
-   *
-   * @param costs   amount to send to the recipient + each edge's fees per hop
-   * @param length number of edges in the path
-   * @param cltv   sum of each edge's cltv
-   */
   case class RichWeight(costs: List[MilliSatoshi], length: Int, cltv: CltvExpiryDelta, weight: Double) extends Ordered[RichWeight] {
     override def compare(that: RichWeight): Int = weight.compareTo(that.weight)
   }
@@ -42,10 +19,6 @@ object Graph {
 
   case class WeightedPath(path: Seq[GraphEdge], weight: RichWeight)
 
-  /**
-   * This comparator must be consistent with the "equals" behavior, thus for two weighted nodes with the same weight we distinguish them by their public key
-   * See https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html
-   */
   object NodeComparator extends Ordering[WeightedNode] {
     override def compare(x: WeightedNode, y: WeightedNode): Int = {
       val weightCmp = x.weight.compareTo(y.weight)
@@ -58,13 +31,12 @@ object Graph {
     override def compare(x: WeightedPath, y: WeightedPath): Int = y.weight.compare(x.weight)
   }
 
-  def bestPath(graph: DirectedGraph,
-               sourceNode: PublicKey, targetNode: PublicKey, amount: MilliSatoshi,
-               ignoredEdges: Set[ChannelDesc], ignoredVertices: Set[PublicKey],
+  def bestPath(graph: DirectedGraph, sourceNode: PublicKey, targetNode: PublicKey,
+               amount: MilliSatoshi, ignoredEdges: Set[ChannelDesc], ignoredVertices: Set[PublicKey],
                boundaries: RichWeight => Boolean): Option[WeightedPath] = {
 
     val latestBlockExpectedStampMsecs = System.currentTimeMillis
-    val targetWeight = RichWeight(List(amount), length = 0, CltvExpiryDelta(0), weight = 0)
+    val targetWeight = RichWeight(costs = List(amount), length = 0, CltvExpiryDelta(0), weight = 0)
     val shortestPath = dijkstraShortestPath(graph, sourceNode, targetNode, ignoredEdges, ignoredVertices, targetWeight, boundaries, latestBlockExpectedStampMsecs)
 
     if (shortestPath.nonEmpty) {
@@ -77,19 +49,6 @@ object Graph {
     } else None
   }
 
-  /**
-   * Finds the shortest path in the graph, uses a modified version of Dijkstra's algorithm that computes the shortest
-   * path from the target to the source (this is because we want to calculate the weight of the edges correctly). The
-   * graph @param g is optimized for querying the incoming edges given a vertex.
-   *
-   * @param g                             the graph on which will be performed the search
-   * @param sourceNode                    the starting node of the path we're looking for
-   * @param targetNode                    the destination node of the path
-   * @param ignoredEdges                  channels that should be avoided
-   * @param ignoredVertices               nodes that should be avoided
-   * @param initialWeight                 weight that will be applied to the target node
-   * @param boundaries                    a predicate function that can be used to impose limits on the outcome of the search
-   */
   private def dijkstraShortestPath(g: DirectedGraph, sourceNode: PublicKey, targetNode: PublicKey,
                                    ignoredEdges: Set[ChannelDesc], ignoredVertices: Set[PublicKey], initialWeight: RichWeight,
                                    boundaries: RichWeight => Boolean, latestBlockExpectedStampMsecs: Long): Seq[GraphEdge] = {
@@ -143,7 +102,7 @@ object Graph {
     }
 
     if (targetFound) {
-      val edgePath = new mutable.ArrayBuffer[GraphEdge](RouteCalculation.ROUTE_MAX_LENGTH)
+      val edgePath = new mutable.ArrayBuffer[GraphEdge]
       var current = bestEdges.get(sourceNode)
 
       while (null != current) {
@@ -181,8 +140,7 @@ object Graph {
 
     val SCORE_HIGH = 1000
 
-    def normalize(value: Double, min: Double, max: Double): Double =
-      if (value <= min) 0D else if (value >= max) 1D else (value - min) / (max - min)
+    def normalize(value: Double, min: Double, max: Double): Double = if (value <= min) 0D else if (value >= max) 1D else (value - min) / (max - min)
 
     def addEdgeWeight(sender: PublicKey, edge: GraphEdge, prev: RichWeight, latestBlockExpectedStampMsecs: Long): RichWeight = {
       // Every edge is weighted by its routing success score, higher score adds less weight

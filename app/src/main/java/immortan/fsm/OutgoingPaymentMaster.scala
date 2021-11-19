@@ -116,7 +116,7 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
       become(data.withFailuresReduced(System.currentTimeMillis), state)
 
     case (send: SendMultiPart, EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
-      for (edge <- send.assistedEdges) cm.pf process edge
+      for (graphEdge <- send.assistedEdges) cm.pf process graphEdge
       data.payments(send.fullTag) doProcess send
       me process CMDAskForRoute
 
@@ -147,7 +147,7 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
       cm.pf process PathFinder.FindRoute(me, req1)
       become(data, WAITING_FOR_ROUTE)
 
-    case (PathFinder.NotifyRejected, WAITING_FOR_ROUTE) =>
+    case (PathFinder.NotifyNotReady, WAITING_FOR_ROUTE) =>
       // Pathfinder is not yet ready, switch local state back
       // pathfinder is expected to notify us once it gets ready
       become(data, EXPECTING_PAYMENTS)

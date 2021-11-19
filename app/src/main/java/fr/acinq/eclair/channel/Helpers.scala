@@ -165,18 +165,18 @@ object Helpers {
       (closingTx, closingSigned)
     }
 
-    def checkClosingSignature(commitments: NormalCommits, localScriptPubkey: ByteVector, remoteScriptPubkey: ByteVector, remoteClosingFee: Satoshi, remoteClosingSig: ByteVector64): Transaction = {
+    def checkClosingSignature(commitments: NormalCommits, localScriptPubkey: ByteVector, remoteScriptPubkey: ByteVector, remote: ClosingSigned): Transaction = {
       val lastCommitFeeSatoshi = commitments.commitInput.txOut.amount - commitments.localCommit.publishableTxs.commitTx.tx.txOut.map(_.amount).sum
-      if (remoteClosingFee > lastCommitFeeSatoshi) throw ChannelTransitionFail(commitments.channelId)
+      if (remote.feeSatoshis > lastCommitFeeSatoshi) throw ChannelTransitionFail(commitments.channelId, remote)
 
       val localFundingKey = commitments.localParams.keys.fundingKey.publicKey
-      val (closingTx, closingSigned) = makeClosingTx(commitments, localScriptPubkey, remoteScriptPubkey, remoteClosingFee)
+      val (closingTx, closingSigned) = makeClosingTx(commitments, localScriptPubkey, remoteScriptPubkey, remote.feeSatoshis)
 
       val isAllUtxosAboveDust = checkClosingDustAmounts(closingTx)
-      if (!isAllUtxosAboveDust) throw ChannelTransitionFail(commitments.channelId)
+      if (!isAllUtxosAboveDust) throw ChannelTransitionFail(commitments.channelId, remote)
 
-      val signedTx = Transactions.addSigs(closingTx, localFundingKey, commitments.remoteParams.fundingPubKey, closingSigned.signature, remoteClosingSig)
-      if (Transactions.checkSpendable(signedTx).isFailure) throw ChannelTransitionFail(commitments.channelId)
+      val signedTx = Transactions.addSigs(closingTx, localFundingKey, commitments.remoteParams.fundingPubKey, closingSigned.signature, remote.signature)
+      if (Transactions.checkSpendable(signedTx).isFailure) throw ChannelTransitionFail(commitments.channelId, remote)
       signedTx.tx
     }
 

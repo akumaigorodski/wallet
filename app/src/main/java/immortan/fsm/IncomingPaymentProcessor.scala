@@ -168,16 +168,11 @@ class TrampolinePaymentRelayer(val fullTag: FullPaymentTag, cm: ChannelMaster) e
 
   def collectedEnough(adds: ReasonableTrampolines): Boolean = firstOpt(adds).exists(lastAmountIn >= _.outerPayload.totalAmount)
   def firstOpt(adds: ReasonableTrampolines): Option[IncomingPacket.NodeRelayPacket] = adds.headOption.map(_.packet)
-  def expiryIn(adds: ReasonableTrampolines): CltvExpiry = CltvExpiry(0L) // adds.map(_.add.cltvExpiry).minBy(_.underlying)
-
-  def relayFee(innerPayload: Onion.NodeRelayPayload, params: TrampolineOn): MilliSatoshi = {
-    val linearProportional = proportionalFee(innerPayload.amountToForward, params.feeProportionalMillionths)
-    trampolineFee(linearProportional.toLong, params.feeBaseMsat, params.exponent, params.logExponent)
-  }
+  def expiryIn(adds: ReasonableTrampolines): CltvExpiry = adds.map(_.add.cltvExpiry).minBy(_.underlying)
 
   def validateRelay(params: TrampolineOn, adds: ReasonableTrampolines, blockHeight: Long): Option[FailureMessage] = firstOpt(adds) collectFirst {
     case pkt if pkt.innerPayload.invoiceFeatures.isDefined && pkt.innerPayload.paymentSecret.isEmpty => InvalidOnionPayload(UInt64(8), 0) // We do not serve legacy recepients
-    case pkt if relayFee(pkt.innerPayload, params) > lastAmountIn - pkt.innerPayload.amountToForward => TrampolineFeeInsufficient // Proposed trampoline fee is less than required
+    case pkt if params.relayFee(pkt.innerPayload.amountToForward) > lastAmountIn - pkt.innerPayload.amountToForward => TrampolineFeeInsufficient // Proposed trampoline fee is less than required
     case pkt if adds.map(_.packet.innerPayload.amountToForward).toSet.size != 1 => IncorrectOrUnknownPaymentDetails(pkt.add.amountMsat, LNParams.blockCount.get) // amountToForward divergence
     case pkt if adds.map(_.packet.outerPayload.totalAmount).toSet.size != 1 => IncorrectOrUnknownPaymentDetails(pkt.add.amountMsat, LNParams.blockCount.get) // totalAmount divergence
     case pkt if params.cltvExpiryDelta > expiryIn(adds) - pkt.innerPayload.outgoingCltv => TrampolineExpiryTooSoon // Proposed delta is less than required by our node
@@ -214,7 +209,7 @@ class TrampolinePaymentRelayer(val fullTag: FullPaymentTag, cm: ChannelMaster) e
         val reserve = packet.outerPayload.totalAmount - packet.innerPayload.amountToForward
         val actualEarnings = senderData.filter(_.inFlightParts.nonEmpty).map(reserve - _.usedFee)
         // Second, used fee in sender data may be incorrect after restart, use fallback in that case
-        val finalEarnings = actualEarnings getOrElse relayFee(packet.innerPayload, LNParams.trampoline)
+        val finalEarnings = actualEarnings getOrElse LNParams.trampoline.relayFee(packet.innerPayload.amountToForward)
         cm.payBag.addRelayedPreimageInfo(fullTag, preimage, packet.innerPayload.amountToForward, finalEarnings)
       }
 
@@ -295,8 +290,8 @@ class TrampolinePaymentRelayer(val fullTag: FullPaymentTag, cm: ChannelMaster) e
 
       case None =>
         val inner = firstOpt(adds).get.innerPayload
-        val totalFeeReserve = lastAmountIn - inner.amountToForward - relayFee(inner, LNParams.trampoline)
         val extraEdges = RouteCalculation.makeExtraEdges(inner.invoiceRoutingInfo.getOrElse(Nil), inner.outgoingNodeId)
+        val totalFeeReserve = lastAmountIn - inner.amountToForward - LNParams.trampoline.relayFee(inner.amountToForward)
         val routerConf = LNParams.routerConf.copy(routeMaxCltv = expiryIn(adds) - inner.outgoingCltv - LNParams.ourRoutingCltvExpiryDelta)
         // It makes no sense to try to route out a payment through channels used by peer to route it in, this also includes possible unused multiple channels from same peer
         val allowedChans = cm.all -- adds.map(_.add.channelId).flatMap(cm.all.get).flatMap(Channel.chanAndCommitsOpt).map(_.commits.remoteInfo.nodeId).flatMap(cm.allFromNode).map(_.commits.channelId)
