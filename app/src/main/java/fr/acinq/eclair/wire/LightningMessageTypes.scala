@@ -206,7 +206,7 @@ case class ChannelUpdate(signature: ByteVector64, chainHash: ByteVector32, short
 
   def extraHop(nodeId: PublicKey): ExtraHop = ExtraHop(nodeId, shortChannelId, feeBaseMsat, feeProportionalMillionths, cltvExpiryDelta)
 
-  // Point useless fields to same object, db-restored should be the same, make sure it does not erase channelUpdateChecksumCodec fields
+  // Point useless fields to same object, db-restored should be same, make sure it does not erase channelUpdateChecksumCodec fields
   def lite: ChannelUpdate = copy(signature = ByteVector64.Zeroes, LNParams.chainHash, unknownFields = ByteVector.empty)
 }
 

@@ -223,8 +223,6 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
 
   def sortedReceivable(chans: Iterable[Channel] = Nil): Seq[ChanAndCommits] = operationalCncs(chans).filter(_.commits.updateOpt.isDefined).sortBy(_.commits.availableForReceive)
 
-  def rightNowSendable(chans: Iterable[Channel] = Nil)
-
   def maxReceivable(sorted: Seq[ChanAndCommits] = Nil): Option[CommitsAndMax] = {
     // Example: we have (5, 50, 60, 100) chans -> (50, 60, 100), receivable = 50*3 = 150, #channels = 3
     // Example: we have (25, 50, 60, 100) chans -> (25, 50, 60, 100), receivable = 50*3 = 150 (because 50*3 > 25*4), but #channels = 4
