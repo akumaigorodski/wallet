@@ -13,6 +13,7 @@ case class MilliSatoshi(underlying: Long) extends AnyVal with Ordered[MilliSatos
   def /(d: Long): MilliSatoshi = MilliSatoshi(underlying / d)
   def unary_- = MilliSatoshi(-underlying)
 
+  override def toString: String = s"$underlying msat"
   override def compare(other: MilliSatoshi): Int = underlying.compareTo(other.underlying)
   // Since BtcAmount is a sealed trait that MilliSatoshi cannot extend, we need to redefine comparison operators.
   def compare(other: Satoshi): Int = compare(other.toMilliSatoshi)

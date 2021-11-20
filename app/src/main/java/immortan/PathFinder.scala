@@ -1,7 +1,8 @@
 package immortan
 
-import java.util.concurrent.Executors
+import java.util.concurrent.{Executors, TimeUnit}
 
+import com.google.common.cache.CacheBuilder
 import fr.acinq.bitcoin.Crypto
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.eclair.router.Graph.GraphStructure.{DirectedGraph, GraphEdge}
@@ -16,6 +17,7 @@ import immortan.crypto.{CanBeRepliedTo, StateMachine}
 import immortan.utils.{Rx, Statistics}
 import rx.lang.scala.Subscription
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
@@ -32,8 +34,7 @@ object PathFinder {
 
   sealed trait PathFinderRequest { val sender: CanBeRepliedTo }
   case class FindRoute(sender: CanBeRepliedTo, request: RouteRequest) extends PathFinderRequest
-  case class GetPayeeInferredHopFees(sender: CanBeRepliedTo, payee: PublicKey) extends PathFinderRequest
-  case class GetAverageExpectedHopFees(sender: CanBeRepliedTo) extends PathFinderRequest
+  case class GetExpectedRouteFees(sender: CanBeRepliedTo, payee: PublicKey, interHops: Int) extends PathFinderRequest
 
   case class ExpectedRouteFees(hops: List[HasRelayFee] = Nil) {
     private def accumulate(accumulator: MilliSatoshi, hop: HasRelayFee) = accumulator + hop.relayFee(accumulator)
@@ -43,7 +44,8 @@ object PathFinder {
 }
 
 abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) extends StateMachine[Data] { me =>
-  val extraEdges: mutable.Map[Long, GraphEdge] = mutable.Map.empty
+  private val extraEdgesCache = CacheBuilder.newBuilder.expireAfterWrite(1, TimeUnit.DAYS).maximumSize(500).build[java.lang.Long, GraphEdge]
+  val extraEdges: mutable.Map[java.lang.Long, GraphEdge] = extraEdgesCache.asMap.asScala
 
   var listeners: Set[CanBeRepliedTo] = Set.empty
   var subscription: Option[Subscription] = None
@@ -78,18 +80,11 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       // Graph is loaded but empty: likely a first launch or synchronizing
       request.sender process NotifyNotReady
 
-    case (calc: GetAverageExpectedHopFees, OPERATIONAL) =>
-      // Calculate average single hop params for the entire visible routing graph
-      val sample = data.channels.values.toVector.flatMap(pc => pc.update1Opt ++ pc.update2Opt)
-      val noFeeOutliers = Statistics.removeExtremeOutliers(sample)(_.update.feeProportionalMillionths)
-      calc.sender process getAvgHopParams(noFeeOutliers)
-
-    case (calc: GetPayeeInferredHopFees, OPERATIONAL) =>
-      // Calculate expected params for final payee hop based on graph
-      data.graph.vertices.getOrElse(calc.payee, Nil).map(_.updExt) match {
-        case Nil => calc.sender process GetAverageExpectedHopFees(calc.sender)
-        case hops => calc.sender process getSkewedFeeLastHopParams(hops)
-      }
+    case (calc: GetExpectedRouteFees, OPERATIONAL) =>
+      val interExpectedFees = List.fill(calc.interHops)(data.avgHopParams)
+      val payeeHops = data.graph.vertices.getOrElse(calc.payee, default = Nil).map(_.updExt)
+      val lastExpectedFees = if (payeeHops.isEmpty) data.avgHopParams else getSkewedFeeLastHopParams(payeeHops)
+      calc.sender process ExpectedRouteFees(interExpectedFees :+ lastExpectedFees)
 
     case (fr: FindRoute, OPERATIONAL) =>
       // Search through single pre-selected local channel
@@ -206,8 +201,8 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
     case (edge: GraphEdge, WAITING | OPERATIONAL) if !data.channels.contains(edge.desc.shortChannelId) =>
       // We add assisted routes to graph as if they are normal channels, also rememeber them to refill later if graph gets reloaded
       // these edges will be private most of the time, but they also may be public but yet not visible to us for some reason
+      extraEdgesCache.put(edge.updExt.update.shortChannelId, edge)
       val data1 = data.copy(graph = data.graph replaceEdge edge)
-      extraEdges.put(edge.updExt.update.shortChannelId, edge)
       become(data1, state)
 
     case _ =>
@@ -250,7 +245,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
 
     case None =>
       // This is a legitimate private/unknown-public update
-      extraEdges.put(edge.updExt.update.shortChannelId, edge)
+      extraEdgesCache.put(edge.updExt.update.shortChannelId, edge)
       // Don't save this in DB but update runtime graph
       data.copy(graph = data.graph replaceEdge edge)
   }
@@ -263,23 +258,12 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
   def attemptPHCSync: Unit = {
     if (LNParams.syncParams.phcSyncNodes.nonEmpty) {
       val master = new PHCSyncMaster(data) { def onSyncComplete(pure: CompleteHostedRoutingData): Unit = me process pure }
-      master process SyncMasterPHCData(LNParams.syncParams.phcSyncNodes, getPHCExtraNodes, Set.empty)
+      master process SyncMasterPHCData(LNParams.syncParams.phcSyncNodes, getPHCExtraNodes, activeSyncs = Set.empty)
     } else updateLastTotalResyncStamp(System.currentTimeMillis)
   }
 
-  def getAvgHopParams(sample: Seq[ChannelUpdateExt] = Nil): AvgHopParams = {
-    val cltvMean = Statistics.meanBy(sample)(_.update.cltvExpiryDelta.underlying).toInt
-    val cltvDeltaToFrequency = sample.groupBy(_.update.cltvExpiryDelta.underlying).mapValues(_.size)
-    val (cltvMode, _) = cltvDeltaToFrequency.maxBy(identity)(Statistics.InverseIntTupleComparator)
-
-    val proportional = Statistics.meanBy(sample)(_.update.feeProportionalMillionths).toLong
-    val base = MilliSatoshi(Statistics.meanBy(sample)(_.update.feeBaseMsat.underlying).toLong)
-    // For avergage hop we take max(mean, mode) to ensure we don't exlude too many routes by cltv
-    AvgHopParams(CltvExpiryDelta(cltvMean max cltvMode), proportional, base, sample.size)
-  }
-
   def getSkewedFeeLastHopParams(lastHopSample: Seq[ChannelUpdateExt] = Nil): AvgHopParams = {
-    val AvgHopParams(cltvDelta, proportional, base, sampleSize) = getAvgHopParams(sample = lastHopSample)
+    val AvgHopParams(cltvDelta, proportional, base, sampleSize) = Router.getAvgHopParams(lastHopSample)
     val stdDev = Statistics.stdDevBy(lastHopSample, proportional)(_.update.feeProportionalMillionths).toLong
     // For last payee hop we add 1 SD to calculated fees to ensure we don't exclude too many final channels
     AvgHopParams(cltvDelta, proportional + stdDev, base, sampleSize)

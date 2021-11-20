@@ -269,7 +269,8 @@
     <string name="settings_ln_fee_cap">Limitar las tarifas de LN a la chain</string>
     <string name="settings_ln_fee_cap_disabled"><![CDATA[La tarifa máxima de LN es como máximo<strong>%1$s</strong> del pago y <b>puede ser más alta</b> que la actual tarifa promedio chain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[La tarifa máxima de LN es como máximo <strong>%1$s</strong> del pago pero <b>nunca más alta</b> que la tarifa promedio chain de <b>%2$s</b>]]></string>
-    <string name="settings_ln_fee_expensive_omitted">Las rutas costosas fueron omitidas, elimina el límite de tarifa de LN si quieres que se permitan rutas mas costosas</string>
+    <string name="ln_fee_expensive_omitted">Las rutas costosas fueron omitidas, elimina el límite de tarifa de LN si quieres que se permitan rutas mas costosas</string>
+    <string name="ln_payee_likely_offline">It is likely that payee wallet is offline right now</string>
 
     <string name="settings_btc_unit">Unidad de Bitcoin</string>
     <string name="settings_fiat_currency">Moneda fiduciaria</string>

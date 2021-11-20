@@ -33,7 +33,7 @@ import fr.acinq.eclair.blockchain.electrum.{ElectrumEclairWallet, ElectrumWallet
 import fr.acinq.eclair.blockchain.fee.FeeratePerByte
 import fr.acinq.eclair.channel._
 import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, Scripts}
-import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv}
+import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv, UnknownNextPeer}
 import immortan.ChannelListener.Malfunction
 import immortan.ChannelMaster.{OutgoingAdds, RevealedLocalFulfills}
 import immortan._
@@ -977,8 +977,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   private val extraOutgoingListener = new OutgoingPaymentListener {
     override def wholePaymentFailed(data: OutgoingPaymentSenderData): Unit = UITask {
-      val warnFeeCap = data.failures.exists { case local: LocalFailure => PaymentFailure.NO_ROUTES_FOUND == local.status case _ => false }
-      if (WalletApp.capLNFeeToChain && warnFeeCap) snack(contentWindow, getString(settings_ln_fee_expensive_omitted), dialog_ok, _.dismiss)
+      val assistedShortIds = data.cmd.assistedEdges.map(_.updExt.update.shortChannelId)
+      val warnPayeeOffline = data.failures.exists { case rf: RemoteFailure if rf.packet.failureMessage == UnknownNextPeer => assistedShortIds.contains(rf.originShortChanId) case _ => false }
+      val warnNoRouteFound = data.failures.exists { case localFailure: LocalFailure => PaymentFailure.NO_ROUTES_FOUND == localFailure.status case _ => false }
+      if (warnPayeeOffline && warnNoRouteFound) snack(parent = contentWindow, msg = getString(ln_payee_likely_offline), res = dialog_ok, _.dismiss)
+      else if (WalletApp.capLNFeeToChain && warnNoRouteFound) snack(contentWindow, getString(ln_fee_expensive_omitted), dialog_ok, _.dismiss)
     }.run
 
     override def gotFirstPreimage(data: OutgoingPaymentSenderData, fulfill: RemoteFulfill): Unit = UITask {

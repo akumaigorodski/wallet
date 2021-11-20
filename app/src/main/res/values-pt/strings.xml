@@ -269,7 +269,8 @@
     <string name="settings_ln_fee_cap">Limitar as taxas da LN</string>
     <string name="settings_ln_fee_cap_disabled"><![CDATA[A taxa da LN é de no máximo <strong>%1$s</strong> do pagamento e <b>pode ficar mais alta</b> do que a atual taxa média da blockchain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[A taxa da LN é de no máximo <strong>%1$s</strong> do pagamento mas <b>nunca maior</b> do que a atual taxa média da blockchain de <b>%2$s</b>]]></string>
-    <string name="settings_ln_fee_expensive_omitted">Rotas caras foram omitidas, remova o limite de taxa da LN nas configurações se você quiser permitir rotas mais caras</string>
+    <string name="ln_fee_expensive_omitted">Rotas caras foram omitidas, remova o limite de taxa da LN nas configurações se você quiser permitir rotas mais caras</string>
+    <string name="ln_payee_likely_offline">It is likely that payee wallet is offline right now</string>
 
     <string name="settings_btc_unit">Unidade de bitcoin</string>
     <string name="settings_fiat_currency">Moeda fiduciária</string>
