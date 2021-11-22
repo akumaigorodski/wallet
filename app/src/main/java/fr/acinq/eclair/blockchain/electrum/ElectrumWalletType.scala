@@ -76,6 +76,11 @@ abstract class ElectrumWalletType {
   def signTransaction(usableUtxos: Seq[Utxo], tx: Transaction): Transaction
 
   def setUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction
+
+  def writePublicKeyScriptHash(key: PublicKey): ByteVector = {
+    val scriptProgram = computePublicKeyScript(key)
+    Script.write(scriptProgram)
+  }
 }
 
 class ElectrumWallet44(val secrets: Option[AccountAndXPrivKey], val xPub: ExtendedPublicKey, val chainHash: ByteVector32) extends ElectrumWalletType {

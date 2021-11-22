@@ -31,13 +31,13 @@ object Graph {
     override def compare(x: WeightedPath, y: WeightedPath): Int = y.weight.compare(x.weight)
   }
 
-  def bestPath(graph: DirectedGraph, sourceNode: PublicKey, targetNode: PublicKey,
-               amount: MilliSatoshi, ignoredEdges: Set[ChannelDesc], ignoredVertices: Set[PublicKey],
+  def bestPath(graph: DirectedGraph, sourceNode: PublicKey, targetNode: PublicKey, amount: MilliSatoshi,
+               ignoreEdges: Set[ChannelDesc], ignoreVertices: Set[PublicKey], ignoreDirections: Set[NodeDirectionDesc],
                boundaries: RichWeight => Boolean): Option[WeightedPath] = {
 
     val latestBlockExpectedStampMsecs = System.currentTimeMillis
-    val targetWeight = RichWeight(costs = List(amount), length = 0, CltvExpiryDelta(0), weight = 0)
-    val shortestPath = dijkstraShortestPath(graph, sourceNode, targetNode, ignoredEdges, ignoredVertices, targetWeight, boundaries, latestBlockExpectedStampMsecs)
+    val targetWeight = RichWeight(costs = List(amount), length = 0, cltv = CltvExpiryDelta(0), weight = 0)
+    val shortestPath = dijkstraShortestPath(graph, sourceNode, targetNode, ignoreEdges, ignoreVertices, ignoreDirections, targetWeight, boundaries, latestBlockExpectedStampMsecs)
 
     if (shortestPath.nonEmpty) {
       val weight = shortestPath.foldRight(targetWeight) { case (edge, prev) =>
@@ -50,8 +50,8 @@ object Graph {
   }
 
   private def dijkstraShortestPath(g: DirectedGraph, sourceNode: PublicKey, targetNode: PublicKey,
-                                   ignoredEdges: Set[ChannelDesc], ignoredVertices: Set[PublicKey], initialWeight: RichWeight,
-                                   boundaries: RichWeight => Boolean, latestBlockExpectedStampMsecs: Long): Seq[GraphEdge] = {
+                                   ignoreEdges: Set[ChannelDesc], ignoreVertices: Set[PublicKey], ignoreDirections: Set[NodeDirectionDesc],
+                                   initialWeight: RichWeight, boundaries: RichWeight => Boolean, latestBlockExpectedStampMsecs: Long): Seq[GraphEdge] = {
 
     val sourceNotInGraph = !g.containsVertex(sourceNode)
     val targetNotInGraph = !g.containsVertex(targetNode)
@@ -84,7 +84,7 @@ object Graph {
           val canRelayAmount = currentCost <= edge.updExt.capacity && currentCost >= edge.updExt.update.htlcMinimumMsat
           val neighbor = edge.desc.from
 
-          if (boundaries(neighborWeight) && !ignoredEdges.contains(edge.desc) && !ignoredVertices.contains(neighbor) && canRelayAmount) {
+          if (boundaries(neighborWeight) && !ignoreEdges.contains(edge.desc) && !ignoreVertices.contains(neighbor) && !ignoreDirections.contains(edge.desc.toDirection) && canRelayAmount) {
             // if this path between neighbor and the target has a shorter distance than previously known, we select it
             if (neighborWeight.weight < bestWeights.getOrDefaultValue(neighbor).weight) {
               // update the best edge for this vertex

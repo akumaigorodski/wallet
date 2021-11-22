@@ -60,9 +60,10 @@ case class CutIntoHalves(amount: MilliSatoshi)
 case class RemoveSenderFSM(fullTag: FullPaymentTag)
 case class CreateSenderFSM(listeners: Iterable[OutgoingPaymentListener], fullTag: FullPaymentTag)
 
-case class NodeFailed(failedNodeId: PublicKey, increment: Int)
-case class ChannelFailed(failedDescAndCap: DescAndCapacity, increment: Int)
+case class ChannelNotRoutable(failedDesc: ChannelDesc)
+case class ChannelFailed(failedDescAndCap: DescAndCapacity)
 case class StampedChannelFailed(amount: MilliSatoshi, stamp: Long)
+case class NodeFailed(failedNodeId: PublicKey, increment: Int)
 
 case class SplitInfo(totalSum: MilliSatoshi, myPart: MilliSatoshi) {
   val sentRatio: Long = ratio(totalSum, myPart)
@@ -77,21 +78,24 @@ case class SendMultiPart(fullTag: FullPaymentTag, chainExpiry: Either[CltvExpiry
 case class OutgoingPaymentMasterData(payments: Map[FullPaymentTag, OutgoingPaymentSender],
                                      chanFailedAtAmount: Map[DescAndCapacity, StampedChannelFailed] = Map.empty,
                                      nodeFailedWithUnknownUpdateTimes: Map[PublicKey, Int] = Map.empty,
-                                     chanFailedTimes: Map[ChannelDesc, Int] = Map.empty) {
+                                     directionFailedTimes: Map[NodeDirectionDesc, Int] = Map.empty,
+                                     chanNotRoutable: Set[ChannelDesc] = Set.empty) {
 
   def withFailuresReduced(stampInFuture: Long): OutgoingPaymentMasterData = {
-    val node1 = nodeFailedWithUnknownUpdateTimes.mapValues(_ / 2)
-    val chan1 = chanFailedTimes.mapValues(_ / 2)
+    // Reduce failure times to give previously failing channels a chance
+    // failed-at-amount is restored gradually within a time window
 
     val acc = Map.empty[DescAndCapacity, StampedChannelFailed]
-    val amount1 = chanFailedAtAmount.foldLeft(acc) { case (acc1, dac ~ failed) =>
-      val ratio: Double = (stampInFuture - failed.stamp) / LNParams.failedChanRecoveryMsec
-      val failed1 = failed.copy(amount = failed.amount + (dac.capacity - failed.amount) * ratio)
+    val chanFailedAtAmount1 = chanFailedAtAmount.foldLeft(acc) { case (acc1, dac ~ failed) =>
+      val restoredRatio: Double = (stampInFuture - failed.stamp) / LNParams.failedChanRecoveryMsec
+      val failed1 = failed.copy(amount = failed.amount + (dac.capacity - failed.amount) * restoredRatio)
       if (failed1.amount >= dac.capacity) acc1 else acc1.updated(dac, failed1)
     }
 
-    // Reduce failure times to give previously failing channels a chance, failed-at-amount is restored gradually
-    copy(nodeFailedWithUnknownUpdateTimes = node1, chanFailedTimes = chan1, chanFailedAtAmount = amount1)
+    copy(nodeFailedWithUnknownUpdateTimes = nodeFailedWithUnknownUpdateTimes.mapValues(_ / 2),
+      directionFailedTimes = directionFailedTimes.mapValues(_ / 2),
+      chanFailedAtAmount = chanFailedAtAmount1,
+      chanNotRoutable = Set.empty)
   }
 }
 
@@ -137,11 +141,11 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
       // IMPLICIT GUARD: this message is ignored in all other states
       val currentUsedCapacities: mutable.Map[DescAndCapacity, MilliSatoshi] = usedCapacities
       val currentUsedDescs = mapKeys[DescAndCapacity, MilliSatoshi, ChannelDesc](currentUsedCapacities, _.desc, defVal = 0L.msat)
-      val ignoreChansFailedTimes = data.chanFailedTimes.collect { case (desc, times) if times >= LNParams.routerConf.maxChannelFailures => desc }
+      val ignoreDirectionsFailedTimes = data.directionFailedTimes.collect { case (desc, times) if times >= LNParams.routerConf.maxNodeFailures => desc }
       val ignoreChansCanNotHandle = currentUsedCapacities.collect { case (dac, used) if used + req.amount >= dac.capacity - req.amount / 32 => dac.desc }
       val ignoreChansFailedAtAmount = data.chanFailedAtAmount.collect { case (dac, failedAt) if failedAt.amount - currentUsedDescs(dac.desc) - req.amount / 8 <= req.amount => dac.desc }
-      val ignoreNodes = data.nodeFailedWithUnknownUpdateTimes.collect { case (nodeId, failTimes) if failTimes >= LNParams.routerConf.maxStrangeNodeFailures => nodeId }
-      val req1 = req.copy(ignoreNodes = ignoreNodes.toSet, ignoreChannels = ignoreChansFailedTimes.toSet ++ ignoreChansCanNotHandle ++ ignoreChansFailedAtAmount)
+      val ignoreNodes = data.nodeFailedWithUnknownUpdateTimes.collect { case (affectedNodeId, nodeFailedTimes) if nodeFailedTimes >= LNParams.routerConf.maxStrangeNodeFailures => affectedNodeId }
+      val req1 = req.copy(ignoreNodes = ignoreNodes.toSet, ignoreChannels = data.chanNotRoutable ++ ignoreChansCanNotHandle ++ ignoreChansFailedAtAmount, ignoreDirections = ignoreDirectionsFailedTimes.toSet)
       // Note: we may get many route request messages from payment FSMs with parts waiting for routes
       // so it is important to immediately switch to WAITING_FOR_ROUTE after seeing a first message
       cm.pf process PathFinder.FindRoute(me, req1)
@@ -158,13 +162,12 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
       become(data, EXPECTING_PAYMENTS)
       me process CMDAskForRoute
 
-    case (ChannelFailed(descAndCapacity, increment), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
+    case (ChannelFailed(descAndCapacity), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
       // At this point an affected InFlight status IS STILL PRESENT so failedAtAmount1 = usedCapacities = sum(inFlight)
       val amount1 = data.chanFailedAtAmount.get(descAndCapacity).map(_.amount).getOrElse(Long.MaxValue.msat) min usedCapacities(descAndCapacity)
-      val times1 = data.chanFailedTimes.updated(descAndCapacity.desc, data.chanFailedTimes.getOrElse(descAndCapacity.desc, 0) + increment)
-      val stampedChannelFailed = StampedChannelFailed(amount1, stamp = System.currentTimeMillis)
-      val fail1 = data.chanFailedAtAmount.updated(descAndCapacity, stampedChannelFailed)
-      become(data.copy(chanFailedAtAmount = fail1, chanFailedTimes = times1), state)
+      val directionFailedTimes1 = data.directionFailedTimes.updated(descAndCapacity.desc.toDirection, data.directionFailedTimes.getOrElse(descAndCapacity.desc.toDirection, 0) + 1)
+      val chanFailedAtAmount1 = data.chanFailedAtAmount.updated(value = StampedChannelFailed(amount1, stamp = System.currentTimeMillis), key = descAndCapacity)
+      become(data.copy(chanFailedAtAmount = chanFailedAtAmount1, directionFailedTimes = directionFailedTimes1), state)
 
     case (NodeFailed(nodeId, increment), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
       val newNodeFailedTimes = data.nodeFailedWithUnknownUpdateTimes.getOrElse(nodeId, 0) + increment
@@ -383,26 +386,26 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
 
               if (isSignatureFine) {
                 opm.cm.pf process failure.update
+                val edgeOpt = route.getEdgeForNode(originNodeId)
                 val isEnabled = Announcements.isEnabled(failure.update.channelFlags)
-                // If channel is disabled we exclude it for current MPP session, but may reuse in next one
-                val channelFailIncrement = if (isEnabled) 1 else data.cmd.routerConf.maxChannelFailures
+                for (edge <- edgeOpt if !isEnabled) opm doProcess ChannelNotRoutable(edge.desc)
 
-                route.getEdgeForNode(originNodeId) match {
+                edgeOpt match {
                   case Some(edge) if edge.updExt.update.shortChannelId != failure.update.shortChannelId =>
                     // This is fine: remote node has used a different channel than the one we have initially requested
                     // But remote node may send such errors infinitely so increment this specific type of failure
                     // Still fail an originally selected channel since it has most likely been tried too
-                    opm doProcess ChannelFailed(edge.toDescAndCapacity, channelFailIncrement)
                     opm doProcess NodeFailed(originNodeId, increment = 1)
+                    opm doProcess ChannelFailed(edge.toDescAndCapacity)
 
                   case Some(edge) if edge.updExt.update.core.noPosition == failure.update.core.noPosition =>
                     // Remote node returned EXACTLY same update, this channel is likely imbalanced
-                    opm doProcess ChannelFailed(edge.toDescAndCapacity, channelFailIncrement)
+                    opm doProcess ChannelFailed(edge.toDescAndCapacity)
 
                   case _ =>
                     // Something like higher feerates or CLTV, channel is updated in graph and may be chosen once again
                     // But remote node may send oscillating updates infinitely so increment this specific type of failure
-                    opm doProcess NodeFailed(originNodeId, channelFailIncrement)
+                    opm doProcess NodeFailed(originNodeId, increment = 1)
                 }
               } else {
                 // Invalid sig is a severe violation, ban sender node for 6 subsequent MPP sessions
@@ -418,9 +421,9 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
               resolveRemoteFail(RemoteFailure(pkt, route), wait)
 
             case pkt: Sphinx.DecryptedFailurePacket =>
-              // This is not an update failure, better to avoid entirely
+              // This is not an update failure, better avoid entirely
               route.getEdgeForNode(pkt.originNode).map(_.toDescAndCapacity) match {
-                case Some(dnc) => opm doProcess ChannelFailed(dnc, data.cmd.routerConf.maxChannelFailures)
+                case Some(descAndCapacity) => opm doProcess ChannelNotRoutable(descAndCapacity.desc)
                 case None => opm doProcess NodeFailed(pkt.originNode, data.cmd.routerConf.maxStrangeNodeFailures)
               }
 

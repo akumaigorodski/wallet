@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 
 object RouteCalculation {
   def handleRouteRequest(graph: DirectedGraph, r: RouteRequest): RouteResponse =
-    findRouteInternal(graph, r.source, r.target, r.amount, r.ignoreChannels, r.ignoreNodes, r.routeParams) match {
+    findRouteInternal(graph, r.source, r.target, r.amount, r.ignoreChannels, r.ignoreNodes, r.ignoreDirections, r.routeParams) match {
       case Some(searchResult) => RouteFound(Route(searchResult.path.map(ChannelHop), searchResult.weight), r.fullTag, r.partId)
       case _ => NoRouteAvailable(r.fullTag, r.partId)
     }
@@ -42,7 +42,7 @@ object RouteCalculation {
   }
 
   private def findRouteInternal(graph: DirectedGraph, localNodeId: PublicKey, targetNodeId: PublicKey, amount: MilliSatoshi,
-                                ignoredEdges: Set[ChannelDesc] = Set.empty, ignoredVertices: Set[PublicKey] = Set.empty,
+                                ignoredEdges: Set[ChannelDesc], ignoredVertices: Set[PublicKey], ignoreDirections: Set[NodeDirectionDesc],
                                 routeParams: RouteParams): Option[Graph.WeightedPath] = {
 
     def feeOk(fee: MilliSatoshi): Boolean = fee <= routeParams.feeReserve
@@ -50,6 +50,6 @@ object RouteCalculation {
     def cltvOk(cltv: CltvExpiryDelta): Boolean = cltv <= routeParams.routeMaxCltv
 
     val boundaries: RichWeight => Boolean = weight => feeOk(weight.costs.head - amount) && cltvOk(weight.cltv) && lengthOk(weight.length)
-    Graph.bestPath(graph, localNodeId, targetNodeId, amount, ignoredEdges, ignoredVertices, boundaries)
+    Graph.bestPath(graph, localNodeId, targetNodeId, amount, ignoredEdges, ignoredVertices, ignoreDirections, boundaries)
   }
 }

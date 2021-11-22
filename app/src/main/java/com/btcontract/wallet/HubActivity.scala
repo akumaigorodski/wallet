@@ -120,7 +120,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   // PAYMENT LIST
 
-  def reloadTxInfos: Unit = txInfos.setItems(WalletApp.txDataBag.listRecentTxs(20) map WalletApp.txDataBag.toTxInfo)
+  def reloadTxInfos: Unit = txInfos.setItems(WalletApp.txDataBag.listRecentTxs(200) map WalletApp.txDataBag.toTxInfo)
   def reloadPaymentInfos: Unit = paymentInfos.setItems(LNParams.cm.payBag.listRecentPayments(20) map LNParams.cm.payBag.toPaymentInfo)
   def reloadRelayedPreimageInfos: Unit = relayedPreimageInfos.setItems(LNParams.cm.payBag.listRecentRelays(20) map LNParams.cm.payBag.toRelayedPreimageInfo)
   def reloadPayMarketInfos: Unit = lnUrlPayLinks.setItems(WalletApp.lnUrlPayBag.listRecentLinks(20) map WalletApp.lnUrlPayBag.toLinkInfo)

@@ -20,9 +20,13 @@ case class ChannelUpdateExt(update: ChannelUpdate, crc32: Long, score: Long, use
 }
 
 object Router {
-  case class ChannelDesc(shortChannelId: Long, from: PublicKey, to: PublicKey)
+  case class NodeDirectionDesc(from: PublicKey, to: PublicKey)
 
-  case class RouterConf(initRouteMaxLength: Int, routeMaxCltv: CltvExpiryDelta, maxChannelFailures: Int = 4, maxStrangeNodeFailures: Int = 4, maxRemoteAttempts: Int = 6)
+  case class ChannelDesc(shortChannelId: Long, from: PublicKey, to: PublicKey) {
+    def toDirection: NodeDirectionDesc = NodeDirectionDesc(from, to)
+  }
+
+  case class RouterConf(initRouteMaxLength: Int, routeMaxCltv: CltvExpiryDelta, maxNodeFailures: Int = 4, maxStrangeNodeFailures: Int = 6, maxRemoteAttempts: Int = 6)
 
   case class PublicChannel(update1Opt: Option[ChannelUpdateExt], update2Opt: Option[ChannelUpdateExt], ann: ChannelAnnouncement) {
     def getChannelUpdateSameSideAs(cu: ChannelUpdate): Option[ChannelUpdateExt] = if (cu.position == ChannelUpdate.POSITION1NODE) update1Opt else update2Opt
@@ -56,9 +60,8 @@ object Router {
 
   case class RouteParams(feeReserve: MilliSatoshi, routeMaxLength: Int, routeMaxCltv: CltvExpiryDelta)
 
-  case class RouteRequest(fullTag: FullPaymentTag, partId: ByteVector, source: PublicKey,
-                          target: PublicKey, amount: MilliSatoshi, localEdge: GraphEdge, routeParams: RouteParams,
-                          ignoreNodes: Set[PublicKey] = Set.empty, ignoreChannels: Set[ChannelDesc] = Set.empty)
+  case class RouteRequest(fullTag: FullPaymentTag, partId: ByteVector, source: PublicKey, target: PublicKey, amount: MilliSatoshi, localEdge: GraphEdge, routeParams: RouteParams,
+                          ignoreNodes: Set[PublicKey] = Set.empty, ignoreChannels: Set[ChannelDesc] = Set.empty, ignoreDirections: Set[NodeDirectionDesc] = Set.empty)
 
   type RoutedPerHop = (MilliSatoshi, Hop)
 
@@ -79,9 +82,7 @@ object Router {
   }
 
   sealed trait RouteResponse { def fullTag: FullPaymentTag }
-
   case class NoRouteAvailable(fullTag: FullPaymentTag, partId: ByteVector) extends RouteResponse
-
   case class RouteFound(route: Route, fullTag: FullPaymentTag, partId: ByteVector) extends RouteResponse
 
   case class Data(channels: Map[Long, PublicChannel], hostedChannels: Map[Long, PublicChannel], graph: DirectedGraph) {
