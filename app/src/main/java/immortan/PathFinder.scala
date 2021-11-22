@@ -14,7 +14,7 @@ import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi}
 import immortan.PathFinder._
 import immortan.crypto.Tools._
 import immortan.crypto.{CanBeRepliedTo, StateMachine}
-import immortan.utils.{Rx, Statistics}
+import immortan.utils.{Denomination, Rx, Statistics}
 import rx.lang.scala.Subscription
 
 import scala.collection.JavaConverters._
@@ -37,6 +37,9 @@ object PathFinder {
   case class GetExpectedRouteFees(sender: CanBeRepliedTo, payee: PublicKey, interHops: Int) extends PathFinderRequest
 
   case class ExpectedRouteFees(hops: List[HasRelayFee] = Nil) {
+    def humanEstimate(denom: Denomination, amount: MilliSatoshi, mainColor: String, zeroColor: String): String =
+      denom.expectedFeeRange(hops.last.relayFee(amount), totalWithFee(amount) - amount, mainColor, zeroColor)
+
     private def accumulate(accumulator: MilliSatoshi, hop: HasRelayFee) = accumulator + hop.relayFee(accumulator)
     def totalWithFee(amount: MilliSatoshi): MilliSatoshi = hops.reverse.foldLeft(amount)(accumulate)
     def totalCltvDelta: CltvExpiryDelta = hops.map(_.cltvExpiryDelta).reduce(_ + _)
@@ -266,6 +269,6 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
     val AvgHopParams(cltvDelta, proportional, base, sampleSize) = Router.getAvgHopParams(lastHopSample)
     val stdDev = Statistics.stdDevBy(lastHopSample, proportional)(_.update.feeProportionalMillionths).toLong
     // For last payee hop we add 1 SD to calculated fees to ensure we don't exclude too many final channels
-    AvgHopParams(cltvDelta, proportional + stdDev, base, sampleSize)
+    AvgHopParams(cltvDelta, proportional + stdDev, base max MilliSatoshi(1000L), sampleSize)
   }
 }

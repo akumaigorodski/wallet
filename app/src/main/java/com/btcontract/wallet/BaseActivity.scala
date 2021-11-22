@@ -701,16 +701,14 @@ trait BaseActivity extends AppCompatActivity { me =>
       updatePopupButton(getPositiveButton(alert), isPayEnabled)
     }
 
-    // Load graph while user is looking at payment form
-    LNParams.cm.pf process PathFinder.CMDLoadGraph
-
     def neutral(alert: AlertDialog): Unit
     def send(alert: AlertDialog): Unit
     def isNeutralEnabled: Boolean
     def isPayEnabled: Boolean
 
     def baseSendNow(prExt: PaymentRequestExt, alert: AlertDialog): Unit = {
-      val cmd = LNParams.cm.makeSendCmd(prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(manager.resultMsat)
+      val feeReserve = LNParams.cm.feeReserve(manager.resultMsat, typicalChainTxFee, WalletApp.capLNFeeToChain, LNParams.maxOffChainFeeAboveRatio)
+      val cmd = LNParams.cm.makeSendCmd(prExt, LNParams.cm.all.values.toList, feeReserve, manager.resultMsat).modify(_.split.totalSum).setTo(manager.resultMsat)
       val pd = PaymentDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
       replaceOutgoingPayment(prExt, pd, action = None, sentAmount = cmd.split.myPart)
       LNParams.cm.localSend(cmd)
@@ -718,7 +716,8 @@ trait BaseActivity extends AppCompatActivity { me =>
     }
 
     def proceedSplit(prExt: PaymentRequestExt, origAmount: MilliSatoshi, alert: AlertDialog): Unit = {
-      val cmd = LNParams.cm.makeSendCmd(prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(origAmount)
+      val feeReserve = LNParams.cm.feeReserve(manager.resultMsat, typicalChainTxFee, WalletApp.capLNFeeToChain, LNParams.maxOffChainFeeAboveRatio)
+      val cmd = LNParams.cm.makeSendCmd(prExt, LNParams.cm.all.values.toList, feeReserve, manager.resultMsat).modify(_.split.totalSum).setTo(origAmount)
       val pd = PaymentDescription(split = cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
       goToWithValue(value = SplitParams(prExt, action = None, pd, cmd, typicalChainTxFee), target = ClassNames.qrSplitActivityClass)
       alert.dismiss

@@ -1,5 +1,10 @@
 package immortan.crypto
 
+import java.io.ByteArrayInputStream
+import java.nio.charset.StandardCharsets
+import java.nio.{ByteBuffer, ByteOrder}
+import java.util.concurrent.TimeUnit
+
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.sparrowwallet.hummingbird.UR
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
@@ -20,10 +25,6 @@ import immortan.utils.{FeeRatesInfo, ThrottledWork}
 import rx.lang.scala.Observable
 import scodec.bits.ByteVector
 
-import java.io.ByteArrayInputStream
-import java.nio.charset.StandardCharsets
-import java.nio.{ByteBuffer, ByteOrder}
-import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.language.implicitConversions
@@ -34,6 +35,8 @@ object Tools {
   type Bytes = Array[Byte]
   type Fiat2Btc = Map[String, Double]
   final val SEPARATOR = " "
+  final val HYPHEN = "-"
+  final val TILDA = "~"
 
   def trimmed(inputText: String): String = inputText.trim.take(144)
 

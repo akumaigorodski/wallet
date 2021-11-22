@@ -1,5 +1,7 @@
 package immortan
 
+import java.util.concurrent.atomic.AtomicLong
+
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.util.Timeout
 import com.softwaremill.quicklens._
@@ -22,7 +24,6 @@ import immortan.sqlite._
 import immortan.utils._
 import scodec.bits.{ByteVector, HexStringSyntax}
 
-import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.util.Try
@@ -48,7 +49,7 @@ object LNParams {
   val maxHoldSecs: Long = 600L
 
   val maxOffChainFeeRatio: Double = 0.01 // We are OK with paying up to this % of LN fee relative to payment amount
-  val maxOffChainFeeAboveRatio: MilliSatoshi = MilliSatoshi(20000L) // For small amounts we always accept fee up to this
+  val maxOffChainFeeAboveRatio: MilliSatoshi = MilliSatoshi(10000L) // For small amounts we always accept fee up to this
 
   val shouldSendUpdateFeerateDiff = 5.0
   val shouldRejectPaymentFeerateDiff = 20.0

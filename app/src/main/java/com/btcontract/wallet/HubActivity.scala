@@ -32,11 +32,14 @@ import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, R
 import fr.acinq.eclair.blockchain.electrum.{ElectrumEclairWallet, ElectrumWallet}
 import fr.acinq.eclair.blockchain.fee.FeeratePerByte
 import fr.acinq.eclair.channel._
+import fr.acinq.eclair.router.Router
 import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, Scripts}
 import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv, UnknownNextPeer}
 import immortan.ChannelListener.Malfunction
 import immortan.ChannelMaster.{OutgoingAdds, RevealedLocalFulfills}
+import immortan.PathFinder.{ExpectedRouteFees, GetExpectedRouteFees}
 import immortan._
+import immortan.crypto.CanBeRepliedTo
 import immortan.crypto.Tools._
 import immortan.fsm._
 import immortan.sqlite.SQLiteData
@@ -584,8 +587,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     def retry(info: PaymentInfo): Unit = new HasTypicalChainFee {
-      // When retrying we never cap max LN fee to chain because original failure may have happened because more expensive routes were omitted, but it's hard to figure that out with certainty
-      private val cmd = LNParams.cm.makeSendCmd(info.prExt, info.sent, LNParams.cm.all.values.toList, info.chainFee, capLNFeeToChain = false).modify(_.split.totalSum).setTo(info.sent)
+      private val feeReserve = LNParams.cm.feeReserve(info.sent, info.chainFee, capLNFeeToChain = false, LNParams.maxOffChainFeeAboveRatio)
+      private val cmd = LNParams.cm.makeSendCmd(info.prExt, LNParams.cm.all.values.toList, feeReserve, info.sent).modify(_.split.totalSum).setTo(info.sent)
       replaceOutgoingPayment(ext = info.prExt, description = info.description, action = info.action, sentAmount = cmd.split.myPart, seenAt = info.seenAt)
       LNParams.cm.localSend(cmd)
     }
@@ -1084,7 +1087,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
             override def neutral(alert: AlertDialog): Unit = proceedSplit(prExt, origAmount, alert)
 
             override def send(alert: AlertDialog): Unit = {
-              val cmd = LNParams.cm.makeSendCmd(prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(origAmount)
+              val feeReserve = LNParams.cm.feeReserve(manager.resultMsat, typicalChainTxFee, WalletApp.capLNFeeToChain, LNParams.maxOffChainFeeAboveRatio)
+              val cmd = LNParams.cm.makeSendCmd(prExt, LNParams.cm.all.values.toList, feeReserve, manager.resultMsat).modify(_.split.totalSum).setTo(origAmount)
               val pd = PaymentDescription(split = cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
               replaceOutgoingPayment(prExt, pd, action = None, sentAmount = cmd.split.myPart)
               LNParams.cm.localSend(cmd)
@@ -1114,8 +1118,28 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
               val totalHuman = WalletApp.denom.parsedWithSign(origAmount, cardIn, cardZero)
               val title = new TitleView(getString(dialog_send_ln) format prExt.brDescription)
               val builder = titleBodyAsViewBuilder(title.asColoredView(R.color.cardLightning), manager.content)
-              addFlowChip(title.flow, getString(dialog_ln_requested).format(totalHuman), R.drawable.border_blue)
-              mkCheckFormNeutral(send, none, neutral, builder, dialog_ok, dialog_cancel, dialog_split)
+              val popup = mkCheckFormNeutral(send, none, neutral, builder, dialog_ok, dialog_cancel, dialog_split)
+
+              def fillFlow(value: String) = UITask {
+                runAnd(title.flow.removeAllViewsInLayout) {
+                  addFlowChip(title.flow, getString(dialog_ln_requested).format(totalHuman), R.drawable.border_blue)
+                  addFlowChip(title.flow, getString(dialog_ln_expected_fee).format(value), R.drawable.border_blue)
+                }
+              }
+
+              val sender = new CanBeRepliedTo {
+                override def process(reply: Any): Unit = reply match {
+                  case PathFinder.NotifyNotReady => fillFlow(ExpectedRouteFees(Router.defAvgHops).humanEstimate(WalletApp.denom, origAmount, cardIn, cardZero).trim).run
+                  case exp: ExpectedRouteFees => fillFlow(exp.humanEstimate(WalletApp.denom, origAmount, cardIn, cardZero).trim).run
+                  case _ => fillFlow("n/a").run
+                }
+              }
+
+              val length = Router.DEFAULT_EXPECTED_ROUTE_LENGTH
+              val cmd = GetExpectedRouteFees(sender, prExt.pr.nodeId, length)
+              fillFlow(pctCollected.head).run
+              LNParams.cm.pf process cmd
+              popup
             }
 
             // Prefill with asked amount
@@ -1573,7 +1597,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         def proceed(pf: PayRequestFinal): TimerTask = UITask {
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
             val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
-            val cmd = LNParams.cm.makeSendCmd(pf.prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(minSendable)
+            val feeReserve = LNParams.cm.feeReserve(manager.resultMsat, typicalChainTxFee, WalletApp.capLNFeeToChain, LNParams.maxOffChainFeeAboveRatio)
+            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, feeReserve, manager.resultMsat).modify(_.split.totalSum).setTo(minSendable)
             val pd = PaymentDescription(cmd.split.asSome, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, meta = data.meta.textPlain.asSome)
             goToWithValue(value = SplitParams(pf.prExt, pf.successAction, pd, cmd, typicalChainTxFee), target = ClassNames.qrSplitActivityClass)
           }
@@ -1593,7 +1618,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
             val linkOrder = SemanticOrder(id = lnUrl.request, order = Long.MinValue)
             val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
-            val cmd = LNParams.cm.makeSendCmd(pf.prExt, manager.resultMsat, LNParams.cm.all.values.toList, typicalChainTxFee, WalletApp.capLNFeeToChain).modify(_.split.totalSum).setTo(manager.resultMsat)
+            val feeReserve = LNParams.cm.feeReserve(manager.resultMsat, typicalChainTxFee, WalletApp.capLNFeeToChain, LNParams.maxOffChainFeeAboveRatio)
+            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, feeReserve, manager.resultMsat).modify(_.split.totalSum).setTo(manager.resultMsat)
             val pd = PaymentDescription(split = None, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, meta = data.meta.textPlain.asSome)
             replaceOutgoingPayment(pf.prExt, pd, pf.successAction, sentAmount = cmd.split.myPart)
             LNParams.cm.localSend(cmd)

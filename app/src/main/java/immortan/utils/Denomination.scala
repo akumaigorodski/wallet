@@ -1,7 +1,9 @@
 package immortan.utils
 
 import java.text._
+
 import fr.acinq.eclair._
+import immortan.crypto.Tools._
 
 
 object Denomination {
@@ -22,6 +24,8 @@ trait Denomination { me =>
   def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String
 
   def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String
+
+  def expectedFeeRange(min: MilliSatoshi, max: MilliSatoshi, mainColor: String, zeroColor: String): String
 
   def fromMsat(amount: MilliSatoshi): BigDecimal = BigDecimal(amount.toLong) / factor
 
@@ -46,9 +50,14 @@ object SatDenomination extends Denomination { me =>
   val factor = 1000L
   val sign = "sat"
 
-  def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
+  def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
+    parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
 
-  def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = s"<font color=$mainColor>" + fmt.format(me fromMsat msat) + "</font>"
+  def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
+    s"<font color=$mainColor>" + fmt.format(me fromMsat msat) + "</font>"
+
+  def expectedFeeRange(min: MilliSatoshi, max: MilliSatoshi, mainColor: String, zeroColor: String): String =
+    parsed(min, mainColor, zeroColor) + SEPARATOR + HYPHEN + SEPARATOR + parsed(max, mainColor, zeroColor) + SEPARATOR + "\u00A0" + sign
 }
 
 object BtcDenomination extends Denomination { me =>
@@ -75,4 +84,7 @@ object BtcDenomination extends Denomination { me =>
       .append("<font color=").append(mainColor).append('>').append(finalDecimal).append("</font>")
       .toString
   }
+
+  def expectedFeeRange(min: MilliSatoshi, max: MilliSatoshi, mainColor: String, zeroColor: String): String =
+    TILDA + parsedWithSign(max, mainColor, zeroColor)
 }

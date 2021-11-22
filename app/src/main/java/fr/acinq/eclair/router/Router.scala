@@ -20,6 +20,10 @@ case class ChannelUpdateExt(update: ChannelUpdate, crc32: Long, score: Long, use
 }
 
 object Router {
+  val DEFAULT_EXPECTED_ROUTE_LENGTH: Int = 4
+  val defAvgHopParams = AvgHopParams(CltvExpiryDelta(144), feeProportionalMillionths = 500L, feeBaseMsat = 1000L.msat, sampleSize = 1)
+  lazy val defAvgHops: List[AvgHopParams] = List.fill(DEFAULT_EXPECTED_ROUTE_LENGTH)(defAvgHopParams)
+
   case class NodeDirectionDesc(from: PublicKey, to: PublicKey)
 
   case class ChannelDesc(shortChannelId: Long, from: PublicKey, to: PublicKey) {
@@ -86,11 +90,11 @@ object Router {
   case class RouteFound(route: Route, fullTag: FullPaymentTag, partId: ByteVector) extends RouteResponse
 
   case class Data(channels: Map[Long, PublicChannel], hostedChannels: Map[Long, PublicChannel], graph: DirectedGraph) {
-    val defAvgHopParams = AvgHopParams(CltvExpiryDelta(144), feeProportionalMillionths = 500L, feeBaseMsat = 1000L.msat, sampleSize = 1)
+    // This is a costly computation so keep it lazy and only calculate it once on first request
 
     lazy val avgHopParams: AvgHopParams = if (channels.nonEmpty) {
       val sample = channels.values.toVector.flatMap(pubChan => pubChan.update1Opt ++ pubChan.update2Opt)
-      val noFeeOutliers = Statistics.removeExtremeOutliers(sample)(_.update.feeProportionalMillionths)
+      val noFeeOutliers = Statistics.removeExtremeOutliers(sample, 0.1, 0.1)(_.update.feeProportionalMillionths)
       getAvgHopParams(noFeeOutliers)
     } else defAvgHopParams
   }
@@ -105,9 +109,11 @@ object Router {
     val cltvDeltaToFrequency = sample.groupBy(_.update.cltvExpiryDelta.underlying).mapValues(_.size)
     val (cltvMode, _) = cltvDeltaToFrequency.maxBy(identity)(Statistics.InverseIntTupleComparator)
 
+    val baseToFrequency = sample.groupBy(_.update.feeBaseMsat.underlying.toInt).mapValues(_.size)
+    val (baseMode, _) = baseToFrequency.maxBy(identity)(Statistics.InverseIntTupleComparator)
+
     val proportional = Statistics.meanBy(sample)(_.update.feeProportionalMillionths).toLong
-    val base = MilliSatoshi(Statistics.meanBy(sample)(_.update.feeBaseMsat.underlying).toLong)
     // For avergage hop we take max(mean, mode) to ensure we don't exlude too many routes by cltv
-    AvgHopParams(CltvExpiryDelta(cltvMean max cltvMode), proportional, base, sample.size)
+    AvgHopParams(CltvExpiryDelta(cltvMean max cltvMode), proportional, baseMode.msat, sample.size)
   }
 }

@@ -108,6 +108,7 @@
     <string name="dialog_send_ln"><![CDATA[Отправить платеж-<b>Молнию</b> %1$s]]></string>
     <string name="dialog_split_ln"><![CDATA[Разбить платеж-<b>Молнию</b> %1$s]]></string>
     <string name="dialog_split_ln_tip">Сначала пусть кто-то отсканирует,\nПотом одновременно нажмите OK.</string>
+    <string name="dialog_ln_expected_fee"><![CDATA[<b>примерный сбор</b> %1$s]]></string>
     <string name="dialog_ln_requested"><![CDATA[<b>запрошено</b>&#160;%1$s]]></string>
     <string name="dialog_ln_left"><![CDATA[<b>осталось</b>&#160;%1$s]]></string>
 

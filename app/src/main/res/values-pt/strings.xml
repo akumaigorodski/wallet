@@ -108,6 +108,7 @@
     <string name="dialog_send_ln"><![CDATA[Enviar pagamento <b>Lightning</b>%1$s]]></string>
     <string name="dialog_split_ln"><![CDATA[Pagamento <b>Lightning</b> dividido%1$s]]></string>
     <string name="dialog_split_ln_tip">Deixe outra pessoa ler um invoice dividido,\nEntão toquem em PAGAR, aprox ao mesmo tempo</string>
+    <string name="dialog_ln_expected_fee"><![CDATA[<b>expected fee</b> %1$s]]></string>
     <string name="dialog_ln_requested"><![CDATA[<b>solicitado</b>&#160;%1$s]]></string>
     <string name="dialog_ln_left"><![CDATA[<b>falta pagar</b>&#160;%1$s]]></string>
 
