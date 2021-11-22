@@ -117,7 +117,7 @@ class SQLiteNetwork(val db: DBInterface, val updateTable: ChannelUpdateTable, va
 
     for (announce <- pure.announces) addChannelAnnouncement(announce, addChannelAnnouncementNewSqlPQ)
     for (update <- pure.updates) addChannelUpdateByPosition(update, addChannelUpdateByPositionNewSqlPQ, addChannelUpdateByPositionUpdSqlPQ)
-    for (core <- pure.excluded) addExcludedChannel(core.shortChannelId, 1000L * 3600 * 24 * 300, addExcludedChannelNewSqlPQ)
+    for (core <- pure.excluded) addExcludedChannel(core.shortChannelId, 1000L * 3600 * 24 * 3650, addExcludedChannelNewSqlPQ)
 
     addChannelAnnouncementNewSqlPQ.close
     addChannelUpdateByPositionNewSqlPQ.close

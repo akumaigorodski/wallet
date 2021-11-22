@@ -26,7 +26,7 @@ object Router {
     def toDirection: NodeDirectionDesc = NodeDirectionDesc(from, to)
   }
 
-  case class RouterConf(initRouteMaxLength: Int, routeMaxCltv: CltvExpiryDelta, maxNodeFailures: Int = 4, maxStrangeNodeFailures: Int = 6, maxRemoteAttempts: Int = 6)
+  case class RouterConf(initRouteMaxLength: Int, routeMaxCltv: CltvExpiryDelta, maxNodeFailures: Int = 6, maxStrangeNodeFailures: Int = 6, maxRemoteAttempts: Int = 6)
 
   case class PublicChannel(update1Opt: Option[ChannelUpdateExt], update2Opt: Option[ChannelUpdateExt], ann: ChannelAnnouncement) {
     def getChannelUpdateSameSideAs(cu: ChannelUpdate): Option[ChannelUpdateExt] = if (cu.position == ChannelUpdate.POSITION1NODE) update1Opt else update2Opt

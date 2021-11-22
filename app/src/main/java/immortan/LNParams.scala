@@ -102,9 +102,9 @@ object LNParams {
       (BasicMultiPartPayment, FeatureSupport.Optional),
       (OptionDataLossProtect, FeatureSupport.Optional),
       (VariableLengthOnion, FeatureSupport.Optional),
-      (PrivateRouting, FeatureSupport.Optional),
       (ShutdownAnySegwit, FeatureSupport.Optional),
       (StaticRemoteKey, FeatureSupport.Optional),
+      (PrivateRouting, FeatureSupport.Optional),
       (HostedChannels, FeatureSupport.Optional),
       (PaymentSecret, FeatureSupport.Optional),
       (ChainSwap, FeatureSupport.Optional),
@@ -208,7 +208,7 @@ class SyncParams {
   val minNormalChansForPHC = 5 // How many normal chans a node must have to be eligible for PHCs
   val maxPHCPerNode = 3 // How many PHCs a node can have in total
 
-  val minCapacity: MilliSatoshi = MilliSatoshi(900000000L) // 900k sat
+  val minCapacity: MilliSatoshi = MilliSatoshi(750000000L) // 750k sat
   val maxNodesToSyncFrom = 2 // How many disjoint peers to use for majority sync
   val acceptThreshold = 1 // ShortIds and updates are accepted if confirmed by more than this peers
   val messagesToAsk = 400 // Ask for this many messages from peer before they say this chunk is done
