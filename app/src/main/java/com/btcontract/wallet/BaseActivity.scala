@@ -37,6 +37,7 @@ import com.google.zxing.{BarcodeFormat, EncodeHintType}
 import com.journeyapps.barcodescanner.{BarcodeResult, BarcodeView}
 import com.ornach.nobobutton.NoboButton
 import com.softwaremill.quicklens._
+import com.sparrowwallet.hummingbird.registry.CryptoPSBT
 import com.sparrowwallet.hummingbird.{UR, UREncoder}
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
@@ -535,9 +536,9 @@ trait BaseActivity extends AppCompatActivity { me =>
     val qrSlideshow: ImageView = host.findViewById(R.id.qrSlideshow).asInstanceOf[ImageView]
     var subscription: Option[Subscription] = None
 
-    def activate(bytes: Bytes): Unit = {
-      val encoder = new UREncoder(UR.fromBytes(bytes), 10, 100, 0)
-      val stringToQr: String => Bitmap = sourceChunk => QRActivity.get(sourceChunk, qrSize)
+    def activate(psbt: Psbt): Unit = {
+      val encoder = new UREncoder(new CryptoPSBT(Psbt write psbt).toUR, 100, 10, 0)
+      val stringToQr: String => Bitmap = sourceChunk => QRActivity.get(sourceChunk.toUpperCase, qrSize)
       val updateView: Bitmap => Unit = sourceQrCode => UITask(qrSlideshow setImageBitmap sourceQrCode).run
       subscription = Observable.interval(0.second, 700.millis).map(_ => encoder.nextPart).map(stringToQr).subscribe(updateView).asSome
     }
@@ -625,7 +626,7 @@ trait BaseActivity extends AppCompatActivity { me =>
       chainSlideshowView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
       chainSlideshowView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
       runAnd(chainReaderView.barcodeReader.pause)(chainReaderView.barcodeReader.stopDecoding)
-      chainSlideshowView.activate(Psbt write psbt)
+      chainSlideshowView.activate(psbt)
       switchButtons(alert, on = false)
       switchTo(chainSlideshowView)
     }
