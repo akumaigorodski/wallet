@@ -66,7 +66,7 @@ case class StampedChannelFailed(amount: MilliSatoshi, stamp: Long)
 case class NodeFailed(failedNodeId: PublicKey, increment: Int)
 
 case class SplitInfo(totalSum: MilliSatoshi, myPart: MilliSatoshi) {
-  val sentRatio: Long = ratio(totalSum, myPart)
+  val sentRatio: Long = ratio(totalSum, myPart).toLong
 }
 
 // For locally initiated payments outerPaymentSecret and fullTag.paymentSecret are same

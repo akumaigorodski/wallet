@@ -146,7 +146,7 @@ case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, se
 
   def isActivelyHolding(fsm: IncomingPaymentProcessor): Boolean = IncomingPaymentProcessor.RECEIVING == fsm.state && prExt.isEnough(fsm.lastAmountIn) && fsm.isHolding
 
-  def ratio(fsm: IncomingPaymentProcessor): Long = Tools.ratio(received, fsm.lastAmountIn)
+  def ratio(fsm: IncomingPaymentProcessor): Long = Tools.ratio(received, fsm.lastAmountIn).toLong
 }
 
 // Payment actions

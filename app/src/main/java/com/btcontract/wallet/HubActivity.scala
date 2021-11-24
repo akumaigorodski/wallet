@@ -620,7 +620,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
           val liveFeePaid = outgoingFSMOpt.map(_.data.usedFee).getOrElse(info.fee)
           val offChainFeePaid = WalletApp.denom.directedWithSign(0L.msat, liveFeePaid, cardOut, cardIn, cardZero, isIncoming = false)
-          val onChainFeeSaved = WalletApp.denom.directedWithSign(info.chainFee - liveFeePaid, 0L.msat, cardOut, cardIn, cardZero, info.chainFee > liveFeePaid)
           val shouldDisplayFee = liveFeePaid > 0L.msat && (info.status == PaymentStatus.SUCCEEDED || info.status != PaymentStatus.ABORTED && outgoingFSMOpt.isDefined)
           val shouldRetry = info.status == PaymentStatus.ABORTED && !info.prExt.pr.isExpired && info.description.split.isEmpty && info.description.toSelfPreimage.isEmpty
           val shouldShowPayee = !info.isIncoming && info.description.toSelfPreimage.isEmpty
@@ -634,7 +633,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           addFlowChip(extraInfo, getString(popup_fiat).format(s"<font color=$cardIn>$fiatNow</font>", fiatThen), R.drawable.border_gray)
           addFlowChip(extraInfo, getString(popup_prior_chain_balance) format WalletApp.denom.parsedWithSign(info.balanceSnapshot, cardIn, cardZero), R.drawable.border_gray)
           if (info.isIncoming && info.status == PaymentStatus.PENDING) addFlowChip(extraInfo, getString(popup_view_invoice), R.drawable.border_blue, _ => self doViewInvoice info)
-          if (!info.isIncoming && shouldDisplayFee) addFlowChip(extraInfo, getString(popup_ln_fee).format(offChainFeePaid, onChainFeeSaved), R.drawable.border_gray)
+          if (!info.isIncoming && shouldDisplayFee) addFlowChip(extraInfo, getString(popup_ln_fee).format(offChainFeePaid, ratio(amount, liveFeePaid) + PERCENT), R.drawable.border_gray)
           if (shouldRetry) addFlowChip(extraInfo, getString(popup_retry), R.drawable.border_yellow, _ => self retry info)
 
           incomingFSMOpt.filter(info.isActivelyHolding).foreach { fsm =>
@@ -1120,7 +1119,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
               val builder = titleBodyAsViewBuilder(title.asColoredView(R.color.cardLightning), manager.content)
               val popup = mkCheckFormNeutral(send, none, neutral, builder, dialog_ok, dialog_cancel, dialog_split)
 
-              def fillFlow(value: String) = UITask {
+              def fillFlow(value: CharSequence) = UITask {
                 runAnd(title.flow.removeAllViewsInLayout) {
                   addFlowChip(title.flow, getString(dialog_ln_requested).format(totalHuman), R.drawable.border_blue)
                   addFlowChip(title.flow, getString(dialog_ln_expected_fee).format(value), R.drawable.border_blue)
@@ -1129,8 +1128,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
               val sender = new CanBeRepliedTo {
                 override def process(reply: Any): Unit = reply match {
-                  case PathFinder.NotifyNotReady => fillFlow(ExpectedRouteFees(Router.defAvgHops).humanEstimate(WalletApp.denom, origAmount, cardIn, cardZero).trim).run
-                  case exp: ExpectedRouteFees => fillFlow(exp.humanEstimate(WalletApp.denom, origAmount, cardIn, cardZero).trim).run
+                  case PathFinder.NotifyNotReady => fillFlow(getString(dialog_up_to).format(ExpectedRouteFees(Router.defAvgHops) highCapRatio origAmount) + PERCENT).run
+                  case exp: ExpectedRouteFees => fillFlow(getString(dialog_up_to).format(exp highCapRatio origAmount) + PERCENT).run
                   case _ => fillFlow("n/a").run
                 }
               }

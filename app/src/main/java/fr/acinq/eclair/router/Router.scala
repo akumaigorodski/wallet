@@ -93,9 +93,8 @@ object Router {
     // This is a costly computation so keep it lazy and only calculate it once on first request
 
     lazy val avgHopParams: AvgHopParams = if (channels.nonEmpty) {
-      val sample = channels.values.toVector.flatMap(pubChan => pubChan.update1Opt ++ pubChan.update2Opt)
-      val noFeeOutliers = Statistics.removeExtremeOutliers(sample, 0.1, 0.1)(_.update.feeProportionalMillionths)
-      getAvgHopParams(noFeeOutliers)
+      val sample = channels.values.toVector.flatMap(pc => pc.update1Opt ++ pc.update2Opt)
+      getAvgHopParams(sample)
     } else defAvgHopParams
   }
 
@@ -105,15 +104,9 @@ object Router {
   }
 
   def getAvgHopParams(sample: Seq[ChannelUpdateExt] = Nil): AvgHopParams = {
-    val cltvMean = Statistics.meanBy(sample)(_.update.cltvExpiryDelta.underlying).toInt
-    val cltvDeltaToFrequency = sample.groupBy(_.update.cltvExpiryDelta.underlying).mapValues(_.size)
-    val (cltvMode, _) = cltvDeltaToFrequency.maxBy(identity)(Statistics.InverseIntTupleComparator)
-
-    val baseToFrequency = sample.groupBy(_.update.feeBaseMsat.underlying.toInt).mapValues(_.size)
-    val (baseMode, _) = baseToFrequency.maxBy(identity)(Statistics.InverseIntTupleComparator)
-
-    val proportional = Statistics.meanBy(sample)(_.update.feeProportionalMillionths).toLong
-    // For avergage hop we take max(mean, mode) to ensure we don't exlude too many routes by cltv
-    AvgHopParams(CltvExpiryDelta(cltvMean max cltvMode), proportional, baseMode.msat, sample.size)
+    val feeBaseMedian = Statistics.medianBy(sample, skew = 0.6D)(_.update.feeBaseMsat.underlying)
+    val feeProportionalMedian = Statistics.medianBy(sample, skew = 0.75D)(_.update.feeProportionalMillionths)
+    val cltvMedian = CltvExpiryDelta(Statistics.medianBy(sample)(_.update.cltvExpiryDelta.underlying).toInt max 144)
+    AvgHopParams(cltvMedian, feeProportionalMedian max 1, feeBaseMedian.msat max MilliSatoshi(1000L), sample.size)
   }
 }

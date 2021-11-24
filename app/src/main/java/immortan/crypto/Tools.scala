@@ -35,8 +35,7 @@ object Tools {
   type Bytes = Array[Byte]
   type Fiat2Btc = Map[String, Double]
   final val SEPARATOR = " "
-  final val HYPHEN = "-"
-  final val TILDA = "~"
+  final val PERCENT = "%"
 
   def trimmed(inputText: String): String = inputText.trim.take(144)
 
@@ -64,8 +63,9 @@ object Tools {
     }
   }
 
-  def ratio(bigger: MilliSatoshi, lesser: MilliSatoshi): Long =
-    Try(bigger.toLong).map(lesser.toLong * 100D / _).map(_.toLong).getOrElse(0L)
+  def ratio(bigger: MilliSatoshi, lesser: MilliSatoshi): Double =
+    // This trims resulting Double to two decimals to make it more readable
+    Try(bigger.toLong).map(lesser.toLong * 10000D / _).map(_.toLong / 100D).getOrElse(0D)
 
   def mapKeys[K, V, K1](items: mutable.Map[K, V], mapper: K => K1, defVal: V): mutable.Map[K1, V] =
     items.map { case (key, value) => mapper(key) -> value } withDefaultValue defVal

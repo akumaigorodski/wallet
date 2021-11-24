@@ -14,7 +14,7 @@ import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi}
 import immortan.PathFinder._
 import immortan.crypto.Tools._
 import immortan.crypto.{CanBeRepliedTo, StateMachine}
-import immortan.utils.{Denomination, Rx, Statistics}
+import immortan.utils.Rx
 import rx.lang.scala.Subscription
 
 import scala.collection.JavaConverters._
@@ -37,9 +37,7 @@ object PathFinder {
   case class GetExpectedRouteFees(sender: CanBeRepliedTo, payee: PublicKey, interHops: Int) extends PathFinderRequest
 
   case class ExpectedRouteFees(hops: List[HasRelayFee] = Nil) {
-    def humanEstimate(denom: Denomination, amount: MilliSatoshi, mainColor: String, zeroColor: String): String =
-      denom.expectedFeeRange(hops.last.relayFee(amount), totalWithFee(amount) - amount, mainColor, zeroColor)
-
+    def highCapRatio(amount: MilliSatoshi): Double = ratio(amount, totalWithFee(amount) - amount)
     private def accumulate(accumulator: MilliSatoshi, hop: HasRelayFee) = accumulator + hop.relayFee(accumulator)
     def totalWithFee(amount: MilliSatoshi): MilliSatoshi = hops.reverse.foldLeft(amount)(accumulate)
     def totalCltvDelta: CltvExpiryDelta = hops.map(_.cltvExpiryDelta).reduce(_ + _)
@@ -86,7 +84,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
     case (calc: GetExpectedRouteFees, OPERATIONAL) =>
       val interExpectedFees = List.fill(calc.interHops)(data.avgHopParams)
       val payeeHops = data.graph.vertices.getOrElse(calc.payee, default = Nil).map(_.updExt)
-      val lastExpectedFees = if (payeeHops.isEmpty) data.avgHopParams else getSkewedFeeLastHopParams(payeeHops)
+      val lastExpectedFees = if (payeeHops.isEmpty) data.avgHopParams else Router.getAvgHopParams(payeeHops)
       calc.sender process ExpectedRouteFees(interExpectedFees :+ lastExpectedFees)
 
     case (fr: FindRoute, OPERATIONAL) =>
@@ -263,12 +261,5 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       val master = new PHCSyncMaster(data) { def onSyncComplete(pure: CompleteHostedRoutingData): Unit = me process pure }
       master process SyncMasterPHCData(LNParams.syncParams.phcSyncNodes, getPHCExtraNodes, activeSyncs = Set.empty)
     } else updateLastTotalResyncStamp(System.currentTimeMillis)
-  }
-
-  def getSkewedFeeLastHopParams(lastHopSample: Seq[ChannelUpdateExt] = Nil): AvgHopParams = {
-    val AvgHopParams(cltvDelta, proportional, base, sampleSize) = Router.getAvgHopParams(lastHopSample)
-    val stdDev = Statistics.stdDevBy(lastHopSample, proportional)(_.update.feeProportionalMillionths).toLong
-    // For last payee hop we add 1 SD to calculated fees to ensure we don't exclude too many final channels
-    AvgHopParams(cltvDelta, proportional + stdDev, base max MilliSatoshi(1000L), sampleSize)
   }
 }

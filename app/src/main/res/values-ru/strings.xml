@@ -92,7 +92,7 @@
     <string name="dialog_legacy_send_btc">Отправить средства на адрес</string>
     <string name="scan_btc_address">Отсканируйте биткойн-адрес</string>
 
-    <string name="dialog_up_to"><![CDATA[<b> до </b> %1$s]]></string>
+    <string name="dialog_up_to"><![CDATA[<b>до </b> %1$s]]></string>
     <string name="dialog_fee_sat_vbyte"><![CDATA[<b>сбор</b> %1$s sat/vB]]></string>
     <string name="dialog_change_feerate">Изменить комиссию&#8230;</string>
     <string name="dialog_insufficient_funds">мало денег</string>
@@ -209,7 +209,7 @@
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 
     <string name="popup_prior_chain_balance"><![CDATA[<b>прежний&#160;баланс</b>&#160;%1$s]]></string>
-    <string name="popup_ln_fee"><![CDATA[<b>сбор</b>&#160;%1$s,&#160;<b>эконом</b>&#160;%2$s]]></string>
+    <string name="popup_ln_fee"><![CDATA[<b>сбор</b>&#160;%1$s&#160;(%2$s)]]></string>
     <string name="popup_fiat"><![CDATA[<b>в&#160;фиате</b>&#160;%1$s&#160;(%2$s)]]></string>
     <string name="popup_chain_fee"><![CDATA[<b>комиссия</b>&#160;%1$s]]></string>
     <string name="popup_hash"><![CDATA[<b>хэш</b>&#160;%1$s]]></string>

@@ -266,10 +266,7 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     if (isActive) Some(PaymentInfo.NOT_SENDABLE_IN_FLIGHT) else if (getPreimageMemo.get(paymentHash).isSuccess) Some(PaymentInfo.NOT_SENDABLE_SUCCESS) else None
   }
 
-  def localSend(cmd: SendMultiPart): Unit = {
-    val create = CreateSenderFSM(localPaymentListeners, cmd.fullTag)
-    List(create, ClearFailures, cmd).foreach(opm.process)
-  }
+  def localSend(cmd: SendMultiPart): Unit = List(CreateSenderFSM(localPaymentListeners, cmd.fullTag), ClearFailures, cmd).foreach(opm.process)
 
   // These are executed in Channel context
 

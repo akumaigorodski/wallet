@@ -278,7 +278,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     settingsTitle.setText(settings_ln_fee_cap)
 
     override def updateView: Unit = {
-      val maxPercent = (100 * LNParams.maxOffChainFeeRatio).toLong + "%"
+      val maxPercent = (100 * LNParams.maxOffChainFeeRatio).toLong + PERCENT
       val typicalFee = WalletApp.denom.parsedWithSign(typicalChainTxFee, cardIn, cardZero)
       val disabledText = getString(settings_ln_fee_cap_disabled).format(maxPercent, typicalFee)
       val enabledText = getString(settings_ln_fee_cap_enabled).format(maxPercent, typicalFee)
