@@ -201,7 +201,7 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel {
         if (sentExpiredRouted || expiredReceivedRevealed) throw ExpiredHtlcInNormalChannel(norm.channelId, sentExpiredRouted, expiredReceivedRevealed)
 
 
-      case (some: HasNormalCommitments, remoteInfo: RemoteNodeInfo, SLEEPING) if some.commitments.remoteInfo.nodeId == remoteInfo.nodeId =>
+      case (some: HasNormalCommitments, remoteInfo: RemoteNodeInfo, WAIT_FUNDING_DONE | SLEEPING) if some.commitments.remoteInfo.nodeId == remoteInfo.nodeId =>
         StoreBecomeSend(some withNewCommits some.commitments.copy(remoteInfo = remoteInfo.safeAlias), SLEEPING)
 
 
