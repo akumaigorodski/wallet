@@ -112,7 +112,7 @@
     <string name="dialog_ln_requested"><![CDATA[<b>solicitado</b>&#160;%1$s]]></string>
     <string name="dialog_ln_left"><![CDATA[<b>queda por pagar</b>&#160;%1$s]]></string>
 
-    <string name="btc_transfer_label"><![CDATA[Antigua ->  billetera moderna]]></string>
+    <string name="btc_transfer_label"><![CDATA[Antigua -> billetera moderna]]></string>
     <string name="btc_transfer_message"><![CDATA[Transferencia local de Bitcoin desde billetera antigua a billetera moderna]]></string>
     <string name="recovery_phrase_warning">Pulse para guardar la frase de recuperación de la billetera en caso de que pierdas o reemplaces tu teléfono.</string>
 
