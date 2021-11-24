@@ -655,10 +655,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     case _ if !prExt.pr.features.allowPaymentSecret => snack(container, getString(error_ln_send_no_secret).html, dialog_ok, _.dismiss)
 
     case _ if LNParams.cm.operationalCncs(LNParams.cm.all.values).maxBy(_.commits.availableForSend).commits.availableForSend < LNParams.minPayment =>
-      val smallestReserve = -LNParams.cm.operationalCncs(LNParams.cm.all.values).minBy(_.commits.availableForSend).commits.availableForSend
-      val reserveHuman = WalletApp.denom.parsedWithSign(smallestReserve, cardIn, cardZero)
-      val msg = getString(error_ln_send_reserve).format(reserveHuman).html
-      snack(container, msg, dialog_ok, _.dismiss)
+      snack(container, getString(error_ln_send_reserve).html, dialog_ok, _.dismiss)
 
     case _ if prExt.pr.amount.exists(_ < LNParams.minPayment) =>
       val requestedHuman = WalletApp.denom.parsedWithSign(prExt.pr.amount.get, cardIn, cardZero)
@@ -681,7 +678,8 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     case Some(cnc) =>
       if (cnc.commits.availableForReceive < 0L.msat) {
-        val reserveHuman = WalletApp.denom.parsedWithSign(-cnc.commits.availableForReceive, cardIn, cardZero)
+        val reservePlusMinPayment = cnc.commits.availableForReceive + LNParams.minPayment
+        val reserveHuman = WalletApp.denom.parsedWithSign(-reservePlusMinPayment, cardIn, cardZero)
         snack(container, getString(error_ln_receive_reserve).format(reserveHuman).html, dialog_ok, _.dismiss)
       } else onOk
   }

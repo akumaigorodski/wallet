@@ -146,7 +146,7 @@
     <string name="error_ln_receive_reserve"><![CDATA[Can\'t request Lightning payments yet because first you need to spend at least <b>%1$s</b> to make some space for receiving.]]></string>
 
     <string name="error_ln_send_small"><![CDATA[Can\'t send this Lightning payment because requested amount of <b>%1$s</b> is too small, a minimal amount is <b>%2$s</b>.]]></string>
-    <string name="error_ln_send_reserve"><![CDATA[Can\'t send Lightning payments yet because first you need to receive at least <b>%1$s</b> to make some space for sending.]]></string>
+    <string name="error_ln_send_reserve"><![CDATA[Can\'t send Lightning payments yet because your payment channel is empty and you need to receive something into it first.]]></string>
     <string name="error_ln_send_no_secret"><![CDATA[Can\'t send this Lightning payment because invoice does not contain a secret.]]></string>
     <string name="error_ln_send_network"><![CDATA[Can\'t send this Lightning payment because it belongs to some unknown network.]]></string>
     <string name="error_ln_send_split"><![CDATA[Can\'t proceed with this split invoice because its split parameters are wrong.]]></string>

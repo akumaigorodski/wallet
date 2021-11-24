@@ -146,7 +146,7 @@
     <string name="error_ln_receive_reserve"><![CDATA[No se pueden solicitar pagos Lightning aún porque primero debes gastar al menos <b>%1$s</b> para crear algo de liquidez para recibir.]]></string>
 
     <string name="error_ln_send_small"><![CDATA[No se puede enviar este pago Lightning porque el monto solicitado de <b>%1$s</b> es muy pequeño, el monto mínimo es <b>%2$s</b>.]]></string>
-    <string name="error_ln_send_reserve"><![CDATA[No se pueden enviar pagos Lightning aún porque primero necesitas recibir al menos <b>%1$s</b> para crear algo de liquidez para enviar.]]></string>
+    <string name="error_ln_send_reserve"><![CDATA[Can\'t send Lightning payments yet because your payment channel is empty and you need to receive something into it first.]]></string>
     <string name="error_ln_send_no_secret"><![CDATA[No se puede enviar este pago Lightning porque la factura no contiene un secreto.]]></string>
     <string name="error_ln_send_network"><![CDATA[No se puede enviar este pago Lightning porque pertenece a una red desconocida.]]></string>
     <string name="error_ln_send_split"><![CDATA[No se puede proceder con esta factura dividida porque los parámetros de división son incorrectos.]]></string>

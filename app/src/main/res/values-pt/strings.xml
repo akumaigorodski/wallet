@@ -146,7 +146,7 @@
     <string name="error_ln_receive_reserve"><![CDATA[Ainda não é possível solicitar pagamentos Relâmpago porque antes você precisa gastar ao menos<b>%1$s</b> para liberar espaço para receber.]]></string>
 
     <string name="error_ln_send_small"><![CDATA[Não é possível enviar este pagamento Relâmpago porque o valor solicitado de <b>%1$s</b> é muito baixo, o valor mínimo é <b>%2$s</b>.]]></string>
-    <string name="error_ln_send_reserve"><![CDATA[Não é possível enviar pagamentos Lightning ainda porque antes você precisa receber ao menos <b>%1$s</b> para abrir espaço para enviar.]]></string>
+    <string name="error_ln_send_reserve"><![CDATA[Can\'t send Lightning payments yet because your payment channel is empty and you need to receive something into it first.]]></string>
     <string name="error_ln_send_no_secret"><![CDATA[Não é possível enviar este pagamento Lightning porque o invoice não contém um segredo]]></string>
     <string name="error_ln_send_network"><![CDATA[Não é possível enviar este pagamento Lightning porque ele é de uma rede desconhecida]]></string>
     <string name="error_ln_send_split"><![CDATA[Não é possível continuar pois os parâmetros de partição deste invoice dividido estão errados.]]></string>
