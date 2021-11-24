@@ -186,7 +186,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
     def attempt(alert: AlertDialog): Unit = {
       def revertInformDismiss(reason: Throwable): Unit = runAnd(alert.dismiss)(me revertAndInform reason)
       runFutureProcessOnUI(makeFakeFunding(sendView.manager.resultMsat.truncateToSatoshi, feeView.rate), revertInformDismiss) { fakeResponse =>
-        // It is fine to use the first map element here: we send to single address so response may will always have a single element (change not included)
+        // It is fine to use the first map element here: we send to single address so response will always have a single element (change not included)
         // For signing wallet fake response sends to random p2wsh, for watching wallet fake response is also signed with random private key (needs another update)
         val totalFundAmount = fakeResponse.pubKeyScriptToAmount.values.head.toMilliSatoshi
         val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
@@ -290,17 +290,24 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
       val params = LNParams.makeChannelParams(isFunder = false, LNParams.minChanDustLimit)
       new HCOpenHandler(hasInfo.remoteInfo, secret, params.defaultFinalScriptPubKey, LNParams.cm) {
         def onEstablished(cs: Commitments, channel: ChannelHosted): Unit = implant(cs, channel)
-        def onFailure(reason: Throwable): Unit = revertAndInform(reason)
+
+        def onFailure(reason: Throwable): Unit = UITask {
+          // We need to disconnect instead of just showing an error because of HC specifics
+          // remote peer awaits for our response and won't react to another HC open request
+          WalletApp.app.quickToast(reason.getMessage)
+          disconnectListenersAndFinish
+          whenBackPressed.run
+        }.run
       }
     }
   }
 
-  def revertAndInform(reason: Throwable): Unit = {
+  def revertAndInform(reason: Throwable): Unit = UITask {
     // Whatever the reason for this to happen we still may accept new offers
     CommsTower.listenNative(Set(incomingAcceptingListener), hasInfo.remoteInfo)
     setVis(isVisible = criticalSupportAvailable, viewYesFeatureSupport)
-    onFail(reason)
-  }
+    WalletApp.app.quickToast(reason.getMessage)
+  }.run
 
   def stopAcceptingIncomingOffers: Unit = {
     CommsTower.listenNative(Set(incomingIgnoringListener), hasInfo.remoteInfo)
@@ -308,6 +315,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
   }
 
   def implantAndBroadcast(data: DATA_WAIT_FOR_FUNDING_CONFIRMED, fromWallet: ElectrumEclairWallet, freshChannel: Channel): Unit = {
+    // At this point channel has been persisted, we can now safely broadcast a funding tx and add channel to runtime map
     data.fundingTx.foreach(fromWallet.broadcast)
     implant(data.commitments, freshChannel)
   }

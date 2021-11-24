@@ -44,10 +44,9 @@ object FeeRates {
 }
 
 class FeeRates(bag: DataBag) extends CanBeShutDown {
-  def reloadData: FeeratesPerKB = fr.acinq.eclair.secureRandom nextInt 4 match {
+  def reloadData: FeeratesPerKB = fr.acinq.eclair.secureRandom nextInt 3 match {
     case 0 => new EsploraFeeProvider("https://blockstream.info/api/fee-estimates").provide
     case 1 => new EsploraFeeProvider("https://mempool.space/api/fee-estimates").provide
-    case 2 => EarnDotComFeeProvider.provide
     case _ => BitgoFeeProvider.provide
   }
 
@@ -113,9 +112,9 @@ class EsploraFeeProvider(val url: String) extends FeeRatesProvider {
 
   // First we keep only fee ranges with a max block delay below the limit
   // out of all the remaining fee ranges, we select the one with the minimum higher bound
-  def extractFeerate(feeRanges: EsploraFeeStructure, maxBlockDelay: Int): FeeratePerKB = {
-    val belowLimit = FeeratePerKw(feeRanges.filterKeys(_.toInt <= maxBlockDelay).values.min.sat * 1000L)
-    FeeratePerKB(FeeratePerKw.MinimumFeeratePerKw max belowLimit)
+  def extractFeerate(structure: EsploraFeeStructure, maxBlockDelay: Int): FeeratePerKB = {
+    val belowLimit = structure.filterKeys(_.toInt <= maxBlockDelay).values
+    FeeratePerKB(belowLimit.min.sat * 1000L)
   }
 }
 
@@ -147,42 +146,5 @@ object BitgoFeeProvider extends FeeRatesProvider {
   def extractFeerate(structure: BitGoFeeRateStructure, maxBlockDelay: Int): FeeratePerKB = {
     val belowLimit = structure.feeByBlockTarget.filterKeys(_.toInt <= maxBlockDelay).values
     FeeratePerKB(belowLimit.min.sat)
-  }
-}
-
-// EarnDotCom
-
-case class EarnDotComFeeRateStructure(fees: List[EarnDotComFeeRateItem] = Nil) {
-  val feesPerKilobyte: List[EarnDotComFeeRateItem] = fees.map(_.perKilobyte)
-}
-
-case class EarnDotComFeeRateItem(minFee: Long, maxFee: Long, memCount: Long, minDelay: Long, maxDelay: Long) {
-  lazy val perKilobyte: EarnDotComFeeRateItem = copy(minFee = minFee * 1000L, maxFee = maxFee * 1000L)
-}
-
-object EarnDotComFeeProvider extends FeeRatesProvider {
-  val url = "https://bitcoinfees.earn.com/api/v1/fees/list"
-
-  def provide: FeeratesPerKB = {
-    val structure = to[EarnDotComFeeRateStructure](get(url).connectTimeout(15000).body)
-
-    FeeratesPerKB(
-      mempoolMinFee = extractFeerate(structure, 1008),
-      block_1 = extractFeerate(structure, 1),
-      blocks_2 = extractFeerate(structure, 2),
-      blocks_6 = extractFeerate(structure, 6),
-      blocks_12 = extractFeerate(structure, 12),
-      blocks_36 = extractFeerate(structure, 36),
-      blocks_72 = extractFeerate(structure, 72),
-      blocks_144 = extractFeerate(structure, 144),
-      blocks_1008 = extractFeerate(structure, 1008)
-    )
-  }
-
-  // First we keep only fee ranges with a max block delay below the limit
-  // out of all the remaining fee ranges, select the one with the minimum higher bound and make sure it is > 0
-  def extractFeerate(structure: EarnDotComFeeRateStructure, maxBlockDelay: Int): FeeratePerKB = {
-    val belowLimit = structure.feesPerKilobyte.filter(_.maxDelay <= maxBlockDelay)
-    FeeratePerKB(Math.max(belowLimit.minBy(_.maxFee).maxFee, 1).sat)
   }
 }

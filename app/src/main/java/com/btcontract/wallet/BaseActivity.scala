@@ -227,8 +227,7 @@ trait BaseActivity extends AppCompatActivity { me =>
   def runInFutureProcessOnUI[T](fun: => T, no: Throwable => Unit)(ok: T => Unit): Unit = runFutureProcessOnUI[T](Future(fun), no)(ok)
 
   def runFutureProcessOnUI[T](fun: Future[T], no: Throwable => Unit)(ok: T => Unit): Unit = fun onComplete {
-    case Success(result) => UITask(ok apply result).run
-    case Failure(error) => UITask(no apply error).run
+    case Success(result) => UITask(ok apply result).run case Failure(error) => UITask(no apply error).run
   }
 
   def setVis(isVisible: Boolean, view: View): Unit = {

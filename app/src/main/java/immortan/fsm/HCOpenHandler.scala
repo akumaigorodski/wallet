@@ -10,7 +10,6 @@ import immortan._
 import scodec.bits.ByteVector
 
 
-// Secret and refund pubKey are supplied externally because they may be different depending if we have a chain wallet or not
 abstract class HCOpenHandler(info: RemoteNodeInfo, peerSpecificSecret: ByteVector32, peerSpecificRefundPubKey: ByteVector, cm: ChannelMaster) {
   val channelId: ByteVector32 = Tools.hostedChanId(info.nodeSpecificPubKey.value, info.nodeId.value)
 
