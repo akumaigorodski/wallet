@@ -11,6 +11,7 @@ public class DefaultHashMap<K,V> extends HashMap<K,V> {
     }
 
     public V getOrDefaultValue(Object k) {
-        return containsKey(k) ? super.get(k) : defaultValue;
+        V result = super.get(k);
+        return result == null ? defaultValue : result;
     }
 }

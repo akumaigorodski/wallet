@@ -3,11 +3,11 @@ package fr.acinq.eclair.router
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64}
 import fr.acinq.eclair._
-import fr.acinq.eclair.payment.PaymentRequest.ExtraHops
+import fr.acinq.eclair.payment.PaymentRequest.{ExtraHop, ExtraHops}
 import fr.acinq.eclair.router.Graph.GraphStructure.{DirectedGraph, GraphEdge}
 import fr.acinq.eclair.router.Graph.RichWeight
 import fr.acinq.eclair.router.Router._
-import fr.acinq.eclair.wire.{ChannelUpdate, ExtraHop}
+import fr.acinq.eclair.wire.ChannelUpdate
 import immortan.LNParams
 import immortan.crypto.Tools.Any2Some
 
@@ -43,13 +43,9 @@ object RouteCalculation {
 
   private def findRouteInternal(graph: DirectedGraph, localNodeId: PublicKey, targetNodeId: PublicKey, amount: MilliSatoshi,
                                 ignoredEdges: Set[ChannelDesc], ignoredVertices: Set[PublicKey], ignoreDirections: Set[NodeDirectionDesc],
-                                routeParams: RouteParams): Option[Graph.WeightedPath] = {
+                                rp: RouteParams): Option[Graph.WeightedPath] = {
 
-    def feeOk(fee: MilliSatoshi): Boolean = fee <= routeParams.feeReserve
-    def lengthOk(length: Int): Boolean = length <= routeParams.routeMaxLength
-    def cltvOk(cltv: CltvExpiryDelta): Boolean = cltv <= routeParams.routeMaxCltv
-
-    val boundaries: RichWeight => Boolean = weight => feeOk(weight.costs.head - amount) && cltvOk(weight.cltv) && lengthOk(weight.length)
-    Graph.bestPath(graph, localNodeId, targetNodeId, amount, ignoredEdges, ignoredVertices, ignoreDirections, boundaries)
+    Graph.bestPath(graph, sourceNode = localNodeId, targetNodeId, amount, ignoredEdges, ignoredVertices, ignoreDirections,
+      weight => weight.costs.head - amount < rp.feeReserve && weight.cltv <= rp.routeMaxCltv && weight.length <= rp.routeMaxLength)
   }
 }

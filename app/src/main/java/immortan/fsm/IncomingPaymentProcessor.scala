@@ -178,7 +178,7 @@ class TrampolinePaymentRelayer(val fullTag: FullPaymentTag, cm: ChannelMaster) e
     case pkt if params.cltvExpiryDelta > expiryIn(adds) - pkt.innerPayload.outgoingCltv => TrampolineExpiryTooSoon // Proposed delta is less than required by our node
     case _ if !adds.map(_.add.channelId).flatMap(cm.all.get).forall(Channel.isOperational) => TemporaryNodeFailure // Some channels got into error state, better stop
     case pkt if CltvExpiry(blockHeight) >= pkt.innerPayload.outgoingCltv => TrampolineExpiryTooSoon // Final recepient's CLTV expiry is below current chain height
-    case pkt if pkt.innerPayload.amountToForward < params.minimumMsat => TemporaryNodeFailure // Peer wants to route less than a minimum we have told them about
+    case pkt if pkt.innerPayload.amountToForward < params.minMsat => TemporaryNodeFailure // Peer wants to route less than a minimum we have told them about
   }
 
   def abortedWithError(failures: Failures, finalNodeId: PublicKey): TrampolineAborted = {

@@ -79,7 +79,7 @@ object LNParams {
   var fiatRates: FiatRates = _
   var feeRates: FeeRates = _
 
-  var trampoline: TrampolineOn = TrampolineOn(minPayment, Map.empty, feeProportionalMillionths = 1000L, exponent = 0.0, logExponent = 0.0, minRoutingCltvExpiryDelta)
+  var trampoline: TrampolineOn = TrampolineOn(minPayment, Long.MaxValue.msat, feeProportionalMillionths = 1000L, exponent = 0.0, logExponent = 0.0, minRoutingCltvExpiryDelta)
 
   // Last known chain tip (zero is unknown)
   val blockCount: AtomicLong = new AtomicLong(0L)

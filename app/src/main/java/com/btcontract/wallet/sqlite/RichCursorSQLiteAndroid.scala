@@ -17,11 +17,13 @@ case class RichCursorSQLiteAndroid(c: Cursor) extends RichCursor { me =>
 
   def string(key: String): String = c.getString(c getColumnIndex key)
 
-  def int(key: String): Int = c.getInt(c getColumnIndex key)
-
   def long(key: String): Long = c.getLong(c getColumnIndex key)
 
-  def long(pos: Int): Long = c.getLong(pos)
+  @inline def long(pos: Int): Long = c.getLong(pos)
+
+  def int(key: String): Int = c.getInt(c getColumnIndex key)
+
+  @inline def int(key: Int): Int = c.getInt(key)
 
   private val resultCount = c.getCount
 

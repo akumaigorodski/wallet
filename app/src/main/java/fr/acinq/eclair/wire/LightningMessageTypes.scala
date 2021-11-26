@@ -1,19 +1,20 @@
 package fr.acinq.eclair.wire
 
+import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
+import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
+
 import com.google.common.base.Charsets
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, Protocol, Satoshi}
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
+import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
 import fr.acinq.eclair.router.Announcements
 import immortan.crypto.Tools
 import immortan.{ChannelMaster, LNParams}
 import scodec.DecodeResult
 import scodec.bits.ByteVector
-
-import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
-import java.nio.ByteOrder
-import java.nio.charset.StandardCharsets
 
 
 sealed trait LightningMessage extends Serializable
@@ -373,16 +374,12 @@ sealed trait HasRelayFee {
   def cltvExpiryDelta: CltvExpiryDelta
 }
 
-case class TrampolineOn(minimumMsat: MilliSatoshi, routable: Map[Long, MilliSatoshi], feeProportionalMillionths: Long,
-                        exponent: Double, logExponent: Double, cltvExpiryDelta: CltvExpiryDelta) extends TrampolineStatus with HasRelayFee {
-
+case class TrampolineOn(minMsat: MilliSatoshi, maxMsat: MilliSatoshi, feeProportionalMillionths: Long, exponent: Double, logExponent: Double, cltvExpiryDelta: CltvExpiryDelta) extends TrampolineStatus with HasRelayFee { me =>
   def relayFee(amount: MilliSatoshi): MilliSatoshi = trampolineFee(proportionalFee(amount, feeProportionalMillionths).toLong, exponent, logExponent)
+  // If outgoing channel becomes non-operational we better tell our peer we can not route through it right now
+  def finalMessageToSend: TrampolineStatus = if (maxMsat < minMsat) TrampolineUndesired else me
 }
 
 case class AvgHopParams(cltvExpiryDelta: CltvExpiryDelta, feeProportionalMillionths: Long, feeBaseMsat: MilliSatoshi, sampleSize: Long) extends HasRelayFee {
   def relayFee(amount: MilliSatoshi): MilliSatoshi = nodeFee(feeBaseMsat, feeProportionalMillionths, amount)
-}
-
-case class ExtraHop(nodeId: PublicKey, shortChannelId: Long, feeBase: MilliSatoshi, feeProportionalMillionths: Long, cltvExpiryDelta: CltvExpiryDelta) extends HasRelayFee {
-  def relayFee(amount: MilliSatoshi): MilliSatoshi = nodeFee(feeBase, feeProportionalMillionths, amount)
 }

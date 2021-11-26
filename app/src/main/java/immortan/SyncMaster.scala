@@ -119,15 +119,15 @@ case class SyncWorker(master: CanBeRepliedTo, keyPair: KeyPair, remoteInfo: Remo
     case (data1: SyncWorkerShortIdsData, null, WAITING) => become(data1, SHORT_ID_SYNC)
     case (data1: SyncWorkerGossipData, _, WAITING | SHORT_ID_SYNC) => become(data1, GOSSIP_SYNC)
 
-    case (worker: CommsTower.Worker, data: SyncWorkerShortIdsData, SHORT_ID_SYNC) =>
-      val tlv = QueryChannelRangeTlv.QueryFlags(QueryChannelRangeTlv.QueryFlags.WANT_ALL)
-      val query = QueryChannelRange(LNParams.chainHash, data.from, Int.MaxValue, TlvStream(tlv))
+    case (worker: CommsTower.Worker, syncData: SyncWorkerShortIdsData, SHORT_ID_SYNC) =>
+      val tlv = QueryChannelRangeTlv.QueryFlags(flag = QueryChannelRangeTlv.QueryFlags.WANT_ALL)
+      val query = QueryChannelRange(LNParams.chainHash, syncData.from, tlvStream = TlvStream(tlv), numberOfBlocks = Int.MaxValue)
       worker.handler process query
 
-    case (reply: ReplyChannelRange, data1: SyncWorkerShortIdsData, SHORT_ID_SYNC) =>
-      val updatedData: SyncWorkerShortIdsData = data1.copy(ranges = reply +: data1.ranges)
-      if (reply.syncComplete == 1) master process CMDShortIdsComplete(me, updatedData)
-      else become(updatedData, SHORT_ID_SYNC)
+    case (reply: ReplyChannelRange, syncData: SyncWorkerShortIdsData, SHORT_ID_SYNC) =>
+      val updatedData = syncData.copy(ranges = reply +: syncData.ranges)
+      if (reply.syncComplete != 1) become(updatedData, SHORT_ID_SYNC)
+      else master process CMDShortIdsComplete(me, updatedData)
 
     // GOSSIP_SYNC
 
@@ -150,6 +150,7 @@ case class SyncWorker(master: CanBeRepliedTo, keyPair: KeyPair, remoteInfo: Remo
     case (update: ChannelUpdate, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenButShouldBeExcluded(update) => become(d1.copy(excluded = d1.excluded + update.core), GOSSIP_SYNC)
     case (update: ChannelUpdate, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenAndNotExcluded(update.shortChannelId) => become(d1.copy(updates = d1.updates + update.lite), GOSSIP_SYNC)
     case (ann: ChannelAnnouncement, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenShortIds.contains(ann.shortChannelId) => become(d1.copy(announces = d1.announces + ann.lite), GOSSIP_SYNC)
+    case (na: NodeAnnouncement, d1: SyncWorkerGossipData, GOSSIP_SYNC) => d1.syncMaster.onNodeAnnouncement(na)
 
     case (_: ReplyShortChannelIdsEnd, data1: SyncWorkerGossipData, GOSSIP_SYNC) =>
       // We have completed current chunk, inform master and either continue or complete
@@ -204,7 +205,7 @@ case class UpdateConifrmState(liteUpdOpt: Option[ChannelUpdate], confirmedBy: Co
   def add(cu: ChannelUpdate, from: PublicKey): UpdateConifrmState = copy(liteUpdOpt = Some(cu), confirmedBy = confirmedBy + from)
 }
 
-abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMachine[SyncMasterData] with CanBeRepliedTo { me =>
+abstract class SyncMaster(excluded: ShortChanIdSet, requestNodeAnnounce: ShortChanIdSet, routerData: Data) extends StateMachine[SyncMasterData] with CanBeRepliedTo { me =>
   private[this] val confirmedChanUpdates = mutable.Map.empty[UpdateCore, UpdateConifrmState] withDefaultValue UpdateConifrmState(None, Set.empty)
   private[this] val confirmedChanAnnounces = mutable.Map.empty[ChannelAnnouncement, ConfirmedBySet] withDefaultValue Set.empty
   private[this] var newExcludedChanUpdates = Set.empty[UpdateCore]
@@ -212,6 +213,7 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
 
   def onShortIdsSyncComplete(state: SyncMasterShortIdData): Unit
   def onChunkSyncComplete(pure: PureRoutingData): Unit
+  def onNodeAnnouncement(na: NodeAnnouncement): Unit
   def onTotalSyncComplete: Unit
 
   def hasCapacityIssues(update: ChannelUpdate): Boolean = update.htlcMaximumMsat.forall(cap => cap < LNParams.syncParams.minCapacity || cap <= update.htlcMinimumMsat)
@@ -224,9 +226,8 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
 
   def doProcess(change: Any): Unit = (change, data, state) match {
     case (setupData: SyncMasterShortIdData, null, SHORT_ID_SYNC) if setupData.baseInfos.nonEmpty =>
-      val rng = 0 until LNParams.syncParams.maxNodesToSyncFrom
-      become(freshData = setupData, SHORT_ID_SYNC)
-      rng.foreach(_ => me process CMDAddSync)
+      List.fill(LNParams.syncParams.maxNodesToSyncFrom)(CMDAddSync).foreach(process)
+      become(setupData, SHORT_ID_SYNC)
 
     case (CMDAddSync, data1: SyncMasterShortIdData, SHORT_ID_SYNC) if data1.activeSyncs.size < LNParams.syncParams.maxNodesToSyncFrom =>
       // We are asked to create a new worker AND we don't have enough workers yet: create a new one and instruct it to sync right away
@@ -323,7 +324,8 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
 
     val shortIdFlagSeq = for {
       (shortId, theirTimestamps, theirChecksums) <- stack.zipped if provenAndNotExcluded(shortId)
-      finalFlag = computeFlag(shortId, theirTimestamps, theirChecksums) if finalFlag != 0
+      nodeAnnounceFlags = if (requestNodeAnnounce contains shortId) INCLUDE_NODE_ANNOUNCEMENT_1 | INCLUDE_NODE_ANNOUNCEMENT_2 else 0
+      finalFlag = computeFlag(shortId, theirTimestamps, theirChecksums) | nodeAnnounceFlags if finalFlag != 0
     } yield (shortId, finalFlag)
 
     val groupedShortIdFlagSeqs = shortIdFlagSeq.toList.grouped(LNParams.syncParams.messagesToAsk)
@@ -331,9 +333,9 @@ abstract class SyncMaster(excluded: Set[Long], routerData: Data) extends StateMa
     for {
       requestChunk <- groupedShortIdFlagSeqs
       (chunkShortIds, chunkRequestFlags) = requestChunk.unzip
-      shortChannelIds = EncodedShortChannelIds(reply.shortChannelIds.encoding, chunkShortIds)
+      sids = EncodedShortChannelIds(reply.shortChannelIds.encoding, chunkShortIds)
       tlv = QueryShortChannelIdsTlv.EncodedQueryFlags(reply.shortChannelIds.encoding, chunkRequestFlags)
-    } yield QueryShortChannelIds(LNParams.chainHash, shortChannelIds, TlvStream(tlv))
+    } yield QueryShortChannelIds(LNParams.chainHash, tlvStream = TlvStream(tlv), shortChannelIds = sids)
   }
 
   private def computeFlag(shortlId: Long, theirTimestamps: ReplyChannelRangeTlv.Timestamps, theirChecksums: ReplyChannelRangeTlv.Checksums) =

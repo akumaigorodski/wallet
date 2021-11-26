@@ -26,6 +26,8 @@ trait RichCursor extends Iterable[RichCursor] {
   def long(pos: Int): Long
 
   def int(key: String): Int
+
+  def int(pos: Int): Int
 }
 
 case class RichCursorSQLiteGeneral(rs: ResultSet) extends RichCursor { me =>
@@ -41,9 +43,11 @@ case class RichCursorSQLiteGeneral(rs: ResultSet) extends RichCursor { me =>
 
   def long(key: String): Long = rs.getLong(key)
 
-  def long(pos: Int): Long = rs.getLong(pos)
+  def long(pos: Int): Long = rs.getLong(pos + 1)
 
   def int(key: String): Int = rs.getInt(key)
+
+  def int(pos: Int): Int = rs.getInt(pos + 1)
 
   def iterator: Iterator[RichCursor] =
     new Iterator[RichCursor] {
