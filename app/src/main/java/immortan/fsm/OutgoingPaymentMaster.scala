@@ -146,8 +146,7 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
       val ignoreChansFailedAtAmount = data.chanFailedAtAmount.collect { case (dac, failedAt) if failedAt.amount - currentUsedDescs(dac.desc) - req.amount / 8 <= req.amount => dac.desc }
       val ignoreNodes = data.nodeFailedWithUnknownUpdateTimes.collect { case (affectedNodeId, nodeFailedTimes) if nodeFailedTimes >= LNParams.routerConf.maxStrangeNodeFailures => affectedNodeId }
       val req1 = req.copy(ignoreNodes = ignoreNodes.toSet, ignoreChannels = data.chanNotRoutable ++ ignoreChansCanNotHandle ++ ignoreChansFailedAtAmount, ignoreDirections = ignoreDirectionsFailedTimes.toSet)
-      // Note: we may get many route request messages from payment FSMs with parts waiting for routes
-      // so it is important to immediately switch to WAITING_FOR_ROUTE after seeing a first message
+      // Note: we may get many route request messages from payment FSMs with parts waiting for routes so it is important to immediately switch to WAITING_FOR_ROUTE after seeing a first message
       cm.pf process PathFinder.FindRoute(me, req1)
       become(data, WAITING_FOR_ROUTE)
 
@@ -173,6 +172,9 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
       val newNodeFailedTimes = data.nodeFailedWithUnknownUpdateTimes.getOrElse(nodeId, 0) + increment
       val atTimes1 = data.nodeFailedWithUnknownUpdateTimes.updated(nodeId, newNodeFailedTimes)
       become(data.copy(nodeFailedWithUnknownUpdateTimes = atTimes1), state)
+
+    case (ChannelNotRoutable(desc), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
+      become(data.copy(chanNotRoutable = data.chanNotRoutable + desc), state)
 
     case (bag: InFlightPayments, EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
       // We need this to issue "wholePaymentSucceeded" AFTER neither in-flight parts nor leftovers in channels are present
