@@ -122,4 +122,9 @@ object Announcements {
       upd.cltvExpiryDelta, upd.htlcMinimumMsat, upd.feeBaseMsat, upd.feeProportionalMillionths, upd.htlcMaximumMsat, upd.unknownFields)
     verifySignature(witness, upd.signature, nodeId)
   }
+
+  def checkSig(ann: NodeAnnouncement): Boolean = {
+    val witness = nodeAnnouncementWitnessEncode(ann.timestamp, ann.nodeId, ann.rgbColor, ann.alias, ann.features, ann.addresses, ann.unknownFields)
+    verifySignature(witness, ann.signature, ann.nodeId)
+  }
 }

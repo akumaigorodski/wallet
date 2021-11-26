@@ -206,7 +206,10 @@ abstract class ChannelHosted extends Channel { me =>
 
     case (hc: HostedCommits, remoteLCSS: LastCrossSignedState, SLEEPING) if hc.error.isEmpty => attemptInitResync(hc, remoteLCSS)
 
-    case (hc: HostedCommits, remoteInfo: RemoteNodeInfo, SLEEPING) if hc.remoteInfo.nodeId == remoteInfo.nodeId => StoreBecomeSend(hc.copy(remoteInfo = remoteInfo.safeAlias), SLEEPING)
+
+    case (hc: HostedCommits, remoteInfo: RemoteNodeInfo, SLEEPING)
+      if hc.remoteInfo.nodeId == remoteInfo.nodeId && hc.remoteInfo.address != remoteInfo.address =>
+      StoreBecomeSend(hc.copy(remoteInfo = remoteInfo.safeAlias), SLEEPING)
 
 
     case (hc: HostedCommits, update: ChannelUpdate, OPEN | SLEEPING) if hc.updateOpt.forall(_.core != update.core) && hc.error.isEmpty =>

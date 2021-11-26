@@ -316,9 +316,9 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
 
       val links = new TitleView("&#9996;")
       addFlowChip(links.flow, getString(twitter), R.drawable.border_blue, _ => me browse "https://twitter.com/SimpleBtcWallet")
-      addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://lightning-wallet.com/posts/manual")
       addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/btcontract/wallet")
-      addFlowChip(links.flow, getString(rate), R.drawable.border_green, _ => me bringRateDialog null)
+      addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://sbw.finance/posts/manual")
+      addFlowChip(links.flow, "&#9825; Rate us", R.drawable.border_green, _ => me bringRateDialog null)
 
       for (count <- LNParams.logBag.count if count > 0) {
         def exportLog: Unit = me share LNParams.logBag.recent.map(_.asString).mkString("\n\n")

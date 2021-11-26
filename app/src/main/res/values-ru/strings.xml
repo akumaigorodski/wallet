@@ -2,8 +2,6 @@
 <resources>
     <string name="lang">rus</string>
     <string name="app_name">SBW</string>
-
-    <string name="rate">&#9825; Оцените нас</string>
     <string name="sources">Исходный код</string>
     <string name="twitter">Наш твиттер</string>
     <string name="password">Пароль кошелька</string>
@@ -355,13 +353,7 @@
     <string name="stats_title_chan_loss"><![CDATA[<b>Комиссии закрытия каналов</b>]]></string>
     <string name="stats_title_chain"><![CDATA[<b>Биткойн транзакции</b>]]></string>
     <string name="stats_title_relays"><![CDATA[<b>Маршрутизированные платежи</b>]]></string>
-    <string name="stats_title_network"><![CDATA[<b>Статус сети</b>]]></string>
     <string name="stats_title_ln"><![CDATA[<b>Платежи через Молнию</b>]]></string>
-
-    <string name="stats_item_chain_node"><![CDATA[<b>узел&#160;цепи</b>&#160;%1$s]]></string>
-    <string name="stats_item_chain_tip"><![CDATA[<b>высота&#160;цепи</b>&#160;%1$s]]></string>
-    <string name="stats_item_graph"><![CDATA[<b>sync&#160;графа</b>&#160;%1$s]]></string>
-    <string name="stats_item_phc"><![CDATA[<b>sync&#160;PHC</b>&#160;%1$s]]></string>
 
     <string name="stats_item_sent"><![CDATA[<b>отправлено</b>&#160;%1$s]]></string>
     <string name="stats_item_received"><![CDATA[<b>принято</b>&#160;%1$s]]></string>

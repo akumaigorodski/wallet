@@ -1,51 +1,20 @@
 package com.btcontract.wallet
 
-import fr.acinq.eclair._
-import immortan.crypto.Tools._
-import com.btcontract.wallet.R.string._
-import com.btcontract.wallet.Colors.{cardIn, cardOut, cardZero}
-import immortan.utils.{WalletEventsCatcher, WalletEventsListener}
-import immortan.{LNParams, PathFinder, PureRoutingData, SyncMaster, SyncMasterGossipData, SyncMasterShortIdData}
-import fr.acinq.eclair.blockchain.CurrentBlockCount
-import immortan.crypto.CanBeRepliedTo
-import android.widget.LinearLayout
-import java.net.InetSocketAddress
-
 import android.os.Bundle
 import android.view.View
-import java.util.Date
+import android.widget.LinearLayout
+import com.btcontract.wallet.Colors.{cardIn, cardOut, cardZero}
+import com.btcontract.wallet.R.string._
+import fr.acinq.eclair._
+import immortan.LNParams
 
 
-class StatActivity extends BaseActivity with CanBeRepliedTo { me =>
-  def stampAsWhen(stamp: Long): String = if (stamp > 1000000L) WalletApp.app.when(new Date(stamp), WalletApp.app.dateFormat) else "n/a"
+class StatActivity extends BaseActivity { me =>
   lazy private[this] val statContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
-  private[this] var graphSync = Option.empty[String]
-
-  private[this] val chainListener = new WalletEventsListener {
-    override def onChainMasterSelected(event: InetSocketAddress): Unit = UITask(updateView).run
-    override def onChainTipKnown(event: CurrentBlockCount): Unit = UITask(updateView).run
-    override def onChainDisconnected: Unit = UITask(updateView).run
-  }
-
-  override def process(reply: Any): Unit = {
-    // Record last seen sync progress and update view
-
-    reply match {
-      case chunk: PureRoutingData => graphSync = chunk.queriesLeft.toString.asSome
-      case state: SyncMasterShortIdData => graphSync = s"${state.ranges.size} / ${state.totalRanges}".asSome
-      case state: SyncMasterGossipData => graphSync = state.totalQueriesLeft.toString.asSome
-      case _: SyncMaster => graphSync = None
-      case _ => // Do nothing
-    }
-
-    UITask(updateView).run
-  }
 
   def INIT(state: Bundle): Unit = {
     if (WalletApp.isAlive && LNParams.isOperational) {
-      LNParams.chainWallets.catcher ! chainListener
       setContentView(R.layout.activity_settings)
-      LNParams.cm.pf.listeners += me
       updateView
     } else {
       WalletApp.freePossiblyUsedResouces
@@ -53,21 +22,7 @@ class StatActivity extends BaseActivity with CanBeRepliedTo { me =>
     }
   }
 
-  override def onResume: Unit = {
-    // Sync might already be happening when we get here
-    LNParams.cm.pf process PathFinder.CMDRequestSyncProgress
-    super.onResume
-  }
-
-  override def onDestroy: Unit = {
-    val remove = WalletEventsCatcher.Remove(chainListener)
-    LNParams.chainWallets.catcher ! remove
-    LNParams.cm.pf.listeners -= me
-    super.onDestroy
-  }
-
   def updateView: Unit = {
-    statContainer.removeAllViewsInLayout
     val title = new TitleView(me getString settings_stats)
     title.view.setOnClickListener(me onButtonTap finish)
     title.backArrow.setVisibility(View.VISIBLE)
@@ -78,21 +33,6 @@ class StatActivity extends BaseActivity with CanBeRepliedTo { me =>
       val relaySummary = LNParams.cm.payBag.relaySummary.filter(_.count > 0)
       val paymentSummary = LNParams.cm.payBag.paymentSummary.filter(_.count > 0)
       val channelTxFeesSummary = LNParams.cm.chanBag.channelTxFeesSummary.filter(_.count > 0)
-
-      val netTitle = new TitleView(me getString stats_title_network)
-      val chainNode = WalletApp.currentChainNode.map(_.toString).getOrElse("n/a")
-      val blockCount = if (LNParams.blockCount.get == 0L) "n/a" else LNParams.blockCount.get.toString
-      statContainer.addView(netTitle.view)
-
-      addFlowChip(netTitle.flow, getString(stats_item_chain_node).format(chainNode), R.drawable.border_gray)
-      addFlowChip(netTitle.flow, getString(stats_item_chain_tip).format(blockCount), R.drawable.border_gray)
-
-      if (LNParams.cm.all.nonEmpty) {
-        val phcResync = stampAsWhen(LNParams.cm.pf.getLastTotalResyncStamp)
-        val graphResync = graphSync getOrElse stampAsWhen(LNParams.cm.pf.getLastNormalResyncStamp)
-        addFlowChip(netTitle.flow, getString(stats_item_graph).format(graphResync), R.drawable.border_gray)
-        addFlowChip(netTitle.flow, getString(stats_item_phc).format(phcResync), R.drawable.border_gray)
-      }
 
       for (summary <- txSummary) {
         val slotTitle = new TitleView(me getString stats_title_chain)

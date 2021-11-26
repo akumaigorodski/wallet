@@ -2,8 +2,6 @@
 <resources>
     <string name="lang">port</string>
     <string name="app_name">SBW</string>
-
-    <string name="rate">&#9825; Rate us</string>
     <string name="sources">Ver código fonte</string>
     <string name="twitter">Siga-nos no Twitter</string>
     <string name="password">Senha</string>
@@ -351,13 +349,7 @@
     <string name="stats_title_chan_loss"><![CDATA[<b>Taxas de fechamento</b>]]></string>
     <string name="stats_title_chain"><![CDATA[<b>Transações Bitcoin</b>]]></string>
     <string name="stats_title_relays"><![CDATA[<b>Transmissões Lightning</b>]]></string>
-    <string name="stats_title_network"><![CDATA[<b>Status da rede</b>]]></string>
     <string name="stats_title_ln"><![CDATA[<b>Pagamentos Lightning</b>]]></string>
-
-    <string name="stats_item_chain_node"><![CDATA[<b>node&#160;chain</b>&#160;%1$s]]></string>
-    <string name="stats_item_chain_tip"><![CDATA[<b>chain&#160;tip</b>&#160;%1$s]]></string>
-    <string name="stats_item_graph"><![CDATA[<b>sync&#160;grafo</b>&#160;%1$s]]></string>
-    <string name="stats_item_phc"><![CDATA[<b>sync&#160;PHC</b>&#160;%1$s]]></string>
 
     <string name="stats_item_sent"><![CDATA[<b>enviado</b>&#160;%1$s]]></string>
     <string name="stats_item_received"><![CDATA[<b>recebido</b>&#160;%1$s]]></string>

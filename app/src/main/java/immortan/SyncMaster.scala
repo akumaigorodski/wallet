@@ -150,7 +150,7 @@ case class SyncWorker(master: CanBeRepliedTo, keyPair: KeyPair, remoteInfo: Remo
     case (update: ChannelUpdate, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenButShouldBeExcluded(update) => become(d1.copy(excluded = d1.excluded + update.core), GOSSIP_SYNC)
     case (update: ChannelUpdate, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenAndNotExcluded(update.shortChannelId) => become(d1.copy(updates = d1.updates + update.lite), GOSSIP_SYNC)
     case (ann: ChannelAnnouncement, d1: SyncWorkerGossipData, GOSSIP_SYNC) if d1.syncMaster.provenShortIds.contains(ann.shortChannelId) => become(d1.copy(announces = d1.announces + ann.lite), GOSSIP_SYNC)
-    case (na: NodeAnnouncement, d1: SyncWorkerGossipData, GOSSIP_SYNC) => d1.syncMaster.onNodeAnnouncement(na)
+    case (na: NodeAnnouncement, d1: SyncWorkerGossipData, GOSSIP_SYNC) if Announcements.checkSig(na) => d1.syncMaster.onNodeAnnouncement(na)
 
     case (_: ReplyShortChannelIdsEnd, data1: SyncWorkerGossipData, GOSSIP_SYNC) =>
       // We have completed current chunk, inform master and either continue or complete

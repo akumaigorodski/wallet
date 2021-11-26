@@ -34,7 +34,7 @@ import fr.acinq.eclair.blockchain.fee.FeeratePerByte
 import fr.acinq.eclair.channel._
 import fr.acinq.eclair.router.Router
 import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, Scripts}
-import fr.acinq.eclair.wire.{FullPaymentTag, PaymentTagTlv, UnknownNextPeer}
+import fr.acinq.eclair.wire.{FullPaymentTag, NodeAnnouncement, PaymentTagTlv, UnknownNextPeer}
 import immortan.ChannelListener.Malfunction
 import immortan.ChannelMaster.{OutgoingAdds, RevealedLocalFulfills}
 import immortan.PathFinder.{ExpectedRouteFees, GetExpectedRouteFees}
@@ -93,7 +93,7 @@ object HubActivity {
   def hasItems: Boolean = allItems.exists(_.lastItems.nonEmpty)
 }
 
-class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener { me =>
+class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener with CanBeRepliedTo { me =>
   private[this] lazy val expiresInBlocks = getResources.getStringArray(R.array.expires_in_blocks)
   private[this] lazy val partsInFlight = getResources.getStringArray(R.array.parts_in_flight)
   private[this] lazy val pctCollected = getResources.getStringArray(R.array.pct_collected)
@@ -845,8 +845,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val totalBalance: TextView = view.findViewById(R.id.totalBalance).asInstanceOf[TextView]
     val totalFiatBalance: TextView = view.findViewById(R.id.totalFiatBalance).asInstanceOf[TextView]
     val fiatUnitPriceAndChange: TextView = view.findViewById(R.id.fiatUnitPriceAndChange).asInstanceOf[TextView]
+    val chainSyncIndicator: TextView = view.findViewById(R.id.chainSyncIndicator).asInstanceOf[TextView]
     val offlineIndicator: TextView = view.findViewById(R.id.offlineIndicator).asInstanceOf[TextView]
-    val syncIndicator: TextView = view.findViewById(R.id.syncIndicator).asInstanceOf[TextView]
+    val lnSyncIndicator: TextView = view.findViewById(R.id.lnSyncIndicator).asInstanceOf[TextView]
 
     val totalLightningBalance: TextView = view.findViewById(R.id.totalLightningBalance).asInstanceOf[TextView]
     val channelStateIndicators: RelativeLayout = view.findViewById(R.id.channelStateIndicators).asInstanceOf[RelativeLayout]
@@ -959,12 +960,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }.run
 
     override def onChainSyncStarted(localTip: Long, remoteTip: Long): Unit = UITask {
-      setVis(isVisible = remoteTip - localTip > 2016 * 4, walletCards.syncIndicator)
+      setVis(isVisible = remoteTip - localTip > 2016 * 4, walletCards.chainSyncIndicator)
     }.run
 
     override def onChainSyncEnded(localTip: Long): Unit = UITask {
-      TransitionManager.beginDelayedTransition(walletCards.defaultHeader)
-      setVis(isVisible = false, walletCards.syncIndicator)
+      setVis(isVisible = false, walletCards.chainSyncIndicator)
     }.run
 
     override def onWalletReady(event: WalletReady): Unit = {
@@ -1033,10 +1033,21 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     try for (channel <- LNParams.cm.all.values) channel.listeners -= me catch none
     try LNParams.cm.localPaymentListeners remove extraOutgoingListener catch none
     try LNParams.fiatRates.listeners -= fiatRatesListener catch none
+    try LNParams.cm.pf.listeners -= me catch none
     super.onDestroy
   }
 
   override def onBackPressed: Unit = if (isSearchOn) rmSearch(null) else super.onBackPressed
+
+  // Getting graph sync status and our peer announcements
+
+  override def process(reply: Any): Unit = reply match {
+    case na: NodeAnnouncement => LNParams.cm.all.values.foreach(_ process na.toRemoteInfo)
+    case _: SyncMasterShortIdData => UITask(walletCards.lnSyncIndicator setVisibility View.VISIBLE).run
+    case _: PureRoutingData => UITask(walletCards.lnSyncIndicator setVisibility View.VISIBLE).run
+    case _: SyncMaster => UITask(walletCards.lnSyncIndicator setVisibility View.GONE).run
+    case _ => // Do nothing
+  }
 
   type GrantResults = Array[Int]
 
@@ -1236,6 +1247,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       LNParams.cm.localPaymentListeners add extraOutgoingListener
       LNParams.fiatRates.listeners += fiatRatesListener
       LNParams.chainWallets.catcher ! chainListener
+      LNParams.cm.pf.listeners += me
 
       bottomActionBar post UITask {
         bottomBlurringArea.setHeightTo(bottomActionBar)

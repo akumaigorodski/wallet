@@ -12,7 +12,7 @@ import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
 import fr.acinq.eclair.router.Announcements
 import immortan.crypto.Tools
-import immortan.{ChannelMaster, LNParams}
+import immortan.{ChannelMaster, LNParams, RemoteNodeInfo}
 import scodec.DecodeResult
 import scodec.bits.ByteVector
 
@@ -132,11 +132,6 @@ object NodeAddress {
   val V2Len = 16
   val V3Len = 56
 
-  def isTor(na: NodeAddress): Boolean = na match {
-    case _: Tor2 | _: Tor3 => true
-    case _ => false
-  }
-
   def fromParts(host: String, port: Int, orElse: (String, Int) => NodeAddress = resolveIp): NodeAddress =
     if (host.endsWith(onionSuffix) && host.length == V2Len + onionSuffix.length) Tor2(host.dropRight(onionSuffix.length), port)
     else if (host.endsWith(onionSuffix) && host.length == V3Len + onionSuffix.length) Tor3(host.dropRight(onionSuffix.length), port)
@@ -180,9 +175,11 @@ case class Domain(domain: String, port: Int) extends NodeAddress {
   override def toString: String = s"$domain:$port"
 }
 
-case class NodeAnnouncement(signature: ByteVector64, features: Features, timestamp: Long,
-                            nodeId: PublicKey, rgbColor: Color, alias: String, addresses: List[NodeAddress],
-                            unknownFields: ByteVector = ByteVector.empty) extends LightningMessage
+case class NodeAnnouncement(signature: ByteVector64, features: Features, timestamp: Long, nodeId: PublicKey, rgbColor: Color,
+                            alias: String, addresses: List[NodeAddress], unknownFields: ByteVector = ByteVector.empty) extends LightningMessage {
+
+  def toRemoteInfo: RemoteNodeInfo = RemoteNodeInfo(nodeId, addresses.minBy { case _: IPv4 => 1 case _: IPv6 => 2 case _ => 3 }, alias)
+}
 
 object ChannelUpdate {
   final val POSITION1NODE: java.lang.Integer = 1

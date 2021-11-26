@@ -27,7 +27,6 @@ object PathFinder {
   val NotifyNotReady = "path-finder-notify-not-ready"
   val NotifyOperational = "path-finder-notify-operational"
   val CMDStartPeriodicResync = "cmd-start-periodic-resync"
-  val CMDRequestSyncProgress = "cmd-request-sync-progress"
   val CMDLoadGraph = "cmd-load-graph"
 
   val WAITING = 0
@@ -133,15 +132,6 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
 
       syncMaster = normalSync.asSome
       normalSync process setupData
-
-    case (CMDRequestSyncProgress, OPERATIONAL) =>
-      // One of listeners is interested in current sync progress
-      // Send back whatever sync stage data we happen to have
-
-      for {
-        sync <- syncMaster
-        listener <- listeners
-      } listener process sync.data
 
     case (CMDResync, OPERATIONAL) if System.currentTimeMillis - getLastTotalResyncStamp > RESYNC_PERIOD =>
       // Normal resync has happened recently, but PHC resync is outdated (PHC failed last time due to running out of attempts)

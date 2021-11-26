@@ -25,10 +25,19 @@
 
             <TextView
                 style="@style/Notification"
+                android:background="@drawable/border_blue"
+                android:layout_toStartOf="@id/chainSyncIndicator"
+                android:layout_centerVertical="true"
+                android:id="@+id/lnSyncIndicator"
+                android:visibility="gone"
+                android:text="LN SYNC"/>
+
+            <TextView
+                style="@style/Notification"
                 android:background="@drawable/border_yellow"
                 android:layout_toStartOf="@id/offlineIndicator"
                 android:layout_centerVertical="true"
-                android:id="@+id/syncIndicator"
+                android:id="@+id/chainSyncIndicator"
                 android:visibility="gone"
                 android:text="SYNC"/>
 
@@ -41,13 +50,13 @@
 
             <TextView
                 style="@style/Notification"
-                android:text="@string/rate"
                 android:onClick="bringRateDialog"
                 android:background="@drawable/border_green"
                 android:layout_toStartOf="@id/settingsButton"
                 android:layout_centerVertical="true"
                 android:id="@+id/rateTeaser"
-                android:visibility="gone"/>
+                android:visibility="gone"
+                android:text="&#9825;"/>
 
             <ImageButton
                 android:padding="6dp"
