@@ -1,0 +1,3 @@
+* Fix MPP channel exclusion strategy.
+* Fix BIP32 change keys calculation.
+* Use CryptoPSBT for HW interactions.
