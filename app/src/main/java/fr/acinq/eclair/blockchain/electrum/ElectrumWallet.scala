@@ -151,10 +151,6 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
         stay using persistAndNotify(data2)
       }
 
-    case Event(ServerError(gt: GetTransaction, _), data) if data.pendingTransactionRequests.contains(gt.txid) =>
-      // Something is wrong with this client, better disconnect from it
-      goto(DISCONNECTED) replying PoisonPill
-
     case Event(response @ GetMerkleResponse(txid, _, height, _, _), data) =>
       val request = GetHeaders(height / RETARGETING_PERIOD * RETARGETING_PERIOD, RETARGETING_PERIOD)
 
@@ -163,9 +159,11 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
           val data1 = data.copy(proofs = data.proofs.updated(txid, response), pendingMerkleResponses = data.pendingMerkleResponses - response)
           stay using persistAndNotify(data1.withOverridingTxids)
 
-        case Some(existingHeader) if existingHeader.hashMerkleRoot == response.root => stay
+        case Some(existingHeader) if existingHeader.hashMerkleRoot == response.root =>
+          stay
 
-        case None if data.pendingHeadersRequests.contains(request) => stay using data.copy(pendingMerkleResponses = data.pendingMerkleResponses + response)
+        case None if data.pendingHeadersRequests.contains(request) =>
+          stay using data.copy(pendingMerkleResponses = data.pendingMerkleResponses + response)
 
         case None =>
           chainSync ! request

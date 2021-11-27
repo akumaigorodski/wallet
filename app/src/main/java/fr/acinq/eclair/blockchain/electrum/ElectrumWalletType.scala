@@ -118,7 +118,11 @@ class ElectrumWallet44(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
 
 class ElectrumWallet32(override val secrets: Option[AccountAndXPrivKey], override val xPub: ExtendedPublicKey, override val chainHash: ByteVector32) extends ElectrumWallet44(secrets, xPub, chainHash) {
 
-  override val changeMaster: ExtendedPublicKey = derivePublicKey(xPub, 1)
+  override val changeMaster: ExtendedPublicKey = {
+    val bip32ChangePath = KeyPath(hardened(0L) :: 1L :: Nil)
+    val priv = derivePrivateKey(secrets.get.master, bip32ChangePath)
+    publicKey(priv)
+  }
 
   override val accountMaster: ExtendedPublicKey = xPub
 }
