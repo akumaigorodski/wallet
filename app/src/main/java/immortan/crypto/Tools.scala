@@ -1,8 +1,7 @@
 package immortan.crypto
 
 import java.io.ByteArrayInputStream
-import java.nio.charset.StandardCharsets
-import java.nio.{ByteBuffer, ByteOrder}
+import java.nio.ByteOrder
 import java.util.concurrent.TimeUnit
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
@@ -23,6 +22,7 @@ import fr.acinq.eclair.transactions.CommitmentSpec
 import immortan.crypto.Noise.KeyPair
 import immortan.crypto.Tools.runAnd
 import immortan.utils.{FeeRatesInfo, ThrottledWork}
+import okhttp3.{OkHttpClient, Request, ResponseBody}
 import rx.lang.scala.Observable
 import scodec.bits.ByteVector
 
@@ -37,6 +37,18 @@ object Tools {
   type Fiat2Btc = Map[String, Double]
   final val SEPARATOR = " "
   final val PERCENT = "%"
+
+  private[this] val okHttpClient =
+    (new OkHttpClient.Builder)
+      .connectTimeout(15, TimeUnit.SECONDS)
+      .writeTimeout(15, TimeUnit.SECONDS)
+      .readTimeout(15, TimeUnit.SECONDS)
+      .build
+
+  def get(url: String): ResponseBody = {
+    val request = (new Request.Builder).url(url).get
+    okHttpClient.newCall(request.build).execute.body
+  }
 
   def trimmed(inputText: String): String = inputText.trim.take(144)
 

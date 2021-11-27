@@ -1,11 +1,9 @@
 package immortan.utils
 
-import com.github.kevinsawicki.http.HttpRequest.get
 import fr.acinq.bitcoin._
 import fr.acinq.eclair.blockchain.fee._
 import immortan.DataBag
-import immortan.crypto.CanBeShutDown
-import immortan.crypto.Tools.none
+import immortan.crypto.{CanBeShutDown, Tools}
 import immortan.utils.FeeRates._
 import immortan.utils.ImplicitJsonFormats._
 import rx.lang.scala.Subscription
@@ -70,7 +68,7 @@ class FeeRates(bag: DataBag) extends CanBeShutDown {
   val subscription: Subscription = {
     val retry = Rx.retry(Rx.ioQueue.map(_ => reloadData), Rx.incSec, 3 to 18 by 3)
     val repeat = Rx.repeat(retry, Rx.incHour, periodHours to Int.MaxValue by periodHours)
-    Rx.initDelay(repeat, info.stamp, periodHours * 3600 * 1000L).subscribe(updateInfo, none)
+    Rx.initDelay(repeat, info.stamp, periodHours * 3600 * 1000L).subscribe(updateInfo, Tools.none)
   }
 }
 
@@ -95,7 +93,7 @@ class EsploraFeeProvider(val url: String) extends FeeRatesProvider {
   type EsploraFeeStructure = Map[String, Long]
 
   def provide: FeeratesPerKB = {
-    val structure = to[EsploraFeeStructure](get(url).connectTimeout(15000).body)
+    val structure = to[EsploraFeeStructure](Tools.get(url).string)
 
     FeeratesPerKB(
       mempoolMinFee = extractFeerate(structure, 1008),
@@ -126,7 +124,7 @@ object BitgoFeeProvider extends FeeRatesProvider {
   val url = "https://www.bitgo.com/api/v2/btc/tx/fee"
 
   def provide: FeeratesPerKB = {
-    val structure = to[BitGoFeeRateStructure](get(url).connectTimeout(15000).body)
+    val structure = to[BitGoFeeRateStructure](Tools.get(url).string)
 
     FeeratesPerKB(
       mempoolMinFee = extractFeerate(structure, 1008),
