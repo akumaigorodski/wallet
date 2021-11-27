@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.sparrowwallet.hummingbird.UR
+import com.sparrowwallet.hummingbird.registry.CryptoPSBT
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.Psbt.KeyPathWithMaster
 import fr.acinq.bitcoin._
@@ -153,15 +154,10 @@ object Tools {
     }.extract
   }
 
-  def obtainPsbt(ur: UR): Try[Psbt] = {
-    val urBytes = ur.decodeFromRegistry.asInstanceOf[Bytes]
-    val charDecoder = StandardCharsets.UTF_8.newDecoder
-    val buffer = ByteBuffer.wrap(urBytes)
-
-    Try {
-      ByteVector.fromValidHex(charDecoder.decode(buffer).toString)
-    } flatMap Psbt.read orElse Psbt.read(urBytes)
-  }
+  def obtainPsbt(ur: UR): Try[Psbt] = Try {
+    val rawPsbt = ur.decodeFromRegistry.asInstanceOf[CryptoPSBT]
+    ByteVector.view(rawPsbt.getPsbt)
+  } flatMap Psbt.read
 
   object ~ {
     // Useful for matching nested Tuple2 with less noise

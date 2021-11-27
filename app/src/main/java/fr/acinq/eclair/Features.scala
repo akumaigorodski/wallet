@@ -117,7 +117,7 @@ object Features {
   }
 
   case object StaticRemoteKey extends Feature {
-    val rfcName = "Direct balance refund"
+    val rfcName = "Direct refund"
     val mandatory = 12
   }
 

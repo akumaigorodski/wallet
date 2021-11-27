@@ -539,7 +539,7 @@ trait BaseActivity extends AppCompatActivity { me =>
       val encoder = new UREncoder(new CryptoPSBT(Psbt write psbt).toUR, 100, 10, 0)
       val stringToQr: String => Bitmap = sourceChunk => QRActivity.get(sourceChunk.toUpperCase, qrSize)
       val updateView: Bitmap => Unit = sourceQrCode => UITask(qrSlideshow setImageBitmap sourceQrCode).run
-      subscription = Observable.interval(0.second, 700.millis).map(_ => encoder.nextPart).map(stringToQr).subscribe(updateView).asSome
+      subscription = Observable.interval(0.second, 600.millis).map(_ => encoder.nextPart).map(stringToQr).subscribe(updateView).asSome
     }
   }
 
