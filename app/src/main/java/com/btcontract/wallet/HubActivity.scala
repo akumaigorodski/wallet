@@ -59,13 +59,12 @@ import scala.util.{Success, Try}
 
 
 object HubActivity {
-  var txInfos = new ItemsWithMemory[TxInfo]
-  var paymentInfos = new ItemsWithMemory[PaymentInfo]
-  var lnUrlPayLinks = new ItemsWithMemory[LNUrlPayLink]
-  var relayedPreimageInfos = new ItemsWithMemory[RelayedPreimageInfo]
-  val allItems = List(txInfos, paymentInfos, relayedPreimageInfos, lnUrlPayLinks)
+  var txInfos: Iterable[TxInfo] = Nil
+  var paymentInfos: Iterable[PaymentInfo] = Nil
+  var lnUrlPayLinks: Iterable[LNUrlPayLink] = Nil
+  var relayedPreimageInfos: Iterable[RelayedPreimageInfo] = Nil
   // Run clear up method once on app start, do not re-run it every time this activity gets restarted
-  lazy val markAsFailedOnce: Unit = LNParams.cm.markAsFailed(paymentInfos.lastItems, LNParams.cm.allInChannelOutgoing)
+  lazy val markAsFailedOnce: Unit = LNParams.cm.markAsFailed(paymentInfos, LNParams.cm.allInChannelOutgoing)
   val disaplyThreshold: Long = System.currentTimeMillis
 
   var lastHostedReveals: Map[ByteVector32, RevealedLocalFulfills] = Map.empty
@@ -90,7 +89,7 @@ object HubActivity {
   def dangerousHCRevealed(fullTag: FullPaymentTag): List[LocalFulfill] = ChannelMaster.dangerousHCRevealed(lastHostedReveals, LNParams.blockCount.get, fullTag.paymentHash).toList
   def itemsToTags: Map[Int, String] = Map(R.id.bitcoinPayments -> "bitcoinPayments", R.id.lightningPayments -> "lightningPayments", R.id.relayedPayments -> "relayedPayments", R.id.payMarketLinks -> "payMarketLinks")
   def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(incoming = amount, outgoing = 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
-  def hasItems: Boolean = allItems.exists(_.lastItems.nonEmpty)
+  def hasItems: Boolean = txInfos.nonEmpty || paymentInfos.nonEmpty || lnUrlPayLinks.nonEmpty || relayedPreimageInfos.nonEmpty
 }
 
 class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener with CanBeRepliedTo { me =>
@@ -123,10 +122,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   // PAYMENT LIST
 
-  def reloadTxInfos: Unit = txInfos.setItems(WalletApp.txDataBag.listRecentTxs(200) map WalletApp.txDataBag.toTxInfo)
-  def reloadPaymentInfos: Unit = paymentInfos.setItems(LNParams.cm.payBag.listRecentPayments(20) map LNParams.cm.payBag.toPaymentInfo)
-  def reloadRelayedPreimageInfos: Unit = relayedPreimageInfos.setItems(LNParams.cm.payBag.listRecentRelays(20) map LNParams.cm.payBag.toRelayedPreimageInfo)
-  def reloadPayMarketInfos: Unit = lnUrlPayLinks.setItems(WalletApp.lnUrlPayBag.listRecentLinks(20) map WalletApp.lnUrlPayBag.toLinkInfo)
+  def reloadTxInfos: Unit = txInfos = WalletApp.txDataBag.listRecentTxs(20).map(WalletApp.txDataBag.toTxInfo)
+  def reloadPaymentInfos: Unit = paymentInfos = LNParams.cm.payBag.listRecentPayments(20).map(LNParams.cm.payBag.toPaymentInfo)
+  def reloadRelayedPreimageInfos: Unit = relayedPreimageInfos = LNParams.cm.payBag.listRecentRelays(20).map(LNParams.cm.payBag.toRelayedPreimageInfo)
+  def reloadPayMarketInfos: Unit = lnUrlPayLinks = WalletApp.lnUrlPayBag.listRecentLinks(20).map(WalletApp.lnUrlPayBag.toLinkInfo)
 
   def isImportantItem: PartialFunction[TransactionDetails, Boolean] = {
     case anyFreshInfo if anyFreshInfo.updatedAt > disaplyThreshold => true
@@ -136,11 +135,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   def updAllInfos: Unit = UITask {
+    val exceptRouted = List(txInfos, paymentInfos, lnUrlPayLinks)
     val dr = LNParams.cm.delayedRefunds.asSome.filter(_.totalAmount > 0L.msat)
-    val alwaysVisibleInfos = allItems.flatMap(_.lastItems filter isImportantItem)
     val itemsToDisplayMap = Map(R.id.bitcoinPayments -> txInfos, R.id.lightningPayments -> paymentInfos, R.id.relayedPayments -> relayedPreimageInfos, R.id.payMarketLinks -> lnUrlPayLinks)
-    val allVisibleInfos = if (isSearchOn) List(txInfos, paymentInfos, lnUrlPayLinks) else walletCards.toggleGroup.getCheckedButtonIds.asScala.map(_.toInt).map(itemsToDisplayMap)
-    allInfos = SemanticOrder.makeSemanticOrder(allVisibleInfos.flatMap(_.lastItems) ++ alwaysVisibleInfos ++ dr)
+    val allVisibleInfos = if (isSearchOn) exceptRouted else walletCards.toggleGroup.getCheckedButtonIds.asScala.map(_.toInt).map(itemsToDisplayMap)
+    allInfos = SemanticOrder.makeSemanticOrder(allVisibleInfos.flatten ++ exceptRouted.flatMap(_ filter isImportantItem) ++ dr)
   }.run
 
   def loadRecent: Unit = {
@@ -154,9 +153,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   def loadSearch(query: String): Unit = WalletApp.txDataBag.db.txWrap {
-    txInfos.lastItems = WalletApp.txDataBag.searchTransactions(query).map(WalletApp.txDataBag.toTxInfo)
-    paymentInfos.lastItems = LNParams.cm.payBag.searchPayments(query).map(LNParams.cm.payBag.toPaymentInfo)
-    lnUrlPayLinks.lastItems = WalletApp.lnUrlPayBag.searchLinks(query).map(WalletApp.lnUrlPayBag.toLinkInfo)
+    txInfos = WalletApp.txDataBag.searchTransactions(query).map(WalletApp.txDataBag.toTxInfo)
+    paymentInfos = LNParams.cm.payBag.searchPayments(query).map(LNParams.cm.payBag.toPaymentInfo)
+    lnUrlPayLinks = WalletApp.lnUrlPayBag.searchLinks(query).map(WalletApp.lnUrlPayBag.toLinkInfo)
     updAllInfos
   }
 
@@ -987,7 +986,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }.run
 
     override def gotFirstPreimage(data: OutgoingPaymentSenderData, fulfill: RemoteFulfill): Unit = UITask {
-      val actionOpt = paymentInfos.lastItems.find(_.paymentHash == fulfill.ourAdd.paymentHash).flatMap(_.action)
+      val actionOpt = paymentInfos.find(_.paymentHash == fulfill.ourAdd.paymentHash).flatMap(_.action)
       for (paymentAction <- actionOpt) resolveAction(fulfill.theirPreimage, paymentAction)
       Vibrator.vibrate
     }.run
@@ -1285,7 +1284,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
       runInFutureProcessOnUI(loadRecent, none) { _ =>
         // We suggest user to rate us if: no rate attempt has been made before, LN payments were successful, user has been using an app for certain period
-        setVis(WalletApp.showRateUs && paymentInfos.lastItems.forall(_.status == PaymentStatus.SUCCEEDED) && allInfos.size > 4 && allInfos.size < 8, walletCards.rateTeaser)
+        setVis(WalletApp.showRateUs && paymentInfos.forall(_.status == PaymentStatus.SUCCEEDED) && allInfos.size > 4 && allInfos.size < 8, walletCards.rateTeaser)
         // User may kill an activity but not an app and on getting back there won't be a chain listener event, so check connectivity once again here
         setVis(isVisible = WalletApp.currentChainNode.isEmpty, walletCards.offlineIndicator)
         walletCards.searchField addTextChangedListener onTextChange(searchWorker.addWork)
@@ -1302,7 +1301,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         reloadTxInfos
 
         for {
-          txInfo <- txInfos.lastItems if !txInfo.isDoubleSpent && !txInfo.isConfirmed
+          txInfo <- txInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
           relatedChainWallet <- LNParams.chainWallets.findByPubKey(pub = txInfo.pubKey)
           res <- relatedChainWallet.doubleSpent(txInfo.tx) if res.depth != txInfo.depth || res.isDoubleSpent != txInfo.isDoubleSpent
         } WalletApp.txDataBag.updStatus(txInfo.txid, res.depth, updatedStamp = res.stamp, res.isDoubleSpent)
@@ -1636,7 +1635,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
             LNParams.cm.localSend(cmd)
 
             if (!pf.isThrowAway) {
-              val currentLabel = lnUrlPayLinks.lastItems.find(_.payString == lnUrl.request).flatMap(_.description.label)
+              val currentLabel = lnUrlPayLinks.find(_.payString == lnUrl.request).flatMap(_.description.label)
               val desc = LNUrlDescription(currentLabel, linkOrder.asSome, randKey.value.toHex, pf.prExt.pr.paymentHash, pf.prExt.pr.paymentSecret.get, manager.resultMsat)
               val info = LNUrlPayLink(domain = lnUrl.uri.getHost, payString = lnUrl.request, data.metadata, updatedAt = System.currentTimeMillis, desc, pf.prExt.pr.nodeId.toString, getComment)
               WalletApp.lnUrlPayBag.saveLink(info)
@@ -1681,12 +1680,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   def paymentAdapterDataChanged: TimerTask = UITask {
-    if (txInfos.lastDelta > 0) walletCards.bitcoinPayments.setText(s"+${txInfos.lastDelta}")
-    if (lnUrlPayLinks.lastDelta > 0) walletCards.payMarketLinks.setText(s"+${lnUrlPayLinks.lastDelta}")
-    if (paymentInfos.lastDelta > 0) walletCards.lightningPayments.setText(s"+${paymentInfos.lastDelta}")
-    if (relayedPreimageInfos.lastDelta > 0) walletCards.relayedPayments.setText(s"+${relayedPreimageInfos.lastDelta}")
-    setVis(isVisible = relayedPreimageInfos.lastItems.nonEmpty, walletCards.relayedPayments)
-    setVis(isVisible = lnUrlPayLinks.lastItems.nonEmpty, walletCards.payMarketLinks)
+    setVis(isVisible = relayedPreimageInfos.nonEmpty, walletCards.relayedPayments)
+    setVis(isVisible = lnUrlPayLinks.nonEmpty, walletCards.payMarketLinks)
     setVis(isVisible = hasItems && !isSearchOn, walletCards.listCaption)
     setVis(isVisible = !hasItems, walletCards.recoveryPhrase)
     paymentsAdapter.notifyDataSetChanged
