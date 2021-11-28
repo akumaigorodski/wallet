@@ -29,7 +29,6 @@ import scodec.bits.ByteVector
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.language.implicitConversions
-import scala.util.Try
 
 
 object Tools {
@@ -77,8 +76,10 @@ object Tools {
   }
 
   def ratio(bigger: MilliSatoshi, lesser: MilliSatoshi): Double =
-    // This trims resulting Double to two decimals to make it more readable
-    Try(bigger.toLong).map(lesser.toLong * 10000D / _).map(_.toLong / 100D).getOrElse(0D)
+    scala.util.Try(bigger.toLong)
+      .map(lesser.toLong * 10000D / _)
+      .map(_.toLong / 100D)
+      .getOrElse(0D)
 
   def mapKeys[K, V, K1](items: mutable.Map[K, V], mapper: K => K1, defVal: V): mutable.Map[K1, V] =
     items.map { case (key, value) => mapper(key) -> value } withDefaultValue defVal
@@ -131,7 +132,7 @@ object Tools {
     mac ++ nonce ++ ciphertext // 16b + 12b + variable size
   }
 
-  def chaChaDecrypt(key: ByteVector32, data: ByteVector): Try[ByteVector] = Try {
+  def chaChaDecrypt(key: ByteVector32, data: ByteVector): scala.util.Try[ByteVector] = scala.util.Try {
     ChaCha20Poly1305.decrypt(key, nonce = data drop 16 take 12, ciphertext = data drop 28, ByteVector.empty, mac = data take 16)
   }
 
@@ -157,16 +158,15 @@ object Tools {
     }
   }
 
-  def extractBip84Tx(psbt: Psbt): Try[Transaction] = {
+  def extractBip84Tx(psbt: Psbt): scala.util.Try[Transaction] = {
     // We ONLY support BIP84 watching wallets so all inputs have witnesses
     psbt.inputs.zipWithIndex.foldLeft(psbt) { case (psbt1, input ~ index) =>
-      val (pubKey: PublicKey, signature: ByteVector) = input.partialSigs.head
-      val witness = Script.witnessPay2wpkh(pubKey, signature)
+      val witness = (Script.witnessPay2wpkh _).tupled(input.partialSigs.head)
       psbt1.finalizeWitnessInput(index, witness).get
     }.extract
   }
 
-  def obtainPsbt(ur: UR): Try[Psbt] = Try {
+  def obtainPsbt(ur: UR): scala.util.Try[Psbt] = scala.util.Try {
     val rawPsbt = ur.decodeFromRegistry.asInstanceOf[CryptoPSBT]
     ByteVector.view(rawPsbt.getPsbt)
   } flatMap Psbt.read

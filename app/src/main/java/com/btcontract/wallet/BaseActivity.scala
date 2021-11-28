@@ -536,7 +536,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     var subscription: Option[Subscription] = None
 
     def activate(psbt: Psbt): Unit = {
-      val encoder = new UREncoder(new CryptoPSBT(Psbt write psbt).toUR, 100, 10, 0)
+      val encoder = new UREncoder(new CryptoPSBT(Psbt write psbt).toUR, 200, 50, 0)
       val stringToQr: String => Bitmap = sourceChunk => QRActivity.get(sourceChunk.toUpperCase, qrSize)
       val updateView: Bitmap => Unit = sourceQrCode => UITask(qrSlideshow setImageBitmap sourceQrCode).run
       subscription = Observable.interval(0.second, 600.millis).map(_ => encoder.nextPart).map(stringToQr).subscribe(updateView).asSome
@@ -544,18 +544,20 @@ trait BaseActivity extends AppCompatActivity { me =>
   }
 
   class ChainReaderView(val host: View) extends HasUrDecoder with HasHostView {
-    barcodeReader = host.findViewById(R.id.qrReader).asInstanceOf[BarcodeView]
     val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
     var onSignedTx: Transaction => Unit = none
-    instruction = chainButtonsView.chainText
 
-    override def barcodeResult(res: BarcodeResult): Unit = handleUR(res.getText)
-    override def onError(error: String): Unit = onFail(error)
+    def stop: Unit = runAnd(barcodeReader.pause)(barcodeReader.stopDecoding)
+    def start: Unit = runAnd(barcodeReader decodeContinuous this)(barcodeReader.resume)
+    override def barcodeResult(barcodeResult: BarcodeResult): Unit = handleUR(barcodeResult.getText)
+    override def onError(qrParsingError: String): Unit = runAnd(stop)(me onFail qrParsingError)
+    barcodeReader = host.findViewById(R.id.qrReader).asInstanceOf[BarcodeView]
+    instruction = chainButtonsView.chainText
 
     override def onUR(ur: UR): Unit = {
       obtainPsbt(ur).flatMap(extractBip84Tx) match {
         case Success(signedTx) => onSignedTx(signedTx)
-        case Failure(why) => onError(why.getMessage)
+        case Failure(why) => onError(why.stackTraceAsString)
       }
     }
   }
@@ -599,8 +601,9 @@ trait BaseActivity extends AppCompatActivity { me =>
     val onDismissListener: DialogInterface.OnDismissListener = new DialogInterface.OnDismissListener { override def onDismiss(dialog: DialogInterface): Unit = haltProcesses }
 
     def haltProcesses: Unit = {
-      runAnd(chainReaderView.barcodeReader.pause)(chainReaderView.barcodeReader.stopDecoding)
-      for (subscription <- chainSlideshowView.subscription) subscription.unsubscribe
+      // Destroy all running processes to not left them hanging
+      for (sub <- chainSlideshowView.subscription) sub.unsubscribe
+      chainReaderView.stop
     }
 
     def switchToEdit(alert: AlertDialog): Unit = {
@@ -624,20 +627,20 @@ trait BaseActivity extends AppCompatActivity { me =>
       chainSlideshowView.chainButtonsView.chainNextButton setOnClickListener onButtonTap(me switchToHardwareIncoming alert)
       chainSlideshowView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
       chainSlideshowView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
-      runAnd(chainReaderView.barcodeReader.pause)(chainReaderView.barcodeReader.stopDecoding)
       chainSlideshowView.activate(psbt)
       switchButtons(alert, on = false)
       switchTo(chainSlideshowView)
+      chainReaderView.stop
     }
 
     def switchToHardwareIncoming(alert: AlertDialog): Unit = {
       chainReaderView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
       chainReaderView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
-      runAnd(chainReaderView.barcodeReader decodeContinuous chainReaderView)(chainReaderView.barcodeReader.resume)
       setVis(isVisible = false, chainReaderView.chainButtonsView.chainNextButton)
       for (sub <- chainSlideshowView.subscription) sub.unsubscribe
       switchButtons(alert, on = false)
       switchTo(chainReaderView)
+      chainReaderView.start
     }
 
     def switchToSpinner(alert: AlertDialog): Unit = {

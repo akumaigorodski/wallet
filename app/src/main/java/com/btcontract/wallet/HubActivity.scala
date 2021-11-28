@@ -420,7 +420,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           isSent <- notifyAndBroadcast(fromWallet, cpfpResponse.tx)
         } if (isSent) {
           // Parent semantic order is already updated, now we also update CPFP parent info
-          WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCpfpBy(cpfpResponse.tx.txid), info.txid)
+          WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCPFPBy(cpfpResponse.tx.txid), info.txid)
         } else {
           // We revert the whole description back since CPFP has failed
           WalletApp.txDataBag.updDescription(info.description, info.txid)

@@ -67,7 +67,7 @@ case class LNUrl(request: String) {
   lazy val fastWithdrawAttempt: Try[WithdrawRequest] = Try {
     require(uri.getQueryParameter("tag") equals "withdrawRequest")
     WithdrawRequest(uri.getQueryParameter("callback"), uri.getQueryParameter("k1"),
-      uri.getQueryParameter("maxWithdrawable").toLong, uri.getQueryParameter( "defaultDescription"),
+      uri.getQueryParameter("maxWithdrawable").toLong, uri.getQueryParameter("defaultDescription"),
       uri.getQueryParameter("minWithdrawable").toLong.asSome)
   }
 
