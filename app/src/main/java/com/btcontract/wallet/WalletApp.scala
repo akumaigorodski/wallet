@@ -261,9 +261,9 @@ object WalletApp {
         val fee = event.feeOpt.getOrElse(0L.sat)
         val defDescription = TxDescription.define(LNParams.cm.all.values, Nil, event.tx)
         val sentTxDescription = txDescriptions.getOrElse(event.tx.txid, default = defDescription)
-        if (event.sent == event.received + fee) addChainTx(received = 0L.sat, sent = fee, sentTxDescription, isIncoming = 0L)
-        else if (event.sent > event.received) addChainTx(received = 0L.sat, event.sent - event.received - fee, sentTxDescription, isIncoming = 0L)
-        else addChainTx(event.received - event.sent, sent = 0L.sat, TxDescription.define(LNParams.cm.all.values, event.walletAddreses, event.tx), isIncoming = 1L)
+        if (event.sent == event.received + fee) addChainTx(event.received, event.sent, sentTxDescription, isIncoming = 1L)
+        else if (event.sent > event.received) addChainTx(event.received, event.sent - event.received - fee, sentTxDescription, isIncoming = 0L)
+        else addChainTx(event.received - event.sent, event.sent, TxDescription.define(LNParams.cm.all.values, event.walletAddreses, event.tx), isIncoming = 1L)
       }
     }
 

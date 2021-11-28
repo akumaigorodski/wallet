@@ -187,9 +187,9 @@
     <string name="tx_description_refunding">Reembolso de saldo de canal</string>
     <string name="tx_description_htlc_claiming">Reinvindicação de pagamento Lightning</string>
     <string name="tx_description_penalty">Penalidade por violação de canal</string>
-    <string name="tx_description_rbf_boost">RBF boosting transaction</string>
-    <string name="tx_description_rbf_cancel">RBF Cancelling fee</string>
-    <string name="tx_description_cpfp">CPFP boosting fee</string>
+    <string name="tx_description_rbf_cancel">RBF Cancelling</string>
+    <string name="tx_description_rbf_boost">RBF boosting</string>
+    <string name="tx_description_cpfp">CPFP boosting</string>
 
     <string name="tx_btc">Transação Bitcoin</string>
     <string name="tx_ln">Pagamento Relâmpago</string>
