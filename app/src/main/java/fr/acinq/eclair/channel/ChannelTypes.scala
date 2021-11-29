@@ -313,15 +313,15 @@ case class ChannelReserveTooHigh(channelId: ByteVector32, reserveToFundingRatio:
 }
 
 case class ExpiredHtlcInNormalChannel(channelId: ByteVector32, sentExpiredRouted: Boolean, expiredReceivedRevealed: Boolean) extends RuntimeException {
-  override def toString: String = s"ChannelTransitionFail, sentExpiredRouted: $sentExpiredRouted, expiredReceivedRevealed: $expiredReceivedRevealed"
+  override def toString: String = s"ChannelTransitionFail, sentExpiredRouted=$sentExpiredRouted, expiredReceivedRevealed=$expiredReceivedRevealed"
 }
 
 case class ChannelTransitionFail(channelId: ByteVector32, message: LightningMessage) extends RuntimeException {
-  override def toString: String = s"ChannelTransitionFail, related message: $message"
+  override def toString: String = s"ChannelTransitionFail, related message=$message"
 }
 
 case class RemoteErrorException(details: String) extends RuntimeException {
-  override def toString: String = s"RemoteErrorException, details: $details"
+  override def toString: String = s"RemoteErrorException, details=$details"
 }
 
 case class CMDException(reason: String, cmd: Command) extends RuntimeException

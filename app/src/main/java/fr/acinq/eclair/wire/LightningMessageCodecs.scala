@@ -486,8 +486,18 @@ object LightningMessageCodecs {
       (cltvExpiryDelta withContext "cltvExpiryDelta")
   }.as[TrampolineOn]
 
-  final val TRAMPOLINE_STATUS_ON_TAG = 44789
-  final val TRAMPOLINE_STATUS_UNDESIRED_TAG = 44787
+  val nodeIdTrampolineParamsCodec = {
+    (publicKey withContext "nodeId") ::
+      (trampolineOnCodec withContext "trampolineOn")
+  }.as[NodeIdTrampolineParams]
+
+  val trampolineStatusCodec = {
+    (listOfN(valueCodec = nodeIdTrampolineParamsCodec, countCodec = uint16) withContext "params") ::
+      (listOfN(valueCodec = listOfN(uint16, uint32), countCodec = uint16) withContext "paths") ::
+      (listOfN(valueCodec = uint32, countCodec = uint16) withContext "removed")
+  }.as[TrampolineStatus]
+
+  final val TRAMPOLINE_PARAMS_TAG = 44789
 
   //
 
@@ -568,9 +578,7 @@ object LightningMessageCodecs {
       case SWAP_OUT_TRANSACTION_RESPONSE_MESSAGE_TAG => swapOutTransactionResponseCodec
       case SWAP_OUT_TRANSACTION_DENIED_MESSAGE_TAG => swapOutTransactionDeniedCodec
       case SWAP_OUT_FEERATES_MESSAGE_TAG => swapOutFeeratesCodec
-
-      case TRAMPOLINE_STATUS_UNDESIRED_TAG => provide(TrampolineUndesired)
-      case TRAMPOLINE_STATUS_ON_TAG => trampolineOnCodec
+      case TRAMPOLINE_PARAMS_TAG => trampolineStatusCodec
       case _ => throw new RuntimeException
     }
 
@@ -605,9 +613,7 @@ object LightningMessageCodecs {
     case msg: SwapOutTransactionResponse => UnknownMessage(SWAP_OUT_TRANSACTION_RESPONSE_MESSAGE_TAG, swapOutTransactionResponseCodec.encode(msg).require.toByteVector)
     case msg: SwapOutTransactionDenied => UnknownMessage(SWAP_OUT_TRANSACTION_DENIED_MESSAGE_TAG, swapOutTransactionDeniedCodec.encode(msg).require.toByteVector)
     case msg: SwapOutFeerates => UnknownMessage(SWAP_OUT_FEERATES_MESSAGE_TAG, swapOutFeeratesCodec.encode(msg).require.toByteVector)
-
-    case TrampolineUndesired => UnknownMessage(TRAMPOLINE_STATUS_UNDESIRED_TAG, provide(TrampolineUndesired).encode(TrampolineUndesired).require.toByteVector)
-    case msg: TrampolineOn => UnknownMessage(TRAMPOLINE_STATUS_ON_TAG, trampolineOnCodec.encode(msg).require.toByteVector)
+    case msg: TrampolineStatus => UnknownMessage(TRAMPOLINE_PARAMS_TAG, trampolineStatusCodec.encode(msg).require.toByteVector)
     case _ => msg
   }
 

@@ -1,9 +1,5 @@
 package fr.acinq.eclair.wire
 
-import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
-import java.nio.ByteOrder
-import java.nio.charset.StandardCharsets
-
 import com.google.common.base.Charsets
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, Protocol, Satoshi}
@@ -15,6 +11,10 @@ import immortan.crypto.Tools
 import immortan.{ChannelMaster, LNParams, RemoteNodeInfo}
 import scodec.DecodeResult
 import scodec.bits.ByteVector
+
+import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
+import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
 
 
 sealed trait LightningMessage extends Serializable
@@ -360,23 +360,31 @@ object SwapOutTransactionDenied {
 
 case class SwapOutTransactionDenied(btcAddress: String, reason: Long) extends SwapOut with ChainSwapMessage
 
-// Trampoline status
-
-sealed trait TrampolineStatus extends LightningMessage
-
-case object TrampolineUndesired extends TrampolineStatus
+// Trampoline
 
 sealed trait HasRelayFee {
   def relayFee(amount: MilliSatoshi): MilliSatoshi
   def cltvExpiryDelta: CltvExpiryDelta
 }
 
-case class TrampolineOn(minMsat: MilliSatoshi, maxMsat: MilliSatoshi, feeProportionalMillionths: Long, exponent: Double, logExponent: Double, cltvExpiryDelta: CltvExpiryDelta) extends TrampolineStatus with HasRelayFee { me =>
+case class TrampolineOn(minMsat: MilliSatoshi, maxMsat: MilliSatoshi, feeProportionalMillionths: Long, exponent: Double, logExponent: Double, cltvExpiryDelta: CltvExpiryDelta) extends HasRelayFee { me =>
   def relayFee(amount: MilliSatoshi): MilliSatoshi = trampolineFee(proportionalFee(amount, feeProportionalMillionths).toLong, exponent, logExponent)
-  // If outgoing channel becomes non-operational we better tell our peer we can not route through it right now
-  def finalMessageToSend: TrampolineStatus = if (maxMsat < minMsat) TrampolineUndesired else me
 }
 
 case class AvgHopParams(cltvExpiryDelta: CltvExpiryDelta, feeProportionalMillionths: Long, feeBaseMsat: MilliSatoshi, sampleSize: Long) extends HasRelayFee {
   def relayFee(amount: MilliSatoshi): MilliSatoshi = nodeFee(feeBaseMsat, feeProportionalMillionths, amount)
 }
+
+object TrampolineStatus {
+  type NodeIdCrc32Path = List[Long]
+
+  lazy val empty: TrampolineStatus =
+    TrampolineStatus(params = Nil, paths = Nil)
+
+  def fromRemoteInfo(info: RemoteNodeInfo, trampolineOn: TrampolineOn): TrampolineStatus =
+    TrampolineStatus(NodeIdTrampolineParams(info.nodeSpecificPubKey, trampolineOn) :: Nil, paths = Nil)
+}
+
+case class NodeIdTrampolineParams(nodeId: PublicKey, trampolineOn: TrampolineOn)
+
+case class TrampolineStatus(params: List[NodeIdTrampolineParams], paths: List[TrampolineStatus.NodeIdCrc32Path], removed: List[Long] = Nil) extends LightningMessage
