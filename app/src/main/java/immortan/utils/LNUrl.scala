@@ -26,7 +26,7 @@ object LNUrl {
   }
 
   def fromBech32(bech32url: String): LNUrl = {
-    val Tuple2(_, dataBody) = Bech32.decode(bech32url)
+    val Tuple3(_, dataBody, _) = Bech32.decode(bech32url)
     val request = new String(Bech32.five2eight(dataBody), "UTF-8")
     LNUrl(request)
   }

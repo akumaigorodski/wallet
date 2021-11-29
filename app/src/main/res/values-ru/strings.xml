@@ -59,7 +59,7 @@
     <string name="title_chans">Каналы Молнии</string>
 
     <string name="dialog_send">Послать</string>
-    <string name="dialog_receive">Получить</string>
+    <string name="dialog_receive">Принять</string>
 
     <string name="dialog_ok">OK</string>
     <string name="dialog_stamp">Печать</string>

@@ -16,6 +16,7 @@
 
 package fr.acinq.eclair.payment
 
+import fr.acinq.bitcoin.Bech32.Bech32Encoding
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{Base58, Base58Check, Bech32, Block, ByteVector32, ByteVector64, Crypto}
 import fr.acinq.eclair.payment.PaymentRequest._
@@ -549,6 +550,6 @@ object PaymentRequest {
     val hrp = s"${pr.prefix}$hramount"
     val data = Codecs.bolt11DataCodec.encode(Bolt11Data(pr.timestamp, pr.tags, pr.signature)).require
     val int5s = eight2fiveCodec.decode(data).require.value
-    Bech32.encode(hrp, int5s.toArray)
+    Bech32.encode(hrp, int5s.toArray, Bech32Encoding)
   }
 }
