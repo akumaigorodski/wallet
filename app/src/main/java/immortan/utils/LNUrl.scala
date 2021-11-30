@@ -209,7 +209,7 @@ case class PayRequest(callback: String, maxSendable: Long, minSendable: Long, me
 
 case class PayRequestFinal(successAction: Option[PaymentAction], disposable: Option[Boolean], pr: String) extends LNUrlData {
 
-  lazy val prExt: PaymentRequestExt = PaymentRequestExt.fromRaw(pr)
+  lazy val prExt: PaymentRequestExt = PaymentRequestExt.fromUri(pr)
 
   val isThrowAway: Boolean = disposable.getOrElse(true)
 }

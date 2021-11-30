@@ -48,17 +48,16 @@ object InputParser {
     case lnUrl(prefix, data) => LNUrl.fromBech32(s"$prefix$data")
     case nodeLink(key, host, port) => RemoteNodeInfo(PublicKey.fromBin(ByteVector fromValidHex key), NodeAddress.fromParts(host, port.toInt), host)
     case shortNodeLink(key, host) => RemoteNodeInfo(PublicKey.fromBin(ByteVector fromValidHex key), NodeAddress.fromParts(host, port = 9735), host)
-    case lnPayReq(prefix, data) => PaymentRequestExt.fromRaw(s"$prefix$data")
 
     case _ =>
-      val withoutPrefix = PaymentRequestExt.removePrefix(rawInput).trim
-      val isLightningInvoice = rawInput.toLowerCase.startsWith(lightning)
-      val isIdentifier = identifier.findFirstMatchIn(withoutPrefix).isDefined
+      val withoutSlashes = PaymentRequestExt.removePrefix(rawInput).trim
+      val isLightningInvoice = lnPayReq.findFirstMatchIn(rawInput).isDefined
+      val isIdentifier = identifier.findFirstMatchIn(withoutSlashes).isDefined
       val addressToAmount = MultiAddressParser.parseAll(MultiAddressParser.parse, rawInput)
 
-      if (isIdentifier) LNUrl.fromIdentifier(withoutPrefix)
-      else if (isLightningInvoice) PaymentRequestExt.fromUri(withoutPrefix.toLowerCase)
-      else addressToAmount getOrElse BitcoinUri.fromRaw(s"$bitcoin$withoutPrefix")
+      if (isIdentifier) LNUrl.fromIdentifier(withoutSlashes)
+      else if (isLightningInvoice) PaymentRequestExt.fromUri(withoutSlashes.toLowerCase)
+      else addressToAmount getOrElse BitcoinUri.fromRaw(s"$bitcoin$withoutSlashes")
   }
 }
 
@@ -71,16 +70,11 @@ object PaymentRequestExt {
 
   def withoutSlashes(prefix: String, uri: Uri): String = prefix + removePrefix(uri.toString)
 
-  def fromUri(invoiceWithoutPrefix: String): PaymentRequestExt = {
-    val lnPayReq(invoicePrefix, invoiceData) = invoiceWithoutPrefix
-    val uri = Try(Uri parse s"$lightning//$invoiceWithoutPrefix")
+  def fromUri(invoiceWithoutSlashes: String): PaymentRequestExt = {
+    val lnPayReq(invoicePrefix, invoiceData) = invoiceWithoutSlashes
+    val uri = Try(Uri parse s"$lightning//$invoiceWithoutSlashes")
     val pr = PaymentRequest.read(s"$invoicePrefix$invoiceData")
     PaymentRequestExt(uri, pr, s"$invoicePrefix$invoiceData")
-  }
-
-  def fromRaw(raw: String): PaymentRequestExt = {
-    val noUri: Try[Uri] = Failure(new RuntimeException)
-    PaymentRequestExt(noUri, PaymentRequest.read(raw), raw)
   }
 
   def from(pr: PaymentRequest): PaymentRequestExt = {
@@ -111,7 +105,7 @@ object BitcoinUri {
 
 case class BitcoinUri(uri: Try[Uri], address: String) {
   val amount: Option[MilliSatoshi] = uri.map(_ getQueryParameter "amount").map(BigDecimal.apply).map(Denomination.btcBigDecimal2MSat).toOption
-  val prExt: Option[PaymentRequestExt] = uri.map(_ getQueryParameter "lightning").map(PaymentRequestExt.fromRaw).toOption
+  val prExt: Option[PaymentRequestExt] = uri.map(_ getQueryParameter "lightning").map(PaymentRequestExt.fromUri).toOption
   val message: Option[String] = uri.map(_ getQueryParameter "message").map(trimmed).filter(_.nonEmpty).toOption
   val label: Option[String] = uri.map(_ getQueryParameter "label").map(trimmed).filter(_.nonEmpty).toOption
 }

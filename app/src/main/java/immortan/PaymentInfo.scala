@@ -138,7 +138,7 @@ case class PaymentInfo(prString: String, preimage: ByteVector32, status: Int, se
 
   lazy val fiatRateSnapshot: Fiat2Btc = to[Fiat2Btc](fiatRatesString)
 
-  lazy val prExt: PaymentRequestExt = PaymentRequestExt.fromRaw(prString)
+  lazy val prExt: PaymentRequestExt = PaymentRequestExt.fromUri(prString)
 
   lazy val action: Option[PaymentAction] = if (actionString == PaymentInfo.NO_ACTION) None else to[PaymentAction](actionString).asSome
 
