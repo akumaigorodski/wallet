@@ -9,7 +9,7 @@
 
     <string name="choose_wallet">Escoja una billetera</string>
     <string name="hardware_wallet">Billetera Hardware</string>
-    <string name="watching_wallet">Billetera Solo Ver</string>
+    <string name="watching_wallet">Billetera de clave publica</string>
     <string name="coin_control">Control de monedas</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
