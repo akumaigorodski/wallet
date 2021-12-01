@@ -132,7 +132,7 @@
     <string name="error_rejected_incoming_public">Rejected public channel offer, only private channels are allowed.</string>
     <string name="error_btc_no_wallet">Can not proceed because related chain wallet is not found, please add it from app settings.</string>
     <string name="error_btc_broadcast_fail">Could not broadcast a transaction, please make sure that wallet has network connection and then try again.</string>
-    <string name="error_could_not_decrypt"><![CDATA[<b>Backup decryption failed</b>.<br><br>Make sure that both backup file and recovery phrase are correct and belong to the same wallet.<br><br>Error details<br><b>%1$s</b>]]></string>
+    <string name="error_could_not_decrypt"><![CDATA[<b>Backup decryption failed</b>.<br><br>Make sure that backup file and recovery phrase are correct and belong to the same wallet.<br><br>Error details<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>Provided phrase is incorrect</b>.<br><br>Error details<br><b>%1$s</b>]]></string>
     <string name="error_old_api_level">Requires API 24+, yours is %1$s</string>
     <string name="error_nothing_useful">Nothing useful is found</string>
