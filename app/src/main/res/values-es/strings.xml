@@ -7,15 +7,15 @@
     <string name="password">Contraseña de la billetera</string>
     <string name="manual">Leer manual</string>
 
-    <string name="choose_wallet">Choose a wallet</string>
-    <string name="hardware_wallet">Hardware wallet</string>
-    <string name="watching_wallet">Watching wallet</string>
-    <string name="coin_control">Coin control</string>
+    <string name="choose_wallet">Escoja una billetera</string>
+    <string name="hardware_wallet">Billetera Hardware</string>
+    <string name="watching_wallet">Billetera Solo Ver</string>
+    <string name="coin_control">Control de monedas</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Saldo total</string>
-    <string name="hosted_channel">HOSTED CHANNEL\nCustodial solution</string>
+    <string name="hosted_channel">HOSTED CHANNEL\nSolucion custodiada</string>
     <string name="typing_hints">Dirección de Bitcoin, factura, correo&#8230;</string>
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
     <string name="add_address">Más direcciones no usadas</string>
@@ -32,7 +32,7 @@
     <string name="setup_backup_file">Respaldo + frase de recuperación</string>
 
     <string name="delayed_refunding">Reembolso demorado</string>
-    <string name="delayed_refunding_ext">Do not erase wallet data until all delayed refunds are cleared!</string>
+    <string name="delayed_refunding_ext">No borre los datos de la billetera hasta que todos los reembolsos demorados hayan sido liquidados!</string>
     <string name="setup_create_new_hint">Una billetera completamente nueva con una nueva frase de recuperación será generada desde cero.</string>
     <!-- DO NOT TRANSLATE --> <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
     <!-- DO NOT TRANSLATE --> <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
@@ -98,15 +98,15 @@
 
     <string name="dialog_send_btc_from"><![CDATA[desde&#160;<b>%1$s</b>&#160;billetera]]></string>
     <string name="dialog_send_btc"><![CDATA[Enviar transacción <b>Bitcoin</b><br><b>a la dirección</b> %1$s%2$s]]></string>
-    <string name="dialog_send_btc_many"><![CDATA[Send <b>Bitcoin</b> transaction<br><b>to many addresses</b>]]></string>
-    <string name="dialog_send_btc_confirm_amount">Send amount</string>
-    <string name="dialog_send_btc_confirm_fiat">Fiat value</string>
-    <string name="dialog_send_btc_confirm_fee">Chain fee</string>
+    <string name="dialog_send_btc_many"><![CDATA[Enviar transaccion <b>Bitcoin</b> <br><b>a multiples direcciones</b>]]></string>
+    <string name="dialog_send_btc_confirm_amount">Enviar monto</string>
+    <string name="dialog_send_btc_confirm_fiat">Valor en Fiat</string>
+    <string name="dialog_send_btc_confirm_fee">Tarifa de mineria</string>
 
     <string name="dialog_send_ln"><![CDATA[Enviar pago <b>Lightning</b> %1$s]]></string>
     <string name="dialog_split_ln"><![CDATA[Dividir pago <b>Lightning</b> %1$s]]></string>
-    <string name="dialog_split_ln_tip">Deja que alguien escanee una dividir,\nLuego pulsen en OK al mismo tiempo</string>
-    <string name="dialog_ln_expected_fee"><![CDATA[<b>expected fee</b> %1$s]]></string>
+    <string name="dialog_split_ln_tip">Deja que alguien escanee una factura,\nLuego pulsen en OK al mismo tiempo</string>
+    <string name="dialog_ln_expected_fee"><![CDATA[<b>tarifa esperada</b> %1$s]]></string>
     <string name="dialog_ln_requested"><![CDATA[<b>solicitado</b>&#160;%1$s]]></string>
     <string name="dialog_ln_left"><![CDATA[<b>queda por pagar</b>&#160;%1$s]]></string>
 
@@ -134,7 +134,7 @@
     <string name="error_btc_broadcast_fail">No se pudo transmitir la transacción, por favor asegúrese de que la billetera tenga conexión de red e intente de nuevo.</string>
     <string name="error_could_not_decrypt"><![CDATA[<b>Falló el descifrado del respaldo</b>.<br><br>Asegúrese que tanto el archivo de respaldo como la frase de recuperación sean las correctas.<br><br>Detalles del error<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>La frase introducida es incorrecta</b>.<br><br>Detalles del error<br><b>%1$s</b>]]></string>
-    <string name="error_old_api_level">Requires API 24+, yours is %1$s</string>
+    <string name="error_old_api_level">Requiere API 24+, el tuyo es %1$s</string>
     <string name="error_nothing_useful">No se encontró nada útil</string>
 
     <string name="error_ln_no_chans"><![CDATA[No se puede enviar ni recibir pagos Lightning porque no hay canales abiertos.]]></string>
@@ -144,7 +144,7 @@
     <string name="error_ln_receive_reserve"><![CDATA[No se pueden solicitar pagos Lightning aún porque primero debes gastar al menos <b>%1$s</b> para crear algo de liquidez para recibir.]]></string>
 
     <string name="error_ln_send_small"><![CDATA[No se puede enviar este pago Lightning porque el monto solicitado de <b>%1$s</b> es muy pequeño, el monto mínimo es <b>%2$s</b>.]]></string>
-    <string name="error_ln_send_reserve"><![CDATA[Can\'t send Lightning payments yet because your payment channel is empty and you need to receive something into it first.]]></string>
+    <string name="error_ln_send_reserve"><![CDATA[No se puede enviar este pago Lightning aun porque tu canal esta vacio y necesitas recibir algo en el primero.]]></string>
     <string name="error_ln_send_no_secret"><![CDATA[No se puede enviar este pago Lightning porque la factura no contiene un secreto.]]></string>
     <string name="error_ln_send_network"><![CDATA[No se puede enviar este pago Lightning porque pertenece a una red desconocida.]]></string>
     <string name="error_ln_send_split"><![CDATA[No se puede proceder con esta factura dividida porque los parámetros de división son incorrectos.]]></string>
@@ -187,9 +187,9 @@
     <string name="tx_description_refunding">Reembolsar saldo de canal</string>
     <string name="tx_description_htlc_claiming">Reclamando pago Lightning</string>
     <string name="tx_description_penalty">Penalización por incumplimiento</string>
-    <string name="tx_description_rbf_cancel">RBF cancelling</string>
-    <string name="tx_description_rbf_boost">RBF boosting</string>
-    <string name="tx_description_cpfp">CPFP boosting</string>
+    <string name="tx_description_rbf_cancel">Cancelando RBF</string>
+    <string name="tx_description_rbf_boost">Aplicando RBF</string>
+    <string name="tx_description_cpfp">Aplicando CPFP</string>
 
     <string name="tx_btc">Transacción Bitcoin</string>
     <string name="tx_ln">Pago Lightning</string>
@@ -198,7 +198,7 @@
     <string name="tx_state_double_spent">fallido</string>
 
     <string name="popup_retry">Reintentar pago</string>
-    <string name="popup_view_invoice">View invoice</string>
+    <string name="popup_view_invoice">Ver factura</string>
     <string name="popup_run_action"><![CDATA[run&#160;pago&#160;action]]></string>
     <string name="popup_proof_stamp"><![CDATA[pago&#160;prueba&#160;sello]]></string>
     <string name="popup_to_address"><![CDATA[<b>dirección</b>&#160;%1$s]]></string>
@@ -208,7 +208,7 @@
 
     <string name="popup_prior_chain_balance"><![CDATA[<b>anterior&#160;saldo</b>&#160;%1$s]]></string>
     <string name="popup_ln_fee"><![CDATA[<b>tarifa</b>&#160;%1$s&#160;(%2$s)]]></string>
-    <string name="popup_fiat"><![CDATA[<b>fiat&#160;value</b>&#160;%1$s&#160;(%2$s)]]></string>
+    <string name="popup_fiat"><![CDATA[<b>fiat&#160;valor</b>&#160;%1$s&#160;(%2$s)]]></string>
     <string name="popup_chain_fee"><![CDATA[<b>cadena&#160;tarifa</b>&#160;%1$s]]></string>
     <string name="popup_hash"><![CDATA[<b>hash</b>&#160;%1$s]]></string>
 
@@ -246,11 +246,11 @@
     <string name="settings_backup_where">El archivo se guarda en la carpeta Descargas</string>
     <string name="settings_backup_how">Permisos -> Almacenamiento</string>
 
-    <string name="settings_hardware_add">Add hardware wallet</string>
-    <string name="settings_hardware_label">Set hardware wallet label</string>
-    <string name="settings_hw_zpub_tip">Hardware wallet or zpub</string>
+    <string name="settings_hardware_add">Agregar billetera hardware</string>
+    <string name="settings_hardware_label">Nombrar billetera hardware</string>
+    <string name="settings_hw_zpub_tip">Billetera hardware o zpub</string>
 
-    <string name="settings_chain_wallets">Manejar billeteras chain</string>
+    <string name="settings_chain_wallets">Manejar billeteras onchain</string>
     <string name="settings_chain_legacy">Billetera antigua</string>
     <string name="settings_chain_modern">Billetera moderna</string>
 
@@ -269,7 +269,7 @@
     <string name="settings_ln_fee_cap_disabled"><![CDATA[La tarifa máxima de LN es como máximo<strong>%1$s</strong> del pago y <b>puede ser más alta</b> que la actual tarifa promedio chain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[La tarifa máxima de LN es como máximo <strong>%1$s</strong> del pago pero <b>nunca más alta</b> que la tarifa promedio chain de <b>%2$s</b>]]></string>
     <string name="ln_fee_expensive_omitted">Las rutas costosas fueron omitidas, elimina el límite de tarifa de LN si quieres que se permitan rutas mas costosas</string>
-    <string name="ln_payee_likely_offline">It is likely that payee wallet is offline right now</string>
+    <string name="ln_payee_likely_offline">Es probable que la billetera destino este desconectada ahorita</string>
 
     <string name="settings_btc_unit">Unidad de Bitcoin</string>
     <string name="settings_fiat_currency">Moneda fiduciaria</string>
@@ -322,7 +322,7 @@
     <string name="dialog_lnurl_sending"><![CDATA[Enviando %1$s<br><br><b>%2$s</b>]]></string>
     <string name="dialog_lnurl_from_vendor"><![CDATA[Respuesta del vendedor%1$s]]></string>
 
-    <string name="popup_hold">Hold up to %1$s minutes</string>
+    <string name="popup_hold">Esperar hasta %1$s minutos</string>
     <string name="popup_identity">Adjuntar identidad</string>
 
     <!-- lnurl-auth -->
@@ -357,7 +357,7 @@
     <string name="stats_item_transactions"><![CDATA[<b>transacciones</b>&#160;%1$s]]></string>
 
     <string name="stats_item_fees"><![CDATA[<b>tarifas</b>&#160;%1$s]]></string>
-    <string name="stats_item_fees_saved"><![CDATA[<b>cadena&#160;tarifas&#160;ahorrado</b>&#160;%1$s]]></string>
+    <string name="stats_item_fees_saved"><![CDATA[<b>tarifas&#160;cadena&#160;ahorrado</b>&#160;%1$s]]></string>
 
     <string name="stats_item_relays"><![CDATA[<b>cantidad</b>&#160;%1$s]]></string>
     <string name="stats_item_relayed"><![CDATA[<b>volumen</b>&#160;%1$s]]></string>
@@ -382,7 +382,7 @@
     <string name="ln_info_close_coop">Cierre cooperativo</string>
     <string name="ln_info_close_local">Cierre forzoso local</string>
     <string name="ln_info_close_remote">Cierre forzoso remoto</string>
-    <string name="ln_info_await_close">Awaiting force-close&#8230;</string>
+    <string name="ln_info_await_close">Esperando cierre forzoso&#8230;</string>
     <string name="ln_info_shutdown">Cerrando&#8230;</string>
     <string name="ln_info_opening">Abriendo&#8230;</string>
 
