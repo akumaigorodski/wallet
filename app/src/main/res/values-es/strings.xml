@@ -138,9 +138,9 @@
     <string name="error_nothing_useful">No se encontró nada útil</string>
 
     <string name="error_ln_no_chans"><![CDATA[No se puede enviar ni recibir pagos Lightning porque no hay canales abiertos.]]></string>
-    <string name="error_ln_waiting"><![CDATA[No se puede enviar ni recibir pagos Lightning porque ninguno de tus canales está abierto aún.<br><br>Por favor espere más confirmaciones del financiamiento del canal.]]></string>
+    <string name="error_ln_waiting"><![CDATA[No se puede enviar ni recibir pagos Lightning porque ninguno de tus canales está abierto aún.]]></string>
 
-    <string name="error_ln_receive_no_update"><![CDATA[No se pueden solicitar pagos Lightning porque los parámetros para recibir no están disponibles aún, por favor espere más confirmaciones del financiamineto del canal.]]></string>
+    <string name="error_ln_receive_no_update"><![CDATA[No se pueden solicitar pagos Lightning porque los parámetros para recibir no están disponibles aún.]]></string>
     <string name="error_ln_receive_reserve"><![CDATA[No se pueden solicitar pagos Lightning aún porque primero debes gastar al menos <b>%1$s</b> para crear algo de liquidez para recibir.]]></string>
 
     <string name="error_ln_send_small"><![CDATA[No se puede enviar este pago Lightning porque el monto solicitado de <b>%1$s</b> es muy pequeño, el monto mínimo es <b>%2$s</b>.]]></string>
@@ -269,6 +269,7 @@
     <string name="settings_ln_fee_cap_disabled"><![CDATA[La tarifa máxima de LN es como máximo<strong>%1$s</strong> del pago y <b>puede ser más alta</b> que la actual tarifa promedio chain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[La tarifa máxima de LN es como máximo <strong>%1$s</strong> del pago pero <b>nunca más alta</b> que la tarifa promedio chain de <b>%2$s</b>]]></string>
     <string name="ln_fee_expensive_omitted">Las rutas costosas fueron omitidas, elimina el límite de tarifa de LN si quieres que se permitan rutas mas costosas</string>
+    <string name="ln_sync_not_complete">LN SYNC is not finished yet, please wait a bit while keeping an app open and then try again.</string>
     <string name="ln_payee_likely_offline">Es probable que la billetera destino este desconectada ahorita</string>
 
     <string name="settings_btc_unit">Unidad de Bitcoin</string>

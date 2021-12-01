@@ -138,9 +138,9 @@
     <string name="error_nothing_useful">Nothing useful is found</string>
 
     <string name="error_ln_no_chans"><![CDATA[Can neither send nor receive Lightning payments because no open channels are present.]]></string>
-    <string name="error_ln_waiting"><![CDATA[Can neither send nor receive Lightning payments because none of your channels is open yet.<br><br>Please wait for more channel funding confirmations.]]></string>
+    <string name="error_ln_waiting"><![CDATA[Can neither send nor receive Lightning payments because none of your channels is open yet.]]></string>
 
-    <string name="error_ln_receive_no_update"><![CDATA[Can\'t request Lightning payments because receiving parameters are not yet available, please wait for more channel funding confirmations.]]></string>
+    <string name="error_ln_receive_no_update"><![CDATA[Can\'t request Lightning payments because receiving parameters are not yet available.]]></string>
     <string name="error_ln_receive_reserve"><![CDATA[Can\'t request Lightning payments yet because first you need to spend at least <b>%1$s</b> to make some space for receiving.]]></string>
 
     <string name="error_ln_send_small"><![CDATA[Can\'t send this Lightning payment because requested amount of <b>%1$s</b> is too small, a minimal amount is <b>%2$s</b>.]]></string>
@@ -269,6 +269,7 @@
     <string name="settings_ln_fee_cap_disabled"><![CDATA[Max LN fee is at most <strong>%1$s</strong> of payment and <b>may get higher</b> than current average chain fee of <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[Max LN fee is at most <strong>%1$s</strong> of payment but <b>never higher</b> than current average chain fee of <b>%2$s</b>]]></string>
     <string name="ln_fee_expensive_omitted">Expensive routes were omitted, remove LN fee limit in settings if you would like to allow more expensive routes</string>
+    <string name="ln_sync_not_complete">LN SYNC is not finished yet, please wait a bit while keeping an app open and then try again.</string>
     <string name="ln_payee_likely_offline">It is likely that payee wallet is offline right now</string>
 
     <string name="settings_btc_unit">Bitcoin units</string>

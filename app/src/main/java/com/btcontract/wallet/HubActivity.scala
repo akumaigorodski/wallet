@@ -981,9 +981,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   private val extraOutgoingListener = new OutgoingPaymentListener {
     override def wholePaymentFailed(data: OutgoingPaymentSenderData): Unit = UITask {
       val assistedShortIds = data.cmd.assistedEdges.map(_.updExt.update.shortChannelId)
+      val warnNoRouteFound = data.failures.exists { case lf: LocalFailure => PaymentFailure.NO_ROUTES_FOUND == lf.status case _ => false }
       val warnPayeeOffline = data.failures.exists { case rf: RemoteFailure if rf.packet.failureMessage == UnknownNextPeer => assistedShortIds.contains(rf.originShortChanId) case _ => false }
-      val warnNoRouteFound = data.failures.exists { case localFailure: LocalFailure => PaymentFailure.NO_ROUTES_FOUND == localFailure.status case _ => false }
-      if (warnPayeeOffline && warnNoRouteFound) snack(parent = contentWindow, msg = getString(ln_payee_likely_offline), res = dialog_ok, _.dismiss)
+      if (LNParams.cm.pf.data.channels.isEmpty && warnNoRouteFound) snack(parent = contentWindow, msg = getString(ln_sync_not_complete), res = dialog_ok, _.dismiss)
+      else if (warnPayeeOffline && warnNoRouteFound) snack(parent = contentWindow, msg = getString(ln_payee_likely_offline), res = dialog_ok, _.dismiss)
       else if (WalletApp.capLNFeeToChain && warnNoRouteFound) snack(contentWindow, getString(ln_fee_expensive_omitted), dialog_ok, _.dismiss)
     }.run
 

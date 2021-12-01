@@ -138,9 +138,9 @@
     <string name="error_nothing_useful">Nada útil foi encontrado</string>
 
     <string name="error_ln_no_chans"><![CDATA[Não é possível enviar ou receber pagamentos Relâmpago porque não há nenhum canal aberto.]]></string>
-    <string name="error_ln_waiting"><![CDATA[Não é possível enviar ou receber pagamentos Lightning porque nenhum de seus canais está aberto ainda.<br><br>Por favor aguarde mais confirmações do custeio do canal.]]></string>
+    <string name="error_ln_waiting"><![CDATA[Não é possível enviar ou receber pagamentos Lightning porque nenhum de seus canais está aberto ainda.]]></string>
 
-    <string name="error_ln_receive_no_update"><![CDATA[Não é possível solicitar pagamento Lightning porque os parâmetros de recebimento ainda não estão disponíveis, por favor aguarde mais confirmações do custeio do canal.]]></string>
+    <string name="error_ln_receive_no_update"><![CDATA[Não é possível solicitar pagamento Lightning porque os parâmetros de recebimento ainda não estão disponíveis.]]></string>
     <string name="error_ln_receive_reserve"><![CDATA[Ainda não é possível solicitar pagamentos Relâmpago porque antes você precisa gastar ao menos<b>%1$s</b> para liberar espaço para receber.]]></string>
 
     <string name="error_ln_send_small"><![CDATA[Não é possível enviar este pagamento Relâmpago porque o valor solicitado de <b>%1$s</b> é muito baixo, o valor mínimo é <b>%2$s</b>.]]></string>
@@ -269,6 +269,7 @@
     <string name="settings_ln_fee_cap_disabled"><![CDATA[A taxa da LN é de no máximo <strong>%1$s</strong> do pagamento e <b>pode ficar mais alta</b> do que a atual taxa média da blockchain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[A taxa da LN é de no máximo <strong>%1$s</strong> do pagamento mas <b>nunca maior</b> do que a atual taxa média da blockchain de <b>%2$s</b>]]></string>
     <string name="ln_fee_expensive_omitted">Rotas caras foram omitidas, remova o limite de taxa da LN nas configurações se você quiser permitir rotas mais caras</string>
+    <string name="ln_sync_not_complete">LN SYNC is not finished yet, please wait a bit while keeping an app open and then try again.</string>
     <string name="ln_payee_likely_offline">It is likely that payee wallet is offline right now</string>
 
     <string name="settings_btc_unit">Unidade de bitcoin</string>
