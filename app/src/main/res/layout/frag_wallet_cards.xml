@@ -264,8 +264,28 @@
 
         <ImageButton
             android:padding="6dp"
+            android:onClick="maxMinView"
+            android:id="@+id/minimizeView"
+            android:layout_centerVertical="true"
+            android:layout_toStartOf="@id/maximizeView"
+            android:src="@drawable/baseline_visibility_off_24"
+            android:background="?android:selectableItemBackground"
+            style="@style/BoundedView"/>
+
+        <ImageButton
+            android:padding="6dp"
+            android:onClick="maxMinView"
+            android:id="@+id/maximizeView"
+            android:layout_centerVertical="true"
+            android:layout_toStartOf="@+id/enterSearchMode"
+            android:src="@drawable/baseline_visibility_on_24"
+            android:background="?android:selectableItemBackground"
+            style="@style/BoundedView"/>
+
+        <ImageButton
+            android:padding="6dp"
             android:onClick="bringSearch"
-            android:tint="@color/colorAccent"
+            android:id="@+id/enterSearchMode"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:src="@drawable/ic_search_white_24dp"

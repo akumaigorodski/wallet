@@ -866,6 +866,9 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val bitcoinPayments: MaterialButton = view.findViewById(R.id.bitcoinPayments).asInstanceOf[MaterialButton]
     val relayedPayments: MaterialButton = view.findViewById(R.id.relayedPayments).asInstanceOf[MaterialButton]
     val payMarketLinks: MaterialButton = view.findViewById(R.id.payMarketLinks).asInstanceOf[MaterialButton]
+
+    val minimizeView: ImageButton = view.findViewById(R.id.minimizeView).asInstanceOf[ImageButton]
+    val maximizeView: ImageButton = view.findViewById(R.id.maximizeView).asInstanceOf[ImageButton]
     val searchField: EditText = view.findViewById(R.id.searchField).asInstanceOf[EditText]
     // This means search is off at start
     searchField.setTag(false)
@@ -1247,6 +1250,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     if (WalletApp.isAlive && LNParams.isOperational) {
       setContentView(com.btcontract.wallet.R.layout.activity_hub)
       instance = me
+      doMaxMinView
 
       for (channel <- LNParams.cm.all.values) channel.listeners += me
       LNParams.cm.localPaymentListeners add extraOutgoingListener
@@ -1336,7 +1340,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   def bringSearch(view: View): Unit = {
     walletCards.searchField.setTag(true)
     TransitionManager.beginDelayedTransition(contentWindow)
-    setVisMany(true -> walletCards.searchField, false -> walletCards.defaultHeader, false -> walletCards.listCaption)
+    setVisMany(false -> walletCards.defaultHeader, false -> walletCards.listCaption, true -> walletCards.searchField)
     showKeys(walletCards.searchField)
   }
 
@@ -1344,8 +1348,20 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     walletCards.searchField.setTag(false)
     walletCards.searchField.setText(new String)
     TransitionManager.beginDelayedTransition(contentWindow)
-    setVisMany(false -> walletCards.searchField, true -> walletCards.defaultHeader, hasItems -> walletCards.listCaption)
+    setVisMany(WalletApp.maximizedView -> walletCards.defaultHeader, true -> walletCards.listCaption, false -> walletCards.searchField)
     WalletApp.app.hideKeys(walletCards.searchField)
+  }
+
+  def maxMinView(view: View): Unit = {
+    TransitionManager.beginDelayedTransition(contentWindow)
+    WalletApp.app.prefs.edit.putBoolean(WalletApp.MAXIMIZED_VIEW, !WalletApp.maximizedView).commit
+    doMaxMinView
+  }
+
+  def doMaxMinView: Unit = {
+    setVis(isVisible = WalletApp.maximizedView, walletCards.defaultHeader)
+    setVis(isVisible = !WalletApp.maximizedView, walletCards.minimizeView)
+    setVis(isVisible = WalletApp.maximizedView, walletCards.maximizeView)
   }
 
   def bringSendOptions(view: View): Unit = {
