@@ -1,0 +1,3 @@
+* Improve hardware wallet compatibility.
+* Allow sending to Taproot addresses.
+* UI improvements and minor fixes.
