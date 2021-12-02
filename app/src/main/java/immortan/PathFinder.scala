@@ -25,7 +25,6 @@ import scala.util.Random.shuffle
 
 object PathFinder {
   val NotifyNotReady = "path-finder-notify-not-ready"
-  val NotifyOperational = "path-finder-notify-operational"
   val CMDStartPeriodicResync = "cmd-start-periodic-resync"
   val CMDLoadGraph = "cmd-load-graph"
 
@@ -51,7 +50,6 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
   var listeners: Set[CanBeRepliedTo] = Set.empty
   var subscription: Option[Subscription] = None
   var syncMaster: Option[SyncMaster] = None
-  var debugMode: Boolean = false
 
   implicit val context: ExecutionContextExecutor = ExecutionContext fromExecutor Executors.newSingleThreadExecutor
   def process(changeMessage: Any): Unit = scala.concurrent.Future(me doProcess changeMessage)
@@ -77,10 +75,6 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       val delay = Rx.initDelay(repeat, getLastTotalResyncStamp, RESYNC_PERIOD, preStartMsec = 100)
       subscription = delay.subscribe(_ => me process CMDResync).asSome
 
-    case (request: PathFinderRequest, OPERATIONAL) if data.channels.isEmpty =>
-      // Graph is loaded but empty: likely a first launch or synchronizing
-      request.sender process NotifyNotReady
-
     case (calc: GetExpectedRouteFees, OPERATIONAL) =>
       val interExpectedFees = List.fill(calc.interHops)(data.avgHopParams)
       val payeeHops = data.graph.vertices.getOrElse(calc.payee, default = Nil).map(_.updExt)
@@ -91,10 +85,6 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       // Search through single pre-selected local channel
       val augmentedGraph = data.graph replaceEdge fr.request.localEdge
       fr.sender process handleRouteRequest(augmentedGraph, fr.request)
-
-    case (request: PathFinderRequest, WAITING) if debugMode =>
-      // Do not proceed, just inform the sender
-      request.sender process NotifyNotReady
 
     case (request: PathFinderRequest, WAITING) =>
       // We need a loaded routing data to process these requests
@@ -113,7 +103,6 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       val hostedShortIdToPubChan = hostedBag.getRoutingData
       val searchGraph1 = DirectedGraph.makeGraph(normalShortIdToPubChan ++ hostedShortIdToPubChan).addEdges(extraEdges.values)
       become(Data(normalShortIdToPubChan, hostedShortIdToPubChan, searchGraph1), OPERATIONAL)
-      if (data.channels.nonEmpty) listeners.foreach(_ process NotifyOperational)
 
     case (CMDResync, OPERATIONAL) if System.currentTimeMillis - getLastNormalResyncStamp > RESYNC_PERIOD =>
       val setupData = SyncMasterShortIdData(LNParams.syncParams.syncNodes, getExtraNodes, Set.empty, Map.empty, LNParams.syncParams.maxNodesToSyncFrom)
@@ -168,9 +157,9 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
 
       // Perform database cleaning in a different thread since it's slow and we are operational
       Rx.ioQueue.foreach(_ => normalBag.removeGhostChannels(ghostIds, oneSideShortIds), none)
+      // Remove by now useless reference, this may be used to define if sync is on
+      syncMaster = None
 
-      // Notify that Pathfinder is operational
-      listeners.foreach(_ process NotifyOperational)
       // Notify that normal graph sync is complete
       listeners.foreach(_ process sync)
       attemptPHCSync

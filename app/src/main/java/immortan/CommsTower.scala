@@ -83,7 +83,9 @@ object CommsTower {
                 case msg => for (lst <- ourListeners) lst.onMessage(me, msg)
               }
 
-            case message => for (lst <- ourListeners) lst.onMessage(me, message)
+            case message =>
+              // This is always a base protocol message
+              for (lst <- ourListeners) lst.onMessage(me, message)
           }
         }
 

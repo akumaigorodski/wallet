@@ -93,8 +93,8 @@ object Router {
     // This is a costly computation so keep it lazy and only calculate it once on first request
 
     lazy val avgHopParams: AvgHopParams = if (channels.nonEmpty) {
-      val sample = channels.values.toVector.flatMap(pc => pc.update1Opt ++ pc.update2Opt)
-      getAvgHopParams(sample)
+      val sample = channels.values.flatMap(pc => pc.update1Opt ++ pc.update2Opt)
+      getAvgHopParams(sample.toVector)
     } else defAvgHopParams
   }
 
