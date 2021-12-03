@@ -1,19 +1,20 @@
 package fr.acinq.eclair.wire
 
+import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
+import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
+
 import com.google.common.base.Charsets
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, Protocol, Satoshi}
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
-import fr.acinq.eclair.router.{Announcements, Sync}
+import fr.acinq.eclair.router.Announcements
 import immortan.crypto.Tools
 import immortan.{ChannelMaster, LNParams, RemoteNodeInfo}
 import scodec.DecodeResult
 import scodec.bits.ByteVector
-import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
-import java.nio.ByteOrder
-import java.nio.charset.StandardCharsets
 
 
 sealed trait LightningMessage extends Serializable
@@ -374,45 +375,50 @@ case class AvgHopParams(cltvExpiryDelta: CltvExpiryDelta, feeProportionalMillion
   def relayFee(amount: MilliSatoshi): MilliSatoshi = nodeFee(feeBaseMsat, feeProportionalMillionths, amount)
 }
 
-object TrampolineStatus {
-  type NodeIdCrc32Path = List[Long]
-  type NodeIdPubKeyPath = List[PublicKey]
-
-  lazy val empty: TrampolineStatus =
-    TrampolineStatus(params = Nil, paths = Nil)
-
-  lazy val emptyState: TrampolineRoutingState =
-    TrampolineRoutingState(Map.empty, Map.empty, Set.empty)
-
-  def fromRemoteInfo(info: RemoteNodeInfo, trampolineOn: TrampolineOn): TrampolineStatus =
-    TrampolineStatus(NodeIdTrampolineParams(info.nodeSpecificPubKey, trampolineOn) :: Nil, paths = Nil)
+case class NodeIdTrampolineParams(nodeId: PublicKey, trampolineOn: TrampolineOn) {
+  def withRefreshedParams(update: TrampolineStatusUpdate): NodeIdTrampolineParams = {
+    val trampolineOn1 = update.updatedParams.getOrElse(nodeId, trampolineOn)
+    copy(trampolineOn = trampolineOn1)
+  }
 }
 
-case class NodeIdTrampolineParams(nodeId: PublicKey, trampolineOn: TrampolineOn)
+object TrampolineStatus {
+  type NodeIdTrampolineParamsRoute = List[NodeIdTrampolineParams]
+}
 
-case class TrampolineStatus(params: List[NodeIdTrampolineParams], paths: List[TrampolineStatus.NodeIdCrc32Path], removed: List[Long] = Nil) extends LightningMessage
+trait TrampolineStatus extends LightningMessage
 
-case class TrampolineRoutingState(nodeToTrampoline: Map[PublicKey, TrampolineOn], crc32Cache: Map[Long, PublicKey], routes: Set[TrampolineStatus.NodeIdPubKeyPath] = Set.empty) {
+case object TrampolineUndesired extends TrampolineStatus
 
-  def merge(peerId: PublicKey, that: TrampolineStatus): TrampolineRoutingState = {
-    val crc32Cache1 = crc32Cache -- that.removed ++ that.params.map(param => Sync.crc32c(param.nodeId.value) -> param.nodeId)
-    val nodeToTrampoline1 = nodeToTrampoline -- that.removed.flatMap(crc32Cache.get) ++ that.params.map(param => param.nodeId -> param.trampolineOn)
-    val routes1 = that.paths.filter(_.nonEmpty).filter(_ forall crc32Cache1.contains).map(_ map crc32Cache1).filterNot(_ contains peerId).map(furtherRoute => peerId :: furtherRoute)
-    val routes2 = (routes ++ routes1).filter(_.size < 4).filter(_ forall nodeToTrampoline1.contains)
+case class TrampolineStatusInit(routes: List[TrampolineStatus.NodeIdTrampolineParamsRoute],
+                                peerParams: TrampolineOn) extends TrampolineStatus
 
-    val routeKeys = routes2.flatten
-    // Reverse-filter to make sure we don't have params without routes
-    val nodeToTrampoline2 = nodeToTrampoline1.filterKeys(routeKeys.contains)
-    val crc32Cache2 = crc32Cache1.filter { case (_, nodeId) => routeKeys contains nodeId }
-    copy(routes = routes2, nodeToTrampoline = nodeToTrampoline2, crc32Cache = crc32Cache2)
+case class TrampolineStatusUpdate(newRoutes: List[TrampolineStatus.NodeIdTrampolineParamsRoute], updatedParams: Map[PublicKey, TrampolineOn],
+                                  updatedPeerParams: Option[TrampolineOn], removed: Set[PublicKey] = Set.empty) extends TrampolineStatus
+
+case class TrampolineRoutingState(routes: Set[TrampolineStatus.NodeIdTrampolineParamsRoute] = Set.empty, peerParams: NodeIdTrampolineParams) {
+  lazy val completeRoutes: Set[TrampolineStatus.NodeIdTrampolineParamsRoute] = routes.map(peerParams :: _)
+
+  def merge(peerId: PublicKey, that: TrampolineStatusUpdate): TrampolineRoutingState = {
+    def isHopRemoved(hop: NodeIdTrampolineParams): Boolean = that.removed.contains(hop.nodeId)
+    val peerParams1 = for (trampolineOn <- that.updatedPeerParams) yield NodeIdTrampolineParams(peerId, trampolineOn)
+    val routes1 = (routes ++ that.newRoutes).filterNot(_ exists isHopRemoved).filter(_.nonEmpty).filter(_.size < 3).take(5)
+    val routes2 = for (route <- routes1) yield route.map(_ withRefreshedParams that)
+    copy(routes = routes2, peerParams = peerParams1 getOrElse peerParams)
   }
 }
 
 case class TrampolineRoutingStates(states: Map[PublicKey, TrampolineRoutingState] = Map.empty) {
-  def withoutPeer(peerId: PublicKey): TrampolineRoutingStates = TrampolineRoutingStates(states - peerId)
 
-  def merge(peerId: PublicKey, that: TrampolineStatus): TrampolineRoutingStates = {
-    val state1 = states.getOrElse(peerId, TrampolineStatus.emptyState).merge(peerId, that)
+  def init(peerId: PublicKey, init: TrampolineStatusInit): TrampolineRoutingStates = {
+    val peerParams = NodeIdTrampolineParams(nodeId = peerId, init.peerParams)
+    val state = TrampolineRoutingState(init.routes.toSet, peerParams)
+    val states1 = states.updated(peerId, state)
+    copy(states = states1)
+  }
+
+  def merge(peerId: PublicKey, that: TrampolineStatusUpdate): TrampolineRoutingStates = {
+    val state1 = states(peerId).merge(peerId, that)
     val states1 = states.updated(peerId, state1)
     copy(states = states1)
   }

@@ -3,6 +3,7 @@ package immortan.fsm
 import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.eclair._
+import com.softwaremill.quicklens._
 import fr.acinq.eclair.channel.{CMD_ADD_HTLC, ChannelOffline, InPrincipleNotSendable, LocalReject}
 import fr.acinq.eclair.crypto.Sphinx
 import fr.acinq.eclair.crypto.Sphinx.PacketAndSecrets
@@ -59,7 +60,7 @@ case object ClearFailures
 case class CutIntoHalves(amount: MilliSatoshi)
 case class RemoveSenderFSM(fullTag: FullPaymentTag)
 case class CreateSenderFSM(listeners: Iterable[OutgoingPaymentListener], fullTag: FullPaymentTag)
-case class TrampolineStatusUpdate(from: PublicKey, status: TrampolineStatus)
+case class TrampolinePeerStatusUpdate(from: PublicKey, status: TrampolineStatus)
 case class TrampolinePeerDisconnected(from: PublicKey)
 
 case class ChannelNotRoutable(failedDesc: ChannelDesc)
@@ -82,13 +83,17 @@ case class OutgoingPaymentMasterData(trampolineStates: TrampolineRoutingStates,
                                      chanFailedAtAmount: Map[DescAndCapacity, StampedChannelFailed] = Map.empty,
                                      nodeFailedWithUnknownUpdateTimes: Map[PublicKey, Int] = Map.empty,
                                      directionFailedTimes: Map[NodeDirectionDesc, Int] = Map.empty,
-                                     chanNotRoutable: Set[ChannelDesc] = Set.empty) {
+                                     chanNotRoutable: Set[ChannelDesc] = Set.empty) { me =>
+
+  def withNewTrampolineStates(states1: TrampolineRoutingStates): OutgoingPaymentMasterData = copy(trampolineStates = states1)
+
+  def withoutTrampolineStates(nodeId: PublicKey): OutgoingPaymentMasterData = me.modify(_.trampolineStates.states).using(_ - nodeId)
 
   def withFailuresReduced(stampInFuture: Long): OutgoingPaymentMasterData = {
     // Reduce failure times to give previously failing channels a chance
     // failed-at-amount is restored gradually within a time window
-
     val acc = Map.empty[DescAndCapacity, StampedChannelFailed]
+
     val chanFailedAtAmount1 = chanFailedAtAmount.foldLeft(acc) { case (acc1, dac ~ failed) =>
       val restoredRatio: Double = (stampInFuture - failed.stamp) / LNParams.failedChanRecoveryMsec
       val failed1 = failed.copy(amount = failed.amount + (dac.capacity - failed.amount) * restoredRatio)
@@ -119,12 +124,17 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
   become(OutgoingPaymentMasterData(TrampolineRoutingStates(Map.empty), Map.empty), EXPECTING_PAYMENTS)
 
   def doProcess(change: Any): Unit = (change, state) match {
-    case (TrampolineStatusUpdate(from, status), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
-      val trampolineStates1 = data.trampolineStates.merge(from, status)
-      become(data.copy(trampolineStates = trampolineStates1), state)
+    case (TrampolinePeerDisconnected(nodeId), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
+      become(data withoutTrampolineStates nodeId, state)
 
-    case (TrampolinePeerDisconnected(from), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
-      become(data.copy(trampolineStates = data.trampolineStates withoutPeer from), state)
+    case (TrampolinePeerStatusUpdate(nodeId, TrampolineUndesired), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
+      become(data withoutTrampolineStates nodeId, state)
+
+    case (TrampolinePeerStatusUpdate(nodeId, init: TrampolineStatusInit), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
+      become(data withNewTrampolineStates data.trampolineStates.init(nodeId, init), state)
+
+    case (TrampolinePeerStatusUpdate(nodeId, update: TrampolineStatusUpdate), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) if data.trampolineStates.states.contains(nodeId) =>
+      become(data withNewTrampolineStates data.trampolineStates.merge(nodeId, update), state)
 
     case (ClearFailures, EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
       become(data.withFailuresReduced(System.currentTimeMillis), state)

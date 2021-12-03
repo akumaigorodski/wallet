@@ -1,7 +1,5 @@
 package immortan
 
-import java.util.concurrent.atomic.AtomicLong
-
 import com.google.common.cache.LoadingCache
 import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
@@ -22,6 +20,7 @@ import immortan.fsm._
 import immortan.utils.{PaymentRequestExt, Rx}
 import rx.lang.scala.Subject
 
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.Try
@@ -154,7 +153,7 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     allFromNode(worker.info.nodeId).foreach(_.chan process CMD_SOCKET_ONLINE)
 
   override def onMessage(worker: CommsTower.Worker, message: LightningMessage): Unit = message match {
-    case msg: TrampolineStatus => opm process TrampolineStatusUpdate(worker.info.nodeId, msg)
+    case msg: TrampolineStatus => opm process TrampolinePeerStatusUpdate(worker.info.nodeId, msg)
     case msg: ChannelUpdate => allFromNode(worker.info.nodeId).foreach(_.chan process msg)
     case msg: HasChannelId => sendTo(msg, msg.channelId)
     case _ => // Do nothing

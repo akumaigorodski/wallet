@@ -1,16 +1,15 @@
 package immortan.fsm
 
-import java.util.concurrent.Executors
-
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.eclair.Features.PrivateRouting
-import fr.acinq.eclair.wire.{Init, TrampolineOn, TrampolineStatus}
+import fr.acinq.eclair.wire._
 import immortan._
 import immortan.crypto.Tools._
 import immortan.crypto.{CanBeShutDown, StateMachine}
 import immortan.fsm.TrampolineBroadcaster._
 import rx.lang.scala.Observable
 
+import java.util.concurrent.Executors
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
@@ -19,9 +18,9 @@ object TrampolineBroadcaster {
   final val ROUTING_DISABLED = 0
   final val ROUTING_ENABLED = 1
 
-  sealed trait RoutingStatus
-  case object RoutingOff extends RoutingStatus
-  case class RoutingOn(params: TrampolineOn) extends RoutingStatus
+  sealed trait BroadcastStatus
+  case object RoutingOff extends BroadcastStatus
+  case class RoutingOn(params: TrampolineOn) extends BroadcastStatus
 
   val CMDBroadcast = "cmd-broadcast"
 
@@ -32,18 +31,22 @@ object TrampolineBroadcaster {
       val canReceiveFromPeer = peerChannels.map(_.commits.availableForReceive).sum
       val canSendOut = otherChannels.map(_.commits.availableForSend * maxRoutableRatio).sum
       val status = templateTrampolineOn.copy(maxMsat = canSendOut min canReceiveFromPeer)
-      // If routable out amount gets too low we stop routing altogether
-      val last1 = TrampolineStatus.fromRemoteInfo(info, status)
-      if (status.maxMsat > status.minMsat) copy(last = last1)
-      else copy(last = TrampolineStatus.empty)
+
+      val last1 = last match {
+        case _ if status.minMsat > status.maxMsat => TrampolineUndesired
+        case TrampolineUndesired => TrampolineStatusInit(List.empty, status)
+        case _ => TrampolineStatusUpdate(List.empty, Map.empty, status.asSome)
+      }
+
+      copy(last = last1)
     }
   }
 }
 
 // Staggered broadcast of routing params to each connected peer when they change (other peers connect/disconnect, balances change, user actions)
-class TrampolineBroadcaster(cm: ChannelMaster) extends StateMachine[RoutingStatus] with ConnectionListener with CanBeShutDown { me =>
+class TrampolineBroadcaster(cm: ChannelMaster) extends StateMachine[BroadcastStatus] with ConnectionListener with CanBeShutDown { me =>
   implicit val context: ExecutionContextExecutor = ExecutionContext fromExecutor Executors.newSingleThreadExecutor
-  private val subscription = Observable.interval(5.seconds).subscribe(_ => me process CMDBroadcast)
+  private val subscription = Observable.interval(10.seconds).subscribe(_ => me process CMDBroadcast)
   var broadcasters: Map[PublicKey, LastBroadcast] = Map.empty
 
   def doBroadcast(msg: Option[TrampolineStatus], info: RemoteNodeInfo): Unit = CommsTower.sendMany(msg, info.nodeSpecificPair)
@@ -53,7 +56,7 @@ class TrampolineBroadcaster(cm: ChannelMaster) extends StateMachine[RoutingStatu
 
   override def onOperational(worker: CommsTower.Worker, theirInit: Init): Unit = {
     val isPrivateRoutingEnabled = LNParams.isPeerSupports(theirInit)(feature = PrivateRouting)
-    val msg = LastBroadcast(TrampolineStatus.empty, worker.info, maxRoutableRatio = 0.9D)
+    val msg = LastBroadcast(TrampolineUndesired, worker.info, maxRoutableRatio = 0.9D)
     if (isPrivateRoutingEnabled) me process msg
   }
 
@@ -72,6 +75,7 @@ class TrampolineBroadcaster(cm: ChannelMaster) extends StateMachine[RoutingStatu
 
       for {
         Tuple2(nodeId, lastBroadcast) <- broadcasters
+        // To save on traffic we only send out a new status if it differs from an old one
         newBroadcast <- broadcasters1.get(nodeId) if newBroadcast.last != lastBroadcast.last
       } doBroadcast(newBroadcast.last.asSome, lastBroadcast.info)
       broadcasters = broadcasters1
@@ -81,8 +85,8 @@ class TrampolineBroadcaster(cm: ChannelMaster) extends StateMachine[RoutingStatu
       become(routingOn1, ROUTING_ENABLED)
 
     case (RoutingOff, ROUTING_ENABLED, _) =>
-      broadcasters = for (Tuple2(nodeId, lastBroadcast) <- broadcasters) yield nodeId -> lastBroadcast.copy(last = TrampolineStatus.empty)
-      for (lastBroadcast <- broadcasters.values) doBroadcast(TrampolineStatus.empty.asSome, lastBroadcast.info)
+      broadcasters = for (Tuple2(nodeId, lastBroadcast) <- broadcasters) yield nodeId -> lastBroadcast.copy(last = TrampolineUndesired)
+      for (lastBroadcast <- broadcasters.values) doBroadcast(TrampolineUndesired.asSome, lastBroadcast.info)
       become(RoutingOff, ROUTING_DISABLED)
 
     case (lastOn1: LastBroadcast, ROUTING_DISABLED | ROUTING_ENABLED, _) =>
