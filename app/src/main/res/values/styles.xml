@@ -111,7 +111,7 @@
     </style>
 
     <style name="InFlightView">
-        <item name="android:layout_marginStart">@dimen/bottom_navigation_small_selected_width_difference</item>
+        <item name="android:layout_marginStart">10dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_gravity">center</item>

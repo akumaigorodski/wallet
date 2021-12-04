@@ -43,16 +43,4 @@
     <color name="chip_default_text_color">#DE000000</color>
     <color name="chip_default_icon_background_color">#517FA4</color>
     <color name="chip_material_background">#F0F0F0</color>
-
-    <!-- bottom navigation -->
-
-    <color name="colorBottomNavigationPrimary">#3F51B5</color>
-    <color name="colorBottomNavigationPrimaryDark">#303F9F</color>
-    <color name="colorBottomNavigationAccent">#FF4081</color>
-    <color name="colorBottomNavigationInactive">#747474</color>
-    <color name="colorBottomNavigationDisable">#3A000000</color>
-    <color name="colorBottomNavigationActiveColored">#FFFFFF</color>
-    <color name="colorBottomNavigationInactiveColored">#50FFFFFF</color>
-    <color name="colorBottomNavigationSelectedBackground">#17000000</color>
-    <color name="colorBottomNavigationNotification">#F63D2B</color>
 </resources>
