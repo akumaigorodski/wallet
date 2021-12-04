@@ -135,4 +135,16 @@
         <attr name="minDistRequestDisallowParent" format="dimension"/>
         <attr name="flingVelocity" format="integer"/>
     </declare-styleable>
+
+    <!-- InvertedTextProgressbar -->
+
+    <declare-styleable name="InvertedTextProgressbar">
+        <attr name="text" format="string"/>
+        <attr name="text_color" format="color"/>
+        <attr name="text_inverted_color" format="color"/>
+        <attr name="text_size" format="dimension"/>
+        <attr name="text_typeface" format="integer"/>
+        <attr name="max_progress" format="integer"/>
+        <attr name="min_progress" format="integer"/>
+    </declare-styleable>
 </resources>

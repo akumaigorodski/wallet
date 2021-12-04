@@ -61,4 +61,6 @@
     <dimen name="bottom_navigation_notification_margin_top">14dp</dimen>
     <dimen name="bottom_navigation_notification_margin_top_active">3dp</dimen>
     <dimen name="bottom_navigation_notification_text_size">4sp</dimen>
+
+    <dimen name="text_size_default">14sp</dimen>
 </resources>

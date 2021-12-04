@@ -515,7 +515,8 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
 
     shuffle(opm.rightNowSendable(data.cmd.allowedChans, feeLeftover).toSeq).collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc } match {
       case Some(okCnc) if wait.remoteAttempts < data.cmd.routerConf.maxRemoteAttempts => become(data.copy(parts = data.parts + wait.oneMoreRemoteAttempt(okCnc).tuple), PENDING)
-      case _  => if (canBeSplit) become(data, PENDING) doProcess CutIntoHalves(wait.amount) else me abortMaybeNotify data.withLocalFailure(RUN_OUT_OF_RETRY_ATTEMPTS, wait.amount)
+      case _ if !canBeSplit => me abortMaybeNotify data.withLocalFailure(RUN_OUT_OF_RETRY_ATTEMPTS, wait.amount)
+      case _ => become(data, PENDING) doProcess CutIntoHalves(wait.amount)
     }
   }
 
