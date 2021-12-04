@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    style="@style/StandardLinearLayout"
+<LinearLayout style="@style/StandardLinearLayout"
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:lib="http://schemas.android.com/tools">
 
     <!-- Default view -->
 
@@ -24,39 +24,54 @@
                 style="@style/FillingView"/>
 
             <TextView
-                style="@style/Notification"
-                android:background="@drawable/border_blue"
-                android:layout_toStartOf="@id/chainSyncIndicator"
-                android:layout_centerVertical="true"
-                android:id="@+id/lnSyncIndicator"
-                android:visibility="gone"
-                android:text="LN SYNC"/>
-
-            <TextView
-                style="@style/Notification"
-                android:background="@drawable/border_yellow"
-                android:layout_toStartOf="@id/offlineIndicator"
-                android:layout_centerVertical="true"
-                android:id="@+id/chainSyncIndicator"
-                android:visibility="gone"
-                android:text="SYNC"/>
-
-            <TextView
-                style="@style/Notification"
+                style="@style/ChipTextGray"
                 android:layout_toStartOf="@id/rateTeaser"
+                android:textSize="@dimen/text_size_12"
                 android:layout_centerVertical="true"
                 android:id="@+id/offlineIndicator"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone"
                 android:text="OFFLINE"/>
 
             <TextView
-                style="@style/Notification"
+                android:clickable="true"
+                android:focusable="true"
+                style="@style/ChipTextGray"
                 android:onClick="bringRateDialog"
+                android:textSize="@dimen/text_size_12"
                 android:background="@drawable/border_green"
-                android:layout_toStartOf="@id/settingsButton"
+                android:layout_toStartOf="@id/chainSyncIndicator"
                 android:layout_centerVertical="true"
+                android:layout_marginEnd="6dp"
                 android:text="&#9825; Rate us"
                 android:id="@+id/rateTeaser"
                 android:visibility="gone"/>
+
+            <TextView
+                style="@style/ChipTextGray"
+                android:textSize="@dimen/text_size_12"
+                android:background="@drawable/border_yellow"
+                android:layout_toStartOf="@id/lnSyncIndicator"
+                android:layout_centerVertical="true"
+                android:id="@+id/chainSyncIndicator"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone"
+                android:text="SYNC"/>
+
+            <com.danilomendes.progressbar.InvertedTextProgressbar
+                card_view:text_inverted_color="@android:color/black"
+                android:layout_toStartOf="@id/settingsButton"
+                card_view:text_color="@android:color/white"
+                android:background="@drawable/border_blue"
+                android:src="@color/paymentActiveBorder"
+                android:layout_centerVertical="true"
+                android:id="@+id/lnSyncIndicator"
+                android:layout_marginEnd="6dp"
+                android:layout_height="24sp"
+                android:layout_width="65sp"
+                android:visibility="gone"
+                card_view:text="LN SYNC"
+                android:padding="1dp"/>
 
             <ImageButton
                 android:padding="6dp"

@@ -112,7 +112,7 @@ public class InvertedTextProgressbar extends AppCompatImageView {
         mTextPaint.setColor(typedArray.getColor(R.styleable.InvertedTextProgressbar_text_color, Color.BLACK));
         mTextPaint.setStyle(Paint.Style.FILL);
         mTextPaint.setTextSize(typedArray.getDimensionPixelSize(R.styleable.InvertedTextProgressbar_text_size,
-                context.getResources().getDimensionPixelSize(R.dimen.text_size_default)));
+                context.getResources().getDimensionPixelSize(R.dimen.text_size_12)));
         mTextPaint.setTypeface(Typeface.defaultFromStyle(typedArray.getInteger(
                 R.styleable.InvertedTextProgressbar_text_typeface, Typeface.defaultFromStyle(Typeface.NORMAL).getStyle())));
         mTextPaint.setTextAlign(Paint.Align.CENTER); // Text draw is started in the middle
@@ -282,9 +282,10 @@ public class InvertedTextProgressbar extends AppCompatImageView {
      *
      * @param progress The progress to be set.
      */
-    public void setProgress(int progress) {
+    public InvertedTextProgressbar setProgress(int progress) {
         mCurrProgress = progress;
         invalidate();
+        return this;
     }
 
     /**
@@ -302,8 +303,9 @@ public class InvertedTextProgressbar extends AppCompatImageView {
      *
      * @param maxProgress The maximum progress.
      */
-    public void setMaxProgress(int maxProgress) {
+    public InvertedTextProgressbar setMaxProgress(int maxProgress) {
         mMaxProgress = maxProgress;
+        return this;
     }
 
     /**
@@ -321,8 +323,9 @@ public class InvertedTextProgressbar extends AppCompatImageView {
      *
      * @param minProgress The minimum progress.
      */
-    public void setMinProgress(int minProgress) {
+    public InvertedTextProgressbar setMinProgress(int minProgress) {
         mMinProgress = minProgress;
+        return this;
     }
 
     /**

@@ -18,6 +18,7 @@ import com.btcontract.wallet.HubActivity._
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.utils.LocalBackup
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
+import com.danilomendes.progressbar.InvertedTextProgressbar
 import com.github.mmin18.widget.RealtimeBlurView
 import com.google.android.material.button.MaterialButtonToggleGroup.OnButtonCheckedListener
 import com.google.android.material.button.{MaterialButton, MaterialButtonToggleGroup}
@@ -846,9 +847,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val totalBalance: TextView = view.findViewById(R.id.totalBalance).asInstanceOf[TextView]
     val totalFiatBalance: TextView = view.findViewById(R.id.totalFiatBalance).asInstanceOf[TextView]
     val fiatUnitPriceAndChange: TextView = view.findViewById(R.id.fiatUnitPriceAndChange).asInstanceOf[TextView]
+
+    val lnSyncIndicator: InvertedTextProgressbar = view.findViewById(R.id.lnSyncIndicator).asInstanceOf[InvertedTextProgressbar]
     val chainSyncIndicator: TextView = view.findViewById(R.id.chainSyncIndicator).asInstanceOf[TextView]
     val offlineIndicator: TextView = view.findViewById(R.id.offlineIndicator).asInstanceOf[TextView]
-    val lnSyncIndicator: TextView = view.findViewById(R.id.lnSyncIndicator).asInstanceOf[TextView]
 
     val totalLightningBalance: TextView = view.findViewById(R.id.totalLightningBalance).asInstanceOf[TextView]
     val channelStateIndicators: RelativeLayout = view.findViewById(R.id.channelStateIndicators).asInstanceOf[RelativeLayout]
@@ -900,6 +902,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, new AlertDialog.Builder(me).setMessage(confirm_remove_item), dialog_ok, dialog_cancel)
       }
     }
+
+    def updateLnSyncProgress(total: Int, left: Int): Unit = UITask {
+      lnSyncIndicator.setMaxProgress(total).setMinProgress(0).setProgress(total - left)
+      setVis(isVisible = true, lnSyncIndicator)
+    }.run
 
     def resetChainCards(ext1: WalletExt): Unit = {
       // Remove all existing cards and place new ones
@@ -1051,8 +1058,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   override def process(reply: Any): Unit = reply match {
     case na: NodeAnnouncement => LNParams.cm.all.values.foreach(_ process na.toRemoteInfo)
-    case _: SyncMasterShortIdData => UITask(walletCards.lnSyncIndicator setVisibility View.VISIBLE).run
-    case _: PureRoutingData => UITask(walletCards.lnSyncIndicator setVisibility View.VISIBLE).run
+    case PathFinder.CMDResync => walletCards.updateLnSyncProgress(total = 1000, left = 1000)
+    case prd: PureRoutingData => walletCards.updateLnSyncProgress(prd.queriesTotal, prd.queriesLeft)
     case _: SyncMaster => UITask(walletCards.lnSyncIndicator setVisibility View.GONE).run
     case _ => // Do nothing
   }

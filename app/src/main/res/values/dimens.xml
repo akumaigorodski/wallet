@@ -22,5 +22,5 @@
 
     <!-- inverted progress bar -->
 
-    <dimen name="text_size_default">14sp</dimen>
+    <dimen name="text_size_12">12sp</dimen>
 </resources>

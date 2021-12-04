@@ -27,6 +27,7 @@ object PathFinder {
   val NotifyNotReady = "path-finder-notify-not-ready"
   val CMDStartPeriodicResync = "cmd-start-periodic-resync"
   val CMDLoadGraph = "cmd-load-graph"
+  val CMDResync = "cmd-resync"
 
   val WAITING = 0
   val OPERATIONAL = 1
@@ -54,7 +55,6 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
   implicit val context: ExecutionContextExecutor = ExecutionContext fromExecutor Executors.newSingleThreadExecutor
   def process(changeMessage: Any): Unit = scala.concurrent.Future(me doProcess changeMessage)
 
-  private val CMDResync = "cmd-resync"
   private val RESYNC_PERIOD: Long = 1000L * 3600 * 72
   // We don't load routing data on every startup but when user (or system) actually needs it
   become(Data(channels = Map.empty, hostedChannels = Map.empty, DirectedGraph.empty), WAITING)
@@ -72,7 +72,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
     case (CMDStartPeriodicResync, WAITING | OPERATIONAL) if subscription.isEmpty =>
       val repeat = Rx.repeat(Rx.ioQueue, Rx.incHour, times = 73 to Int.MaxValue by 73)
       // Resync every RESYNC_PERIOD hours + 1 hour to trigger a full resync, not just PHC resync
-      val delay = Rx.initDelay(repeat, getLastTotalResyncStamp, RESYNC_PERIOD, preStartMsec = 100)
+      val delay = Rx.initDelay(repeat, getLastTotalResyncStamp, RESYNC_PERIOD, preStartMsec = 500)
       subscription = delay.subscribe(_ => me process CMDResync).asSome
 
     case (calc: GetExpectedRouteFees, OPERATIONAL) =>
@@ -113,13 +113,13 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       } yield shuffle(edges).head.desc.shortChannelId
 
       val normalSync = new SyncMaster(normalBag.listExcludedChannels, requestNodeAnnounceForChan, data) { self =>
-        override def onShortIdsSyncComplete(state: SyncMasterShortIdData): Unit = listeners.foreach(_ process state)
         override def onNodeAnnouncement(na: NodeAnnouncement): Unit = listeners.foreach(_ process na)
         override def onChunkSyncComplete(pure: PureRoutingData): Unit = me process pure
         override def onTotalSyncComplete: Unit = me process self
       }
 
       syncMaster = normalSync.asSome
+      listeners.foreach(_ process CMDResync)
       normalSync process setupData
 
     case (CMDResync, OPERATIONAL) if System.currentTimeMillis - getLastTotalResyncStamp > RESYNC_PERIOD =>
