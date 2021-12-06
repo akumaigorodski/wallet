@@ -33,7 +33,7 @@ object CommsTower {
 
     workers.get(pair) match {
       case Some(worker) => for (init <- worker.theirInit) worker.handleTheirRemoteInitMessage(listeners1, init)
-      case None => workers(pair) = new Worker(pair, info, new Bytes(1024), new Socket)
+      case None => workers(pair) = new Worker(pair, info, new Bytes(1024), LNParams.connectionProvider.getSocket)
     }
   }
 

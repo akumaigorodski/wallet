@@ -1,9 +1,8 @@
 package immortan.utils
 
-import immortan.DataBag
-import immortan.utils.ImplicitJsonFormats._
 import immortan.crypto.{CanBeShutDown, Tools}
-import rx.lang.scala.{Observable, Subscription}
+import immortan.utils.ImplicitJsonFormats._
+import immortan.{DataBag, LNParams}
 
 
 object FiatRates {
@@ -13,6 +12,8 @@ object FiatRates {
 }
 
 class FiatRates(bag: DataBag) extends CanBeShutDown {
+  override def becomeShutDown: Unit = listeners = Set.empty
+
   val customFiatSymbols: Map[String, String] = Map("rub" -> "\u20BD", "usd" -> "$", "inr" -> "₹", "gbp" -> "£", "cny" -> "CN¥", "jpy" -> "¥", "brl" -> "R$", "eur" -> "€", "krw" -> "₩")
 
   val universallySupportedSymbols: Map[String, String] = Map("usd" -> "US Dollar", "eur" -> "Euro", "jpy" -> "Japanese Yen", "cny" -> "Chinese Yuan", "inr" -> "Indian Rupee", "cad" -> "Canadian Dollar",
@@ -21,32 +22,20 @@ class FiatRates(bag: DataBag) extends CanBeShutDown {
     "dkk" -> "Danish Krone", "sek" -> "Swedish Krona", "chf" -> "Swiss franc", "huf" -> "Hungarian forint")
 
   def reloadData: Tools.Fiat2Btc = fr.acinq.eclair.secureRandom nextInt 3 match {
-    case 0 => to[CoinGecko](Tools.get("https://api.coingecko.com/api/v3/exchange_rates").string).rates.map { case (code, item) => code.toLowerCase -> item.value }
-    case 1 => to[FiatRates.BlockchainInfoItemMap](Tools.get("https://blockchain.info/ticker").string).map { case (code, item) => code.toLowerCase -> item.last }
-    case _ => to[Bitpay](Tools.get("https://bitpay.com/rates").string).data.map { case BitpayItem(code, rate) => code.toLowerCase -> rate }.toMap
+    case 0 => to[CoinGecko](LNParams.connectionProvider.get("https://api.coingecko.com/api/v3/exchange_rates").string).rates.map { case (code, item) => code.toLowerCase -> item.value }
+    case 1 => to[FiatRates.BlockchainInfoItemMap](LNParams.connectionProvider.get("https://blockchain.info/ticker").string).map { case (code, item) => code.toLowerCase -> item.last }
+    case _ => to[Bitpay](LNParams.connectionProvider.get("https://bitpay.com/rates").string).data.map { case BitpayItem(code, rate) => code.toLowerCase -> rate }.toMap
   }
 
-  override def becomeShutDown: Unit = {
-    subscription.unsubscribe
-    listeners = Set.empty
+  def updateInfo(newRates: Tools.Fiat2Btc): Unit = {
+    info = FiatRatesInfo(newRates, info.rates, System.currentTimeMillis)
+    for (lst <- listeners) lst.onFiatRates(info)
   }
 
   var listeners: Set[FiatRatesListener] = Set.empty
   var info: FiatRatesInfo = bag.tryGetFiatRatesInfo getOrElse {
     FiatRatesInfo(rates = Map.empty, oldRates = Map.empty, stamp = 0L)
   }
-
-  private[this] val periodSecs = 60 * 30
-  private[this] val retryRepeatDelayedCall: Observable[Tools.Fiat2Btc] = {
-    val retry = Rx.retry(Rx.ioQueue.map(_ => reloadData), Rx.incSec, 3 to 18 by 3)
-    val repeat = Rx.repeat(retry, Rx.incSec, periodSecs to Int.MaxValue by periodSecs)
-    Rx.initDelay(repeat, info.stamp, periodSecs * 1000L)
-  }
-
-  val subscription: Subscription = retryRepeatDelayedCall.subscribe(newRates => {
-    info = FiatRatesInfo(newRates, info.rates, System.currentTimeMillis)
-    for (lst <- listeners) lst.onFiatRates(info)
-  }, Tools.none)
 }
 
 trait FiatRatesListener {

@@ -32,7 +32,7 @@ object PaymentFailure {
   final val PAYMENT_NOT_SENDABLE = "payment-not-sendable"
   final val RUN_OUT_OF_RETRY_ATTEMPTS = "run-out-of-retry-attempts"
   final val RUN_OUT_OF_CAPABLE_CHANNELS = "run-out-of-capable-channels"
-  final val PEER_COULD_NOT_PARSE_ONION = "peer-could-not-parse-onion"
+  final val NODE_COULD_NOT_PARSE_ONION = "node-could-not-parse-onion"
   final val NOT_RETRYING_NO_DETAILS = "not-retrying-no-details"
   final val TIMED_OUT = "timed-out"
 }
@@ -60,11 +60,11 @@ case object ClearFailures
 case class CutIntoHalves(amount: MilliSatoshi)
 case class RemoveSenderFSM(fullTag: FullPaymentTag)
 case class CreateSenderFSM(listeners: Iterable[OutgoingPaymentListener], fullTag: FullPaymentTag)
-case class TrampolinePeerStatusUpdate(from: PublicKey, status: TrampolineStatus)
+case class TrampolinePeerUpdated(from: PublicKey, status: TrampolineStatus)
 case class TrampolinePeerDisconnected(from: PublicKey)
 
 case class ChannelNotRoutable(failedDesc: ChannelDesc)
-case class ChannelFailed(failedDescAndCap: DescAndCapacity)
+case class ChannelFailedAtAmount(failedDescAndCap: DescAndCapacity)
 case class StampedChannelFailed(amount: MilliSatoshi, stamp: Long)
 case class NodeFailed(failedNodeId: PublicKey, increment: Int)
 
@@ -127,13 +127,13 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
     case (TrampolinePeerDisconnected(nodeId), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
       become(data withoutTrampolineStates nodeId, state)
 
-    case (TrampolinePeerStatusUpdate(nodeId, TrampolineUndesired), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
+    case (TrampolinePeerUpdated(nodeId, TrampolineUndesired), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
       become(data withoutTrampolineStates nodeId, state)
 
-    case (TrampolinePeerStatusUpdate(nodeId, init: TrampolineStatusInit), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
+    case (TrampolinePeerUpdated(nodeId, init: TrampolineStatusInit), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
       become(data withNewTrampolineStates data.trampolineStates.init(nodeId, init), state)
 
-    case (TrampolinePeerStatusUpdate(nodeId, update: TrampolineStatusUpdate), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) if data.trampolineStates.states.contains(nodeId) =>
+    case (TrampolinePeerUpdated(nodeId, update: TrampolineStatusUpdate), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) if data.trampolineStates.states.contains(nodeId) =>
       become(data withNewTrampolineStates data.trampolineStates.merge(nodeId, update), state)
 
     case (ClearFailures, EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
@@ -173,7 +173,7 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
       become(data, EXPECTING_PAYMENTS)
       me process CMDAskForRoute
 
-    case (ChannelFailed(descAndCapacity), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
+    case (ChannelFailedAtAmount(descAndCapacity), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
       // At this point an affected InFlight status IS STILL PRESENT so failedAtAmount1 = usedCapacities = sum(inFlight)
       val amount1 = data.chanFailedAtAmount.get(descAndCapacity).map(_.amount).getOrElse(Long.MaxValue.msat) min usedCapacities(descAndCapacity)
       val directionFailedTimes1 = data.directionFailedTimes.updated(descAndCapacity.desc.toDirection, data.directionFailedTimes.getOrElse(descAndCapacity.desc.toDirection, 0) + 1)
@@ -338,6 +338,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
 
           otherOpt match {
             case Some(okCnc) => become(data.copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
+            // TODO: if we have not found a route here we can try trampolines before splitting, or we can combine approaches (part-trampoline, part-split)
             case None if canBeSplit => become(data.withoutPartId(wait.partId), PENDING) doProcess CutIntoHalves(wait.amount)
             case _ => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(NO_ROUTES_FOUND, wait.amount)
           }
@@ -346,6 +347,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
     case (found: RouteFound, PENDING) =>
       data.parts.values.collectFirst {
         case wait: WaitForRouteOrInFlight if wait.flight.isEmpty && wait.partId == found.partId =>
+          // TODO: even if route is found we can compare its fees against trampoline fees here and choose trampoline if its fees are more attractive
           val chainExpiry = data.cmd.chainExpiry.fold(fb = _.toCltvExpiry(LNParams.blockCount.get + 1L), fa = identity)
           val finalPayload = Onion.createMultiPartPayload(wait.amount, data.cmd.split.totalSum, chainExpiry, data.cmd.outerPaymentSecret, data.cmd.onionTlvs, data.cmd.userCustomTlvs)
           val (firstAmount, firstExpiry, onion) = OutgoingPacket.buildPacket(Sphinx.PaymentPacket)(wait.onionKey, fullTag.paymentHash, found.route.hops, finalPayload)
@@ -377,7 +379,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
           val otherOpt = singleCapableCncCandidates.collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc }
 
           otherOpt match {
-            case None => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(PEER_COULD_NOT_PARSE_ONION, wait.amount)
+            case None => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(NODE_COULD_NOT_PARSE_ONION, wait.amount)
             case Some(okCnc) => become(data.copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
           }
       }
@@ -409,12 +411,12 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
                     // This is fine: remote node has used a different channel than the one we have initially requested
                     // But remote node may send such errors infinitely so increment this specific type of failure
                     // Still fail an originally selected channel since it has most likely been tried too
+                    opm doProcess ChannelFailedAtAmount(edge.toDescAndCapacity)
                     opm doProcess NodeFailed(originNodeId, increment = 1)
-                    opm doProcess ChannelFailed(edge.toDescAndCapacity)
 
                   case Some(edge) if edge.updExt.update.core.noPosition == failure.update.core.noPosition =>
                     // Remote node returned EXACTLY same update, this channel is likely imbalanced
-                    opm doProcess ChannelFailed(edge.toDescAndCapacity)
+                    opm doProcess ChannelFailedAtAmount(edge.toDescAndCapacity)
 
                   case _ =>
                     // Something like higher feerates or CLTV, channel is updated in graph and may be chosen once again
@@ -505,6 +507,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
     // It may happen that all chans are to stay offline indefinitely, payment parts will then await indefinitely
     // so set a timer to abort a payment in case if we have no in-flight parts after some reasonable amount of time
     // note that timer gets reset each time this method gets called
+    // TODO: CMDAbort may arrive while we searching for routes while channel is actually online, maybe cancel it instead once adding an in-flight part (which would mean channel is online?)
     delayedCMDWorker.replaceWork(CMDAbort)
   }
 

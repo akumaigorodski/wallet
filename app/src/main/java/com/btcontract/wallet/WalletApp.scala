@@ -139,6 +139,7 @@ object WalletApp {
     LNParams.logBag = new SQLiteLog(miscInterface)
     LNParams.chainHash = Block.LivenetGenesisBlock.hash
     LNParams.routerConf = RouterConf(10, LNParams.maxCltvExpiryDelta)
+    LNParams.connectionProvider = new ClearnetConnectionProvider
     LNParams.ourInit = LNParams.createInit
     LNParams.syncParams = new SyncParams
   }
@@ -194,13 +195,13 @@ object WalletApp {
     }
 
     val params = WalletParameters(extDataBag, chainWalletBag, txDataBag, dustLimit = 546L.sat)
-    val pool = LNParams.loggedActor(Props(classOf[ElectrumClientPool], LNParams.blockCount, LNParams.chainHash, LNParams.ec), "connection-pool")
-    val sync = LNParams.loggedActor(Props(classOf[ElectrumChainSync], pool, params.headerDb, LNParams.chainHash), "chain-sync")
-    val watcher = LNParams.loggedActor(Props(classOf[ElectrumWatcher], LNParams.blockCount, pool), "channel-watcher")
+    val electrumPool = LNParams.loggedActor(Props(classOf[ElectrumClientPool], LNParams.blockCount, LNParams.chainHash, LNParams.ec), "connection-pool")
+    val sync = LNParams.loggedActor(Props(classOf[ElectrumChainSync], electrumPool, params.headerDb, LNParams.chainHash), "chain-sync")
+    val watcher = LNParams.loggedActor(Props(classOf[ElectrumWatcher], LNParams.blockCount, electrumPool), "channel-watcher")
     val catcher = LNParams.loggedActor(Props(new WalletEventsCatcher), "events-catcher")
 
     val walletExt: WalletExt =
-      (WalletExt(wallets = Nil, catcher, sync, pool, watcher, params) /: chainWalletBag.listWallets) {
+      (WalletExt(wallets = Nil, catcher, sync, electrumPool, watcher, params) /: chainWalletBag.listWallets) {
         case ext ~ CompleteChainWalletInfo(core: SigningWallet, persistentSigningWalletData, lastBalance, label, false) =>
           val signingWallet = ext.makeSigningWalletParts(core, lastBalance, label)
           signingWallet.walletRef ! persistentSigningWalletData
@@ -271,9 +272,7 @@ object WalletApp {
 
     pf.listeners += LNParams.cm.opm
     // Get channels and still active FSMs up and running
-    LNParams.cm.all = Channel.load(listeners = Set(LNParams.cm), chanBag)
-    // Only schedule periodic resync if Lightning channels are being present
-    if (LNParams.cm.all.nonEmpty) pf process PathFinder.CMDStartPeriodicResync
+    LNParams.cm.all = Channel.load(Set(LNParams.cm), chanBag)
     // This inital notification will create all in/routed/out FSMs
     LNParams.cm.notifyResolvers
 
@@ -286,6 +285,24 @@ object WalletApp {
     Rx.repeat(Rx.ioQueue.delay(2.seconds), Rx.incHour, 1 to Int.MaxValue).foreach { _ =>
       DelayedNotification.cancel(app, DelayedNotification.WATCH_TOWER_TAG)
       if (vulnerableChannelsExist) reScheduleWatchtower
+    }
+
+    LNParams.connectionProvider doWhenReady {
+      electrumPool ! ElectrumClientPool.InitConnect
+      // Only schedule periodic resync if Lightning channels are being present
+      if (LNParams.cm.all.nonEmpty) pf process PathFinder.CMDStartPeriodicResync
+
+      val feeratePeriodHours = 6
+      val rateRetry = Rx.retry(Rx.ioQueue.map(_ => LNParams.feeRates.reloadData), Rx.incSec, 3 to 18 by 3)
+      val rateRepeat = Rx.repeat(rateRetry, Rx.incHour, feeratePeriodHours to Int.MaxValue by feeratePeriodHours)
+      val feerateObs = Rx.initDelay(rateRepeat, LNParams.feeRates.info.stamp, feeratePeriodHours * 3600 * 1000L)
+      feerateObs.foreach(LNParams.feeRates.updateInfo, none)
+
+      val fiatPeriodSecs = 60 * 30
+      val fiatRetry = Rx.retry(Rx.ioQueue.map(_ => LNParams.fiatRates.reloadData), Rx.incSec, 3 to 18 by 3)
+      val fiatRepeat = Rx.repeat(fiatRetry, Rx.incSec, fiatPeriodSecs to Int.MaxValue by fiatPeriodSecs)
+      val fiatObs = Rx.initDelay(fiatRepeat, LNParams.fiatRates.info.stamp, fiatPeriodSecs * 1000L)
+      fiatObs.foreach(LNParams.fiatRates.updateInfo, none)
     }
   }
 
@@ -315,7 +332,7 @@ object WalletApp {
   def msatInFiat(rates: Fiat2Btc, code: String)(msat: MilliSatoshi): Try[Double] = currentRate(rates, code).map(perBtc => msat.toLong * perBtc / BtcDenomination.factor)
 
   def msatInFiatHuman(rates: Fiat2Btc, code: String, msat: MilliSatoshi, decimalFormat: DecimalFormat): String = {
-    val fiatAmount = msatInFiat(rates, code)(msat).map(f = decimalFormat.format).getOrElse(default = "?")
+    val fiatAmount: String = msatInFiat(rates, code)(msat).map(decimalFormat.format).getOrElse(default = "?")
     val formatted = LNParams.fiatRates.customFiatSymbols.get(code).map(symbol => s"$symbol$fiatAmount")
     formatted.getOrElse(s"$fiatAmount $code")
   }

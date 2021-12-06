@@ -2,11 +2,10 @@ package immortan.utils
 
 import fr.acinq.bitcoin._
 import fr.acinq.eclair.blockchain.fee._
-import immortan.DataBag
-import immortan.crypto.{CanBeShutDown, Tools}
+import immortan.crypto.CanBeShutDown
 import immortan.utils.FeeRates._
 import immortan.utils.ImplicitJsonFormats._
-import rx.lang.scala.Subscription
+import immortan.{DataBag, LNParams}
 
 
 object FeeRates {
@@ -42,6 +41,8 @@ object FeeRates {
 }
 
 class FeeRates(bag: DataBag) extends CanBeShutDown {
+  override def becomeShutDown: Unit = listeners = Set.empty
+
   def reloadData: FeeratesPerKB = fr.acinq.eclair.secureRandom nextInt 3 match {
     case 0 => new EsploraFeeProvider("https://blockstream.info/api/fee-estimates").provide
     case 1 => new EsploraFeeProvider("https://mempool.space/api/fee-estimates").provide
@@ -54,21 +55,9 @@ class FeeRates(bag: DataBag) extends CanBeShutDown {
     for (lst <- listeners) lst.onFeeRates(info)
   }
 
-  override def becomeShutDown: Unit = {
-    subscription.unsubscribe
-    listeners = Set.empty
-  }
-
-  private[this] val periodHours = 6
   var listeners: Set[FeeRatesListener] = Set.empty
   var info: FeeRatesInfo = bag.tryGetFeeRatesInfo getOrElse {
     FeeRatesInfo(FeeratesPerKw(defaultFeerates), history = Nil, stamp = 0L)
-  }
-
-  val subscription: Subscription = {
-    val retry = Rx.retry(Rx.ioQueue.map(_ => reloadData), Rx.incSec, 3 to 18 by 3)
-    val repeat = Rx.repeat(retry, Rx.incHour, periodHours to Int.MaxValue by periodHours)
-    Rx.initDelay(repeat, info.stamp, periodHours * 3600 * 1000L).subscribe(updateInfo, Tools.none)
   }
 }
 
@@ -93,7 +82,7 @@ class EsploraFeeProvider(val url: String) extends FeeRatesProvider {
   type EsploraFeeStructure = Map[String, Long]
 
   def provide: FeeratesPerKB = {
-    val structure = to[EsploraFeeStructure](Tools.get(url).string)
+    val structure = to[EsploraFeeStructure](LNParams.connectionProvider.get(url).string)
 
     FeeratesPerKB(
       mempoolMinFee = extractFeerate(structure, 1008),
@@ -124,7 +113,7 @@ object BitgoFeeProvider extends FeeRatesProvider {
   val url = "https://www.bitgo.com/api/v2/btc/tx/fee"
 
   def provide: FeeratesPerKB = {
-    val structure = to[BitGoFeeRateStructure](Tools.get(url).string)
+    val structure = to[BitGoFeeRateStructure](LNParams.connectionProvider.get(url).string)
 
     FeeratesPerKB(
       mempoolMinFee = extractFeerate(structure, 1008),
