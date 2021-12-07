@@ -277,8 +277,9 @@ case class OutgoingPaymentSenderData(cmd: SendMultiPart, parts: Map[ByteVector, 
   def usedRoutesAsString: String = inFlightParts.map(_.route.asString).mkString("\n\n")
   def failuresAsString: String = failures.reverse.map(_.asString).mkString("\n\n")
 
+  lazy val waitOnlinePart: Option[WaitForChanOnline] = parts.values.collectFirst { case wait: WaitForChanOnline => wait }
   lazy val inFlightParts: Iterable[InFlightInfo] = parts.values.flatMap { case wait: WaitForRouteOrInFlight => wait.flight case _ => None }
-  lazy val successfulUpdates: Iterable[ChannelUpdateExt] = inFlightParts.flatMap(_.route.routedPerChannelHop).toMap.values.map(_.edge.updExt)
+  lazy val successfulUpdates: Iterable[ChannelUpdateExt] = inFlightParts.flatMap(_.route.routedPerChannelHop).secondItems.map(_.edge.updExt)
   lazy val usedFee: MilliSatoshi = inFlightParts.map(_.route.fee).sum
 }
 
@@ -306,7 +307,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
       val chans = opm.rightNowSendable(cmd.allowedChans, cmd.totalFeeReserve)
       assignToChans(chans, OutgoingPaymentSenderData(cmd, Map.empty), cmd.split.myPart)
 
-    case (CMDAbort, INIT | PENDING) if data.inFlightParts.isEmpty =>
+    case (CMDAbort, INIT | PENDING) if data.waitOnlinePart.nonEmpty =>
       // When at least some parts get through we can eventaully expect for remote timeout
       // but if ALL parts are still waiting after local timeout then we need to fail a whole payment locally
       me abortMaybeNotify data.copy(parts = Map.empty).withLocalFailure(TIMED_OUT, data.cmd.split.myPart)
@@ -317,10 +318,9 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
       become(data.withoutPartId(fulfill.ourAdd.partId), SUCCEEDED)
 
     case (CMDChanGotOnline, PENDING) =>
-      data.parts.values.collectFirst {
-        case wait: WaitForChanOnline =>
-          val nowSendable = opm.rightNowSendable(data.cmd.allowedChans, feeLeftover)
-          assignToChans(nowSendable, data.withoutPartId(wait.partId), wait.amount)
+      for (waitOnline <- data.waitOnlinePart) {
+        val nowSendable = opm.rightNowSendable(data.cmd.allowedChans, feeLeftover)
+        assignToChans(nowSendable, data.withoutPartId(waitOnline.partId), waitOnline.amount)
       }
 
     case (CMDAskForRoute, PENDING) =>
@@ -507,7 +507,6 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
     // It may happen that all chans are to stay offline indefinitely, payment parts will then await indefinitely
     // so set a timer to abort a payment in case if we have no in-flight parts after some reasonable amount of time
     // note that timer gets reset each time this method gets called
-    // TODO: CMDAbort may arrive while we searching for routes while channel is actually online, maybe cancel it instead once adding an in-flight part (which would mean channel is online?)
     delayedCMDWorker.replaceWork(CMDAbort)
   }
 
