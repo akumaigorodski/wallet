@@ -26,11 +26,11 @@ abstract class BiometricAuth(view: View, host: BaseActivity) {
   }
 
   def callAuthDialog: Unit = {
-    val promptInfo: BiometricPrompt.PromptInfo =
-      (new BiometricPrompt.PromptInfo.Builder)
-        .setTitle(host getString R.string.settings_auth_title)
-        .setDeviceCredentialAllowed(true)
-        .build
+    val promptInfo: BiometricPrompt.PromptInfo = {
+      val builder = new BiometricPrompt.PromptInfo.Builder
+      val title = host getString R.string.settings_auth_title
+      builder.setDeviceCredentialAllowed(true).setTitle(title).build
+    }
 
     val callback: BiometricPrompt.AuthenticationCallback = new BiometricPrompt.AuthenticationCallback {
       override def onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult): Unit = {

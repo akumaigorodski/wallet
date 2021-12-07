@@ -214,18 +214,6 @@
 
     <!-- /special tx/payment descriptions -->
 
-    <!-- orbot -->
-
-    <string name="orbot_err_unclear"><![CDATA[
-        A carteira não conseguiu se conectar ao proxy Tor localhost:9050. O processo foi interrompido porque suas configurações exigem conexão Tor.<br><br>
-        Por favor, certifique-se de que o app Orbot está instalado, o modo VPN está ativado e que a carteira está na lista de aplicativos habilitados para Tor.
-    ]]></string>
-
-    <string name="orbot_action_open">Feche a carteira e abra o Orbot</string>
-    <string name="orbot_action_skip">Continuar sem Tor</string>
-
-    <!-- /orbot -->
-
     <!-- Remote peer activity -->
 
     <string name="rpa_title">Conexão com par remoto</string>
@@ -262,9 +250,6 @@
     <string name="settings_auth_title">Autenticação da carteira</string>
 
     <string name="settings_ensure_tor">Aplicar conexão Tor</string>
-    <string name="settings_ensure_tor_enabled">O app não inicia a menos que Orbot VPN esteja em execução e é interrompido se Orbot parar de funcionar</string>
-    <string name="settings_ensure_tor_disabled">Requer instalação do Orbot</string>
-
     <string name="settings_ln_fee_cap">Limitar as taxas da LN</string>
     <string name="settings_ln_fee_cap_disabled"><![CDATA[A taxa da LN é de no máximo <strong>%1$s</strong> do pagamento e <b>pode ficar mais alta</b> do que a atual taxa média da blockchain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[A taxa da LN é de no máximo <strong>%1$s</strong> do pagamento mas <b>nunca maior</b> do que a atual taxa média da blockchain de <b>%2$s</b>]]></string>

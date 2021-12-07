@@ -1,6 +1,6 @@
 package com.btcontract.wallet
 
-import java.net.{InetSocketAddress, Socket}
+import java.net.InetSocketAddress
 import java.text.{DecimalFormat, SimpleDateFormat}
 import java.util.Date
 
@@ -120,7 +120,8 @@ object WalletApp {
     freePossiblyUsedResouces
     require(!LNParams.isOperational, "Still operational")
     val intent = new Intent(app, ClassNames.mainActivityClass)
-    app.startActivity(Intent makeRestartActivityTask intent.getComponent)
+    val restart = Intent.makeRestartActivityTask(intent.getComponent)
+    app.startActivity(restart)
     System.exit(0)
   }
 
@@ -138,8 +139,8 @@ object WalletApp {
     // In case these are needed early
     LNParams.logBag = new SQLiteLog(miscInterface)
     LNParams.chainHash = Block.LivenetGenesisBlock.hash
-    LNParams.routerConf = RouterConf(10, LNParams.maxCltvExpiryDelta)
-    LNParams.connectionProvider = new ClearnetConnectionProvider
+    LNParams.routerConf = RouterConf(initRouteMaxLength = 10, LNParams.maxCltvExpiryDelta)
+    LNParams.connectionProvider = if (ensureTor) new TorConnectionProvider(app) else new ClearnetConnectionProvider
     LNParams.ourInit = LNParams.createInit
     LNParams.syncParams = new SyncParams
   }
@@ -189,10 +190,7 @@ object WalletApp {
       case _ => throw new RuntimeException
     }
 
-    LNParams.cm = new ChannelMaster(payBag, chanBag, extDataBag, pf) {
-      // There will be a disconnect if VPN (Orbot) suddenly stops working, we then clear everything and restart an app
-      override def initConnect: Unit = if (ensureTor) app.checkTorProxy(restartApplication)(super.initConnect) else super.initConnect
-    }
+    LNParams.cm = new ChannelMaster(payBag, chanBag, extDataBag, pf)
 
     val params = WalletParameters(extDataBag, chainWalletBag, txDataBag, dustLimit = 546L.sat)
     val electrumPool = LNParams.loggedActor(Props(classOf[ElectrumClientPool], LNParams.blockCount, LNParams.chainHash, LNParams.ec), "connection-pool")
@@ -423,11 +421,6 @@ class WalletApp extends Application { me =>
   def plurOrZero(num: Long, opts: Array[String] = Array.empty): String = if (num > 0) plur(opts, num).format(num) else opts(0)
   def clipboardManager: ClipboardManager = getSystemService(Context.CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
   def getBufferUnsafe: String = clipboardManager.getPrimaryClip.getItemAt(0).getText.toString
-
-  def checkTorProxy(onFail: => Unit, socket: Socket = new Socket)(onOk: => Unit): Unit = {
-    def connectToProxy: Unit = socket.connect(new InetSocketAddress("localhost", 9050), 4000)
-    Rx.ioQueue.map(_ => connectToProxy).toBlocking.subscribe(_ => onOk, _ => onFail, socket.close)
-  }
 
   def inputMethodManager: InputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE).asInstanceOf[InputMethodManager]
   def showKeys(field: EditText): Unit = try inputMethodManager.showSoftInput(field, InputMethodManager.SHOW_IMPLICIT) catch none

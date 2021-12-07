@@ -137,14 +137,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     view setOnClickListener onButtonTap(callUrScanner)
     settingsTitle.setText(settings_hardware_add)
     override def updateView: Unit = none
-
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-      val message = getString(error_old_api_level).format(Build.VERSION.SDK_INT)
-      setVis(isVisible = true, settingsInfo)
-      settingsInfo.setText(message)
-      settingsTitle.setAlpha(0.5F)
-      view.setEnabled(false)
-    }
+    disableIfOldAndroid
 
     def callUrScanner: Unit = {
       def onKey(data: PairingData): Unit = {
@@ -197,8 +190,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
 
         def warnAndUpdateView: Unit = {
           def onOk(snack: Snackbar): Unit = runAnd(snack.dismiss)(WalletApp.restartApplication)
-          val msg = getString(settings_custom_electrum_restart_notice).html
-          snack(settingsContainer, msg, R.string.dialog_ok, onOk)
+          snack(settingsContainer, getString(settings_custom_electrum_restart_notice).html, R.string.dialog_ok, onOk)
           updateView
         }
       }
@@ -242,7 +234,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
   }
 
   lazy private[this] val useFingerprint: SettingsHolder = new SettingsHolder { self =>
-    private def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.mainLayout), me) {
+    private def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.settingsContainer), me) {
       def onHardwareUnavailable: Unit = WalletApp.app.quickToast(R.string.settings_auth_not_available)
       def onNoneEnrolled: Unit = WalletApp.app.quickToast(R.string.settings_auth_add_method)
       def onNoHardware: Unit = WalletApp.app.quickToast(R.string.settings_auth_no_support)
@@ -261,16 +253,16 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
   }
 
   lazy private[this] val enforceTor = new SettingsHolder {
+    override def updateView: Unit = settingsCheck.setChecked(WalletApp.ensureTor)
+
     settingsTitle.setText(settings_ensure_tor)
+    setVis(isVisible = false, settingsInfo)
+    disableIfOldAndroid
 
     view setOnClickListener onButtonTap {
       putBoolAndUpdateView(WalletApp.ENSURE_TOR, !WalletApp.ensureTor)
-    }
-
-    override def updateView: Unit = {
-      val status = if (WalletApp.ensureTor) settings_ensure_tor_enabled else settings_ensure_tor_disabled
-      settingsCheck.setChecked(WalletApp.ensureTor)
-      settingsInfo.setText(status)
+      def onOk(snack: Snackbar): Unit = runAnd(snack.dismiss)(WalletApp.restartApplication)
+      snack(settingsContainer, getString(settings_custom_electrum_restart_notice).html, R.string.dialog_ok, onOk)
     }
   }
 
@@ -357,5 +349,14 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
       WalletApp.app.prefs.edit.putBoolean(key, value).commit
       updateView
     }
+
+    def disableIfOldAndroid: Unit =
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+        val message = getString(error_old_api_level).format(Build.VERSION.SDK_INT)
+        setVis(isVisible = true, settingsInfo)
+        settingsInfo.setText(message)
+        settingsTitle.setAlpha(0.5F)
+        view.setEnabled(false)
+      }
   }
 }
