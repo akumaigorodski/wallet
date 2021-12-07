@@ -1,29 +1,14 @@
-/*
- * Copyright 2019 ACINQ SAS
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package fr.acinq.eclair.blockchain.electrum
 
 import java.net.{InetSocketAddress, SocketAddress}
 import java.util
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Stash, Terminated}
+import akka.actor.{Actor, ActorRef, Cancellable, Stash, Terminated}
 import fr.acinq.bitcoin._
 import fr.acinq.eclair.blockchain.bitcoind.rpc.{Error, JsonRPCRequest, JsonRPCResponse}
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.SSL
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
+import immortan.LNParams
 import io.netty.bootstrap.Bootstrap
 import io.netty.buffer.PooledByteBufAllocator
 import io.netty.channel._
@@ -32,6 +17,7 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.string.{LineEncoder, StringDecoder}
 import io.netty.handler.codec.{LineBasedFrameDecoder, MessageToMessageDecoder, MessageToMessageEncoder}
+import io.netty.handler.proxy.Socks5ProxyHandler
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import io.netty.util.CharsetUtil
@@ -46,11 +32,9 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 
-class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec: ExecutionContext) extends Actor with Stash with ActorLogging {
+class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec: ExecutionContext) extends Actor with Stash {
 
   import ElectrumClient._
-
-  implicit val formats = DefaultFormats
 
   val b = new Bootstrap
   b.group(workerGroup)
@@ -62,7 +46,7 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
   b.handler(new ChannelInitializer[SocketChannel]() {
     override def initChannel(ch: SocketChannel): Unit = {
       ssl match {
-        case SSL.OFF => ()
+        case SSL.OFF =>
         case SSL.STRICT =>
           val sslCtx = SslContextBuilder.forClient.build
           val handler = sslCtx.newHandler(ch.alloc(), serverAddress.getHostName, serverAddress.getPort)
@@ -74,7 +58,7 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
           } else {
             "TLSv1.2" :: Nil
           }
-          handler.engine().setEnabledProtocols(enabledProtocols.toArray)
+          handler.engine.setEnabledProtocols(enabledProtocols.toArray)
           ch.pipeline.addLast(handler)
         case SSL.LOOSE =>
           // INSECURE VERSION THAT DOESN'T CHECK CERTIFICATE
@@ -91,20 +75,18 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
       ch.pipeline.addLast(new JsonRPCRequestEncoder)
       // error handler
       ch.pipeline.addLast(new ExceptionHandler)
+
+      LNParams.connectionProvider.proxyAddress.foreach { address =>
+        // Optional proxy which must be the first handler
+        val handler = new Socks5ProxyHandler(address)
+        ch.pipeline.addFirst(handler)
+      }
     }
   })
 
-  // Start the client.
-  log.debug("connecting to server={}", serverAddress)
-
   val channelOpenFuture: ChannelFuture = b.connect(serverAddress.getHostName, serverAddress.getPort)
 
-  def errorHandler(t: Throwable): Unit = {
-    // generic errors don't need to be logged in most cases, what we actually want are errors that happened once we were
-    // properly connected and had exchanged version messages
-    log.debug("server={} connection error (reason={})", serverAddress, t.getMessage)
-    self ! Close
-  }
+  def errorHandler(t: Throwable): Unit = self ! Close
 
   channelOpenFuture.addListeners(new ChannelFutureListener {
     override def operationComplete(future: ChannelFuture): Unit = {
@@ -116,7 +98,6 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
             if (!future.isSuccess) {
               errorHandler(future.cause())
             } else {
-              log.debug("server={} channel closed: {}", serverAddress, future.channel())
               self ! Close
             }
           }
@@ -174,7 +155,6 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
       import org.json4s.JsonDSL._
       import org.json4s._
 
-      log.debug("sending {} to {}", request, serverAddress)
       val json = ("method" -> request.method) ~ ("params" -> request.params.map {
         case s: String => new JString(s)
         case b: ByteVector32 => new JString(b.toHex)
@@ -230,7 +210,8 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
         statusListeners.foreach(_ ! ElectrumDisconnected)
         context.stop(self)
 
-      case _ => log.warning("server={} unhandled message {}", serverAddress, message)
+      case _ =>
+        // Do nothing
     }
   }
 
@@ -261,7 +242,6 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
 
   def disconnected: Receive = {
     case ctx: ChannelHandlerContext =>
-      log.debug("connected to server={}", serverAddress)
       send(ctx, version)
       context become waitingForVersion(ctx)
 
@@ -271,14 +251,11 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
   def waitingForVersion(ctx: ChannelHandlerContext): Receive = {
     case Right(json: JsonRPCResponse) =>
       (parseJsonResponse(version, json): @unchecked) match {
-        case ServerVersionResponse(clientName, protocolVersion) =>
-          log.info("server={} clientName={} protocolVersion={}", serverAddress, clientName, protocolVersion)
+        case _: ServerVersionResponse =>
           send(ctx, HeaderSubscription(self))
           headerSubscriptions += self
-          log.debug("waiting for tip from server={}", serverAddress)
           context become waitingForTip(ctx)
-        case ServerError(request, error) =>
-          log.error("server={} sent error={} while processing request={}, disconnecting", serverAddress, error, request)
+        case _: ServerError =>
           self ! Close
       }
 
@@ -288,9 +265,8 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
   def waitingForTip(ctx: ChannelHandlerContext): Receive = {
     case Right(json: JsonRPCResponse) =>
       val (height, header) = parseBlockHeader(json.result)
-      log.debug("connected to server={}, tip={} height={}", serverAddress, header.hash, height)
       statusListeners.foreach(_ ! ElectrumReady(height, header, serverAddress))
-      context become connected(ctx, height, header, Map())
+      context become connected(ctx, height, header, Map.empty)
 
     case AddStatusListener(actor) => statusListeners += actor
   }
@@ -322,10 +298,8 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
       requests.get(json.id) match {
         case Some((request, requestor)) =>
           val response = parseJsonResponse(request, json)
-          log.debug("server={} sent response for reqId={} request={} response={}", serverAddress, json.id, request, response)
           requestor ! response
         case None =>
-          log.warning("server={} could not find requestor for reqId=${} response={}", serverAddress, json.id, json)
       }
       context become connected(ctx, height, tip, requests - json.id)
 
@@ -335,9 +309,7 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
 
     case Left(response: ScriptHashSubscriptionResponse) => scriptHashSubscriptions.get(response.scriptHash).foreach(listeners => listeners.foreach(_ ! response))
 
-    case HeaderSubscriptionResponse(height, newtip) =>
-      log.info("server={} new tip={}", serverAddress, newtip)
-      context become connected(ctx, height, newtip, requests)
+    case HeaderSubscriptionResponse(height1, newtip) => context become connected(ctx, height1, newtip, requests)
   }
 }
 
@@ -472,7 +444,6 @@ object ElectrumClient {
   // @formatter:on
 
   def parseResponse(input: String): Either[Response, JsonRPCResponse] = {
-    implicit val formats = DefaultFormats
     val json = JsonMethods.parse(new String(input))
     json \ "method" match {
       case JString(method) =>
@@ -490,7 +461,6 @@ object ElectrumClient {
   }
 
   def parseJsonRpcResponse(json: JValue): JsonRPCResponse = {
-    implicit val formats = DefaultFormats
     val result = json \ "result"
     val error = json \ "error" match {
       case JNull => None

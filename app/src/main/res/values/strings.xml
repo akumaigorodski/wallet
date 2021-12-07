@@ -214,18 +214,6 @@
 
     <!-- /special tx/payment descriptions -->
 
-    <!-- orbot -->
-
-    <string name="orbot_err_unclear"><![CDATA[
-        Wallet can not connect to localhost:9050 Tor proxy. Further progress has been halted because your settings require Tor connection.<br><br>
-        Please make sure that Orbot app is installed, VPN mode is turned on there and wallet is added to list of Tor-enabled apps.
-    ]]></string>
-
-    <string name="orbot_action_open">Close wallet and open Orbot</string>
-    <string name="orbot_action_skip">Proceed without Tor</string>
-
-    <!-- /orbot -->
-
     <!-- Remote peer activity -->
 
     <string name="rpa_title">Remote peer connection</string>
@@ -261,10 +249,7 @@
     <string name="settings_auth_error"><![CDATA[<b>Authentication error</b><br><br><b>Details</b>: %1$s<br><br><b>Code</b>: %2$s]]></string>
     <string name="settings_auth_title">Wallet authentication</string>
 
-    <string name="settings_ensure_tor">Enforce Tor connection</string>
-    <string name="settings_ensure_tor_enabled">App does not start unless Orbot VPN is running and halts if Orbot stops running</string>
-    <string name="settings_ensure_tor_disabled">Requires an Orbot installed</string>
-
+    <string name="settings_ensure_tor">Use Tor connection</string>
     <string name="settings_ln_fee_cap">Limit LN fees to chain fees</string>
     <string name="settings_ln_fee_cap_disabled"><![CDATA[Max LN fee is at most <strong>%1$s</strong> of payment and <b>may get higher</b> than current average chain fee of <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[Max LN fee is at most <strong>%1$s</strong> of payment but <b>never higher</b> than current average chain fee of <b>%2$s</b>]]></string>

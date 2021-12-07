@@ -70,6 +70,7 @@ object LNParams {
   var secret: WalletSecret = _
   var chainHash: ByteVector32 = _
   var chainWallets: WalletExt = _
+  var connectionProvider: ConnectionProvider = _
   var logBag: SQLiteLog = _
   var cm: ChannelMaster = _
 
@@ -81,13 +82,12 @@ object LNParams {
 
   var trampoline: TrampolineOn = TrampolineOn(minPayment, Long.MaxValue.msat, feeProportionalMillionths = 1000L, exponent = 0.0, logExponent = 0.0, minRoutingCltvExpiryDelta)
 
-  // Last known chain tip (zero is unknown)
   val blockCount: AtomicLong = new AtomicLong(0L)
 
   def isOperational: Boolean =
-    null != chainHash && null != secret && null != chainWallets && null != syncParams && null != trampoline &&
-      null != fiatRates && null != feeRates && null != cm && null != cm.inProcessors && null != cm.sendTo &&
-      null != logBag && null != routerConf && null != ourInit
+    null != chainHash && null != secret && null != chainWallets && connectionProvider != null &&
+      null != syncParams && null != trampoline && null != fiatRates && null != feeRates && null != cm &&
+      null != cm.inProcessors && null != cm.sendTo && null != logBag && null != routerConf && null != ourInit
 
   implicit val timeout: Timeout = Timeout(30.seconds)
   implicit val system: ActorSystem = ActorSystem("immortan-actor-system")

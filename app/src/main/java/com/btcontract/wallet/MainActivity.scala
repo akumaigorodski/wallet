@@ -4,20 +4,15 @@ import java.io.{File, FileInputStream}
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.NotificationManagerCompat
-import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.R.string._
-import com.ornach.nobobutton.NoboButton
 import fr.acinq.bitcoin.Satoshi
 import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.eclair.blockchain.electrum.db.SigningWallet
 import immortan.LNParams
 import immortan.crypto.Tools.{none, runAnd}
 import immortan.utils.InputParser
-import info.guardianproject.netcipher.proxy.OrbotHelper
 import org.bitcoinj.wallet._
 import org.ndeftools.Message
 import org.ndeftools.util.activity.NfcReaderActivity
@@ -44,20 +39,9 @@ class MainActivity extends NfcReaderActivity with BaseActivity { me =>
   lazy val legacyWalletFile = new File(getFilesDir, "Bitcoin.wallet")
 
   def INIT(state: Bundle): Unit = {
-    // We may enter an app by tapping a notification
+    setContentView(R.layout.frag_linear_layout)
     NotificationManagerCompat.from(me).cancelAll
     initNfc(state)
-  }
-
-  lazy val (skipOrbotCheck, takeOrbotAction, mainOrbotMessage, mainOrbotIssues) = {
-    // This saves some time by not drawing a view in case if we can proceed to wallet
-    
-    setContentView(R.layout.activity_main)
-    val skipOrbotCheck1 = findViewById(R.id.skipOrbotCheck).asInstanceOf[NoboButton]
-    val takeOrbotAction1 = findViewById(R.id.takeOrbotAction).asInstanceOf[NoboButton]
-    val mainOrbotMessage1 = findViewById(R.id.mainOrbotMessage).asInstanceOf[TextView]
-    val mainOrbotIssues1 = findViewById(R.id.mainOrbotIssues).asInstanceOf[View]
-    (skipOrbotCheck1, takeOrbotAction1, mainOrbotMessage1, mainOrbotIssues1)
   }
 
   // NFC AND SHARE
@@ -83,8 +67,7 @@ class MainActivity extends NfcReaderActivity with BaseActivity { me =>
     case true if LNParams.isOperational => me exitTo ClassNames.hubActivityClass
 
     case true =>
-      val step3 = if (legacyWalletFile.exists) new EnsureLegacy else new EnsureSeed
-      val step2 = if (WalletApp.ensureTor) new EnsureTor(step3) else step3
+      val step2 = if (legacyWalletFile.exists) new EnsureLegacy else new EnsureSeed
       val step1 = if (WalletApp.useAuth) new EnsureAuth(step2) else step2
       step1.makeAttempt
   }
@@ -144,7 +127,7 @@ class MainActivity extends NfcReaderActivity with BaseActivity { me =>
   }
 
   class EnsureAuth(next: Step) extends Step {
-    def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.mainLayout), me) {
+    def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.linearLayout), me) {
       def onHardwareUnavailable: Unit = WalletApp.app.quickToast(settings_auth_not_available)
       def onNoHardware: Unit = WalletApp.app.quickToast(settings_auth_no_support)
 
@@ -157,31 +140,5 @@ class MainActivity extends NfcReaderActivity with BaseActivity { me =>
       def onCanAuthenticate: Unit = callAuthDialog
       def onAuthSucceeded: Unit = next.makeAttempt
     }.checkAuth
-  }
-
-  class EnsureTor(next: Step) extends Step {
-    val orbotHelper: OrbotHelper = OrbotHelper.get(me)
-    def makeAttempt: Unit = WalletApp.app.checkTorProxy(showIssue)(next.makeAttempt)
-
-    private def showIssue: Unit = UITask {
-      skipOrbotCheck setOnClickListener onButtonTap(proceedAnyway)
-      takeOrbotAction setOnClickListener onButtonTap(closeAppOpenOrbot)
-      mainOrbotMessage setText getString(orbot_err_unclear).html
-      mainOrbotIssues setVisibility View.VISIBLE
-    }.run
-
-    def closeAppOpenOrbot: Unit = {
-      val pack = OrbotHelper.ORBOT_PACKAGE_NAME
-      val intent = getPackageManager getLaunchIntentForPackage pack
-      Option(intent).foreach(startActivity)
-      finishAffinity
-      System exit 0
-    }
-
-    def proceedAnyway: Unit = {
-      // We must disable Tor check because disconnect later will bring us here again
-      WalletApp.app.prefs.edit.putBoolean(WalletApp.ENSURE_TOR, false).commit
-      next.makeAttempt
-    }
   }
 }

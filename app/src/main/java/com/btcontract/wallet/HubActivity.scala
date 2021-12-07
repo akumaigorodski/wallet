@@ -842,15 +842,16 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     val view: LinearLayout = getLayoutInflater.inflate(R.layout.frag_wallet_cards, null).asInstanceOf[LinearLayout]
     val recoveryPhrase: TextView = view.findViewById(R.id.recoveryPhraseWarning).asInstanceOf[TextView]
     val defaultHeader: LinearLayout = view.findViewById(R.id.defaultHeader).asInstanceOf[LinearLayout]
-    val rateTeaser: TextView = view.findViewById(R.id.rateTeaser).asInstanceOf[TextView]
 
     val totalBalance: TextView = view.findViewById(R.id.totalBalance).asInstanceOf[TextView]
     val totalFiatBalance: TextView = view.findViewById(R.id.totalFiatBalance).asInstanceOf[TextView]
     val fiatUnitPriceAndChange: TextView = view.findViewById(R.id.fiatUnitPriceAndChange).asInstanceOf[TextView]
 
-    val lnSyncIndicator: InvertedTextProgressbar = view.findViewById(R.id.lnSyncIndicator).asInstanceOf[InvertedTextProgressbar]
-    val chainSyncIndicator: TextView = view.findViewById(R.id.chainSyncIndicator).asInstanceOf[TextView]
+    val rateTeaser: TextView = view.findViewById(R.id.rateTeaser).asInstanceOf[TextView]
     val offlineIndicator: TextView = view.findViewById(R.id.offlineIndicator).asInstanceOf[TextView]
+    val chainSyncIndicator: TextView = view.findViewById(R.id.chainSyncIndicator).asInstanceOf[TextView]
+    val lnSyncIndicator: InvertedTextProgressbar = view.findViewById(R.id.lnSyncIndicator).asInstanceOf[InvertedTextProgressbar]
+    val torIndicator: TextView = view.findViewById(R.id.torIndicator).asInstanceOf[TextView]
 
     val totalLightningBalance: TextView = view.findViewById(R.id.totalLightningBalance).asInstanceOf[TextView]
     val channelStateIndicators: RelativeLayout = view.findViewById(R.id.channelStateIndicators).asInstanceOf[RelativeLayout]
@@ -1303,7 +1304,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         // We suggest user to rate us if: no rate attempt has been made before, LN payments were successful, user has been using an app for certain period
         setVis(WalletApp.showRateUs && paymentInfos.forall(_.status == PaymentStatus.SUCCEEDED) && allInfos.size > 4 && allInfos.size < 8, walletCards.rateTeaser)
         // User may kill an activity but not an app and on getting back there won't be a chain listener event, so check connectivity once again here
-        setVis(isVisible = WalletApp.currentChainNode.isEmpty, walletCards.offlineIndicator)
+        setVisMany(WalletApp.ensureTor -> walletCards.torIndicator, WalletApp.currentChainNode.isEmpty -> walletCards.offlineIndicator)
         walletCards.searchField addTextChangedListener onTextChange(searchWorker.addWork)
         runAnd(updateLnCaches)(paymentAdapterDataChanged.run)
         markAsFailedOnce

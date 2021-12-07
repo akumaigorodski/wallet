@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout style="@style/StandardLinearLayout"
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:lib="http://schemas.android.com/tools">
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Default view -->
 
@@ -24,28 +23,28 @@
                 style="@style/FillingView"/>
 
             <TextView
-                style="@style/ChipTextGray"
-                android:layout_toStartOf="@id/rateTeaser"
-                android:textSize="@dimen/text_size_12"
-                android:layout_centerVertical="true"
-                android:id="@+id/offlineIndicator"
-                android:layout_marginEnd="6dp"
-                android:visibility="gone"
-                android:text="OFFLINE"/>
-
-            <TextView
                 android:clickable="true"
                 android:focusable="true"
                 style="@style/ChipTextGray"
                 android:onClick="bringRateDialog"
                 android:textSize="@dimen/text_size_12"
                 android:background="@drawable/border_green"
-                android:layout_toStartOf="@id/chainSyncIndicator"
+                android:layout_toStartOf="@id/offlineIndicator"
                 android:layout_centerVertical="true"
                 android:layout_marginEnd="6dp"
                 android:text="&#9825; Rate us"
                 android:id="@+id/rateTeaser"
                 android:visibility="gone"/>
+
+            <TextView
+                style="@style/ChipTextGray"
+                android:layout_toStartOf="@id/chainSyncIndicator"
+                android:textSize="@dimen/text_size_12"
+                android:layout_centerVertical="true"
+                android:id="@+id/offlineIndicator"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone"
+                android:text="OFFLINE"/>
 
             <TextView
                 style="@style/ChipTextGray"
@@ -60,7 +59,7 @@
 
             <com.danilomendes.progressbar.InvertedTextProgressbar
                 card_view:text_inverted_color="@android:color/black"
-                android:layout_toStartOf="@id/settingsButton"
+                android:layout_toStartOf="@id/torIndicator"
                 card_view:text_color="@android:color/white"
                 android:background="@drawable/border_blue"
                 android:src="@color/paymentActiveBorder"
@@ -72,6 +71,16 @@
                 android:visibility="gone"
                 card_view:text="LN SYNC"
                 android:padding="1dp"/>
+
+            <TextView
+                style="@style/ChipTextGray"
+                android:layout_toStartOf="@id/settingsButton"
+                android:textSize="@dimen/text_size_12"
+                android:layout_centerVertical="true"
+                android:id="@+id/torIndicator"
+                android:layout_marginEnd="2dp"
+                android:visibility="gone"
+                android:text="TOR"/>
 
             <ImageButton
                 android:padding="6dp"

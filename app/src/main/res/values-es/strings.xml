@@ -214,18 +214,6 @@
 
     <!-- /special tx/payment descriptions -->
 
-    <!-- orbot -->
-
-    <string name="orbot_err_unclear"><![CDATA[
-        La billetera no se puede conectar al proxy Tor localhost:9050. Se ha detenido el progreso porque tu configuración requiere de conexión a Tor.<br><br>
-        Por favor asegúrese de que Orbot esté instalado, el modo VPN esté activado y la billetera esté en la lista de aplicaciones habilitadas para Tor.
-    ]]></string>
-
-    <string name="orbot_action_open">Cerrar billetera y abrir Orbot</string>
-    <string name="orbot_action_skip">Continuar sin Tor</string>
-
-    <!-- /orbot -->
-
     <!-- Remote peer activity -->
 
     <string name="rpa_title">Conexión de par remoto</string>
@@ -262,9 +250,6 @@
     <string name="settings_auth_title">Autenticación de billetera</string>
 
     <string name="settings_ensure_tor">Obligar conexion a Tor</string>
-    <string name="settings_ensure_tor_enabled">La aplicación no empezará a menos que el VPN Orbot esté ejecutándose y se detendrá si Orbot se detiene</string>
-    <string name="settings_ensure_tor_disabled">Requiere Orbot instalado</string>
-
     <string name="settings_ln_fee_cap">Limitar las tarifas de LN a la chain</string>
     <string name="settings_ln_fee_cap_disabled"><![CDATA[La tarifa máxima de LN es como máximo<strong>%1$s</strong> del pago y <b>puede ser más alta</b> que la actual tarifa promedio chain de <b>%2$s</b>]]></string>
     <string name="settings_ln_fee_cap_enabled"><![CDATA[La tarifa máxima de LN es como máximo <strong>%1$s</strong> del pago pero <b>nunca más alta</b> que la tarifa promedio chain de <b>%2$s</b>]]></string>
