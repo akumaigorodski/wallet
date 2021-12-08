@@ -14,6 +14,7 @@ import fr.acinq.eclair.{CltvExpiryDelta, MilliSatoshi}
 import immortan.PathFinder._
 import immortan.crypto.Tools._
 import immortan.crypto.{CanBeRepliedTo, StateMachine}
+import immortan.fsm.SendMultiPart
 import immortan.utils.Rx
 import rx.lang.scala.Subscription
 
@@ -34,6 +35,7 @@ object PathFinder {
 
   sealed trait PathFinderRequest { val sender: CanBeRepliedTo }
   case class FindRoute(sender: CanBeRepliedTo, request: RouteRequest) extends PathFinderRequest
+  case class GetExpectedPaymentFees(sender: CanBeRepliedTo, cmd: SendMultiPart, interHops: Int) extends PathFinderRequest
   case class GetExpectedRouteFees(sender: CanBeRepliedTo, payee: PublicKey, interHops: Int) extends PathFinderRequest
 
   case class ExpectedRouteFees(hops: List[HasRelayFee] = Nil) {
@@ -75,16 +77,11 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       val delay = Rx.initDelay(repeat, getLastTotalResyncStamp, RESYNC_PERIOD, preStartMsec = 500)
       subscription = delay.subscribe(_ => me process CMDResync).asSome
 
-    case (calc: GetExpectedRouteFees, OPERATIONAL) =>
-      val interExpectedFees = List.fill(calc.interHops)(data.avgHopParams)
-      val payeeHops = data.graph.vertices.getOrElse(calc.payee, default = Nil).map(_.updExt)
-      val lastExpectedFees = if (payeeHops.isEmpty) data.avgHopParams else Router.getAvgHopParams(payeeHops)
-      calc.sender process ExpectedRouteFees(interExpectedFees :+ lastExpectedFees)
+    case (calc: GetExpectedRouteFees, OPERATIONAL) => calc.sender process calcExpectedRoutes(calc.payee, calc.interHops)
 
-    case (fr: FindRoute, OPERATIONAL) =>
-      // Search through single pre-selected local channel
-      val augmentedGraph = data.graph replaceEdge fr.request.localEdge
-      fr.sender process handleRouteRequest(augmentedGraph, fr.request)
+    case (calc: GetExpectedPaymentFees, OPERATIONAL) => calc.sender process calc.cmd.copy(expectedRouteFees = calcExpectedRoutes(calc.cmd.targetNodeId, calc.interHops).asSome)
+
+    case (fr: FindRoute, OPERATIONAL) => fr.sender process handleRouteRequest(data.graph replaceEdge fr.request.localEdge, fr.request)
 
     case (request: PathFinderRequest, WAITING) =>
       // We need a loaded routing data to process these requests
@@ -247,5 +244,11 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       val master = new PHCSyncMaster(data) { override def onSyncComplete(pure: CompleteHostedRoutingData): Unit = me process pure }
       master process SyncMasterPHCData(LNParams.syncParams.phcSyncNodes, getPHCExtraNodes, activeSyncs = Set.empty)
     } else updateLastTotalResyncStamp(System.currentTimeMillis)
+  }
+
+  def calcExpectedRoutes(nodeId: PublicKey, hopsNum: Int): ExpectedRouteFees = {
+    val payeeHops = data.graph.vertices.getOrElse(nodeId, default = Nil).map(_.updExt)
+    val lastFees = if (payeeHops.isEmpty) data.avgHopParams else Router.getAvgHopParams(payeeHops)
+    ExpectedRouteFees(List.fill(hopsNum)(data.avgHopParams) :+ lastFees)
   }
 }

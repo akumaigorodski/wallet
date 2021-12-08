@@ -4,6 +4,8 @@ import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.{BtcAmount, Satoshi, SatoshiLong}
 import fr.acinq.eclair._
 import fr.acinq.eclair.payment.PaymentRequest
+import fr.acinq.eclair.router.Graph.GraphStructure
+import fr.acinq.eclair.router.RouteCalculation
 import fr.acinq.eclair.wire.NodeAddress
 import immortan.crypto.Tools.trimmed
 import immortan.utils.InputParser._
@@ -84,8 +86,9 @@ object PaymentRequestExt {
 }
 
 case class PaymentRequestExt(uri: Try[Uri], pr: PaymentRequest, raw: String) {
-  def isEnough(collected: MilliSatoshi): Boolean = pr.amount.exists(originallyAsked => collected >= originallyAsked)
+  def isEnough(collected: MilliSatoshi): Boolean = pr.amount.exists(collected >= _)
   def withNewSplit(anotherPart: MilliSatoshi): String = s"$lightning$raw?splits=" + (anotherPart :: splits).map(_.toLong).mkString(",")
+  lazy val extraEdges: Set[GraphStructure.GraphEdge] = RouteCalculation.makeExtraEdges(pr.routingInfo, pr.nodeId)
 
   val splits: List[MilliSatoshi] = uri.map(_.getQueryParameter("splits").split(',').toList.map(_.toLong) map MilliSatoshi.apply).getOrElse(Nil)
   val hasSplitIssue: Boolean = pr.amount.exists(splits.sum + LNParams.minPayment > _) || (pr.amount.isEmpty && splits.nonEmpty)

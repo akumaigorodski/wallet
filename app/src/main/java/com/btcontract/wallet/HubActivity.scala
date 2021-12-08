@@ -1161,10 +1161,11 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
                 }
               }
 
-              val length = Router.DEFAULT_EXPECTED_ROUTE_LENGTH
-              val cmd = GetExpectedRouteFees(sender, prExt.pr.nodeId, length)
+              // We need to provide PathFinder with ExtraEdges at this point already for more accurate estimation
+              val getExpectedRouteFees = GetExpectedRouteFees(sender, prExt.pr.nodeId, Router.DEFAULT_EXPECTED_ROUTE_LENGTH)
+              for (extraGraphEdge <- prExt.extraEdges) LNParams.cm.pf process extraGraphEdge
+              LNParams.cm.pf process getExpectedRouteFees
               fillFlow(pctCollected.head).run
-              LNParams.cm.pf process cmd
               popup
             }
 

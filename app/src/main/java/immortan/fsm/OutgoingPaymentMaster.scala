@@ -56,7 +56,6 @@ case class RemoteFailure(packet: Sphinx.DecryptedFailurePacket, route: Route) ex
 
 // Master commands and data
 
-case object ClearFailures
 case class CutIntoHalves(amount: MilliSatoshi)
 case class RemoveSenderFSM(fullTag: FullPaymentTag)
 case class CreateSenderFSM(listeners: Iterable[OutgoingPaymentListener], fullTag: FullPaymentTag)
@@ -75,8 +74,9 @@ case class SplitInfo(totalSum: MilliSatoshi, myPart: MilliSatoshi) {
 // For locally initiated payments outerPaymentSecret and fullTag.paymentSecret are same
 // For trampoline-routed payments fullTag.paymentSecret is taken from upstream incoming payment
 case class SendMultiPart(fullTag: FullPaymentTag, chainExpiry: Either[CltvExpiry, CltvExpiryDelta], split: SplitInfo, routerConf: RouterConf, targetNodeId: PublicKey,
-                         totalFeeReserve: MilliSatoshi = MilliSatoshi(0L), allowedChans: Seq[Channel] = Nil, outerPaymentSecret: ByteVector32 = ByteVector32.Zeroes,
-                         assistedEdges: Set[GraphEdge] = Set.empty, onionTlvs: Seq[OnionTlv] = Nil, userCustomTlvs: Seq[GenericTlv] = Nil)
+                         expectedRouteFees: Option[PathFinder.ExpectedRouteFees], totalFeeReserve: MilliSatoshi = MilliSatoshi(0L), allowedChans: Seq[Channel] = Nil,
+                         outerPaymentSecret: ByteVector32 = ByteVector32.Zeroes, assistedEdges: Set[GraphEdge] = Set.empty, onionTlvs: Seq[OnionTlv] = Nil,
+                         userCustomTlvs: Seq[GenericTlv] = Nil)
 
 case class OutgoingPaymentMasterData(trampolineStates: TrampolineRoutingStates,
                                      payments: Map[FullPaymentTag, OutgoingPaymentSender],
@@ -122,6 +122,7 @@ object OutgoingPaymentMaster {
 class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[OutgoingPaymentMasterData] with CanBeRepliedTo { me =>
   def process(change: Any): Unit = scala.concurrent.Future(me doProcess change)(Channel.channelContext)
   become(OutgoingPaymentMasterData(TrampolineRoutingStates(Map.empty), Map.empty), EXPECTING_PAYMENTS)
+  var clearFailures: Boolean = true
 
   def doProcess(change: Any): Unit = (change, state) match {
     case (TrampolinePeerDisconnected(nodeId), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
@@ -136,10 +137,8 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
     case (TrampolinePeerUpdated(nodeId, update: TrampolineStatusUpdate), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) if data.trampolineStates.states.contains(nodeId) =>
       become(data withNewTrampolineStates data.trampolineStates.merge(nodeId, update), state)
 
-    case (ClearFailures, EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
-      become(data.withFailuresReduced(System.currentTimeMillis), state)
-
     case (send: SendMultiPart, EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
+      if (clearFailures) become(data.withFailuresReduced(System.currentTimeMillis), state)
       for (graphEdge <- send.assistedEdges) cm.pf process graphEdge
       data.payments(send.fullTag) doProcess send
       me process CMDAskForRoute
@@ -291,7 +290,7 @@ trait OutgoingPaymentListener {
 }
 
 class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable[OutgoingPaymentListener], opm: OutgoingPaymentMaster) extends StateMachine[OutgoingPaymentSenderData] { me =>
-  become(OutgoingPaymentSenderData(SendMultiPart(fullTag, Right(LNParams.minInvoiceExpiryDelta), SplitInfo(0L.msat, 0L.msat), LNParams.routerConf, invalidPubKey), Map.empty), INIT)
+  become(OutgoingPaymentSenderData(SendMultiPart(fullTag, Right(LNParams.minInvoiceExpiryDelta), SplitInfo(0L.msat, 0L.msat), LNParams.routerConf, invalidPubKey, expectedRouteFees = None), Map.empty), INIT)
 
   def doProcess(msg: Any): Unit = (msg, state) match {
     case (reject: RemoteReject, ABORTED) => me abortMaybeNotify data.withoutPartId(reject.ourAdd.partId)

@@ -255,8 +255,11 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
   // An assumption is that toSend is at most maxSendable so max theoretically possible off-chain fee is already counted in
   def makeSendCmd(prExt: PaymentRequestExt, allowedChans: Seq[Channel], feeReserve: MilliSatoshi, toSend: MilliSatoshi): SendMultiPart = {
     val fullTag = FullPaymentTag(paymentHash = prExt.pr.paymentHash, paymentSecret = prExt.pr.paymentSecret.get, tag = PaymentTagTlv.LOCALLY_SENT)
-    SendMultiPart(fullTag, chainExpiry = Right(prExt.pr.minFinalCltvExpiryDelta getOrElse LNParams.minInvoiceExpiryDelta), SplitInfo(totalSum = 0L.msat, myPart = toSend),
-      LNParams.routerConf, targetNodeId = prExt.pr.nodeId, feeReserve, allowedChans, fullTag.paymentSecret, RouteCalculation.makeExtraEdges(prExt.pr.routingInfo, prExt.pr.nodeId), Nil)
+    val chainExpiry = Right(prExt.pr.minFinalCltvExpiryDelta getOrElse LNParams.minInvoiceExpiryDelta)
+    val splitInfo = SplitInfo(totalSum = 0L.msat, myPart = toSend)
+
+    SendMultiPart(fullTag, chainExpiry, splitInfo, LNParams.routerConf, prExt.pr.nodeId,
+      expectedRouteFees = None, feeReserve, allowedChans, fullTag.paymentSecret, prExt.extraEdges)
   }
 
   def makePrExt(toReceive: MilliSatoshi, description: PaymentDescription, allowedChans: Seq[ChanAndCommits], hash: ByteVector32, secret: ByteVector32): PaymentRequestExt = {
@@ -270,7 +273,12 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     if (isActive) Some(PaymentInfo.NOT_SENDABLE_IN_FLIGHT) else if (getPreimageMemo.get(paymentHash).isSuccess) Some(PaymentInfo.NOT_SENDABLE_SUCCESS) else None
   }
 
-  def localSend(cmd: SendMultiPart): Unit = List(CreateSenderFSM(localPaymentListeners, cmd.fullTag), ClearFailures, cmd).foreach(opm.process)
+  def localSend(cmd: SendMultiPart): Unit = {
+    // Prepare sender FSM and fetch expected fees for payment
+    // these fees will be replied back to FSM for trampoline sends
+    opm process CreateSenderFSM(localPaymentListeners, cmd.fullTag)
+    pf process PathFinder.GetExpectedPaymentFees(opm, cmd, interHops = 2)
+  }
 
   // These are executed in Channel context
 

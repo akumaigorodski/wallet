@@ -409,7 +409,6 @@ case class TrampolineRoutingState(routes: Set[TrampolineStatus.NodeIdTrampolineP
 }
 
 case class TrampolineRoutingStates(states: Map[PublicKey, TrampolineRoutingState] = Map.empty) {
-
   def init(peerId: PublicKey, init: TrampolineStatusInit): TrampolineRoutingStates = {
     val peerParams = NodeIdTrampolineParams(nodeId = peerId, init.peerParams)
     val state = TrampolineRoutingState(init.routes.toSet, peerParams)
