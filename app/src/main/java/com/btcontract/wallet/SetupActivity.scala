@@ -40,7 +40,8 @@ object SetupActivity {
 }
 
 class SetupActivity extends BaseActivity { me =>
-  def INIT(state: Bundle): Unit = setContentView(R.layout.activity_setup)
+  override def START(state: Bundle): Unit = setContentView(R.layout.activity_setup)
+
   private[this] lazy val activitySetupMain = findViewById(R.id.activitySetupMain).asInstanceOf[LinearLayout]
   private[this] lazy val restoreOptionsButton = findViewById(R.id.restoreOptionsButton).asInstanceOf[NoboButton]
   private[this] lazy val restoreOptions = findViewById(R.id.restoreOptions).asInstanceOf[LinearLayout]

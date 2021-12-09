@@ -18,7 +18,7 @@ import immortan.utils.{Haiku, InputParser, WalletEventsCatcher, WalletEventsList
 import immortan.{LNParams, TxDescription}
 
 
-class CoinControlActivity extends BaseActivity with ExternalDataChecker { me =>
+class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { me =>
   lazy private[this] val coinControlContainer = findViewById(R.id.coinControlContainer).asInstanceOf[LinearLayout]
   lazy private[this] val utxoList = findViewById(R.id.utxoList).asInstanceOf[ListView]
 
@@ -106,7 +106,7 @@ class CoinControlActivity extends BaseActivity with ExternalDataChecker { me =>
     super.onDestroy
   }
 
-  def INIT(state: Bundle): Unit = {
+  override def PROCEED(state: Bundle): Unit = {
     setContentView(R.layout.activity_coin_control)
     checkExternalData(noneRunnable)
   }

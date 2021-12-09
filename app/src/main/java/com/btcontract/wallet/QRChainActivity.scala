@@ -90,7 +90,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     }
   }
 
-  def INIT(state: Bundle): Unit = {
+  override def PROCEED(state: Bundle): Unit = {
     setContentView(R.layout.activity_qr_chain_addresses)
     checkExternalData(noneRunnable)
   }

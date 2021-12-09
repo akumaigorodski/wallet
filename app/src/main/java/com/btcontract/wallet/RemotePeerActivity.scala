@@ -145,7 +145,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
     case _ => whenNone.run
   }
 
-  def INIT(state: Bundle): Unit = {
+  override def PROCEED(state: Bundle): Unit = {
     setContentView(R.layout.activity_remote_peer)
     checkExternalData(whenBackPressed)
   }

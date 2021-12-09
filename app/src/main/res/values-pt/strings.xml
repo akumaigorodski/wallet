@@ -246,7 +246,7 @@
     <string name="settings_auth_no_support">Autenticação não suportada neste telefone</string>
     <string name="settings_auth_add_method">Register an authentication method in system settings</string>
     <string name="settings_auth_not_available">Autenticação está bloqueada no momento, tente novamente mais tarde</string>
-    <string name="settings_auth_error"><![CDATA[<b>Erro de autenticação</b><br><br><b>Detalhes</b>: %1$s<br><br><b>Code</b>: %2$s]]></string>
+    <string name="settings_auth_error"><![CDATA[<b>Erro de autenticação</b><br><b>Detalhes</b>: %1$s]]></string>
     <string name="settings_auth_title">Autenticação da carteira</string>
 
     <string name="settings_ensure_tor">Aplicar conexão Tor</string>

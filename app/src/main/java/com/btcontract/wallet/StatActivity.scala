@@ -9,10 +9,10 @@ import fr.acinq.eclair._
 import immortan.LNParams
 
 
-class StatActivity extends BaseActivity { me =>
+class StatActivity extends BaseCheckActivity { me =>
   lazy private[this] val statContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
 
-  def INIT(state: Bundle): Unit = {
+  override def PROCEED(state: Bundle): Unit = {
     setContentView(R.layout.activity_settings)
     updateView
   }

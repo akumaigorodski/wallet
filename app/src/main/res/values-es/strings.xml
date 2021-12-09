@@ -246,7 +246,7 @@
     <string name="settings_auth_no_support">No existe soporte de autenticación en este teléfono</string>
     <string name="settings_auth_add_method">Register an authentication method in system settings</string>
     <string name="settings_auth_not_available">El soporte de autenticación esta bloqueado en este momento, intente de nuevo más tarde</string>
-    <string name="settings_auth_error"><![CDATA[<b>Error de autenticación</b><br><br><b>Detalles</b>: %1$s<br><br><b>Código</b>: %2$s]]></string>
+    <string name="settings_auth_error"><![CDATA[<b>Error de autenticación</b><br><b>Detalles</b>: %1$s]]></string>
     <string name="settings_auth_title">Autenticación de billetera</string>
 
     <string name="settings_ensure_tor">Obligar conexion a Tor</string>

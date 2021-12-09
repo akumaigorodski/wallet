@@ -45,10 +45,11 @@ import scala.util.Try
 
 
 object WalletApp {
-  var txDataBag: SQLiteTx = _
-  var lnUrlPayBag: SQLiteLNUrlPay = _
+  var userSentAppToBackground: Boolean = false
   var chainWalletBag: SQLiteChainWallet = _
   var extDataBag: SQLiteDataExtended = _
+  var lnUrlPayBag: SQLiteLNUrlPay = _
+  var txDataBag: SQLiteTx = _
   var app: WalletApp = _
 
   val txDescriptions = mutable.Map.empty[ByteVector32, TxDescription]
@@ -399,6 +400,13 @@ class WalletApp extends Application { me =>
       DelayedNotification.cancel(me, DelayedNotification.IN_FLIGHT_HTLC_TAG)
       if (LNParams.cm.channelsContainHtlc) WalletApp.reScheduleInFlight
     }
+  }
+
+  override def onTrimMemory(level: Int): Unit = {
+    // Most notably this will be used to determine if auth should be requested
+    val shouldSetTrue = level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN
+    if (shouldSetTrue) WalletApp.userSentAppToBackground = true
+    super.onTrimMemory(level)
   }
 
   def when(thenDate: Date, simpleFormat: SimpleDateFormat, now: Long = System.currentTimeMillis): String = thenDate.getTime match {

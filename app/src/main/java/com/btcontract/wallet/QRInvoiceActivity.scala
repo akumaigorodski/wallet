@@ -32,7 +32,7 @@ class QRInvoiceActivity extends QRActivity with ExternalDataChecker { me =>
     setVisMany(false -> invoiceSuccess, true -> invoiceHolding)
   }.run
 
-  def INIT(state: Bundle): Unit = {
+  override def PROCEED(state: Bundle): Unit = {
     setContentView(R.layout.activity_qr_lightning_invoice)
     invoiceQrCaption setText getString(R.string.dialog_receive_ln).html
     invoiceHolding setOnClickListener onButtonTap(finish)

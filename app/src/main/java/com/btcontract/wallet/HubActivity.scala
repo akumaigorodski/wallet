@@ -1255,7 +1255,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     case _ =>
   }
 
-  def INIT(state: Bundle): Unit = {
+  override def PROCEED(state: Bundle): Unit = {
     setContentView(com.btcontract.wallet.R.layout.activity_hub)
     for (channel <- LNParams.cm.all.values) channel.listeners += me
     LNParams.cm.localPaymentListeners add extraOutgoingListener

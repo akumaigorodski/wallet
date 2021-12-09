@@ -246,7 +246,7 @@
     <string name="settings_auth_no_support">На этом телефоне нет поддержки аутентификации</string>
     <string name="settings_auth_add_method">Сначала создайте способ авторизации в настройках телефона</string>
     <string name="settings_auth_not_available">Поддержка аутентификации заблокирована, попробуйте позже</string>
-    <string name="settings_auth_error"><![CDATA[<b>Ошибка аутентификации</b><br><br><b>Детали</b>: %1$s<br><br><b>Код</b>: %2$s]]></string>
+    <string name="settings_auth_error"><![CDATA[<b>Ошибка аутентификации</b><br><b>Детали</b>: %1$s]]></string>
     <string name="settings_auth_title">Аутентификация кошелька</string>
 
     <string name="settings_ensure_tor">Использовать Tor</string>

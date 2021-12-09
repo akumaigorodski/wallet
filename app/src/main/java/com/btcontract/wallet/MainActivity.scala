@@ -37,9 +37,8 @@ object ClassNames {
 
 class MainActivity extends NfcReaderActivity with BaseActivity { me =>
   lazy val legacyWalletFile = new File(getFilesDir, "Bitcoin.wallet")
-  override def PREINIT(state: Bundle): Unit = INIT(state)
 
-  override def INIT(state: Bundle): Unit = {
+  override def START(state: Bundle): Unit = {
     setContentView(R.layout.frag_linear_layout)
     NotificationManagerCompat.from(me).cancelAll
     initNfc(state)
@@ -65,15 +64,45 @@ class MainActivity extends NfcReaderActivity with BaseActivity { me =>
 
   def proceed(empty: Any): Unit = WalletApp.isAlive match {
     case false => runAnd(WalletApp.makeAlive)(me proceed null)
-    case true if LNParams.isOperational => me exitTo ClassNames.hubActivityClass
-    case true if legacyWalletFile.exists => (new EnsureLegacy).makeAttempt
-    case true => (new EnsureSeed).makeAttempt
+
+    case true if LNParams.isOperational =>
+      if (WalletApp.useAuth) new EnsureAuth(new ToHub).makeAttempt
+      else me exitTo ClassNames.hubActivityClass
+
+    case true =>
+      val step2 = if (legacyWalletFile.exists) new EnsureLegacy else new EnsureSeed
+      val step1 = if (WalletApp.useAuth) new EnsureAuth(step2) else step2
+      step1.makeAttempt
   }
 
   // Tor and auth
 
   trait Step {
     def makeAttempt: Unit
+  }
+
+  class ToHub extends Step {
+    def makeAttempt: Unit = {
+      // Make sure auth won't be asked for again
+      WalletApp.userSentAppToBackground = false
+      me exitTo ClassNames.hubActivityClass
+    }
+  }
+
+  class EnsureAuth(next: Step) extends Step {
+    def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.linearLayout), me, _ => finish) {
+      def onHardwareUnavailable: Unit = WalletApp.app.quickToast(settings_auth_not_available)
+      def onNoHardware: Unit = WalletApp.app.quickToast(settings_auth_no_support)
+
+      def onNoneEnrolled: Unit = {
+        // Settings flag is on but user has removed all fingerprints from system
+        WalletApp.app.prefs.edit.putBoolean(WalletApp.USE_AUTH, false).commit
+        next.makeAttempt
+      }
+
+      def onCanAuthenticate: Unit = callAuthDialog
+      def onAuthSucceeded: Unit = next.makeAttempt
+    }.checkAuth
   }
 
   class EnsureSeed extends Step {

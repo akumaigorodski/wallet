@@ -1,14 +1,14 @@
 package com.btcontract.wallet.utils
 
-import androidx.biometric.{BiometricManager, BiometricPrompt}
-import com.btcontract.wallet.BaseActivity.StringOps
-import com.btcontract.wallet.BaseActivity
-import androidx.core.content.ContextCompat
-import com.btcontract.wallet.R
 import android.view.View
+import androidx.biometric.{BiometricManager, BiometricPrompt}
+import androidx.core.content.ContextCompat
+import com.btcontract.wallet.BaseActivity.StringOps
+import com.btcontract.wallet.{BaseActivity, R}
+import com.google.android.material.snackbar.Snackbar
 
 
-abstract class BiometricAuth(view: View, host: BaseActivity) {
+abstract class BiometricAuth(view: View, host: BaseActivity, onErrorSnackOk: Snackbar => Unit) {
   val biometricManager: BiometricManager = BiometricManager.from(host)
 
   def onAuthSucceeded: Unit
@@ -39,8 +39,8 @@ abstract class BiometricAuth(view: View, host: BaseActivity) {
       }
 
       override def onAuthenticationError(errorCode: Int, errString: CharSequence): Unit = {
-        val message = host.getString(R.string.settings_auth_error).format(errString, errorCode).html
-        host.snack(view, message, R.string.dialog_ok, _.dismiss)
+        val message = host.getString(R.string.settings_auth_error).format(errString).html
+        host.snack(view, message, R.string.dialog_ok, onErrorSnackOk)
         super.onAuthenticationError(errorCode, errString)
       }
 

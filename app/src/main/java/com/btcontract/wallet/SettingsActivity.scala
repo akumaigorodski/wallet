@@ -25,7 +25,7 @@ import immortan.{ChannelMaster, LNParams}
 import scala.util.Success
 
 
-class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceReceiver { me =>
+class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with ChoiceReceiver { me =>
   lazy private[this] val settingsContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
   private[this] val fiatSymbols = LNParams.fiatRates.universallySupportedSymbols.toList.sorted
   private[this] val CHOICE_FIAT_DENOMINATION_TAG = "choiceFiatDenominationTag"
@@ -39,7 +39,7 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     setFiat.updateView
     setBtc.updateView
 
-    useFingerprint.updateView
+    useBiometric.updateView
     enforceTor.updateView
     capLnFees.updateView
     super.onResume
@@ -233,8 +233,8 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     }
   }
 
-  lazy private[this] val useFingerprint: SettingsHolder = new SettingsHolder { self =>
-    private def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.settingsContainer), me) {
+  lazy private[this] val useBiometric: SettingsHolder = new SettingsHolder { self =>
+    private def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.settingsContainer), me, _.dismiss) {
       def onHardwareUnavailable: Unit = WalletApp.app.quickToast(R.string.settings_auth_not_available)
       def onNoneEnrolled: Unit = WalletApp.app.quickToast(R.string.settings_auth_add_method)
       def onNoHardware: Unit = WalletApp.app.quickToast(R.string.settings_auth_no_support)
@@ -298,44 +298,39 @@ class SettingsActivity extends BaseActivity with HasTypicalChainFee with ChoiceR
     override def updateView: Unit = none
   }
 
-  def INIT(state: Bundle): Unit = {
-    if (WalletApp.isAlive && LNParams.isOperational) {
-      setContentView(R.layout.activity_settings)
+  override def PROCEED(state: Bundle): Unit = {
+    setContentView(R.layout.activity_settings)
 
-      val settingsPageitle = new TitleView(s"v$VERSION_NAME-$VERSION_CODE")
-      settingsPageitle.view.setOnClickListener(me onButtonTap finish)
-      settingsPageitle.backArrow.setVisibility(View.VISIBLE)
+    val settingsPageitle = new TitleView(s"v$VERSION_NAME-$VERSION_CODE")
+    settingsPageitle.view.setOnClickListener(me onButtonTap finish)
+    settingsPageitle.backArrow.setVisibility(View.VISIBLE)
 
-      val links = new TitleView("&#9996;")
-      addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://sbw.finance/posts/manual")
-      addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/btcontract/wallet")
-      addFlowChip(links.flow, getString(twitter), R.drawable.border_blue, _ => me browse "https://twitter.com/SimpleBtcWallet")
-      addFlowChip(links.flow, "&#9825; Rate us", R.drawable.border_green, _ => me bringRateDialog null)
+    val links = new TitleView("&#9996;")
+    addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://sbw.finance/posts/manual")
+    addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/btcontract/wallet")
+    addFlowChip(links.flow, getString(twitter), R.drawable.border_blue, _ => me browse "https://twitter.com/SimpleBtcWallet")
+    addFlowChip(links.flow, "&#9825; Rate us", R.drawable.border_green, _ => me bringRateDialog null)
 
-      for (count <- LNParams.logBag.count if count > 0) {
-        def exportLog: Unit = me share LNParams.logBag.recent.map(_.asString).mkString("\n\n")
-        val errorCount = s"${me getString error_log} <font color=$cardZero>$count</font>"
-        addFlowChip(links.flow, errorCount, R.drawable.border_yellow, _ => exportLog)
-      }
-
-      settingsContainer.addView(settingsPageitle.view)
-      settingsContainer.addView(storeLocalBackup.view)
-      settingsContainer.addView(chainWallets.view)
-      settingsContainer.addView(addHardware.view)
-      settingsContainer.addView(electrum.view)
-      settingsContainer.addView(setFiat.view)
-      settingsContainer.addView(setBtc.view)
-
-      settingsContainer.addView(useFingerprint.view)
-      settingsContainer.addView(enforceTor.view)
-      settingsContainer.addView(capLnFees.view)
-      settingsContainer.addView(viewCode.view)
-      settingsContainer.addView(viewStat.view)
-      settingsContainer.addView(links.view)
-    } else {
-      WalletApp.freePossiblyUsedRuntimeResouces
-      me exitTo ClassNames.mainActivityClass
+    for (count <- LNParams.logBag.count if count > 0) {
+      def exportLog: Unit = me share LNParams.logBag.recent.map(_.asString).mkString("\n\n")
+      val errorCount = s"${me getString error_log} <font color=$cardZero>$count</font>"
+      addFlowChip(links.flow, errorCount, R.drawable.border_yellow, _ => exportLog)
     }
+
+    settingsContainer.addView(settingsPageitle.view)
+    settingsContainer.addView(storeLocalBackup.view)
+    settingsContainer.addView(chainWallets.view)
+    settingsContainer.addView(addHardware.view)
+    settingsContainer.addView(electrum.view)
+    settingsContainer.addView(setFiat.view)
+    settingsContainer.addView(setBtc.view)
+
+    settingsContainer.addView(useBiometric.view)
+    settingsContainer.addView(enforceTor.view)
+    settingsContainer.addView(capLnFees.view)
+    settingsContainer.addView(viewCode.view)
+    settingsContainer.addView(viewStat.view)
+    settingsContainer.addView(links.view)
   }
 
   trait SettingsHolder {

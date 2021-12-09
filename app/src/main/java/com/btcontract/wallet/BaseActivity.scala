@@ -116,27 +116,18 @@ trait BaseActivity extends AppCompatActivity { me =>
     runAnd(InputParser.DoNotEraseRecordedValue)(finish)
   }
 
+  def START(state: Bundle): Unit
+
   override def onCreate(savedActivityState: Bundle): Unit = {
     Thread setDefaultUncaughtExceptionHandler new UncaughtHandler(me)
     super.onCreate(savedActivityState)
-    PREINIT(savedActivityState)
+    START(savedActivityState)
   }
 
   override def onDestroy: Unit = {
     super.onDestroy
     timer.cancel
   }
-
-  def PREINIT(state: Bundle): Unit = {
-    if (WalletApp.isAlive && LNParams.isOperational) INIT(state) else {
-      // The way Android works is we can get some objects nullified when restoring from background
-      // when that happens we make sure to free all remaining resources and start from scratch
-      WalletApp.freePossiblyUsedRuntimeResouces
-      me exitTo ClassNames.mainActivityClass
-    }
-  }
-
-  def INIT(state: Bundle): Unit
 
   // Helpers
 
@@ -214,12 +205,11 @@ trait BaseActivity extends AppCompatActivity { me =>
     snack
   }
 
-  def snack(parent: View, msg: CharSequence, res: Int, fun: Snackbar => Unit): Try[Snackbar] =
-    snack(parent, msg, res) map { snack =>
-      val listener = onButtonTap(fun apply snack)
-      snack.setAction(res, listener).show
-      snack
-    }
+  def snack(parent: View, msg: CharSequence, res: Int, fun: Snackbar => Unit): Try[Snackbar] = snack(parent, msg, res) map { snack =>
+    val listener = onButtonTap(fun apply snack)
+    snack.setAction(res, listener).show
+    snack
+  }
 
   // Listener helpers
 
@@ -778,6 +768,25 @@ trait BaseActivity extends AppCompatActivity { me =>
   }
 }
 
+trait BaseCheckActivity extends BaseActivity { me =>
+  def PROCEED(state: Bundle): Unit
+
+  override def onResume: Unit = {
+    val shouldAskAuth = WalletApp.userSentAppToBackground && WalletApp.useAuth
+    if (shouldAskAuth) me exitTo ClassNames.mainActivityClass
+    super.onResume
+  }
+
+  override def START(state: Bundle): Unit = {
+    if (WalletApp.isAlive && LNParams.isOperational) PROCEED(state) else {
+      // The way Android works is we can get some objects nullified when restoring from background
+      // when that happens we make sure to free all remaining resources and start from scratch
+      WalletApp.freePossiblyUsedRuntimeResouces
+      me exitTo ClassNames.mainActivityClass
+    }
+  }
+}
+
 trait HasTypicalChainFee {
   lazy val typicalChainTxFee: MilliSatoshi = {
     val target = LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget
@@ -790,7 +799,7 @@ trait HasTypicalChainFee {
     LNParams.cm.payBag.replaceOutgoingPayment(ext, description, action, sentAmount, BaseActivity.totalBalance, LNParams.fiatRates.info.rates, typicalChainTxFee, seenAt)
 }
 
-trait ChanErrorHandlerActivity extends BaseActivity { me =>
+trait ChanErrorHandlerActivity extends BaseCheckActivity { me =>
   // Activities extending from this trait process unknown channel errors by default, also can be configured to handle other types of channel-related exceptions
   val channelErrors: Cache[ByteVector32, JInt] = CacheBuilder.newBuilder.expireAfterAccess(30, TimeUnit.SECONDS).maximumSize(500).build[ByteVector32, JInt]
   val MAX_ERROR_COUNT_WITHIN_WINDOW = 4
@@ -814,7 +823,7 @@ trait ChanErrorHandlerActivity extends BaseActivity { me =>
   }.run
 }
 
-trait QRActivity extends BaseActivity { me =>
+trait QRActivity extends BaseCheckActivity { me =>
   def shareData(bitmap: Bitmap, bech32: String): Unit = {
     val paymentRequestFilePath = new File(getCacheDir, "images")
     if (!paymentRequestFilePath.isFile) paymentRequestFilePath.mkdirs

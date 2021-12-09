@@ -358,7 +358,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     callScanner(sheet)
   }
 
-  def INIT(state: Bundle): Unit = {
+  override def PROCEED(state: Bundle): Unit = {
     if (WalletApp.isAlive && LNParams.isOperational) {
       for (channel <- LNParams.cm.all.values) channel.listeners += me
       setContentView(R.layout.activity_chan)
