@@ -107,13 +107,8 @@ class CoinControlActivity extends BaseActivity with ExternalDataChecker { me =>
   }
 
   def INIT(state: Bundle): Unit = {
-    if (WalletApp.isAlive && LNParams.isOperational) {
-      setContentView(R.layout.activity_coin_control)
-      checkExternalData(noneRunnable)
-    } else {
-      WalletApp.freePossiblyUsedResouces
-      me exitTo ClassNames.mainActivityClass
-    }
+    setContentView(R.layout.activity_coin_control)
+    checkExternalData(noneRunnable)
   }
 
   def updateWallet: Unit = {

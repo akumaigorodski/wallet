@@ -384,7 +384,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
       val statusEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.statusUpdateStream, window)
       updateSubscription = stateEvents.merge(statusEvents).subscribe(_ => updateChanData.run).asSome
     } else {
-      WalletApp.freePossiblyUsedResouces
+      WalletApp.freePossiblyUsedRuntimeResouces
       me exitTo ClassNames.mainActivityClass
     }
   }

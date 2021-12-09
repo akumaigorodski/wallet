@@ -1,22 +1,23 @@
 package com.btcontract.wallet
 
-import scala.util.{Failure, Success}
-import scodec.bits.{BitVector, ByteVector}
-import immortan.crypto.Tools.{SEPARATOR, none}
+import android.app.Activity
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
 import android.widget.{ArrayAdapter, LinearLayout}
-import immortan.{LNParams, LightningNodeKeys, WalletSecret}
-import androidx.documentfile.provider.DocumentFile
-import com.btcontract.wallet.utils.LocalBackup
-import androidx.transition.TransitionManager
 import androidx.appcompat.app.AlertDialog
+import androidx.documentfile.provider.DocumentFile
+import androidx.transition.TransitionManager
+import com.btcontract.wallet.utils.LocalBackup
 import com.google.common.io.ByteStreams
 import com.ornach.nobobutton.NoboButton
 import fr.acinq.bitcoin.MnemonicCode
+import immortan.crypto.Tools.{SEPARATOR, none}
 import immortan.wire.ExtCodecs
-import android.content.Intent
-import android.app.Activity
-import android.os.Bundle
-import android.view.View
+import immortan.{LNParams, LightningNodeKeys, WalletSecret}
+import scodec.bits.{BitVector, ByteVector}
+
+import scala.util.{Failure, Success}
 
 
 object SetupActivity {
@@ -39,6 +40,7 @@ object SetupActivity {
 }
 
 class SetupActivity extends BaseActivity { me =>
+  def INIT(state: Bundle): Unit = setContentView(R.layout.activity_setup)
   private[this] lazy val activitySetupMain = findViewById(R.id.activitySetupMain).asInstanceOf[LinearLayout]
   private[this] lazy val restoreOptionsButton = findViewById(R.id.restoreOptionsButton).asInstanceOf[NoboButton]
   private[this] lazy val restoreOptions = findViewById(R.id.restoreOptions).asInstanceOf[LinearLayout]
@@ -47,13 +49,6 @@ class SetupActivity extends BaseActivity { me =>
   private[this] lazy val englishWordList = {
     val rawData = getAssets.open("bip39_english_wordlist.txt")
     scala.io.Source.fromInputStream(rawData, "UTF-8").getLines.toArray
-  }
-
-  def INIT(state: Bundle): Unit = if (WalletApp.isAlive) {
-    setContentView(R.layout.activity_setup)
-  } else {
-    WalletApp.freePossiblyUsedResouces
-    me exitTo ClassNames.mainActivityClass
   }
 
   var proceedWithMnemonics: List[String] => Unit = mnemonics => {

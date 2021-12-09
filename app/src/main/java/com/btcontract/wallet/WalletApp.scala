@@ -100,7 +100,7 @@ object WalletApp {
 
   def isAlive: Boolean = null != txDataBag && null != lnUrlPayBag && null != chainWalletBag && null != extDataBag && null != app
 
-  def freePossiblyUsedResouces: Unit = {
+  def freePossiblyUsedRuntimeResouces: Unit = {
     // Drop whatever network connections we still have
     CommsTower.workers.values.map(_.pair).foreach(CommsTower.forget)
     // Clear listeners, destroy actors, finalize state machines
@@ -113,11 +113,8 @@ object WalletApp {
     txDataBag = null
   }
 
-  def restartApplication: Unit = if (isAlive) {
-    // This may be called multiple times from different threads
-    // execute once if app is alive, otherwise do nothing
-
-    freePossiblyUsedResouces
+  def restart: Unit = {
+    freePossiblyUsedRuntimeResouces
     require(!LNParams.isOperational, "Still operational")
     val intent = new Intent(app, ClassNames.mainActivityClass)
     val restart = Intent.makeRestartActivityTask(intent.getComponent)

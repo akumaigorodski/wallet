@@ -32,16 +32,12 @@ class QRInvoiceActivity extends QRActivity with ExternalDataChecker { me =>
     setVisMany(false -> invoiceSuccess, true -> invoiceHolding)
   }.run
 
-  def INIT(state: Bundle): Unit =
-    if (WalletApp.isAlive && LNParams.isOperational) {
-      setContentView(R.layout.activity_qr_lightning_invoice)
-      invoiceQrCaption setText getString(R.string.dialog_receive_ln).html
-      invoiceHolding setOnClickListener onButtonTap(finish)
-      checkExternalData(noneRunnable)
-    } else {
-      WalletApp.freePossiblyUsedResouces
-      me exitTo ClassNames.mainActivityClass
-    }
+  def INIT(state: Bundle): Unit = {
+    setContentView(R.layout.activity_qr_lightning_invoice)
+    invoiceQrCaption setText getString(R.string.dialog_receive_ln).html
+    invoiceHolding setOnClickListener onButtonTap(finish)
+    checkExternalData(noneRunnable)
+  }
 
   def showInvoice(info: PaymentInfo): Unit =
     runInFutureProcessOnUI(QRActivity.get(info.prExt.raw.toUpperCase, qrSize), onFail) { qrBitmap =>

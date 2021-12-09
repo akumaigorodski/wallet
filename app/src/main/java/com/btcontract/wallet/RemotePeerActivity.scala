@@ -146,13 +146,8 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
   }
 
   def INIT(state: Bundle): Unit = {
-    if (WalletApp.isAlive && LNParams.isOperational) {
-      setContentView(R.layout.activity_remote_peer)
-      checkExternalData(whenBackPressed)
-    } else {
-      WalletApp.freePossiblyUsedResouces
-      me exitTo ClassNames.mainActivityClass
-    }
+    setContentView(R.layout.activity_remote_peer)
+    checkExternalData(whenBackPressed)
   }
 
   // BUTTON ACTIONS

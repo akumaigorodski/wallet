@@ -17,16 +17,12 @@ class QRSplitActivity extends QRActivity with ExternalDataChecker with HasTypica
   lazy private[this] val qrViewHolder = new QRViewHolder(me findViewById R.id.splitQr)
   lazy private[this] val dialogPay = getString(R.string.dialog_ok)
 
-  def INIT(state: Bundle): Unit =
-    if (WalletApp.isAlive && LNParams.isOperational) {
-      setContentView(R.layout.activity_qr_split_invoice)
-      val splitCaption = getString(R.string.dialog_split_ln)
-      splitQrCaption setText splitCaption.format(new String).html
-      checkExternalData(noneRunnable)
-    } else {
-      WalletApp.freePossiblyUsedResouces
-      me exitTo ClassNames.mainActivityClass
-    }
+  def INIT(state: Bundle): Unit = {
+    setContentView(R.layout.activity_qr_split_invoice)
+    val splitCaption = getString(R.string.dialog_split_ln)
+    splitQrCaption setText splitCaption.format(new String).html
+    checkExternalData(noneRunnable)
+  }
 
   def showSplitInvoice(sp: SplitParams): Unit = {
     val nextSplitLink = sp.prExt.withNewSplit(sp.cmd.split.myPart)

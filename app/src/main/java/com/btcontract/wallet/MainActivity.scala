@@ -37,8 +37,9 @@ object ClassNames {
 
 class MainActivity extends NfcReaderActivity with BaseActivity { me =>
   lazy val legacyWalletFile = new File(getFilesDir, "Bitcoin.wallet")
+  override def PREINIT(state: Bundle): Unit = INIT(state)
 
-  def INIT(state: Bundle): Unit = {
+  override def INIT(state: Bundle): Unit = {
     setContentView(R.layout.frag_linear_layout)
     NotificationManagerCompat.from(me).cancelAll
     initNfc(state)
@@ -65,11 +66,8 @@ class MainActivity extends NfcReaderActivity with BaseActivity { me =>
   def proceed(empty: Any): Unit = WalletApp.isAlive match {
     case false => runAnd(WalletApp.makeAlive)(me proceed null)
     case true if LNParams.isOperational => me exitTo ClassNames.hubActivityClass
-
-    case true =>
-      val step2 = if (legacyWalletFile.exists) new EnsureLegacy else new EnsureSeed
-      val step1 = if (WalletApp.useAuth) new EnsureAuth(step2) else step2
-      step1.makeAttempt
+    case true if legacyWalletFile.exists => (new EnsureLegacy).makeAttempt
+    case true => (new EnsureSeed).makeAttempt
   }
 
   // Tor and auth
@@ -124,21 +122,5 @@ class MainActivity extends NfcReaderActivity with BaseActivity { me =>
         } getOrElse makeAttempt
       }
     }
-  }
-
-  class EnsureAuth(next: Step) extends Step {
-    def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.linearLayout), me) {
-      def onHardwareUnavailable: Unit = WalletApp.app.quickToast(settings_auth_not_available)
-      def onNoHardware: Unit = WalletApp.app.quickToast(settings_auth_no_support)
-
-      def onNoneEnrolled: Unit = {
-        // Settings flag is on but user has removed all fingerprints from system
-        WalletApp.app.prefs.edit.putBoolean(WalletApp.USE_AUTH, false).commit
-        next.makeAttempt
-      }
-
-      def onCanAuthenticate: Unit = callAuthDialog
-      def onAuthSucceeded: Unit = next.makeAttempt
-    }.checkAuth
   }
 }

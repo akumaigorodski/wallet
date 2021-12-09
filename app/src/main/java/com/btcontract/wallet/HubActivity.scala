@@ -1256,92 +1256,86 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
   }
 
   def INIT(state: Bundle): Unit = {
-    if (WalletApp.isAlive && LNParams.isOperational) {
-      setContentView(com.btcontract.wallet.R.layout.activity_hub)
-      instance = me
-      doMaxMinView
+    setContentView(com.btcontract.wallet.R.layout.activity_hub)
+    for (channel <- LNParams.cm.all.values) channel.listeners += me
+    LNParams.cm.localPaymentListeners add extraOutgoingListener
+    LNParams.fiatRates.listeners += fiatRatesListener
+    LNParams.chainWallets.catcher ! chainListener
+    LNParams.cm.pf.listeners += me
+    instance = me
+    doMaxMinView
 
-      for (channel <- LNParams.cm.all.values) channel.listeners += me
-      LNParams.cm.localPaymentListeners add extraOutgoingListener
-      LNParams.fiatRates.listeners += fiatRatesListener
-      LNParams.chainWallets.catcher ! chainListener
-      LNParams.cm.pf.listeners += me
+    bottomActionBar post UITask {
+      bottomBlurringArea.setHeightTo(bottomActionBar)
+      itemsList.setPadding(0, 0, 0, bottomActionBar.getHeight)
+    }
 
-      bottomActionBar post UITask {
-        bottomBlurringArea.setHeightTo(bottomActionBar)
-        itemsList.setPadding(0, 0, 0, bottomActionBar.getHeight)
+    // TOGGLE MENU
+
+    val defaultButtons = Set("bitcoinPayments", "lightningPayments")
+    val checkedButtonTags = WalletApp.getCheckedButtons(defaultButtons)
+
+    for {
+      Tuple2(itemId, buttonTag) <- itemsToTags
+      if checkedButtonTags.contains(buttonTag)
+    } walletCards.toggleGroup.check(itemId)
+
+    walletCards.recoveryPhrase setOnClickListener onButtonTap(viewRecoveryCode)
+    walletCards.toggleGroup addOnButtonCheckedListener new OnButtonCheckedListener {
+      def onButtonChecked(group: MaterialButtonToggleGroup, checkId: Int, isChecked: Boolean): Unit = {
+        WalletApp.putCheckedButtons(itemsToTags.filterKeys(group.getCheckedButtonIds.contains).values.toSet)
+        runAnd(updAllInfos)(paymentAdapterDataChanged.run)
       }
+    }
 
-      // TOGGLE MENU
+    // LIST
 
-      val defaultButtons = Set("bitcoinPayments", "lightningPayments")
-      val checkedButtonTags = WalletApp.getCheckedButtons(defaultButtons)
+    itemsList.addHeaderView(walletCards.view)
+    itemsList.setAdapter(paymentsAdapter)
+    itemsList.setDividerHeight(0)
+    itemsList.setDivider(null)
+
+    // Fill wallet list with wallet card views here
+    walletCards.chainCards.init(LNParams.chainWallets.wallets)
+    walletCards.updateView
+
+    runInFutureProcessOnUI(loadRecent, none) { _ =>
+      // We suggest user to rate us if: no rate attempt has been made before, LN payments were successful, user has been using an app for certain period
+      setVis(WalletApp.showRateUs && paymentInfos.forall(_.status == PaymentStatus.SUCCEEDED) && allInfos.size > 4 && allInfos.size < 8, walletCards.rateTeaser)
+      // User may kill an activity but not an app and on getting back there won't be a chain listener event, so check connectivity once again here
+      setVisMany(WalletApp.ensureTor -> walletCards.torIndicator, WalletApp.currentChainNode.isEmpty -> walletCards.offlineIndicator)
+      walletCards.searchField addTextChangedListener onTextChange(searchWorker.addWork)
+      runAnd(updateLnCaches)(paymentAdapterDataChanged.run)
+      markAsFailedOnce
+    }
+
+    // STREAMS
+
+    val window = 600.millis
+    val txEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.txDbStream, window).doOnNext { _ =>
+      // After each delayed update we check if pending txs got confirmed or double-spent
+      // do this check specifically after updating txInfos with new items
+      reloadTxInfos
 
       for {
-        (itemId, buttonTag) <- itemsToTags
-        if checkedButtonTags.contains(buttonTag)
-      } walletCards.toggleGroup.check(itemId)
-
-      walletCards.recoveryPhrase setOnClickListener onButtonTap(viewRecoveryCode)
-      walletCards.toggleGroup addOnButtonCheckedListener new OnButtonCheckedListener {
-        def onButtonChecked(group: MaterialButtonToggleGroup, checkId: Int, isChecked: Boolean): Unit = {
-          WalletApp.putCheckedButtons(itemsToTags.filterKeys(group.getCheckedButtonIds.contains).values.toSet)
-          runAnd(updAllInfos)(paymentAdapterDataChanged.run)
-        }
-      }
-
-      // LIST
-
-      itemsList.addHeaderView(walletCards.view)
-      itemsList.setAdapter(paymentsAdapter)
-      itemsList.setDividerHeight(0)
-      itemsList.setDivider(null)
-
-      // Fill wallet list with wallet card views here
-      walletCards.chainCards.init(LNParams.chainWallets.wallets)
-      walletCards.updateView
-
-      runInFutureProcessOnUI(loadRecent, none) { _ =>
-        // We suggest user to rate us if: no rate attempt has been made before, LN payments were successful, user has been using an app for certain period
-        setVis(WalletApp.showRateUs && paymentInfos.forall(_.status == PaymentStatus.SUCCEEDED) && allInfos.size > 4 && allInfos.size < 8, walletCards.rateTeaser)
-        // User may kill an activity but not an app and on getting back there won't be a chain listener event, so check connectivity once again here
-        setVisMany(WalletApp.ensureTor -> walletCards.torIndicator, WalletApp.currentChainNode.isEmpty -> walletCards.offlineIndicator)
-        walletCards.searchField addTextChangedListener onTextChange(searchWorker.addWork)
-        runAnd(updateLnCaches)(paymentAdapterDataChanged.run)
-        markAsFailedOnce
-      }
-
-      // STREAMS
-
-      val window = 600.millis
-      val txEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.txDbStream, window).doOnNext { _ =>
-        // After each delayed update we check if pending txs got confirmed or double-spent
-        // do this check specifically after updating txInfos with new items
-        reloadTxInfos
-
-        for {
-          txInfo <- txInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
-          relatedChainWallet <- LNParams.chainWallets.findByPubKey(pub = txInfo.pubKey)
-          res <- relatedChainWallet.doubleSpent(txInfo.tx) if res.depth != txInfo.depth || res.isDoubleSpent != txInfo.isDoubleSpent
-        } WalletApp.txDataBag.updStatus(txInfo.txid, res.depth, updatedStamp = res.stamp, res.isDoubleSpent)
-      }
-
-      val relayEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.relayDbStream, window).doOnNext(_ => reloadRelayedPreimageInfos)
-      val marketEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.payMarketDbStream, window).doOnNext(_ => reloadPayMarketInfos)
-      val paymentEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.paymentDbStream, window).doOnNext(_ => reloadPaymentInfos)
-      val stateEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.stateUpdateStream, window).doOnNext(_ => updateLnCaches)
-
-      stateSubscription = txEvents.merge(paymentEvents).merge(relayEvents).merge(marketEvents).merge(stateEvents).doOnNext(_ => updAllInfos).subscribe(_ => paymentAdapterDataChanged.run).asSome
-      statusSubscription = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.statusUpdateStream, window).merge(stateEvents).subscribe(_ => UITask(walletCards.updateView).run).asSome
-      inFinalizedSubscription = ChannelMaster.inFinalized.collect { case _: IncomingRevealed => true }.subscribe(_ => Vibrator.vibrate).asSome
-
-      timer.scheduleAtFixedRate(paymentAdapterDataChanged, 30000, 30000)
-      val backupAllowed = LocalBackup.isAllowed(context = WalletApp.app)
-      if (!backupAllowed) LocalBackup.askPermission(activity = me)
-    } else {
-      WalletApp.freePossiblyUsedResouces
-      me exitTo ClassNames.mainActivityClass
+        txInfo <- txInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
+        relatedChainWallet <- LNParams.chainWallets.findByPubKey(pub = txInfo.pubKey)
+        res <- relatedChainWallet.doubleSpent(txInfo.tx) if res.depth != txInfo.depth || res.isDoubleSpent != txInfo.isDoubleSpent
+      } WalletApp.txDataBag.updStatus(txInfo.txid, res.depth, updatedStamp = res.stamp, res.isDoubleSpent)
     }
+
+    val relayEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.relayDbStream, window).doOnNext(_ => reloadRelayedPreimageInfos)
+    val marketEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.payMarketDbStream, window).doOnNext(_ => reloadPayMarketInfos)
+    val paymentEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.paymentDbStream, window).doOnNext(_ => reloadPaymentInfos)
+    val stateEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.stateUpdateStream, window).doOnNext(_ => updateLnCaches)
+
+    stateSubscription = txEvents.merge(paymentEvents).merge(relayEvents).merge(marketEvents).merge(stateEvents).doOnNext(_ => updAllInfos).subscribe(_ => paymentAdapterDataChanged.run).asSome
+    statusSubscription = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.statusUpdateStream, window).merge(stateEvents).subscribe(_ => UITask(walletCards.updateView).run).asSome
+    inFinalizedSubscription = ChannelMaster.inFinalized.collect { case _: IncomingRevealed => true }.subscribe(_ => Vibrator.vibrate).asSome
+
+    timer.scheduleAtFixedRate(paymentAdapterDataChanged, 30000, 30000)
+    val backupAllowed = LocalBackup.isAllowed(context = WalletApp.app)
+    if (!backupAllowed) LocalBackup.askPermission(activity = me)
   }
 
   // VIEW HANDLERS

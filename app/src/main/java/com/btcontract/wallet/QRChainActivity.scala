@@ -91,13 +91,8 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
   }
 
   def INIT(state: Bundle): Unit = {
-    if (WalletApp.isAlive && LNParams.isOperational) {
-      setContentView(R.layout.activity_qr_chain_addresses)
-      checkExternalData(noneRunnable)
-    } else {
-      WalletApp.freePossiblyUsedResouces
-      me exitTo ClassNames.mainActivityClass
-    }
+    setContentView(R.layout.activity_qr_chain_addresses)
+    checkExternalData(noneRunnable)
   }
 
   def showCode: Unit = {

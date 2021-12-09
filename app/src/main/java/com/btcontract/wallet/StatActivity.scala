@@ -13,13 +13,8 @@ class StatActivity extends BaseActivity { me =>
   lazy private[this] val statContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
 
   def INIT(state: Bundle): Unit = {
-    if (WalletApp.isAlive && LNParams.isOperational) {
-      setContentView(R.layout.activity_settings)
-      updateView
-    } else {
-      WalletApp.freePossiblyUsedResouces
-      me exitTo ClassNames.mainActivityClass
-    }
+    setContentView(R.layout.activity_settings)
+    updateView
   }
 
   def updateView: Unit = {

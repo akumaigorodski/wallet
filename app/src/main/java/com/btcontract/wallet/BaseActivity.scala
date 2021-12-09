@@ -119,12 +119,21 @@ trait BaseActivity extends AppCompatActivity { me =>
   override def onCreate(savedActivityState: Bundle): Unit = {
     Thread setDefaultUncaughtExceptionHandler new UncaughtHandler(me)
     super.onCreate(savedActivityState)
-    INIT(savedActivityState)
+    PREINIT(savedActivityState)
   }
 
   override def onDestroy: Unit = {
     super.onDestroy
     timer.cancel
+  }
+
+  def PREINIT(state: Bundle): Unit = {
+    if (WalletApp.isAlive && LNParams.isOperational) INIT(state) else {
+      // The way Android works is we can get some objects nullified when restoring from background
+      // when that happens we make sure to free all remaining resources and start from scratch
+      WalletApp.freePossiblyUsedRuntimeResouces
+      me exitTo ClassNames.mainActivityClass
+    }
   }
 
   def INIT(state: Bundle): Unit
