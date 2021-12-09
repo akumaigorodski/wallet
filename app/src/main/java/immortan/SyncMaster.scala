@@ -195,7 +195,7 @@ sealed trait SyncMasterData extends { me =>
 }
 
 case class PureRoutingData(announces: Set[ChannelAnnouncement], updates: Set[ChannelUpdate], excluded: Set[UpdateCore], queriesLeft: Int, queriesTotal: Int)
-case class SyncMasterShortIdData(baseInfos: Set[RemoteNodeInfo], extInfos: Set[RemoteNodeInfo], activeSyncs: Set[SyncWorker], ranges: Map[PublicKey, SyncWorkerShortIdsData], totalRanges: Int) extends SyncMasterData
+case class SyncMasterShortIdData(baseInfos: Set[RemoteNodeInfo], extInfos: Set[RemoteNodeInfo], activeSyncs: Set[SyncWorker], ranges: Map[PublicKey, SyncWorkerShortIdsData] = Map.empty) extends SyncMasterData
 
 case class SyncMasterGossipData(baseInfos: Set[RemoteNodeInfo], extInfos: Set[RemoteNodeInfo], activeSyncs: Set[SyncWorker], chunksLeft: Int) extends SyncMasterData {
   def batchQueriesLeft: Int = activeSyncs.map(_.data).collect { case data: SyncWorkerGossipData => data.queries.size }.sum
@@ -205,7 +205,7 @@ case class UpdateConifrmState(liteUpdOpt: Option[ChannelUpdate], confirmedBy: Co
   def add(cu: ChannelUpdate, from: PublicKey): UpdateConifrmState = copy(liteUpdOpt = Some(cu), confirmedBy = confirmedBy + from)
 }
 
-abstract class SyncMaster(excluded: ShortChanIdSet, requestNodeAnnounce: ShortChanIdSet, routerData: Data) extends StateMachine[SyncMasterData] with CanBeRepliedTo { me =>
+abstract class SyncMaster(excluded: ShortChanIdSet, requestNodeAnnounce: ShortChanIdSet, routerData: Data, maxConnections: Int) extends StateMachine[SyncMasterData] with CanBeRepliedTo { me =>
   private[this] val confirmedChanUpdates = mutable.Map.empty[UpdateCore, UpdateConifrmState] withDefaultValue UpdateConifrmState(None, Set.empty)
   private[this] val confirmedChanAnnounces = mutable.Map.empty[ChannelAnnouncement, ConfirmedBySet] withDefaultValue Set.empty
 
@@ -227,10 +227,10 @@ abstract class SyncMaster(excluded: ShortChanIdSet, requestNodeAnnounce: ShortCh
 
   def doProcess(change: Any): Unit = (change, data, state) match {
     case (setupData: SyncMasterShortIdData, null, SHORT_ID_SYNC) if setupData.baseInfos.nonEmpty =>
-      List.fill(LNParams.syncParams.maxNodesToSyncFrom)(CMDAddSync).foreach(process)
+      List.fill(maxConnections)(CMDAddSync).foreach(process)
       become(setupData, SHORT_ID_SYNC)
 
-    case (CMDAddSync, data1: SyncMasterShortIdData, SHORT_ID_SYNC) if data1.activeSyncs.size < LNParams.syncParams.maxNodesToSyncFrom =>
+    case (CMDAddSync, data1: SyncMasterShortIdData, SHORT_ID_SYNC) if data1.activeSyncs.size < maxConnections =>
       // We are asked to create a new worker AND we don't have enough workers yet: create a new one and instruct it to sync right away
 
       val newSyncWorker = data.getNewSync(me)
@@ -246,7 +246,7 @@ abstract class SyncMaster(excluded: ShortChanIdSet, requestNodeAnnounce: ShortCh
       val data2 = data1.copy(ranges = ranges2)
       become(data2, SHORT_ID_SYNC)
 
-      if (data2.ranges.size == data2.totalRanges) {
+      if (ranges2.size == maxConnections) {
         // Collected enough channel ranges to start gossip
         val goodRanges = data2.ranges.values.filter(_.isHolistic)
         val accum = mutable.Map.empty[Long, Int].withDefaultValue(0)
@@ -266,7 +266,7 @@ abstract class SyncMaster(excluded: ShortChanIdSet, requestNodeAnnounce: ShortCh
 
     // GOSSIP_SYNC
 
-    case (workerData: SyncWorkerGossipData, data1: SyncMasterGossipData, GOSSIP_SYNC) if data1.activeSyncs.size < LNParams.syncParams.maxNodesToSyncFrom =>
+    case (workerData: SyncWorkerGossipData, data1: SyncMasterGossipData, GOSSIP_SYNC) if data1.activeSyncs.size < maxConnections =>
       // Turns out one of the workers has disconnected while getting gossip, create one with unused remote nodeId and track its progress
       // Important: we retain pending queries from previous sync worker, that's why we need worker data here
 

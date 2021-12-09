@@ -57,7 +57,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
   implicit val context: ExecutionContextExecutor = ExecutionContext fromExecutor Executors.newSingleThreadExecutor
   def process(changeMessage: Any): Unit = scala.concurrent.Future(me doProcess changeMessage)
 
-  private val RESYNC_PERIOD: Long = 1000L * 3600 * 72
+  private val RESYNC_PERIOD: Long = 1000L * 3600 * 24 * 4
   // We don't load routing data on every startup but when user (or system) actually needs it
   become(Data(channels = Map.empty, hostedChannels = Map.empty, DirectedGraph.empty), WAITING)
 
@@ -72,7 +72,7 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
 
   def doProcess(change: Any): Unit = (change, state) match {
     case (CMDStartPeriodicResync, WAITING | OPERATIONAL) if subscription.isEmpty =>
-      val repeat = Rx.repeat(Rx.ioQueue, Rx.incHour, times = 73 to Int.MaxValue by 73)
+      val repeat = Rx.repeat(Rx.ioQueue, Rx.incHour, times = 97 to Int.MaxValue by 97)
       // Resync every RESYNC_PERIOD hours + 1 hour to trigger a full resync, not just PHC resync
       val delay = Rx.initDelay(repeat, getLastTotalResyncStamp, RESYNC_PERIOD, preStartMsec = 500)
       subscription = delay.subscribe(_ => me process CMDResync).asSome
@@ -102,16 +102,16 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       become(Data(normalShortIdToPubChan, hostedShortIdToPubChan, searchGraph1), OPERATIONAL)
 
     case (CMDResync, OPERATIONAL) if System.currentTimeMillis - getLastNormalResyncStamp > RESYNC_PERIOD =>
-      val setupData = SyncMasterShortIdData(LNParams.syncParams.syncNodes, getExtraNodes, Set.empty, Map.empty, LNParams.syncParams.maxNodesToSyncFrom)
+      val setupData = SyncMasterShortIdData(LNParams.syncParams.syncNodes, getExtraNodes, Set.empty, Map.empty)
 
       val requestNodeAnnounceForChan = for {
         info <- getExtraNodes ++ getPHCExtraNodes
         edges <- data.graph.vertices.get(info.nodeId)
       } yield shuffle(edges).head.desc.shortChannelId
 
-      val normalSync = new SyncMaster(normalBag.listExcludedChannels, requestNodeAnnounceForChan, data) { self =>
-        override def onNodeAnnouncement(na: NodeAnnouncement): Unit = listeners.foreach(_ process na)
-        override def onChunkSyncComplete(pure: PureRoutingData): Unit = me process pure
+      val normalSync = new SyncMaster(normalBag.listExcludedChannels, requestNodeAnnounceForChan, data, LNParams.syncParams.maxNodesToSyncFrom) { self =>
+        override def onNodeAnnouncement(nodeAnnouncement: NodeAnnouncement): Unit = listeners.foreach(_ process nodeAnnouncement)
+        override def onChunkSyncComplete(pureRoutingData: PureRoutingData): Unit = me process pureRoutingData
         override def onTotalSyncComplete: Unit = me process self
       }
 
