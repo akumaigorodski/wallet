@@ -1155,8 +1155,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
               val sender = new CanBeRepliedTo {
                 override def process(reply: Any): Unit = reply match {
-                  case PathFinder.NotifyNotReady => fillFlow(getString(dialog_up_to).format(ExpectedRouteFees(Router.defAvgHops) highCapRatio origAmount) + PERCENT).run
-                  case exp: ExpectedRouteFees => fillFlow(getString(dialog_up_to).format(exp highCapRatio origAmount) + PERCENT).run
+                  case PathFinder.NotifyNotReady => fillFlow(getString(dialog_up_to).format(ExpectedRouteFees(Router.defAvgHops) % origAmount) + PERCENT).run
+                  case expectedRouteFees: ExpectedRouteFees => fillFlow(getString(dialog_up_to).format(expectedRouteFees % origAmount) + PERCENT).run
                   case _ => fillFlow("n/a").run
                 }
               }

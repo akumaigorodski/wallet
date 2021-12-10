@@ -375,7 +375,10 @@ case class AvgHopParams(cltvExpiryDelta: CltvExpiryDelta, feeProportionalMillion
   def relayFee(amount: MilliSatoshi): MilliSatoshi = nodeFee(feeBaseMsat, feeProportionalMillionths, amount)
 }
 
-case class NodeIdTrampolineParams(nodeId: PublicKey, trampolineOn: TrampolineOn) {
+case class NodeIdTrampolineParams(nodeId: PublicKey, trampolineOn: TrampolineOn) extends HasRelayFee {
+  def relayFee(amount: MilliSatoshi): MilliSatoshi = trampolineOn.relayFee(amount)
+  def cltvExpiryDelta: CltvExpiryDelta = trampolineOn.cltvExpiryDelta
+
   def withRefreshedParams(update: TrampolineStatusUpdate): NodeIdTrampolineParams = {
     val trampolineOn1 = update.updatedParams.getOrElse(nodeId, trampolineOn)
     copy(trampolineOn = trampolineOn1)

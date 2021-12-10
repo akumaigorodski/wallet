@@ -58,7 +58,7 @@ object Router {
   }
 
   case class NodeHop(nodeId: PublicKey, nextNodeId: PublicKey, cltvExpiryDelta: CltvExpiryDelta, fee: MilliSatoshi) extends Hop {
-    override def toString: String = s"Trampoline, node: ${nodeId.value.toHex}, fee reserve: $fee"
+    override def toString: String = s"Trampoline, node: ${nodeId.value.toHex}, fee reserve: $fee, cltv reserve: ${cltvExpiryDelta.underlying}"
     override def fee(amount: MilliSatoshi): MilliSatoshi = fee
   }
 

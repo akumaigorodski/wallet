@@ -277,7 +277,7 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     // Prepare sender FSM and fetch expected fees for payment
     // these fees will be replied back to FSM for trampoline sends
     opm process CreateSenderFSM(localPaymentListeners, cmd.fullTag)
-    pf process PathFinder.GetExpectedPaymentFees(opm, cmd, interHops = 2)
+    pf process PathFinder.GetExpectedPaymentFees(opm, cmd, interHops = 3)
   }
 
   // These are executed in Channel context

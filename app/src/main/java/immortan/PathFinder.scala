@@ -39,10 +39,11 @@ object PathFinder {
   case class GetExpectedRouteFees(sender: CanBeRepliedTo, payee: PublicKey, interHops: Int) extends PathFinderRequest
 
   case class ExpectedRouteFees(hops: List[HasRelayFee] = Nil) {
-    def highCapRatio(amount: MilliSatoshi): Double = ratio(amount, totalWithFee(amount) - amount)
-    private def accumulate(accumulator: MilliSatoshi, hop: HasRelayFee) = accumulator + hop.relayFee(accumulator)
-    def totalWithFee(amount: MilliSatoshi): MilliSatoshi = hops.reverse.foldLeft(amount)(accumulate)
+    def % (amount: MilliSatoshi): Double = ratio(amount, totalWithFeeReserve(amount) - amount)
     def totalCltvDelta: CltvExpiryDelta = hops.map(_.cltvExpiryDelta).reduce(_ + _)
+
+    private def accumulate(hasRelayFee: HasRelayFee, accumulator: MilliSatoshi): MilliSatoshi = hasRelayFee.relayFee(accumulator) + accumulator
+    def totalWithFeeReserve(amount: MilliSatoshi): MilliSatoshi = hops.foldRight(amount)(accumulate)
   }
 }
 
