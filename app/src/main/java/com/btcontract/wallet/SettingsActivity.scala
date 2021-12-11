@@ -41,7 +41,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
 
     useBiometric.updateView
     enforceTor.updateView
-    capLnFees.updateView
     super.onResume
   }
 
@@ -57,7 +56,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     case CHOICE_BTC_DENOMINATON_TAG =>
       WalletApp.app.prefs.edit.putString(WalletApp.BTC_DENOM, units(pos).sign).commit
       ChannelMaster.next(ChannelMaster.stateUpdateStream)
-      capLnFees.updateView
       setBtc.updateView
 
     case _ =>
@@ -266,24 +264,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     }
   }
 
-  lazy private[this] val capLnFees = new SettingsHolder {
-    settingsTitle.setText(settings_ln_fee_cap)
-
-    override def updateView: Unit = {
-      val maxPercent = (100 * LNParams.maxOffChainFeeRatio).toLong + PERCENT
-      val typicalFee = WalletApp.denom.parsedWithSign(typicalChainTxFee, cardIn, cardZero)
-      val disabledText = getString(settings_ln_fee_cap_disabled).format(maxPercent, typicalFee)
-      val enabledText = getString(settings_ln_fee_cap_enabled).format(maxPercent, typicalFee)
-      val info = if (WalletApp.capLNFeeToChain) enabledText else disabledText
-      settingsCheck.setChecked(WalletApp.capLNFeeToChain)
-      settingsInfo.setText(info.html)
-    }
-
-    view setOnClickListener onButtonTap {
-      putBoolAndUpdateView(WalletApp.CAP_LN_FEE_TO_CHAIN, !WalletApp.capLNFeeToChain)
-    }
-  }
-
   lazy private[this] val viewCode = new SettingsHolder {
     setVisMany(false -> settingsCheck, false -> settingsInfo)
     view setOnClickListener onButtonTap(viewRecoveryCode)
@@ -327,7 +307,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
 
     settingsContainer.addView(useBiometric.view)
     settingsContainer.addView(enforceTor.view)
-    settingsContainer.addView(capLnFees.view)
     settingsContainer.addView(viewCode.view)
     settingsContainer.addView(viewStat.view)
     settingsContainer.addView(links.view)

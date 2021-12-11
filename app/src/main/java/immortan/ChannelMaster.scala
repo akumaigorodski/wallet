@@ -1,5 +1,7 @@
 package immortan
 
+import java.util.concurrent.atomic.AtomicLong
+
 import com.google.common.cache.LoadingCache
 import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
@@ -7,7 +9,6 @@ import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.TxConfirmedAt
 import fr.acinq.eclair.channel._
 import fr.acinq.eclair.payment.{IncomingPacket, PaymentRequest}
-import fr.acinq.eclair.router.RouteCalculation
 import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, RemoteReject}
 import fr.acinq.eclair.wire._
 import immortan.Channel._
@@ -20,7 +21,6 @@ import immortan.fsm._
 import immortan.utils.{PaymentRequestExt, Rx}
 import rx.lang.scala.Subject
 
-import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.Try
@@ -242,13 +242,10 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     0L.msat.max(sendableNoFee - fee)
   }
 
-  // If computed fee gets too small we use a standard minimal fee to make small payment still succeed
-  def feeReserve(amount: MilliSatoshi, typicalChainFee: MilliSatoshi, capLNFeeToChain: Boolean): MilliSatoshi = {
-
-    val maxFee = amount * LNParams.maxOffChainFeeRatio
-    if (maxFee < LNParams.maxOffChainFeeAboveRatio) LNParams.maxOffChainFeeAboveRatio
-    else if (capLNFeeToChain && maxFee > typicalChainFee) typicalChainFee
-    else maxFee
+  def feeReserve(amount: MilliSatoshi): MilliSatoshi = {
+    val maxPossibleFee = amount * LNParams.maxOffChainFeeRatio
+    if (maxPossibleFee > LNParams.maxOffChainFeeAboveRatio) maxPossibleFee
+    else LNParams.maxOffChainFeeAboveRatio
   }
 
   // Supply relative cltv expiry in case if we initiate a payment when chain tip is not yet known

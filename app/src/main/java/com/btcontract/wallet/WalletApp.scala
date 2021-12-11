@@ -70,7 +70,6 @@ object WalletApp {
   final val BTC_DENOM = "btcDenom"
   final val ENSURE_TOR = "ensureTor"
   final val MAXIMIZED_VIEW = "maximizedView"
-  final val CAP_LN_FEE_TO_CHAIN = "capLNFeeToChain"
   final val LAST_TOTAL_GOSSIP_SYNC = "lastTotalGossipSync"
   final val LAST_NORMAL_GOSSIP_SYNC = "lastNormalGossipSync"
   final val CUSTOM_ELECTRUM_ADDRESS = "customElectrumAddress"
@@ -81,7 +80,6 @@ object WalletApp {
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
   def ensureTor: Boolean = app.prefs.getBoolean(ENSURE_TOR, false)
   def maximizedView: Boolean = app.prefs.getBoolean(MAXIMIZED_VIEW, true)
-  def capLNFeeToChain: Boolean = app.prefs.getBoolean(CAP_LN_FEE_TO_CHAIN, false)
   def showRateUs: Boolean = app.prefs.getBoolean(SHOW_RATE_US, true)
   def openHc: Boolean = app.prefs.getBoolean(OPEN_HC, true)
 
