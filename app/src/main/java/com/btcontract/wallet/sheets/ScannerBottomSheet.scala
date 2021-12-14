@@ -22,7 +22,7 @@ import spray.json._
 
 import scala.collection.JavaConverters._
 import scala.language.implicitConversions
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 
 trait HasBarcodeReader extends BarcodeCallback {
@@ -37,18 +37,15 @@ trait HasUrDecoder extends HasBarcodeReader {
   def onUR(ur: UR): Unit
 
   def handleUR(part: String): Unit = {
-    val isUseful = decoder.receivePart(part)
-    val pct = decoder.getEstimatedPercentComplete
-
-    if (!isUseful && System.currentTimeMillis - lastAttempt > 2000) {
+    val partAdded = Try(decoder receivePart part).getOrElse(false)
+    if (!partAdded && System.currentTimeMillis - lastAttempt > 2000) {
       WalletApp.app.quickToast(R.string.error_nothing_useful)
       lastAttempt = System.currentTimeMillis
     }
 
-    if (pct > 0D) {
-      val pct100 = (pct * 100).floor.toLong
-      instruction.setText(s"$pct100%")
-    }
+    val pct = decoder.getEstimatedPercentComplete
+    val pctAsFractionOf100 = (pct * 100).floor.toLong
+    if (pct > 0D) instruction.setText(s"$pctAsFractionOf100%")
 
     for {
       result <- Option(decoder.getResult)
