@@ -298,10 +298,10 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
   }
 
   def revertAndInform(reason: Throwable): Unit = UITask {
-    // Whatever the reason for this to happen we still may accept new offers
-    CommsTower.listenNative(Set(incomingAcceptingListener), hasInfo.remoteInfo)
     setVis(isVisible = criticalSupportAvailable, viewYesFeatureSupport)
-    WalletApp.app.quickToast(reason.getMessage)
+    CommsTower.listenNative(Set(incomingAcceptingListener), hasInfo.remoteInfo)
+    val details = Option(reason.getMessage).getOrElse(reason.stackTraceAsString)
+    WalletApp.app.quickToast(details)
   }.run
 
   def stopAcceptingIncomingOffers: Unit = {
