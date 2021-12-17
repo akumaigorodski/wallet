@@ -257,9 +257,14 @@ trait BaseActivity extends AppCompatActivity { me =>
     field
   }
 
-  def titleBodyAsViewBuilder(title: View, body: View): AlertDialog.Builder = new AlertDialog.Builder(me).setCustomTitle(title).setView(body)
+  def titleBodyAsViewBuilder(title: View, body: View): AlertDialog.Builder =
+    new AlertDialog.Builder(me).setCustomTitle(title).setView(body)
 
-  def onFail(error: String): Unit = UITask(me showForm titleBodyAsViewBuilder(null, error.asDefView).setPositiveButton(dialog_ok, null).create).run
+  def onFail(error: String): Unit = UITask {
+    val bld = titleBodyAsViewBuilder(null, error.asDefView)
+    val bld1 = bld.setPositiveButton(dialog_ok, null)
+    showForm(bld1.create)
+  }.run
 
   def onFail(error: Throwable): Unit = error match {
     case exc if exc.getCause.isInstanceOf[java.io.InterruptedIOException] =>

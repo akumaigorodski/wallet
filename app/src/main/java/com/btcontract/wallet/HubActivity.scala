@@ -1208,8 +1208,10 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     snack(contentWindow, getString(dialog_lnurl_processing).format(lnUrl.warnUri).html, dialog_cancel) foreach { snack =>
-      val level1Sub = lnUrl.level1DataResponse.doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss).subscribe(resolve, onFail)
-      val listener = onButtonTap(level1Sub.unsubscribe)
+      def onErrorFromVendor(error: Throwable): Unit = onFail(s"Error from vendor:<br><br><tt>${error.toString}</tt>")
+      val level1Sub = lnUrl.level1DataResponse.doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
+      val level2Sub = level1Sub.subscribe(resolve, onErrorFromVendor)
+      val listener = onButtonTap(level2Sub.unsubscribe)
       snack.setAction(dialog_cancel, listener).show
     }
   }
