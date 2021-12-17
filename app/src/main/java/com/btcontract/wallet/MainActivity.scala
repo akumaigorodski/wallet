@@ -51,11 +51,11 @@ class MainActivity extends BaseActivity { me =>
     case false => runAnd(WalletApp.makeAlive)(me proceed null)
 
     case true if LNParams.isOperational =>
-      if (WalletApp.useAuth) new EnsureAuth(new ToHub).makeAttempt
-      else me exitTo ClassNames.hubActivityClass
+      if (WalletApp.useAuth) new EnsureAuth(ToHub).makeAttempt
+      else ToHub.makeAttempt
 
     case true =>
-      val step2 = if (legacyWalletFile.exists) new EnsureLegacy(new ToHub) else new EnsureSeed(new ToHub)
+      val step2 = if (legacyWalletFile.exists) new EnsureLegacy(ToHub) else new EnsureSeed(ToHub)
       if (WalletApp.useAuth) new EnsureAuth(step2).makeAttempt else step2.makeAttempt
   }
 
@@ -65,7 +65,7 @@ class MainActivity extends BaseActivity { me =>
     def makeAttempt: Unit
   }
 
-  class ToHub extends Step {
+  object ToHub extends Step {
     def makeAttempt: Unit = {
       // Make sure auth won't be asked for again
       WalletApp.userSentAppToBackground = false

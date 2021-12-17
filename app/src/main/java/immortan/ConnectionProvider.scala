@@ -3,6 +3,7 @@ package immortan
 import okhttp3.{OkHttpClient, Request, ResponseBody}
 import java.net.{InetSocketAddress, Socket}
 import java.util.concurrent.TimeUnit
+import immortan.crypto.Tools
 
 
 trait ConnectionProvider {
@@ -10,14 +11,16 @@ trait ConnectionProvider {
 
   val okHttpClient: OkHttpClient
 
+  def getSocket: Socket
+
   def doWhenReady(action: => Unit): Unit
+
+  def notifyAppAvailable: Unit = Tools.none
 
   def get(url: String): ResponseBody = {
     val request = (new Request.Builder).url(url).get
     okHttpClient.newCall(request.build).execute.body
   }
-
-  def getSocket: Socket
 }
 
 class ClearnetConnectionProvider extends ConnectionProvider {
