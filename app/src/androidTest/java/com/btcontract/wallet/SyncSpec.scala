@@ -74,6 +74,7 @@ class SyncSpec {
         dbInterface.base.execSQL("VACUUM")
         normalStore.clearDataTables
         println(s"Cleared data tables")
+
         val dataBaseFile = new File(WalletApp.app.getDatabasePath(dbName).getPath)
         val plainBytes = ByteVector(Files toByteArray dataBaseFile)
         println(s"Size of graph db is ${plainBytes.size}")
