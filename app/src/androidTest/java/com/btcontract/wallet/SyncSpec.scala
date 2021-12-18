@@ -1,7 +1,7 @@
 package com.btcontract.wallet
 
 import org.junit.{Ignore, Test}
-import immortan.{LNParams, PureRoutingData, SyncMaster, SyncMasterShortIdData, SyncParams}
+import immortan.{ClearnetConnectionProvider, LNParams, PureRoutingData, SyncMaster, SyncMasterShortIdData, SyncParams}
 import fr.acinq.eclair.router.Graph.GraphStructure.DirectedGraph
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.acinq.eclair.router.Router.Data
@@ -11,6 +11,8 @@ import immortan.wire.ExtCodecs
 import scodec.bits.ByteVector
 import fr.acinq.bitcoin.Block
 import java.io.File
+
+import fr.acinq.eclair.wire.NodeAnnouncement
 
 
 //@Ignore
@@ -26,6 +28,7 @@ class SyncSpec {
   def run(dbName: String, makeSnapshot: Boolean): Unit = {
     val (normalStore, _, dbInterface) = DBSpec.getNetworkStores(dbName)
 
+    LNParams.connectionProvider = new ClearnetConnectionProvider
     LNParams.chainHash = Block.LivenetGenesisBlock.hash
     LNParams.ourInit = LNParams.createInit
 
@@ -36,10 +39,10 @@ class SyncSpec {
 
     val channelMap0 = normalStore.getRoutingData
     val data0 = Data(channelMap0, hostedChannels = Map.empty, graph = DirectedGraph makeGraph channelMap0)
-    val setupData = SyncMasterShortIdData(LNParams.syncParams.syncNodes, extInfos = Set.empty, activeSyncs = Set.empty, ranges = Map.empty, LNParams.syncParams.maxNodesToSyncFrom)
+    val setupData = SyncMasterShortIdData(LNParams.syncParams.syncNodes, extInfos = Set.empty, activeSyncs = Set.empty, ranges = Map.empty)
 
-    val syncMaster = new SyncMaster(normalStore.listExcludedChannels, data0) {
-      def onShortIdsSyncComplete(state: SyncMasterShortIdData): Unit = println("onShortIdsSyncComplete")
+    val syncMaster = new SyncMaster(normalStore.listExcludedChannels, Set.empty, data0, LNParams.syncParams.maxNodesToSyncFrom) {
+      def onNodeAnnouncement(na: NodeAnnouncement): Unit = println("onNodeAnnouncement")
 
       def onChunkSyncComplete(pure: PureRoutingData): Unit = {
         println(s"Chunk complete, announces=${pure.announces.size}, updates=${pure.updates.size}, excluded=${pure.excluded.size}")
