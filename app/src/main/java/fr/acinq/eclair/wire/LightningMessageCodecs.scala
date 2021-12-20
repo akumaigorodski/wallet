@@ -114,7 +114,7 @@ object LightningMessageCodecs {
       ("amountMsat" | millisatoshi) ::
       ("paymentHash" | bytes32) ::
       ("expiry" | cltvExpiry) ::
-      ("onionRoutingPacket" | OnionCodecs.paymentOnionPacketCodec) ::
+      ("onionRoutingPacket" | PaymentOnionCodecs.paymentOnionPacketCodec) ::
       ("tlvStream" | PaymentTagTlv.codec)
   }.as[UpdateAddHtlc]
 

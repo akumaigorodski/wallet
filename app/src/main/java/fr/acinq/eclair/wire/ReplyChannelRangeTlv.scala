@@ -5,6 +5,7 @@ import fr.acinq.eclair.wire.CommonCodecs.{varint, varintoverflow}
 import scodec.Codec
 import scodec.codecs._
 
+
 sealed trait ReplyChannelRangeTlv extends Tlv
 
 object ReplyChannelRangeTlv {

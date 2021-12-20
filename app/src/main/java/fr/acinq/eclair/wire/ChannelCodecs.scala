@@ -38,11 +38,11 @@ object ChannelCodecs {
       ("parent" | int64)
   }.as[ExtendedPublicKey]
 
-  val outPointCodec: Codec[OutPoint] = lengthDelimited(bytes.xmap(d => OutPoint.read(d.toArray), OutPoint.write))
+  val outPointCodec = lengthDelimited(bytes.xmap(d => OutPoint.read(d.toArray), OutPoint.write))
 
-  val txOutCodec: Codec[TxOut] = lengthDelimited(bytes.xmap(d => TxOut.read(d.toArray), TxOut.write))
+  val txOutCodec = lengthDelimited(bytes.xmap(d => TxOut.read(d.toArray), TxOut.write))
 
-  val txCodec: Codec[Transaction] = lengthDelimited(bytes.xmap(d => Transaction.read(d.toArray), Transaction.write))
+  val txCodec = lengthDelimited(bytes.xmap(d => Transaction.read(d.toArray), Transaction.write))
 
   /**
    * byte-aligned boolean codec

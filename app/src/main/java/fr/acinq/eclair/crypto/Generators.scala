@@ -22,11 +22,7 @@ import scodec.bits.ByteVector
 
 
 object Generators {
-
-  def fixSize(data: ByteVector): ByteVector32 = data.length match {
-    case 32 => ByteVector32(data)
-    case length if length < 32 => ByteVector32(data.padLeft(32))
-  }
+  def fixSize(data: ByteVector): ByteVector32 = if (data.length < 32) ByteVector32(data padLeft 32) else ByteVector32(data)
 
   def perCommitSecret(seed: ByteVector32, index: Long): PrivateKey = PrivateKey(ShaChain.shaChainFromSeed(seed, 0xFFFFFFFFFFFFL - index))
 

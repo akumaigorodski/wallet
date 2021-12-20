@@ -10,7 +10,7 @@ import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.channel.Helpers.Closing
 import fr.acinq.eclair.channel._
 import fr.acinq.eclair.crypto.ShaChain
-import fr.acinq.eclair.payment.OutgoingPacket
+import fr.acinq.eclair.payment.OutgoingPaymentPacket
 import fr.acinq.eclair.transactions.Transactions.TxOwner
 import fr.acinq.eclair.transactions._
 import fr.acinq.eclair.wire._
@@ -296,7 +296,7 @@ abstract class ChannelNormal(bag: ChannelBag) extends Channel {
       case (norm: DATA_NORMAL, cmd: CMD_FAIL_HTLC, OPEN)
         // CMD_SIGN will be sent from ChannelMaster strictly after outgoing FSM sends this command
         if norm.commitments.latestReducedRemoteSpec.findOutgoingHtlcById(cmd.theirAdd.id).isDefined =>
-        val msg = OutgoingPacket.buildHtlcFailure(cmd, theirAdd = cmd.theirAdd)
+        val msg = OutgoingPaymentPacket.buildHtlcFailure(cmd, theirAdd = cmd.theirAdd)
         val commits1 = norm.commitments.addLocalProposal(msg)
         BECOME(norm.copy(commitments = commits1), OPEN)
         SEND(msg)

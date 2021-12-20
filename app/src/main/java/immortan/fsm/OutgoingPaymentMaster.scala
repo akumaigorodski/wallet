@@ -7,7 +7,7 @@ import com.softwaremill.quicklens._
 import fr.acinq.eclair.channel.{CMD_ADD_HTLC, ChannelOffline, InPrincipleNotSendable, LocalReject}
 import fr.acinq.eclair.crypto.Sphinx
 import fr.acinq.eclair.crypto.Sphinx.PacketAndSecrets
-import fr.acinq.eclair.payment.OutgoingPacket
+import fr.acinq.eclair.payment.OutgoingPaymentPacket
 import fr.acinq.eclair.router.Graph.GraphStructure.{DescAndCapacity, GraphEdge}
 import fr.acinq.eclair.router.Router._
 import fr.acinq.eclair.router.{Announcements, ChannelUpdateExt}
@@ -75,8 +75,8 @@ case class SplitInfo(totalSum: MilliSatoshi, myPart: MilliSatoshi) {
 // For trampoline-routed payments fullTag.paymentSecret is taken from upstream incoming payment
 case class SendMultiPart(fullTag: FullPaymentTag, chainExpiry: Either[CltvExpiry, CltvExpiryDelta], split: SplitInfo, routerConf: RouterConf, targetNodeId: PublicKey,
                          expectedRouteFees: Option[PathFinder.ExpectedRouteFees], totalFeeReserve: MilliSatoshi = MilliSatoshi(0L), allowedChans: Seq[Channel] = Nil,
-                         outerPaymentSecret: ByteVector32 = ByteVector32.Zeroes, assistedEdges: Set[GraphEdge] = Set.empty, onionTlvs: Seq[OnionTlv] = Nil,
-                         userCustomTlvs: Seq[GenericTlv] = Nil)
+                         outerPaymentSecret: ByteVector32 = ByteVector32.Zeroes, assistedEdges: Set[GraphEdge] = Set.empty,
+                         onionTlvs: Seq[OnionPaymentPayloadTlv] = Nil, userCustomTlvs: Seq[GenericTlv] = Nil)
 
 case class OutgoingPaymentMasterData(trampolineStates: TrampolineRoutingStates,
                                      payments: Map[FullPaymentTag, OutgoingPaymentSender],
@@ -348,8 +348,8 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
         case wait: WaitForRouteOrInFlight if wait.flight.isEmpty && wait.partId == found.partId =>
           // TODO: even if route is found we can compare its fees against trampoline fees here and choose trampoline if its fees are more attractive
           val payeeExpiry = data.cmd.chainExpiry.fold(fb = _.toCltvExpiry(LNParams.blockCount.get + 1L), fa = identity)
-          val finalPayload = Onion.createMultiPartPayload(wait.amount, data.cmd.split.totalSum, payeeExpiry, data.cmd.outerPaymentSecret, data.cmd.onionTlvs, data.cmd.userCustomTlvs)
-          val (firstAmount, firstExpiry, onion) = OutgoingPacket.buildPacket(Sphinx.PaymentPacket)(wait.onionKey, fullTag.paymentHash, found.route.hops, finalPayload)
+          val finalPayload = PaymentOnion.createMultiPartPayload(wait.amount, data.cmd.split.totalSum, payeeExpiry, data.cmd.outerPaymentSecret, data.cmd.onionTlvs, data.cmd.userCustomTlvs)
+          val (firstAmount, firstExpiry, onion) = OutgoingPaymentPacket.buildPaymentPacket(wait.onionKey, fullTag.paymentHash, found.route.hops, finalPayload)
           val cmdAdd = CMD_ADD_HTLC(fullTag, firstAmount, firstExpiry, PacketAndSecrets(onion.packet, onion.sharedSecrets), finalPayload)
           become(data.copy(parts = data.parts + wait.copy(flight = InFlightInfo(cmdAdd, found.route).asSome).tuple), PENDING)
           wait.cnc.chan process cmdAdd

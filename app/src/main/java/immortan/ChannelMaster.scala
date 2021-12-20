@@ -8,7 +8,7 @@ import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.TxConfirmedAt
 import fr.acinq.eclair.channel._
-import fr.acinq.eclair.payment.{IncomingPacket, PaymentRequest}
+import fr.acinq.eclair.payment.{IncomingPaymentPacket, PaymentRequest}
 import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, RemoteReject}
 import fr.acinq.eclair.wire._
 import immortan.Channel._
@@ -111,23 +111,23 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
 
   var sendTo: (Any, ByteVector32) => Unit = (change, channelId) => all.get(channelId).foreach(_ process change)
 
-  private def defineResolution(secret: PrivateKey, pkt: IncomingPacket): IncomingResolution = pkt match {
-    case packet: IncomingPacket.FinalPacket if packet.payload.paymentSecret != NO_SECRET => ReasonableLocal(packet, secret)
-    case packet: IncomingPacket.NodeRelayPacket if packet.outerPayload.paymentSecret != NO_SECRET => ReasonableTrampoline(packet, secret)
-    case packet: IncomingPacket.ChannelRelayPacket => CMD_FAIL_HTLC(IncorrectOrUnknownPaymentDetails(packet.add.amountMsat, LNParams.blockCount.get).asRight, secret, packet.add)
-    case packet: IncomingPacket.NodeRelayPacket => CMD_FAIL_HTLC(IncorrectOrUnknownPaymentDetails(packet.add.amountMsat, LNParams.blockCount.get).asRight, secret, packet.add)
-    case packet: IncomingPacket.FinalPacket => CMD_FAIL_HTLC(IncorrectOrUnknownPaymentDetails(packet.add.amountMsat, LNParams.blockCount.get).asRight, secret, packet.add)
+  private def defineResolution(secret: PrivateKey, pkt: IncomingPaymentPacket): IncomingResolution = pkt match {
+    case packet: IncomingPaymentPacket.FinalPacket if packet.payload.paymentSecret != NO_SECRET => ReasonableLocal(packet, secret)
+    case packet: IncomingPaymentPacket.NodeRelayPacket if packet.outerPayload.paymentSecret != NO_SECRET => ReasonableTrampoline(packet, secret)
+    case packet: IncomingPaymentPacket.ChannelRelayPacket => CMD_FAIL_HTLC(IncorrectOrUnknownPaymentDetails(packet.add.amountMsat, LNParams.blockCount.get).asRight, secret, packet.add)
+    case packet: IncomingPaymentPacket.NodeRelayPacket => CMD_FAIL_HTLC(IncorrectOrUnknownPaymentDetails(packet.add.amountMsat, LNParams.blockCount.get).asRight, secret, packet.add)
+    case packet: IncomingPaymentPacket.FinalPacket => CMD_FAIL_HTLC(IncorrectOrUnknownPaymentDetails(packet.add.amountMsat, LNParams.blockCount.get).asRight, secret, packet.add)
   }
 
   def initResolve(ext: UpdateAddHtlcExt): IncomingResolution =
-    IncomingPacket.decrypt(ext.theirAdd, ext.remoteInfo.nodeSpecificPrivKey) match {
+    IncomingPaymentPacket.decrypt(ext.theirAdd, ext.remoteInfo.nodeSpecificPrivKey) match {
       // Attempt to decrypt an onion with our peer-specific nodeId, this would be a routed payment
       // If fails with BadOnion: get all waiting incoming secrets and try to find a matching one
 
       case Left(routed: BadOnion) =>
         val ephemeralKeys = payBag.listPendingSecrets.map(LNParams.secret.keys.fakeInvoiceKey).toList
-        val decryptionResults = for (ephemeralKey <- ephemeralKeys) yield IncomingPacket.decrypt(ext.theirAdd, ephemeralKey)
-        val goodResultFirst = decryptionResults.zip(ephemeralKeys) sortBy { case res ~ _ if res.isRight => 0 case _ => 1 }
+        val decryptionResults = for (ephemeralKey <- ephemeralKeys) yield IncomingPaymentPacket.decrypt(ext.theirAdd, ephemeralKey)
+        val goodResultFirst = decryptionResults.zip(ephemeralKeys) sortBy { case (res, _) if res.isRight => 0 case _ => 1 }
 
         goodResultFirst.headOption.map {
           case (Right(packet), secret) => defineResolution(secret, packet)

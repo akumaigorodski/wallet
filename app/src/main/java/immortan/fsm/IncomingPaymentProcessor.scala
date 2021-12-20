@@ -4,7 +4,7 @@ import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.eclair._
 import fr.acinq.eclair.channel.{CMD_FAIL_HTLC, CMD_FULFILL_HTLC, ReasonableLocal, ReasonableTrampoline}
-import fr.acinq.eclair.payment.IncomingPacket
+import fr.acinq.eclair.payment.IncomingPaymentPacket
 import fr.acinq.eclair.router.RouteCalculation
 import fr.acinq.eclair.transactions.RemoteFulfill
 import fr.acinq.eclair.wire._
@@ -167,7 +167,7 @@ class TrampolinePaymentRelayer(val fullTag: FullPaymentTag, cm: ChannelMaster) e
   override def wholePaymentFailed(data: OutgoingPaymentSenderData): Unit = self doProcess data
 
   def collectedEnough(adds: ReasonableTrampolines): Boolean = firstOpt(adds).exists(lastAmountIn >= _.outerPayload.totalAmount)
-  def firstOpt(adds: ReasonableTrampolines): Option[IncomingPacket.NodeRelayPacket] = adds.headOption.map(_.packet)
+  def firstOpt(adds: ReasonableTrampolines): Option[IncomingPaymentPacket.NodeRelayPacket] = adds.headOption.map(_.packet)
   def expiryIn(adds: ReasonableTrampolines): CltvExpiry = adds.map(_.add.cltvExpiry).minBy(_.underlying)
 
   def validateRelay(params: TrampolineOn, adds: ReasonableTrampolines, blockHeight: Long): Option[FailureMessage] = firstOpt(adds) collectFirst {
@@ -302,7 +302,7 @@ class TrampolinePaymentRelayer(val fullTag: FullPaymentTag, cm: ChannelMaster) e
         become(TrampolineProcessing(inner.outgoingNodeId, fullTag), SENDING)
         // If invoice features are present then sender is asking for non-trampoline relay, it's known that recipient supports MPP
         if (inner.invoiceFeatures.isDefined) cm.opm process send.copy(assistedEdges = extraEdges, outerPaymentSecret = inner.paymentSecret.get)
-        else cm.opm process send.copy(onionTlvs = OnionTlv.TrampolineOnion(adds.head.packet.nextPacket) :: Nil, outerPaymentSecret = randomBytes32)
+        else cm.opm process send.copy(onionTlvs = OnionPaymentPayloadTlv.TrampolineOnion(adds.head.packet.nextPacket) :: Nil, outerPaymentSecret = randomBytes32)
     }
   }
 

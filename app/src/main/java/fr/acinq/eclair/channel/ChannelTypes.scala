@@ -8,10 +8,10 @@ import fr.acinq.eclair.blockchain.TxConfirmedAt
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.crypto.Generators
 import fr.acinq.eclair.crypto.Sphinx.PacketAndSecrets
-import fr.acinq.eclair.payment.IncomingPacket
+import fr.acinq.eclair.payment.IncomingPaymentPacket
 import fr.acinq.eclair.transactions.Transactions._
 import fr.acinq.eclair.transactions.{CommitmentSpec, Transactions}
-import fr.acinq.eclair.wire.Onion.FinalPayload
+import fr.acinq.eclair.wire.PaymentOnion.FinalPayload
 import fr.acinq.eclair.wire._
 import immortan.crypto.Tools
 import immortan.{LNParams, RemoteNodeInfo}
@@ -48,12 +48,12 @@ sealed trait ReasonableResolution extends IncomingResolution {
   val add: UpdateAddHtlc
 }
 
-case class ReasonableTrampoline(packet: IncomingPacket.NodeRelayPacket, secret: PrivateKey) extends ReasonableResolution {
+case class ReasonableTrampoline(packet: IncomingPaymentPacket.NodeRelayPacket, secret: PrivateKey) extends ReasonableResolution {
   val fullTag: FullPaymentTag = FullPaymentTag(packet.add.paymentHash, packet.outerPayload.paymentSecret, PaymentTagTlv.TRAMPLOINE_ROUTED)
   val add: UpdateAddHtlc = packet.add
 }
 
-case class ReasonableLocal(packet: IncomingPacket.FinalPacket, secret: PrivateKey) extends ReasonableResolution {
+case class ReasonableLocal(packet: IncomingPaymentPacket.FinalPacket, secret: PrivateKey) extends ReasonableResolution {
   val fullTag: FullPaymentTag = FullPaymentTag(packet.add.paymentHash, packet.payload.paymentSecret, PaymentTagTlv.FINAL_INCOMING)
   val add: UpdateAddHtlc = packet.add
 }

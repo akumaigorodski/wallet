@@ -1,45 +1,21 @@
-/*
- * Copyright 2019 ACINQ SAS
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package fr.acinq.eclair.wire
-
-import java.net.{Inet4Address, Inet6Address, InetAddress}
 
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Satoshi}
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.crypto.Mac32
-import fr.acinq.eclair.{CltvExpiry, CltvExpiryDelta, MilliSatoshi, ShortChannelId, UInt64}
+import fr.acinq.eclair.{CltvExpiry, CltvExpiryDelta, MilliSatoshi, UInt64}
 import org.apache.commons.codec.binary.Base32
 import scodec.bits.{BitVector, ByteVector}
 import scodec.codecs._
 import scodec.{Attempt, Codec, DecodeResult, Err, SizeBound}
 
+import java.net.{Inet4Address, Inet6Address, InetAddress}
 import scala.Ordering.Implicits._
 import scala.util.Try
 
-/**
- * Created by t-bast on 20/06/2019.
- */
 
 object CommonCodecs {
-
-  /**
-   * Discriminator codec with a default fallback codec (of the same type).
-   */
   def discriminatorWithDefault[A](discriminator: Codec[A], fallback: Codec[A]): Codec[A] = new Codec[A] {
     def sizeBound: SizeBound = discriminator.sizeBound | fallback.sizeBound
 

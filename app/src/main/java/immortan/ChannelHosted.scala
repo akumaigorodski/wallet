@@ -7,7 +7,7 @@ import fr.acinq.eclair.blockchain.CurrentBlockCount
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.channel.Helpers.HashToPreimage
 import fr.acinq.eclair.channel._
-import fr.acinq.eclair.payment.OutgoingPacket
+import fr.acinq.eclair.payment.OutgoingPaymentPacket
 import fr.acinq.eclair.transactions._
 import fr.acinq.eclair.wire._
 import immortan.Channel._
@@ -184,7 +184,7 @@ abstract class ChannelHosted extends Channel { me =>
 
     // CMD_SIGN will be sent from ChannelMaster strictly after outgoing FSM sends this command
     case (hc: HostedCommits, cmd: CMD_FAIL_HTLC, OPEN) if hc.nextLocalSpec.findIncomingHtlcById(cmd.theirAdd.id).isDefined && hc.error.isEmpty =>
-      val msg = OutgoingPacket.buildHtlcFailure(cmd, theirAdd = cmd.theirAdd)
+      val msg = OutgoingPaymentPacket.buildHtlcFailure(cmd, theirAdd = cmd.theirAdd)
       StoreBecomeSend(hc.addLocalProposal(msg), OPEN, msg)
 
 

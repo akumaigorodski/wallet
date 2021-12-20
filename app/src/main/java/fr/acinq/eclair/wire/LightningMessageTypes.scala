@@ -1,9 +1,5 @@
 package fr.acinq.eclair.wire
 
-import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
-import java.nio.ByteOrder
-import java.nio.charset.StandardCharsets
-
 import com.google.common.base.Charsets
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, Protocol, Satoshi}
@@ -15,6 +11,10 @@ import immortan.crypto.Tools
 import immortan.{ChannelMaster, LNParams, RemoteNodeInfo}
 import scodec.DecodeResult
 import scodec.bits.ByteVector
+
+import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
+import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
 
 
 sealed trait LightningMessage extends Serializable
