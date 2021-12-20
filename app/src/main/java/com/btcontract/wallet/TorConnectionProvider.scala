@@ -15,7 +15,7 @@ class TorConnectionProvider(context: Context) extends ConnectionProvider {
 
   private val proxy = new java.net.Proxy(java.net.Proxy.Type.SOCKS, proxyAddress.get)
 
-  override val okHttpClient: OkHttpClient = (new OkHttpClient.Builder).proxy(proxy).connectTimeout(20, TimeUnit.SECONDS).build
+  override val okHttpClient: OkHttpClient = (new OkHttpClient.Builder).proxy(proxy).connectTimeout(30, TimeUnit.SECONDS).build
 
   private var shouldReconnect: Boolean = false
 
