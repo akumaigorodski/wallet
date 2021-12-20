@@ -98,11 +98,6 @@ dependencies {
     implementation 'info.guardianproject:tor-android:0.4.6.7'
     implementation 'info.guardianproject:jtorctl:0.4.5.7'
 
-    // Legacy
-    implementation 'com.google.protobuf:protobuf-java:3.9.2'
-    implementation 'net.jcip:jcip-annotations:1.0'
-    implementation 'org.slf4j:slf4j-api:1.7.30'
-
     // Android tests
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

@@ -4,7 +4,6 @@
     <string name="app_name">SBW</string>
     <string name="sources">Ver código fuente</string>
     <string name="twitter">Síguenos en Twitter</string>
-    <string name="password">Contraseña de la billetera</string>
     <string name="manual">Leer manual</string>
 
     <string name="choose_wallet">Escoja una billetera</string>

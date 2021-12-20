@@ -4,7 +4,6 @@
     <string name="app_name">SBW</string>
     <string name="sources">Исходный код</string>
     <string name="twitter">Наш твиттер</string>
-    <string name="password">Пароль кошелька</string>
     <string name="manual">Читать инструкцию</string>
 
     <string name="choose_wallet">Выберите кошелек</string>

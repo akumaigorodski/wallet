@@ -4,7 +4,6 @@
     <string name="app_name">SBW</string>
     <string name="sources">View source code</string>
     <string name="twitter">Follow us on twitter</string>
-    <string name="password">Wallet password</string>
     <string name="manual">Read manual</string>
 
     <string name="choose_wallet">Choose a wallet</string>
