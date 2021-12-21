@@ -86,7 +86,7 @@ object PaymentRequestExt {
 }
 
 case class PaymentRequestExt(uri: Try[Uri], pr: PaymentRequest, raw: String) {
-  def isEnough(collected: MilliSatoshi): Boolean = pr.amount.exists(collected >= _)
+  def isEnough(collected: MilliSatoshi): Boolean = pr.amount.exists(requested => collected >= requested)
   def withNewSplit(anotherPart: MilliSatoshi): String = s"$lightning$raw?splits=" + (anotherPart :: splits).map(_.toLong).mkString(",")
   lazy val extraEdges: Set[GraphStructure.GraphEdge] = RouteCalculation.makeExtraEdges(pr.routingInfo, pr.nodeId)
 

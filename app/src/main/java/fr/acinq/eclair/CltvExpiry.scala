@@ -3,6 +3,7 @@ package fr.acinq.eclair
 
 case class CltvExpiry(underlying: Long) extends AnyVal {
   def +(d: CltvExpiryDelta): CltvExpiry = CltvExpiry(underlying + d.underlying)
+  def -(d: CltvExpiryDelta): CltvExpiry = CltvExpiry(underlying - d.underlying)
   def >=(d: CltvExpiry): Boolean = underlying >= d.underlying
   def <=(d: CltvExpiry): Boolean = underlying <= d.underlying
   def <(d: CltvExpiry): Boolean = underlying < d.underlying

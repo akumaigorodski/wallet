@@ -64,10 +64,9 @@ class SQLiteNetwork(val db: DBInterface, val updateTable: ChannelUpdateTable, va
   def listChannelUpdates: Iterable[ChannelUpdateExt] =
     db.select(updateTable.selectAllSql).iterable { rc =>
       val htlcMaximumMsat: MilliSatoshi = MilliSatoshi(rc long 9)
-      ChannelUpdateExt(ChannelUpdate(signature = ByteVector64.Zeroes, chainHash = LNParams.chainHash,
-        shortChannelId = rc long 1, timestamp = rc long 2, messageFlags = (rc int 3).toByte, channelFlags = (rc int 4).toByte,
-        cltvExpiryDelta = CltvExpiryDelta(rc int 5), htlcMinimumMsat = MilliSatoshi(rc long 6), feeBaseMsat = MilliSatoshi(rc long 7),
-        feeProportionalMillionths = rc long 8, htlcMaximumMsat = Some(htlcMaximumMsat), unknownFields = ByteVector.empty),
+      ChannelUpdateExt(ChannelUpdate(signature = ByteVector64.Zeroes, chainHash = LNParams.chainHash, shortChannelId = rc long 1, timestamp = rc long 2,
+        messageFlags = (rc int 3).toByte, channelFlags = (rc int 4).toByte, cltvExpiryDelta = CltvExpiryDelta(rc int 5), htlcMinimumMsat = MilliSatoshi(rc long 6),
+        feeBaseMsat = MilliSatoshi(rc long 7), feeProportionalMillionths = rc long 8, htlcMaximumMsat = Some(htlcMaximumMsat), unknownFields = ByteVector.empty),
         crc32 = rc long 12, score = rc long 11, updateTable.useHeuristics)
     }
 

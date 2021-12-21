@@ -19,6 +19,7 @@ import immortan.crypto.Tools._
 import immortan.crypto.{CanBeRepliedTo, StateMachine}
 import immortan.fsm.OutgoingPaymentMaster._
 import immortan.fsm.PaymentFailure._
+import immortan.utils.PaymentRequestExt
 import scodec.bits.ByteVector
 
 import scala.collection.mutable
@@ -74,8 +75,8 @@ case class SplitInfo(totalSum: MilliSatoshi, myPart: MilliSatoshi) {
 // For locally initiated payments outerPaymentSecret and fullTag.paymentSecret are same
 // For trampoline-routed payments fullTag.paymentSecret is taken from upstream incoming payment
 case class SendMultiPart(fullTag: FullPaymentTag, chainExpiry: Either[CltvExpiry, CltvExpiryDelta], split: SplitInfo, routerConf: RouterConf, targetNodeId: PublicKey,
-                         expectedRouteFees: Option[PathFinder.ExpectedRouteFees], totalFeeReserve: MilliSatoshi = MilliSatoshi(0L), allowedChans: Seq[Channel] = Nil,
-                         outerPaymentSecret: ByteVector32 = ByteVector32.Zeroes, assistedEdges: Set[GraphEdge] = Set.empty,
+                         expectedRouteFees: Option[PathFinder.ExpectedRouteFees], prExt: Option[PaymentRequestExt], totalFeeReserve: MilliSatoshi = MilliSatoshi(0L),
+                         allowedChans: Seq[Channel] = Nil, outerPaymentSecret: ByteVector32 = ByteVector32.Zeroes, assistedEdges: Set[GraphEdge] = Set.empty,
                          onionTlvs: Seq[OnionPaymentPayloadTlv] = Nil, userCustomTlvs: Seq[GenericTlv] = Nil)
 
 case class OutgoingPaymentMasterData(trampolineStates: TrampolineRoutingStates,
@@ -290,7 +291,7 @@ trait OutgoingPaymentListener {
 }
 
 class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable[OutgoingPaymentListener], opm: OutgoingPaymentMaster) extends StateMachine[OutgoingPaymentSenderData] { me =>
-  become(OutgoingPaymentSenderData(SendMultiPart(fullTag, Right(LNParams.minInvoiceExpiryDelta), SplitInfo(0L.msat, 0L.msat), LNParams.routerConf, invalidPubKey, expectedRouteFees = None), Map.empty), INIT)
+  become(OutgoingPaymentSenderData(SendMultiPart(fullTag, Right(LNParams.minInvoiceExpiryDelta), SplitInfo(0L.msat, 0L.msat), LNParams.routerConf, invalidPubKey, None, None), Map.empty), INIT)
 
   def doProcess(msg: Any): Unit = (msg, state) match {
     case (reject: RemoteReject, ABORTED) => me abortMaybeNotify data.withoutPartId(reject.ourAdd.partId)
