@@ -3,11 +3,14 @@ package com.btcontract.wallet
 import java.net.{InetSocketAddress, Socket}
 import java.util.concurrent.TimeUnit
 
+import android.app.ActivityManager
 import android.content.{BroadcastReceiver, Context, Intent, IntentFilter}
 import immortan.ConnectionProvider
 import immortan.crypto.Tools._
 import okhttp3.OkHttpClient
 import org.torproject.jni.TorService
+
+import scala.collection.JavaConverters._
 
 
 class TorConnectionProvider(context: Context) extends ConnectionProvider {
@@ -17,7 +20,7 @@ class TorConnectionProvider(context: Context) extends ConnectionProvider {
 
   override val okHttpClient: OkHttpClient = (new OkHttpClient.Builder).proxy(proxy).connectTimeout(30, TimeUnit.SECONDS).build
 
-  private var shouldReconnect: Boolean = false
+  private val torServiceClassReference = classOf[TorService]
 
   def doWhenReady(action: => Unit): Unit = {
     lazy val once: BroadcastReceiver = new BroadcastReceiver {
@@ -28,19 +31,8 @@ class TorConnectionProvider(context: Context) extends ConnectionProvider {
         }
     }
 
-    lazy val track: BroadcastReceiver = new BroadcastReceiver {
-      override def onReceive(context: Context, intent: Intent): Unit =
-        if (intent.getStringExtra(TorService.EXTRA_STATUS) == TorService.STATUS_OFF) {
-          try context.unregisterReceiver(track) catch none
-          try context.unregisterReceiver(once) catch none
-          shouldReconnect = true
-        }
-    }
-
-    val torServiceClassReference = classOf[TorService]
     val serviceIntent = new Intent(context, torServiceClassReference)
     val intentFilter = new IntentFilter(TorService.ACTION_STATUS)
-    context.registerReceiver(track, intentFilter)
     context.registerReceiver(once, intentFilter)
     context.startService(serviceIntent)
   }
@@ -48,7 +40,8 @@ class TorConnectionProvider(context: Context) extends ConnectionProvider {
   override def getSocket: Socket = new Socket(proxy)
 
   override def notifyAppAvailable: Unit = {
+    val services = context.getSystemService(Context.ACTIVITY_SERVICE).asInstanceOf[ActivityManager].getRunningServices(Integer.MAX_VALUE)
+    val shouldReconnect = !services.asScala.exists(_.service.getClassName == torServiceClassReference.getName)
     if (shouldReconnect) doWhenReady(none)
-    shouldReconnect = false
   }
 }
