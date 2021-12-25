@@ -486,32 +486,6 @@ object LightningMessageCodecs {
       (cltvExpiryDelta withContext "cltvExpiryDelta")
   }.as[TrampolineOn]
 
-  val nodeIdTrampolineParamsCodec = {
-    (publicKey withContext "nodeId") ::
-      (trampolineOnCodec withContext "trampolineOn")
-  }.as[NodeIdTrampolineParams]
-
-  private val trampolineRouteCodec = {
-    val innerList = listOfN(uint16, nodeIdTrampolineParamsCodec)
-    listOfN(valueCodec = innerList, countCodec = uint16)
-  }
-
-  val trampolineStatusInitCodec = {
-    (trampolineRouteCodec withContext "routes") ::
-      (trampolineOnCodec withContext "peerParams")
-  }.as[TrampolineStatusInit]
-
-  val trampolineStatusUpdateCodec = {
-    (trampolineRouteCodec withContext "newRoutes") ::
-      (mapCodec(publicKey, trampolineOnCodec) withContext "updatedParams") ::
-      (optional(bool, trampolineOnCodec) withContext "updatedPeerParams") ::
-      (setCodec(publicKey) withContext "removed")
-  }.as[TrampolineStatusUpdate]
-
-  final val TRAMPOLINE_STATUS_INIT_TAG = 44789
-  final val TRAMPOLINE_STATUS_UPDATE_TAG = 44791
-  final val TRAMPOLINE_STATUS_UNDESIRED_TAG = 44793
-
   //
 
   val lightningMessageCodec: DiscriminatorCodec[LightningMessage, Int] =
@@ -591,10 +565,6 @@ object LightningMessageCodecs {
       case SWAP_OUT_TRANSACTION_RESPONSE_MESSAGE_TAG => swapOutTransactionResponseCodec
       case SWAP_OUT_TRANSACTION_DENIED_MESSAGE_TAG => swapOutTransactionDeniedCodec
       case SWAP_OUT_FEERATES_MESSAGE_TAG => swapOutFeeratesCodec
-
-      case TRAMPOLINE_STATUS_INIT_TAG => trampolineStatusInitCodec
-      case TRAMPOLINE_STATUS_UPDATE_TAG => trampolineStatusUpdateCodec
-      case TRAMPOLINE_STATUS_UNDESIRED_TAG => provide(TrampolineUndesired)
       case _ => throw new RuntimeException
     }
 
@@ -629,10 +599,6 @@ object LightningMessageCodecs {
     case msg: SwapOutTransactionResponse => UnknownMessage(SWAP_OUT_TRANSACTION_RESPONSE_MESSAGE_TAG, swapOutTransactionResponseCodec.encode(msg).require.toByteVector)
     case msg: SwapOutTransactionDenied => UnknownMessage(SWAP_OUT_TRANSACTION_DENIED_MESSAGE_TAG, swapOutTransactionDeniedCodec.encode(msg).require.toByteVector)
     case msg: SwapOutFeerates => UnknownMessage(SWAP_OUT_FEERATES_MESSAGE_TAG, swapOutFeeratesCodec.encode(msg).require.toByteVector)
-
-    case msg: TrampolineStatusInit => UnknownMessage(TRAMPOLINE_STATUS_INIT_TAG, trampolineStatusInitCodec.encode(msg).require.toByteVector)
-    case msg: TrampolineStatusUpdate => UnknownMessage(TRAMPOLINE_STATUS_UPDATE_TAG, trampolineStatusUpdateCodec.encode(msg).require.toByteVector)
-    case TrampolineUndesired => UnknownMessage(TRAMPOLINE_STATUS_UNDESIRED_TAG, provide(TrampolineUndesired).encode(TrampolineUndesired).require.toByteVector)
     case _ => msg
   }
 

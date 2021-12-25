@@ -20,9 +20,7 @@ case class ChannelUpdateExt(update: ChannelUpdate, crc32: Long, score: Long, use
 }
 
 object Router {
-  val DEFAULT_EXPECTED_ROUTE_LENGTH: Int = 4
   val defAvgHopParams = AvgHopParams(CltvExpiryDelta(144), feeProportionalMillionths = 500L, feeBaseMsat = 1000L.msat, sampleSize = 1)
-  lazy val defAvgHops: List[AvgHopParams] = List.fill(DEFAULT_EXPECTED_ROUTE_LENGTH)(defAvgHopParams)
 
   case class NodeDirectionDesc(from: PublicKey, to: PublicKey)
 
@@ -30,7 +28,7 @@ object Router {
     def toDirection: NodeDirectionDesc = NodeDirectionDesc(from, to)
   }
 
-  case class RouterConf(initRouteMaxLength: Int, routeMaxCltv: CltvExpiryDelta, maxNodeFailures: Int = 6, maxStrangeNodeFailures: Int = 6, maxRemoteAttempts: Int = 6)
+  case class RouterConf(initRouteMaxLength: Int, routeMaxCltv: CltvExpiryDelta, maxDirectionFailures: Int = 3, maxStrangeNodeFailures: Int = 6, maxRemoteAttempts: Int = 6)
 
   case class PublicChannel(update1Opt: Option[ChannelUpdateExt], update2Opt: Option[ChannelUpdateExt], ann: ChannelAnnouncement) {
     def getChannelUpdateSameSideAs(cu: ChannelUpdate): Option[ChannelUpdateExt] = if (cu.position == ChannelUpdate.POSITION1NODE) update1Opt else update2Opt
@@ -67,18 +65,14 @@ object Router {
   case class RouteRequest(fullTag: FullPaymentTag, partId: ByteVector, source: PublicKey, target: PublicKey, amount: MilliSatoshi, localEdge: GraphEdge, routeParams: RouteParams,
                           ignoreNodes: Set[PublicKey] = Set.empty, ignoreChannels: Set[ChannelDesc] = Set.empty, ignoreDirections: Set[NodeDirectionDesc] = Set.empty)
 
-  type RoutedPerHop = (MilliSatoshi, Hop)
+  type RoutedPerHop = (MilliSatoshi, ChannelHop)
 
-  type RoutedPerChannelHop = (MilliSatoshi, ChannelHop)
-
-  case class Route(hops: Seq[Hop], weight: RichWeight) {
+  case class Route(hops: Seq[ChannelHop], weight: RichWeight) {
     lazy val fee: MilliSatoshi = weight.costs.head - weight.costs.last
 
     lazy val routedPerHop: Seq[RoutedPerHop] = weight.costs.tail.zip(hops.tail)
 
-    lazy val routedPerChannelHop: Seq[RoutedPerChannelHop] = routedPerHop.collect { case (amt, chanHop: ChannelHop) => amt -> chanHop }
-
-    def getEdgeForNode(nodeId: PublicKey): Option[GraphEdge] = routedPerChannelHop.secondItems.collectFirst { case chanHop if nodeId == chanHop.nodeId => chanHop.edge }
+    def getEdgeForNode(nodeId: PublicKey): Option[GraphEdge] = routedPerHop.secondItems.collectFirst { case chanHop if nodeId == chanHop.nodeId => chanHop.edge }
 
     def asString: String = routedPerHop.secondItems.map(_.toString).mkString(s"${weight.costs.head}\n->\n", "\n->\n", s"\n->\n${weight.costs.last}\n---\nroute fee: $fee")
 

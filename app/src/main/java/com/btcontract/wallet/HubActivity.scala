@@ -38,7 +38,7 @@ import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, Scripts}
 import fr.acinq.eclair.wire.{FullPaymentTag, NodeAnnouncement, PaymentTagTlv, UnknownNextPeer}
 import immortan.ChannelListener.Malfunction
 import immortan.ChannelMaster.{OutgoingAdds, RevealedLocalFulfills}
-import immortan.PathFinder.{ExpectedRouteFees, GetExpectedRouteFees}
+import immortan.PathFinder.{ExpectedFees, GetExpectedRouteFees}
 import immortan._
 import immortan.crypto.CanBeRepliedTo
 import immortan.crypto.Tools._
@@ -587,7 +587,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
 
     def retry(info: PaymentInfo): Unit = new HasTypicalChainFee {
-      private val cmd = LNParams.cm.makeSendCmd(info.prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(info.sent), info.sent).modify(_.split.totalSum).setTo(info.sent)
+      private val cmd = LNParams.cm.makeSendCmd(info.prExt, LNParams.cm.all.values.toList, info.sent).modify(_.split.totalSum).setTo(info.sent)
       replaceOutgoingPayment(ext = info.prExt, description = info.description, action = info.action, sentAmount = cmd.split.myPart, seenAt = info.seenAt)
       LNParams.cm.localSend(cmd)
     }
@@ -1112,8 +1112,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
             override def neutral(alert: AlertDialog): Unit = proceedSplit(prExt, origAmount, alert)
 
             override def send(alert: AlertDialog): Unit = {
-              val cmd = LNParams.cm.makeSendCmd(prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(manager.resultMsat), manager.resultMsat).modify(_.split.totalSum).setTo(origAmount)
-              val pd = PaymentDescription(split = cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
+              val cmd = LNParams.cm.makeSendCmd(prExt, LNParams.cm.all.values.toList, manager.resultMsat).modify(_.split.totalSum).setTo(origAmount)
+              val pd = PaymentDescription(cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
               replaceOutgoingPayment(prExt, pd, action = None, sentAmount = cmd.split.myPart)
               LNParams.cm.localSend(cmd)
               alert.dismiss
@@ -1152,17 +1152,15 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
               }
 
               val sender = new CanBeRepliedTo {
-                override def process(reply: Any): Unit = reply match {
-                  case PathFinder.NotifyNotReady => fillFlow(getString(dialog_up_to).format(ExpectedRouteFees(Router.defAvgHops) % origAmount) + PERCENT).run
-                  case expectedRouteFees: ExpectedRouteFees => fillFlow(getString(dialog_up_to).format(expectedRouteFees % origAmount) + PERCENT).run
-                  case _ => fillFlow("n/a").run
+                override def process(reply: Any): Unit = Try {
+                  val expectedFees = reply.asInstanceOf[ExpectedFees]
+                  val percent = expectedFees.percentOf(origAmount, interHops = 4)
+                  fillFlow(getString(dialog_up_to).format(percent) + PERCENT).run
                 }
               }
 
-              // We need to provide PathFinder with ExtraEdges at this point already for more accurate estimation
-              val getExpectedRouteFees = GetExpectedRouteFees(sender, prExt.pr.nodeId, Router.DEFAULT_EXPECTED_ROUTE_LENGTH)
-              for (extraGraphEdge <- prExt.extraEdges) LNParams.cm.pf process extraGraphEdge
-              LNParams.cm.pf process getExpectedRouteFees
+              for (extraEdge <- prExt.extraEdges) LNParams.cm.pf process extraEdge
+              LNParams.cm.pf process GetExpectedRouteFees(sender, prExt.pr.nodeId)
               fillFlow(pctCollected.head).run
               popup
             }
@@ -1632,8 +1630,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         def proceed(pf: PayRequestFinal): TimerTask = UITask {
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
             val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
-            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(manager.resultMsat), manager.resultMsat).modify(_.split.totalSum).setTo(minSendable)
-            val pd = PaymentDescription(cmd.split.asSome, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, meta = data.meta.textPlain.asSome)
+            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, manager.resultMsat).modify(_.split.totalSum).setTo(minSendable)
+            val pd = PaymentDescription(cmd.split.asSome, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, data.meta.textPlain.asSome)
             goToWithValue(value = SplitParams(pf.prExt, pf.successAction, pd, cmd, typicalChainTxFee), target = ClassNames.qrSplitActivityClass)
           }
         }
@@ -1652,7 +1650,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
             val linkOrder = SemanticOrder(id = lnUrl.request, order = Long.MinValue)
             val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
-            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(manager.resultMsat), manager.resultMsat).modify(_.split.totalSum).setTo(manager.resultMsat)
+            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, manager.resultMsat).modify(_.split.totalSum).setTo(manager.resultMsat)
             val pd = PaymentDescription(split = None, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, meta = data.meta.textPlain.asSome)
             replaceOutgoingPayment(pf.prExt, pd, pf.successAction, sentAmount = cmd.split.myPart)
             LNParams.cm.localSend(cmd)

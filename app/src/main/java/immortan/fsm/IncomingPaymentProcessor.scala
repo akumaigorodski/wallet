@@ -184,8 +184,7 @@ class TrampolinePaymentRelayer(val fullTag: FullPaymentTag, cm: ChannelMaster) e
   def abortedWithError(failures: Failures, finalNodeId: PublicKey): TrampolineAborted = {
     val finalNodeFailure = failures.collectFirst { case remote: RemoteFailure if remote.packet.originNode == finalNodeId => remote.packet.failureMessage }
     val routingNodeFailure = failures.collectFirst { case remote: RemoteFailure if remote.packet.originNode != finalNodeId => remote.packet.failureMessage }
-    val localNoRoutesFoundError = failures.collectFirst { case local: LocalFailure if local.status == PaymentFailure.NO_ROUTES_FOUND => TrampolineFeeInsufficient }
-    TrampolineAborted(finalNodeFailure orElse routingNodeFailure orElse localNoRoutesFoundError getOrElse TemporaryNodeFailure, fullTag)
+    TrampolineAborted(finalNodeFailure orElse routingNodeFailure getOrElse TemporaryNodeFailure, fullTag)
   }
 
   require(fullTag.tag == PaymentTagTlv.TRAMPLOINE_ROUTED)

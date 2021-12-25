@@ -25,7 +25,6 @@ import scala.util.Random.shuffle
 
 
 object PathFinder {
-  val NotifyNotReady = "path-finder-notify-not-ready"
   val CMDStartPeriodicResync = "cmd-start-periodic-resync"
   val CMDLoadGraph = "cmd-load-graph"
   val CMDResync = "cmd-resync"
@@ -35,15 +34,15 @@ object PathFinder {
 
   sealed trait PathFinderRequest { val sender: CanBeRepliedTo }
   case class FindRoute(sender: CanBeRepliedTo, request: RouteRequest) extends PathFinderRequest
-  case class GetExpectedPaymentFees(sender: CanBeRepliedTo, cmd: SendMultiPart, interHops: Int) extends PathFinderRequest
-  case class GetExpectedRouteFees(sender: CanBeRepliedTo, payee: PublicKey, interHops: Int) extends PathFinderRequest
+  case class GetExpectedPaymentFees(sender: CanBeRepliedTo, cmd: SendMultiPart) extends PathFinderRequest
+  case class GetExpectedRouteFees(sender: CanBeRepliedTo, payee: PublicKey) extends PathFinderRequest
 
-  case class ExpectedRouteFees(hops: List[HasRelayFee] = Nil) {
-    def % (amount: MilliSatoshi): Double = ratio(amount, totalWithFeeReserve(amount) - amount)
-    def totalCltvDelta: CltvExpiryDelta = hops.map(_.cltvExpiryDelta).reduce(_ + _)
-
-    private def accumulate(hasRelayFee: HasRelayFee, accumulator: MilliSatoshi): MilliSatoshi = hasRelayFee.relayFee(accumulator) + accumulator
-    def totalWithFeeReserve(amount: MilliSatoshi): MilliSatoshi = hops.foldRight(amount)(accumulate)
+  case class ExpectedFees(interHop: AvgHopParams, payeeHop: AvgHopParams) {
+    def partialRoute(interHops: Int): Seq[AvgHopParams] = List.fill(interHops)(interHop) :+ payeeHop
+    def accumulate(hasRelayFee: AvgHopParams, acc: MilliSatoshi): MilliSatoshi = hasRelayFee.relayFee(acc) + acc
+    def percentOf(amount: MilliSatoshi, interHops: Int): Double = ratio(amount, totalWithFeeReserve(amount, interHops) - amount)
+    def totalWithFeeReserve(amount: MilliSatoshi, interHops: Int): MilliSatoshi = partialRoute(interHops).foldRight(amount)(accumulate)
+    def totalCltvDelta(interHops: Int): CltvExpiryDelta = partialRoute(interHops).map(_.cltvExpiryDelta).reduce(_ + _)
   }
 }
 
@@ -78,9 +77,9 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
       val delay = Rx.initDelay(repeat, getLastTotalResyncStamp, RESYNC_PERIOD, preStartMsec = 500)
       subscription = delay.subscribe(_ => me process CMDResync).asSome
 
-    case (calc: GetExpectedRouteFees, OPERATIONAL) => calc.sender process calcExpectedRoutes(calc.payee, calc.interHops)
+    case (calc: GetExpectedRouteFees, OPERATIONAL) => calc.sender process calcExpectedFees(calc.payee)
 
-    case (calc: GetExpectedPaymentFees, OPERATIONAL) => calc.sender process calc.cmd.copy(expectedRouteFees = calcExpectedRoutes(calc.cmd.targetNodeId, calc.interHops).asSome)
+    case (calc: GetExpectedPaymentFees, OPERATIONAL) => calc.sender process calc.cmd.copy(expectedRouteFees = calcExpectedFees(calc.cmd.targetNodeId).asSome)
 
     case (fr: FindRoute, OPERATIONAL) => fr.sender process handleRouteRequest(data.graph replaceEdge fr.request.localEdge, fr.request)
 
@@ -247,9 +246,9 @@ abstract class PathFinder(val normalBag: NetworkBag, val hostedBag: NetworkBag) 
     } else updateLastTotalResyncStamp(System.currentTimeMillis)
   }
 
-  def calcExpectedRoutes(nodeId: PublicKey, hopsNum: Int): ExpectedRouteFees = {
+  def calcExpectedFees(nodeId: PublicKey): ExpectedFees = {
     val payeeHops = data.graph.vertices.getOrElse(nodeId, default = Nil).map(_.updExt)
-    val lastFees = if (payeeHops.isEmpty) data.avgHopParams else Router.getAvgHopParams(payeeHops)
-    ExpectedRouteFees(List.fill(hopsNum)(data.avgHopParams) :+ lastFees)
+    val payeeAvgParams = if (payeeHops.isEmpty) data.avgHopParams else Router.getAvgHopParams(payeeHops)
+    ExpectedFees(data.avgHopParams, payeeAvgParams)
   }
 }
