@@ -75,7 +75,7 @@ sealed trait TransactionDetails {
   def updatedAt: Long
   def seenAt: Long
 
-  val date: Date = new Date(seenAt)
+  val date: Date = new Date(updatedAt)
   val description: TransactionDescription
   val identity: String
 }
