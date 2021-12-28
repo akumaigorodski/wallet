@@ -145,7 +145,7 @@ object WalletApp {
     require(isAlive, "Application is not alive, hence can not become operational")
     val essentialInterface = new DBInterfaceSQLiteAndroidEssential(app, dbFileNameEssential)
     val graphInterface = new DBInterfaceSQLiteAndroidGraph(app, dbFileNameGraph)
-    val currentCustomElectrumAddress: Try[NodeAddress] = customElectrumAddress
+    val currentCustomElectrum: Try[NodeAddress] = customElectrumAddress
     LNParams.secret = secret
 
     val normalBag = new SQLiteNetwork(graphInterface, NormalChannelUpdateTable, NormalChannelAnnouncementTable, NormalExcludedChannelTable)
@@ -174,9 +174,9 @@ object WalletApp {
     }
 
     ElectrumClientPool.loadFromChainHash = {
-      case _ if currentCustomElectrumAddress.isSuccess => ElectrumServerAddress(currentCustomElectrumAddress.get.socketAddress, SSL.LOOSE).asSome.toSet
-      case Block.LivenetGenesisBlock.hash => ElectrumClientPool.readServerAddresses(app.getAssets open "servers_mainnet.json", sslEnabled = true)
-      case Block.TestnetGenesisBlock.hash => ElectrumClientPool.readServerAddresses(app.getAssets open "servers_testnet.json", sslEnabled = true)
+      case _ if currentCustomElectrum.isSuccess => ElectrumServerAddress(currentCustomElectrum.get.socketAddress, SSL.DECIDE).asSome.toSet
+      case Block.LivenetGenesisBlock.hash => ElectrumClientPool.readServerAddresses(app.getAssets open "servers_mainnet.json")
+      case Block.TestnetGenesisBlock.hash => ElectrumClientPool.readServerAddresses(app.getAssets open "servers_testnet.json")
       case _ => throw new RuntimeException
     }
 

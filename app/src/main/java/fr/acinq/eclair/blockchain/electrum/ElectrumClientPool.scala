@@ -160,36 +160,23 @@ object ElectrumClientPool {
   case class ElectrumServerAddress(address: InetSocketAddress, ssl: SSL)
 
   var loadFromChainHash: ByteVector32 => Set[ElectrumServerAddress] = {
-    case Block.LivenetGenesisBlock.hash => readServerAddresses(classOf[ElectrumServerAddress].getResourceAsStream("/electrum/servers_mainnet.json"), sslEnabled = false)
-    case Block.TestnetGenesisBlock.hash => readServerAddresses(classOf[ElectrumServerAddress].getResourceAsStream("/electrum/servers_testnet.json"), sslEnabled = false)
-    case Block.RegtestGenesisBlock.hash => readServerAddresses(classOf[ElectrumServerAddress].getResourceAsStream("/electrum/servers_regtest.json"), sslEnabled = false)
+    case Block.LivenetGenesisBlock.hash => readServerAddresses(classOf[ElectrumServerAddress] getResourceAsStream "/electrum/servers_mainnet.json")
+    case Block.TestnetGenesisBlock.hash => readServerAddresses(classOf[ElectrumServerAddress] getResourceAsStream "/electrum/servers_testnet.json")
+    case Block.RegtestGenesisBlock.hash => readServerAddresses(classOf[ElectrumServerAddress] getResourceAsStream "/electrum/servers_regtest.json")
     case _ => throw new RuntimeException
   }
 
-  def readServerAddresses(stream: InputStream, sslEnabled: Boolean): Set[ElectrumServerAddress] = try {
+  def readServerAddresses(stream: InputStream): Set[ElectrumServerAddress] = try {
     val JObject(values) = JsonMethods.parse(stream)
-    val addresses = values
-      .toMap
-      .flatMap {
-        case (name, fields)  =>
-          if (sslEnabled) {
-            // We don't authenticate seed servers (SSL.LOOSE), because:
-            // - we don't know them so authentication doesn't really bring anything
-            // - most of them have self-signed SSL certificates so it would always fail
-            fields \ "s" match {
-              case JString(port) => Some(ElectrumServerAddress(InetSocketAddress.createUnresolved(name, port.toInt), SSL.LOOSE))
-              case _ => None
-            }
-          } else {
-            fields \ "t" match {
-              case JString(port) => Some(ElectrumServerAddress(InetSocketAddress.createUnresolved(name, port.toInt), SSL.OFF))
-              case _ => None
-            }
-          }
-      }
-    addresses.toSet
+
+    for (Tuple2(name, fields) <- values.toSet) yield {
+      val port = (fields \ "s").asInstanceOf[JString].s.toInt
+      val address = InetSocketAddress.createUnresolved(name, port)
+      ElectrumServerAddress(address, SSL.LOOSE)
+    }
+
   } finally {
-    stream.close()
+    stream.close
   }
 
   def pickAddress(serverAddresses: Set[ElectrumServerAddress], usedAddresses: Set[InetSocketAddress] = Set.empty): Option[ElectrumServerAddress] =

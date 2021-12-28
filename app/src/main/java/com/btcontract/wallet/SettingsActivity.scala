@@ -177,18 +177,20 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
 
       def proceed: Unit = {
         val input = extraInput.getText.toString.trim
+        def saveAddress(address: String) = WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM_ADDRESS, address)
         if (input.nonEmpty) runInFutureProcessOnUI(saveUnsafeElectrumAddress, onFail)(_ => warnAndUpdateView)
-        else runAnd(WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM_ADDRESS, new String).commit)(warnAndUpdateView)
+        else runAnd(saveAddress(new String).commit)(warnAndUpdateView)
 
         def saveUnsafeElectrumAddress: Unit = {
           val hostOrIP ~ port = input.splitAt(input lastIndexOf ':')
-          val nodeAddress = NodeAddress.fromParts(host = hostOrIP, port = port.tail.toInt, orElse = Domain)
-          WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM_ADDRESS, nodeaddress.encode(nodeAddress).require.toHex).commit
+          val nodeAddress = NodeAddress.fromParts(hostOrIP, port.tail.toInt, Domain)
+          saveAddress(nodeaddress.encode(nodeAddress).require.toHex).commit
         }
 
         def warnAndUpdateView: Unit = {
           def onOk(snack: Snackbar): Unit = runAnd(snack.dismiss)(WalletApp.restart)
-          snack(settingsContainer, getString(settings_custom_electrum_restart_notice).html, R.string.dialog_ok, onOk)
+          val message = getString(settings_custom_electrum_restart_notice).html
+          snack(settingsContainer, message, R.string.dialog_ok, onOk)
           updateView
         }
       }
