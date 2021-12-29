@@ -113,10 +113,10 @@
 
             <TextView
                 android:maxLines="2"
+                android:gravity="end"
                 android:id="@+id/fiatUnitPriceAndChange"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-                android:textAlignment="textEnd"
                 style="@style/ChipTextGray"/>
 
         </RelativeLayout>
