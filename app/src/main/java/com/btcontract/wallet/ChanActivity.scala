@@ -206,7 +206,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
 
       val brandOpt = brandingInfos.get(hc.remoteInfo.nodeId)
       // Hide image container at start, show it later if bitmap is fine
-      hcInfo setOnClickListener onButtonTap(me browse "https://sbw.finance/posts/scaling-ln-with-hosted-channels/")
+      hcInfo setOnClickListener onButtonTap(me browse "https://sbw.app/posts/scaling-ln-with-hosted-channels/")
       setVisMany(true -> hcBranding, false -> hcImageContainer, hc.overrideProposal.isDefined -> overrideProposal)
 
       for {
