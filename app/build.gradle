@@ -68,7 +68,7 @@ dependencies {
     implementation 'androidx.work:work-runtime:2.7.1'
     implementation 'androidx.appcompat:appcompat:1.3.1'
     implementation 'androidx.biometric:biometric:1.1.0'
-    implementation 'com.cottacush:CurrencyEditText:0.0.9'
+    implementation 'com.cottacush:CurrencyEditText:0.0.10'
     implementation 'com.google.android.material:material:1.4.0'
     implementation 'com.google.code.ndef-tools-for-android:ndeftools:1.2.4'
 
