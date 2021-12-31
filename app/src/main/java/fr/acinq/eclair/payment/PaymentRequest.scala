@@ -103,7 +103,7 @@ object PaymentRequest {
 
   val DEFAULT_EXPIRY_SECONDS = 3600 // If provided invoice does not have an expiry then we assume it's this much seconds from timestamp
 
-  val OUR_EXPIRY_SECONDS: Int = DEFAULT_EXPIRY_SECONDS * 24 * 7 * 2 // Invoices issued by us ALWAYS expire in two days
+  val OUR_EXPIRY_SECONDS: Int = DEFAULT_EXPIRY_SECONDS * 24 * 7 * 2 // Invoices issued by us ALWAYS expire in two weeks
 
   val prefixes: Map[ByteVector32, String] = Map(Block.RegtestGenesisBlock.hash -> "lnbcrt", Block.TestnetGenesisBlock.hash -> "lntb", Block.LivenetGenesisBlock.hash -> "lnbc")
 
