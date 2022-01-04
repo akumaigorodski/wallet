@@ -95,7 +95,7 @@ dependencies {
 
     // Built-in Tor
     implementation 'com.squareup.okhttp3:okhttp:4.9.0'
-    implementation 'info.guardianproject:tor-android:0.4.6.7'
+    implementation 'info.guardianproject:tor-android:0.4.6.9'
     implementation 'info.guardianproject:jtorctl:0.4.5.7'
 
     // Android tests
