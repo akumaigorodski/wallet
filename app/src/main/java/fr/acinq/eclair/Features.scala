@@ -156,11 +156,6 @@ object Features {
     val mandatory = 32974
   }
 
-  case object PrivateRouting extends Feature {
-    val rfcName = "Private routing"
-    val mandatory = 33174
-  }
-
   case object ShutdownAnySegwit extends Feature {
     val rfcName = "Any shutdown script"
     val mandatory = 26
@@ -168,9 +163,9 @@ object Features {
 
   val knownFeatures: Set[Feature] =
     Set(ChannelRangeQueriesExtended, OptionDataLossProtect, BasicMultiPartPayment,
-      ChannelRangeQueries, VariableLengthOnion, InitialRoutingSync, PrivateRouting,
-      ShutdownAnySegwit, TrampolinePayment, StaticRemoteKey, HostedChannels,
-      ResizeableHostedChannels, PaymentSecret, ChainSwap, Wumbo)
+      ChannelRangeQueries, VariableLengthOnion, InitialRoutingSync, ShutdownAnySegwit,
+      TrampolinePayment, StaticRemoteKey, HostedChannels, ResizeableHostedChannels,
+      PaymentSecret, ChainSwap, Wumbo)
 
   // Returns true if both feature sets are compatible
   def areCompatible(ours: Features, theirs: Features): Boolean =

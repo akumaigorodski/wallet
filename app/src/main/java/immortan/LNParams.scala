@@ -105,7 +105,6 @@ object LNParams {
       (VariableLengthOnion, FeatureSupport.Optional),
       (ShutdownAnySegwit, FeatureSupport.Optional),
       (StaticRemoteKey, FeatureSupport.Optional),
-      (PrivateRouting, FeatureSupport.Optional),
       (HostedChannels, FeatureSupport.Optional),
       (PaymentSecret, FeatureSupport.Optional),
       (ChainSwap, FeatureSupport.Optional),

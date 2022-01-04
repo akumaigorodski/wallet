@@ -40,7 +40,6 @@
             <TextView style="@style/ChipTextGrayMargin" android:id="@+id/OptionDataLossProtect"/>
             <TextView style="@style/ChipTextGrayMargin" android:id="@+id/BasicMultiPartPayment"/>
             <TextView style="@style/ChipTextGrayMargin" android:id="@+id/StaticRemoteKey"/>
-            <TextView style="@style/ChipTextGrayMargin" android:id="@+id/PrivateRouting"/>
             <TextView style="@style/ChipTextGrayMargin" android:id="@+id/HostedChannels"/>
             <TextView style="@style/ChipTextGrayMargin" android:id="@+id/ChainSwap"/>
             <TextView style="@style/ChipTextGrayMargin" android:id="@+id/Wumbo"/>

@@ -3,7 +3,6 @@ package immortan.fsm
 import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.eclair._
-import com.softwaremill.quicklens._
 import fr.acinq.eclair.channel.{CMD_ADD_HTLC, ChannelOffline, InPrincipleNotSendable, LocalReject}
 import fr.acinq.eclair.crypto.Sphinx
 import fr.acinq.eclair.crypto.Sphinx.PacketAndSecrets
@@ -85,10 +84,6 @@ case class OutgoingPaymentMasterData(payments: Map[FullPaymentTag, OutgoingPayme
                                      directionFailedTimes: Map[NodeDirectionDesc, Int] = Map.empty,
                                      chanNotRoutable: Set[ChannelDesc] = Set.empty) { me =>
 
-//  def withNewTrampolineStates(states1: TrampolineRoutingStates): OutgoingPaymentMasterData = copy(trampolineStates = states1)
-//
-//  def withoutTrampolineStates(nodeId: PublicKey): OutgoingPaymentMasterData = me.modify(_.trampolineStates.states).using(_ - nodeId)
-
   def withFailuresReduced(stampInFuture: Long): OutgoingPaymentMasterData = {
     // Reduce failure times to give previously failing channels a chance
     // failed-at-amount is restored gradually within a time window
@@ -125,18 +120,6 @@ class OutgoingPaymentMaster(val cm: ChannelMaster) extends StateMachine[Outgoing
   var clearFailures: Boolean = true
 
   def doProcess(change: Any): Unit = (change, state) match {
-//    case (TrampolinePeerDisconnected(nodeId), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
-//      become(data withoutTrampolineStates nodeId, state)
-//
-//    case (TrampolinePeerUpdated(nodeId, TrampolineUndesired), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
-//      become(data withoutTrampolineStates nodeId, state)
-//
-//    case (TrampolinePeerUpdated(nodeId, init: TrampolineStatusInit), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
-//      become(data withNewTrampolineStates data.trampolineStates.init(nodeId, init), state)
-//
-//    case (TrampolinePeerUpdated(nodeId, update: TrampolineStatusUpdate), EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) if data.trampolineStates.states.contains(nodeId) =>
-//      become(data withNewTrampolineStates data.trampolineStates.merge(nodeId, update), state)
-
     case (send: SendMultiPart, EXPECTING_PAYMENTS | WAITING_FOR_ROUTE) =>
       if (clearFailures) become(data.withFailuresReduced(System.currentTimeMillis), state)
       for (graphEdge <- send.assistedEdges) cm.pf process graphEdge
@@ -344,7 +327,6 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
 
           otherOpt match {
             case Some(okCnc) => become(data.copy(parts = data.parts + wait.oneMoreLocalAttempt(okCnc).tuple), PENDING)
-            // TODO: case None if <can use trampoline for this shard at affordable price, affordable = within reserve AND amount == total> =>
             case None if outgoingHtlcSlotsLeft >= 1 => become(data.withoutPartId(wait.partId), PENDING) doProcess CutIntoHalves(wait.amount)
             case _ => me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(NO_ROUTES_FOUND, wait.amount)
           }
@@ -353,7 +335,6 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
     case (found: RouteFound, PENDING) =>
       data.parts.values.collectFirst {
         case wait: WaitForRouteOrInFlight if wait.flight.isEmpty && wait.partId == found.partId =>
-          // TODO: even if route is found we can compare its fees against trampoline fees here and choose trampoline if its fees are more attractive
           val payeeExpiry = data.cmd.chainExpiry.fold(fb = _.toCltvExpiry(LNParams.blockCount.get + 1L), fa = identity)
           val finalPayload = PaymentOnion.createMultiPartPayload(wait.amount, data.cmd.split.totalSum, payeeExpiry, data.cmd.outerPaymentSecret, data.cmd.onionTlvs, data.cmd.userCustomTlvs)
           val (firstAmount, firstExpiry, onion) = OutgoingPaymentPacket.buildPaymentPacket(wait.onionKey, fullTag.paymentHash, found.route.hops, finalPayload)
@@ -514,7 +495,6 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
 
     shuffle(opm.rightNowSendable(data.cmd.allowedChans, feeLeftover).toSeq).collectFirst { case (cnc, sendable) if sendable >= wait.amount => cnc } match {
       case Some(okCnc) if wait.remoteAttempts < data.cmd.routerConf.maxRemoteAttempts => become(data.copy(parts = data.parts + wait.oneMoreRemoteAttempt(okCnc).tuple), PENDING)
-      // TODO: case None if <can use trampoline for this shard at affordable price, affordable = within max source routed fee history> =>
       case _ if outgoingHtlcSlotsLeft >= 2 => become(data, PENDING) doProcess CutIntoHalves(wait.amount)
       case _ => me abortMaybeNotify data.withLocalFailure(RUN_OUT_OF_RETRY_ATTEMPTS, wait.amount)
     }
