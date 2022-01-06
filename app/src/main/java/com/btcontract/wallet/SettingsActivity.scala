@@ -25,6 +25,28 @@ import immortan.{ChannelMaster, LNParams}
 import scala.util.Success
 
 
+abstract class SettingsHolder(host: BaseActivity) {
+  val view: RelativeLayout = host.getLayoutInflater.inflate(R.layout.frag_switch, null, false).asInstanceOf[RelativeLayout]
+  val settingsCheck: CheckBox = view.findViewById(R.id.settingsCheck).asInstanceOf[CheckBox]
+  val settingsTitle: TextView = view.findViewById(R.id.settingsTitle).asInstanceOf[TextView]
+  val settingsInfo: TextView = view.findViewById(R.id.settingsInfo).asInstanceOf[TextView]
+  def updateView: Unit
+
+  def putBoolAndUpdateView(key: String, value: Boolean): Unit = {
+    WalletApp.app.prefs.edit.putBoolean(key, value).commit
+    updateView
+  }
+
+  def disableIfOldAndroid: Unit =
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+      val message = host.getString(error_old_api_level).format(Build.VERSION.SDK_INT)
+      host.setVis(isVisible = true, settingsInfo)
+      settingsInfo.setText(message)
+      settingsTitle.setAlpha(0.5F)
+      view.setEnabled(false)
+    }
+}
+
 class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with ChoiceReceiver { me =>
   lazy private[this] val settingsContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
   private[this] val fiatSymbols = LNParams.fiatRates.universallySupportedSymbols.toList.sorted
@@ -61,7 +83,7 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     case _ =>
   }
 
-  lazy private[this] val storeLocalBackup = new SettingsHolder {
+  lazy private[this] val storeLocalBackup = new SettingsHolder(me) {
     setVis(isVisible = false, settingsCheck)
 
     def updateView: Unit = {
@@ -80,7 +102,7 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     }
   }
 
-  lazy private[this] val chainWallets: SettingsHolder = new SettingsHolder {
+  lazy private[this] val chainWallets: SettingsHolder = new SettingsHolder(me) {
     setVisMany(false -> settingsCheck, false -> settingsInfo)
     settingsTitle.setText(settings_chain_wallets)
     override def updateView: Unit = none
@@ -130,7 +152,7 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     }
   }
 
-  lazy private[this] val addHardware: SettingsHolder = new SettingsHolder {
+  lazy private[this] val addHardware: SettingsHolder = new SettingsHolder(me) {
     setVisMany(false -> settingsCheck, false -> settingsInfo)
     view setOnClickListener onButtonTap(callUrScanner)
     settingsTitle.setText(settings_hardware_add)
@@ -160,13 +182,13 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     }
   }
 
-  lazy private[this] val electrum: SettingsHolder = new SettingsHolder {
+  lazy private[this] val electrum: SettingsHolder = new SettingsHolder(me) {
+    setVis(isVisible = false, settingsCheck)
+
     override def updateView: Unit = WalletApp.customElectrumAddress match {
       case Success(nodeAddress) => setTexts(settings_custom_electrum_enabled, nodeAddress.toString)
       case _ => setTexts(settings_custom_electrum_disabled, me getString settings_custom_electrum_disabled_tip)
     }
-
-    setVis(isVisible = false, settingsCheck)
 
     view setOnClickListener onButtonTap {
       val (container, extraInputLayout, extraInput) = singleInputPopup
@@ -202,11 +224,11 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     }
   }
 
-  lazy private[this] val setFiat = new SettingsHolder {
-    override def updateView: Unit = settingsInfo.setText(WalletApp.fiatCode.toUpperCase)
-
+  lazy private[this] val setFiat = new SettingsHolder(me) {
     settingsTitle.setText(settings_fiat_currency)
     setVis(isVisible = false, settingsCheck)
+
+    override def updateView: Unit = settingsInfo.setText(WalletApp.fiatCode.toUpperCase)
 
     view setOnClickListener onButtonTap {
       val options = fiatSymbols.map { case code ~ name => code.toUpperCase + SEPARATOR + name }
@@ -215,7 +237,7 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     }
   }
 
-  lazy private[this] val setBtc = new SettingsHolder {
+  lazy private[this] val setBtc = new SettingsHolder(me) {
     settingsTitle.setText(settings_btc_unit)
     setVis(isVisible = false, settingsCheck)
 
@@ -233,7 +255,7 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     }
   }
 
-  lazy private[this] val useBiometric: SettingsHolder = new SettingsHolder { self =>
+  lazy private[this] val useBiometric: SettingsHolder = new SettingsHolder(me) {
     private def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.settingsContainer), me, _.dismiss) {
       def onHardwareUnavailable: Unit = WalletApp.app.quickToast(R.string.settings_auth_not_available)
       def onNoneEnrolled: Unit = WalletApp.app.quickToast(R.string.settings_auth_add_method)
@@ -252,7 +274,7 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     setVis(isVisible = false, settingsInfo)
   }
 
-  lazy private[this] val enforceTor = new SettingsHolder {
+  lazy private[this] val enforceTor = new SettingsHolder(me) {
     override def updateView: Unit = settingsCheck.setChecked(WalletApp.ensureTor)
 
     settingsTitle.setText(settings_ensure_tor)
@@ -266,14 +288,14 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     }
   }
 
-  lazy private[this] val viewCode = new SettingsHolder {
+  lazy private[this] val viewCode = new SettingsHolder(me) {
     setVisMany(false -> settingsCheck, false -> settingsInfo)
     view setOnClickListener onButtonTap(viewRecoveryCode)
     settingsTitle.setText(settings_view_revocery_phrase)
     override def updateView: Unit = none
   }
 
-  lazy private[this] val viewStat = new SettingsHolder {
+  lazy private[this] val viewStat = new SettingsHolder(me) {
     setVisMany(false -> settingsCheck, false -> settingsInfo)
     view setOnClickListener onButtonTap(me goTo ClassNames.statActivityClass)
     settingsTitle.setText(settings_stats)
@@ -312,27 +334,5 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     settingsContainer.addView(viewCode.view)
     settingsContainer.addView(viewStat.view)
     settingsContainer.addView(links.view)
-  }
-
-  trait SettingsHolder {
-    val view: RelativeLayout = getLayoutInflater.inflate(R.layout.frag_switch, null, false).asInstanceOf[RelativeLayout]
-    val settingsCheck: CheckBox = view.findViewById(R.id.settingsCheck).asInstanceOf[CheckBox]
-    val settingsTitle: TextView = view.findViewById(R.id.settingsTitle).asInstanceOf[TextView]
-    val settingsInfo: TextView = view.findViewById(R.id.settingsInfo).asInstanceOf[TextView]
-    def updateView: Unit
-
-    def putBoolAndUpdateView(key: String, value: Boolean): Unit = {
-      WalletApp.app.prefs.edit.putBoolean(key, value).commit
-      updateView
-    }
-
-    def disableIfOldAndroid: Unit =
-      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-        val message = getString(error_old_api_level).format(Build.VERSION.SDK_INT)
-        setVis(isVisible = true, settingsInfo)
-        settingsInfo.setText(message)
-        settingsTitle.setAlpha(0.5F)
-        view.setEnabled(false)
-      }
   }
 }

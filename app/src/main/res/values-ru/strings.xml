@@ -24,7 +24,7 @@
     <string name="emergency_mode">Что-то пошло не так</string>
     <string name="error_log">Логи ошибок</string>
 
-    <string name="setup_title">Установка кошелька</string>
+    <string name="setup_title">Создание кошелька</string>
     <string name="setup_create_new">Создать новый кошелек</string>
     <string name="setup_restore_existing">Восстановить кошелек</string>
     <string name="setup_recovery_phrase">Только фраза восстановления</string>
@@ -220,7 +220,7 @@
     <string name="rpa_no_feature_support">Невозможно открыть канал с этим узлом потмоу что он не поддерживает важные особенности протокола</string>
     <string name="rpa_hc_warn"><![CDATA[<br><b>Внимание!</b><br><br>Ваши средства в hosted-канале будут храниться на стороне хоста: убедитесь, что вы доверяете этому ему!]]></string>
     <string name="rpa_request_channel">Поделитесь своим node ID с удаленным узлом и оставьте открытой эту страницу до получения входящего канала</string>
-    <string name="rpa_request_hc">Запросить hosted-канал</string>
+    <string name="rpa_request_hc">Использовать hosted-канал</string>
     <string name="rpa_share_node_id">Поделиться Node ID</string>
     <string name="rpa_open_nc">Открыть новый канал</string>
 

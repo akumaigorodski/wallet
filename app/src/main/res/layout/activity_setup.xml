@@ -5,66 +5,65 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <LinearLayout
-        style="@style/StandardXYMarginLinearLayout"
+        style="@style/StandardLinearLayout"
         android:id="@+id/activitySetupMain">
 
         <TextView
-            style="@style/FillingView"
+            style="@style/XMarginFillingView"
             android:text="@string/setup_title"
-            android:layout_width="wrap_content"
             android:textSize="@dimen/header_size"/>
 
-        <!-- new wallet -->
-
-        <com.ornach.nobobutton.NoboButton
-            app:nb_text="@string/setup_create_new"
-            android:layout_marginTop="@dimen/large_button_margin"
-            android:onClick="createNewWallet"
-            style="@style/GreenButton"/>
-
-        <TextView
-            android:layout_marginTop="@dimen/chip_default_padding_edge"
-            android:text="@string/setup_create_new_hint"
-            style="@style/BoundedView"/>
-
-        <com.ornach.nobobutton.NoboButton
-            app:nb_text="@string/setup_restore_existing"
-            android:layout_marginTop="@dimen/large_button_margin"
-            android:id="@+id/restoreOptionsButton"
-            android:onClick="showRestoreOptions"
-            style="@style/GrayButton"/>
-
-        <LinearLayout
-            android:id="@+id/restoreOptions"
-            style="@style/StandardLinearLayout"
-            android:visibility="gone">
-
-            <!-- backup file + recovery phrase -->
+        <LinearLayout style="@style/StandardXYMarginLinearLayout">
 
             <com.ornach.nobobutton.NoboButton
-                android:layout_marginTop="@dimen/large_button_margin"
-                app:nb_text="@string/setup_backup_file"
-                android:onClick="useBackupFile"
-                style="@style/GrayButton"/>
+                app:nb_text="@string/setup_create_new"
+                android:onClick="createNewWallet"
+                style="@style/GreenButton"/>
 
             <TextView
-                android:text="@string/setup_backup_file_hint"
                 android:layout_marginTop="@dimen/chip_default_padding_edge"
+                android:text="@string/setup_create_new_hint"
                 style="@style/BoundedView"/>
-
-            <!-- recovery phrase only -->
 
             <com.ornach.nobobutton.NoboButton
+                app:nb_text="@string/setup_restore_existing"
                 android:layout_marginTop="@dimen/large_button_margin"
-                app:nb_text="@string/setup_recovery_phrase"
-                android:onClick="useRecoveryPhrase"
+                android:id="@+id/restoreOptionsButton"
+                android:onClick="showRestoreOptions"
                 style="@style/GrayButton"/>
 
-            <TextView
-                android:text="@string/setup_recovery_phrase_hint"
-                android:layout_marginTop="@dimen/chip_default_padding_edge"
-                style="@style/BoundedView"/>
+            <LinearLayout
+                android:id="@+id/restoreOptions"
+                style="@style/StandardLinearLayout"
+                android:visibility="gone">
 
+                <!-- backup file + recovery phrase -->
+
+                <com.ornach.nobobutton.NoboButton
+                    android:layout_marginTop="@dimen/large_button_margin"
+                    app:nb_text="@string/setup_backup_file"
+                    android:onClick="useBackupFile"
+                    style="@style/GrayButton"/>
+
+                <TextView
+                    android:text="@string/setup_backup_file_hint"
+                    android:layout_marginTop="@dimen/chip_default_padding_edge"
+                    style="@style/BoundedView"/>
+
+                <!-- recovery phrase only -->
+
+                <com.ornach.nobobutton.NoboButton
+                    android:layout_marginTop="@dimen/large_button_margin"
+                    app:nb_text="@string/setup_recovery_phrase"
+                    android:onClick="useRecoveryPhrase"
+                    style="@style/GrayButton"/>
+
+                <TextView
+                    android:text="@string/setup_recovery_phrase_hint"
+                    android:layout_marginTop="@dimen/chip_default_padding_edge"
+                    style="@style/BoundedView"/>
+
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
