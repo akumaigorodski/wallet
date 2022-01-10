@@ -233,7 +233,7 @@ case class RemoteNodeInfo(nodeId: PublicKey, address: NodeAddress, alias: String
   lazy val nodeSpecificPair: KeyPairAndPubKey = KeyPairAndPubKey(KeyPair(nodeSpecificPubKey.value, nodeSpecificPrivKey.value), nodeId)
   lazy val nodeSpecificPrivKey: PrivateKey = nodeSpecificExtendedKey.privateKey
   lazy val nodeSpecificPubKey: PublicKey = nodeSpecificPrivKey.publicKey
-  def safeAlias: RemoteNodeInfo = copy(alias = new String)
+  def safeAlias: RemoteNodeInfo = copy(alias = alias take 24)
 }
 
 case class WalletSecret(keys: LightningNodeKeys, mnemonic: List[String], seed: ByteVector)

@@ -403,7 +403,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
     else getString(chan_nothing)
   }
 
-  private def peerInfo(info: RemoteNodeInfo): String = s"<strong>${info.nodeId.toString.take(16).humanFour}</strong><br>${info.address.toString}"
+  private def peerInfo(info: RemoteNodeInfo): String = s"<strong>${info.alias}</strong><br>${info.address.toString}"
 
   private def confirmationBuilder(commits: Commitments, msg: CharSequence) = new AlertDialog.Builder(me).setTitle(commits.remoteInfo.address.toString).setMessage(msg)
 
