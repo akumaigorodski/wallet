@@ -16,30 +16,30 @@ object FeatureSupport {
   }
 }
 
-trait Feature {
-  def rfcName: String
+sealed trait FeatureScope
+trait InitFeature extends FeatureScope
+trait NodeFeature extends FeatureScope
+trait InvoiceFeature extends FeatureScope
 
-  def mandatory: Int
-  def optional: Int = mandatory + 1
-
-  def init: Boolean
-  def invoice: Boolean
-  def nodeAnnouncement: Boolean
-
+trait Feature { me: FeatureScope =>
   def supportBit(support: FeatureSupport): Int = support match {
     case Mandatory => mandatory case Optional => optional
   }
+
+  def mandatory: Int
+
+  def optional: Int = mandatory + 1
+
+  def rfcName: String
 }
 
 case class UnknownFeature(bitIndex: Int)
 
 case class Features(activated: Map[Feature, FeatureSupport], unknown: Set[UnknownFeature] = Set.empty) {
 
-  def hasFeature(feature: Feature, support: Option[FeatureSupport] = None): Boolean =
-    support match {
-      case Some(sup) => activated.get(feature).contains(sup)
-      case None => activated.contains(feature)
-    }
+  def hasFeature(feature: Feature, support: Option[FeatureSupport] = None): Boolean = support match {
+    case Some(sup) => activated.get(feature).contains(sup) case None => activated.contains(feature)
+  }
 
   def areSupported(remoteFeatures: Features): Boolean = {
     val knownFeaturesOk = remoteFeatures.activated.forall {
@@ -51,11 +51,17 @@ case class Features(activated: Map[Feature, FeatureSupport], unknown: Set[Unknow
     unknownFeaturesOk && knownFeaturesOk
   }
 
-  def initFeatures: Features = Features(activated.filter { case (f, _) => f.init }, unknown)
+  def initFeatures: Features = Features(activated.collect {
+    case (feature: InitFeature, support) => (feature: Feature, support)
+  }, unknown)
 
-  def nodeAnnouncementFeatures: Features = Features(activated.filter { case (f, _) => f.nodeAnnouncement }, unknown)
+  def nodeAnnouncementFeatures: Features = Features(activated.collect {
+    case (feature: NodeFeature, support) => (feature: Feature, support)
+  }, unknown)
 
-  def invoiceFeatures: Features = Features(activated.filter { case (f, _) => f.invoice }, unknown)
+  def invoiceFeatures: Map[Feature with InvoiceFeature, FeatureSupport] = activated.collect {
+    case (feature: InvoiceFeature, support) => (feature, support)
+  }
 
   def toByteVector: ByteVector = {
     val unknownIndexes = for (feature <- unknown) yield feature.bitIndex
@@ -100,139 +106,79 @@ object Features {
     )
   }
 
-  case object OptionDataLossProtect extends Feature {
+  case object OptionDataLossProtect extends Feature with InitFeature with NodeFeature {
     val rfcName = "Data loss protect"
     val mandatory = 0
-
-    val init = true
-    val invoice = false
-    val nodeAnnouncement = true
   }
 
-  case object InitialRoutingSync extends Feature {
+  case object InitialRoutingSync extends Feature with InitFeature {
     val rfcName = "Initial routing sync"
     val mandatory = 2
-
-    val init = true
-    val invoice = false
-    val nodeAnnouncement = false
   }
 
-  case object ChannelRangeQueries extends Feature {
+  case object ChannelRangeQueries extends Feature with InitFeature with NodeFeature {
     val rfcName = "Basic gossip queries"
     val mandatory = 6
-
-    val init = true
-    val invoice = false
-    val nodeAnnouncement = true
   }
 
-  case object VariableLengthOnion extends Feature {
+  case object VariableLengthOnion extends Feature with InitFeature with NodeFeature with InvoiceFeature {
     val rfcName = "Advanced onion"
     val mandatory = 8
-
-    val init = true
-    val invoice = true
-    val nodeAnnouncement = true
   }
 
-  case object ChannelRangeQueriesExtended extends Feature {
+  case object ChannelRangeQueriesExtended extends Feature with InitFeature with NodeFeature {
     val rfcName = "Fast graph sync"
     val mandatory = 10
-
-    val init = true
-    val invoice = false
-    val nodeAnnouncement = true
   }
 
-  case object StaticRemoteKey extends Feature {
+  case object StaticRemoteKey extends Feature with InitFeature with NodeFeature {
     val rfcName = "Direct refund"
     val mandatory = 12
-
-    val init = true
-    val invoice = false
-    val nodeAnnouncement = true
   }
 
-  case object PaymentSecret extends Feature {
+  case object PaymentSecret extends Feature with InitFeature with NodeFeature with InvoiceFeature {
     val rfcName = "Payment secret"
     val mandatory = 14
-
-    val init = true
-    val invoice = true
-    val nodeAnnouncement = true
   }
 
-  case object BasicMultiPartPayment extends Feature {
+  case object BasicMultiPartPayment extends Feature with InitFeature with NodeFeature with InvoiceFeature {
     val rfcName = "Multipart payments"
     val mandatory = 16
-
-    val init = true
-    val invoice = true
-    val nodeAnnouncement = true
   }
 
-  case object Wumbo extends Feature {
+  case object Wumbo extends Feature with InitFeature with NodeFeature {
     val rfcName = "Large channels"
     val mandatory = 18
-
-    val init = true
-    val invoice = false
-    val nodeAnnouncement = true
   }
 
-  case object ShutdownAnySegwit extends Feature {
+  case object ShutdownAnySegwit extends Feature with InitFeature with NodeFeature {
     val rfcName = "Any shutdown script"
     val mandatory = 26
-
-    val init = true
-    val invoice = false
-    val nodeAnnouncement = true
   }
 
-  case object PaymentMetadata extends Feature {
+  case object PaymentMetadata extends Feature with InvoiceFeature {
     val rfcName = "Payment invoice metadata"
     val mandatory = 48
-
-    val init = false
-    val invoice = true
-    val nodeAnnouncement = false
   }
 
-  case object TrampolinePayment extends Feature {
+  case object TrampolinePayment extends Feature with InitFeature with NodeFeature with InvoiceFeature {
     val rfcName = "Trampoline payments"
     val mandatory = 50
-
-    val init = true
-    val invoice = true
-    val nodeAnnouncement = true
   }
 
-  case object ChainSwap extends Feature {
+  case object ChainSwap extends Feature with InitFeature with NodeFeature {
     val rfcName = "Chain swaps"
     val mandatory = 32770
-
-    val init = true
-    val invoice = false
-    val nodeAnnouncement = true
   }
 
-  case object HostedChannels extends Feature {
+  case object HostedChannels extends Feature with InitFeature with NodeFeature {
     val rfcName = "Hosted channels"
     val mandatory = 32972
-
-    val init = true
-    val invoice = false
-    val nodeAnnouncement = true
   }
 
-  case object ResizeableHostedChannels extends Feature {
+  case object ResizeableHostedChannels extends Feature with InitFeature with NodeFeature {
     val rfcName = "Resizeable Hosted channels"
     val mandatory = 32974
-
-    val init = true
-    val invoice = false
-    val nodeAnnouncement = true
   }
 
   val knownFeatures: Set[Feature] =

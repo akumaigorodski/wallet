@@ -252,8 +252,8 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
     val chainExpiry = Right(prExt.pr.minFinalCltvExpiryDelta getOrElse LNParams.minInvoiceExpiryDelta)
     val splitInfo = SplitInfo(totalSum = 0L.msat, myPart = toSend)
 
-    SendMultiPart(fullTag, chainExpiry, splitInfo, LNParams.routerConf,
-      prExt.pr.nodeId, expectedRouteFees = None, prExt.asSome, feeReserve(toSend),
+    SendMultiPart(fullTag, chainExpiry, splitInfo, LNParams.routerConf, prExt.pr.nodeId,
+      expectedRouteFees = None, prExt.pr.paymentMetadata, feeReserve(toSend),
       allowedChans, fullTag.paymentSecret, prExt.extraEdges)
   }
 

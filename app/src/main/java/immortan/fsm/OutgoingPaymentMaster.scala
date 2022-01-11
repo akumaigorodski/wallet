@@ -18,7 +18,6 @@ import immortan.crypto.Tools._
 import immortan.crypto.{CanBeRepliedTo, StateMachine}
 import immortan.fsm.OutgoingPaymentMaster._
 import immortan.fsm.PaymentFailure._
-import immortan.utils.PaymentRequestExt
 import scodec.bits.ByteVector
 
 import scala.collection.mutable
@@ -74,7 +73,7 @@ case class SplitInfo(totalSum: MilliSatoshi, myPart: MilliSatoshi) {
 // For locally initiated payments outerPaymentSecret and fullTag.paymentSecret are same
 // For trampoline-routed payments fullTag.paymentSecret is taken from upstream incoming payment
 case class SendMultiPart(fullTag: FullPaymentTag, chainExpiry: Either[CltvExpiry, CltvExpiryDelta], split: SplitInfo, routerConf: RouterConf, targetNodeId: PublicKey,
-                         expectedRouteFees: Option[PathFinder.ExpectedFees], prExt: Option[PaymentRequestExt], totalFeeReserve: MilliSatoshi = MilliSatoshi(0L),
+                         expectedRouteFees: Option[PathFinder.ExpectedFees], payeeMetadata: Option[ByteVector], totalFeeReserve: MilliSatoshi = MilliSatoshi(0L),
                          allowedChans: Seq[Channel] = Nil, outerPaymentSecret: ByteVector32 = ByteVector32.Zeroes, assistedEdges: Set[GraphEdge] = Set.empty,
                          onionTlvs: Seq[OnionPaymentPayloadTlv] = Nil, userCustomTlvs: Seq[GenericTlv] = Nil)
 
@@ -336,7 +335,7 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
       data.parts.values.collectFirst {
         case wait: WaitForRouteOrInFlight if wait.flight.isEmpty && wait.partId == found.partId =>
           val payeeExpiry = data.cmd.chainExpiry.fold(fb = _.toCltvExpiry(LNParams.blockCount.get + 1L), fa = identity)
-          val finalPayload = PaymentOnion.createMultiPartPayload(wait.amount, data.cmd.split.totalSum, payeeExpiry, data.cmd.outerPaymentSecret, data.cmd.onionTlvs, data.cmd.userCustomTlvs)
+          val finalPayload = PaymentOnion.createMultiPartPayload(wait.amount, data.cmd.split.totalSum, payeeExpiry, data.cmd.outerPaymentSecret, data.cmd.payeeMetadata, data.cmd.onionTlvs, data.cmd.userCustomTlvs)
           val (firstAmount, firstExpiry, onion) = OutgoingPaymentPacket.buildPaymentPacket(wait.onionKey, fullTag.paymentHash, found.route.hops, finalPayload)
           val cmdAdd = CMD_ADD_HTLC(fullTag, firstAmount, firstExpiry, PacketAndSecrets(onion.packet, onion.sharedSecrets), finalPayload)
           become(data.copy(parts = data.parts + wait.withKnownRoute(cmdAdd, found.route).tuple), PENDING)

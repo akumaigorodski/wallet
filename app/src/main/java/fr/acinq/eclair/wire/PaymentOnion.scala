@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019 ACINQ SAS
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package fr.acinq.eclair.wire
 
 import fr.acinq.bitcoin.ByteVector32
@@ -9,6 +25,9 @@ import fr.acinq.eclair.wire.TlvCodecs._
 import fr.acinq.eclair.{CltvExpiry, MilliSatoshi, UInt64}
 import scodec.bits.{BitVector, ByteVector}
 
+/**
+  * Created by t-bast on 05/07/2019.
+  */
 
 /*
 We support multiple payment flows, each having different requirements for what the onions contain. The following is an
@@ -116,18 +135,18 @@ object OnionPaymentPayloadTlv {
   case class OutgoingChannelId(shortChannelId: Long) extends OnionPaymentPayloadTlv
 
   /**
-   * Bolt 11 payment details (only included for the last node).
-   *
-   * @param secret      payment secret specified in the Bolt 11 invoice.
-   * @param totalAmount total amount in multi-part payments. When missing, assumed to be equal to AmountToForward.
-   */
+    * Bolt 11 payment details (only included for the last node).
+    *
+    * @param secret      payment secret specified in the Bolt 11 invoice.
+    * @param totalAmount total amount in multi-part payments. When missing, assumed to be equal to AmountToForward.
+    */
   case class PaymentData(secret: ByteVector32, totalAmount: MilliSatoshi) extends OnionPaymentPayloadTlv
 
   /**
-   * Route blinding lets the recipient provide some encrypted data for each intermediate node in the blinded part of the
-   * route. This data cannot be decrypted or modified by the sender and usually contains information to locate the next
-   * node without revealing it to the sender.
-   */
+    * Route blinding lets the recipient provide some encrypted data for each intermediate node in the blinded part of the
+    * route. This data cannot be decrypted or modified by the sender and usually contains information to locate the next
+    * node without revealing it to the sender.
+    */
   case class EncryptedRecipientData(data: ByteVector) extends OnionPaymentPayloadTlv
 
   /** Blinding ephemeral public key that should be used to derive shared secrets when using route blinding. */
@@ -137,16 +156,22 @@ object OnionPaymentPayloadTlv {
   case class OutgoingNodeId(nodeId: PublicKey) extends OnionPaymentPayloadTlv
 
   /**
-   * Invoice feature bits. Only included for intermediate trampoline nodes when they should convert to a legacy payment
-   * because the final recipient doesn't support trampoline.
-   */
+    * When payment metadata is included in a Bolt 11 invoice, we should send it as-is to the recipient.
+    * This lets recipients generate invoices without having to store anything on their side until the invoice is paid.
+    */
+  case class PaymentMetadata(data: ByteVector) extends OnionPaymentPayloadTlv
+
+  /**
+    * Invoice feature bits. Only included for intermediate trampoline nodes when they should convert to a legacy payment
+    * because the final recipient doesn't support trampoline.
+    */
   case class InvoiceFeatures(features: ByteVector) extends OnionPaymentPayloadTlv
 
   /**
-   * Invoice routing hints. Only included for intermediate trampoline nodes when they should convert to a legacy payment
-   * because the final recipient doesn't support trampoline.
-   */
-  case class InvoiceRoutingInfo(extraHops: List[PaymentRequest.ExtraHops]) extends OnionPaymentPayloadTlv
+    * Invoice routing hints. Only included for intermediate trampoline nodes when they should convert to a legacy payment
+    * because the final recipient doesn't support trampoline.
+    */
+  case class InvoiceRoutingInfo(extraHops: List[List[PaymentRequest.ExtraHop]]) extends OnionPaymentPayloadTlv
 
   /** An encrypted trampoline onion packet. */
   case class TrampolineOnion(packet: OnionRoutingPacket) extends OnionPaymentPayloadTlv
@@ -195,9 +220,9 @@ object PaymentOnion {
   sealed trait PaymentPacket extends PacketType
 
   /**
-   * A trampoline onion packet is used to defer route construction to trampoline nodes.
-   * It is usually embedded inside a [[PaymentPacket]] in the final node's payload.
-   */
+    * A trampoline onion packet is used to defer route construction to trampoline nodes.
+    * It is usually embedded inside a [[PaymentPacket]] in the final node's payload.
+    */
   sealed trait TrampolinePacket extends PacketType
 
   /** Per-hop payload from an HTLC's payment onion (after decryption and decoding). */
@@ -223,6 +248,7 @@ object PaymentOnion {
     val paymentSecret: ByteVector32
     val totalAmount: MilliSatoshi
     val paymentPreimage: Option[ByteVector32]
+    val paymentMetadata: Option[ByteVector]
   }
 
   case class RelayLegacyPayload(outgoingChannelId: Long, amountToForward: MilliSatoshi, outgoingCltv: CltvExpiry) extends ChannelRelayPayload with LegacyFormat
@@ -245,6 +271,7 @@ object PaymentOnion {
     // The following fields are only included in the trampoline-to-legacy case.
     val totalAmount = records.get[PaymentData].map(_.totalAmount).filter(_.toLong != 0L).getOrElse(amountToForward)
     val paymentSecret = records.get[PaymentData].map(_.secret)
+    val paymentMetadata = records.get[PaymentMetadata].map(_.data)
     val invoiceFeatures = records.get[InvoiceFeatures].map(_.features)
     val invoiceRoutingInfo = records.get[InvoiceRoutingInfo].map(_.extraHops)
   }
@@ -255,6 +282,7 @@ object PaymentOnion {
     override val paymentSecret = records.get[PaymentData].get.secret
     override val totalAmount = records.get[PaymentData].map(_.totalAmount).filter(_.toLong != 0L).getOrElse(amount)
     override val paymentPreimage = records.get[KeySend].map(_.paymentPreimage)
+    override val paymentMetadata = records.get[PaymentMetadata].map(_.data)
   }
 
   def createNodeRelayPayload(amount: MilliSatoshi, expiry: CltvExpiry, nextNodeId: PublicKey): NodeRelayPayload =
@@ -262,17 +290,37 @@ object PaymentOnion {
 
   /** Create a trampoline inner payload instructing the trampoline node to relay via a non-trampoline payment. */
   def createNodeRelayToNonTrampolinePayload(amount: MilliSatoshi, totalAmount: MilliSatoshi, expiry: CltvExpiry, targetNodeId: PublicKey, invoice: PaymentRequest): NodeRelayPayload = {
-    val routingInfo = InvoiceRoutingInfo(invoice.routingInfo.sortBy(_.size).take(4)) // Prevent inclusion of too many hints into onion by taking the shortest ones and then limiting their quantity
-    val tlvs = Seq[OnionPaymentPayloadTlv](AmountToForward(amount), OutgoingCltv(expiry), OutgoingNodeId(targetNodeId), InvoiceFeatures(invoice.features.toByteVector), routingInfo)
-    val tlvs2 = invoice.paymentSecret.map(s => tlvs :+ PaymentData(s, totalAmount)).getOrElse(tlvs)
-    NodeRelayPayload(TlvStream(tlvs2))
+    val tlvs = Seq(
+      Some(AmountToForward(amount)),
+      Some(OutgoingCltv(expiry)),
+      invoice.paymentSecret.map(s => PaymentData(s, totalAmount)),
+      invoice.paymentMetadata.map(m => PaymentMetadata(m)),
+      Some(OutgoingNodeId(targetNodeId)),
+      Some(InvoiceFeatures(invoice.features.toByteVector)),
+      Some(InvoiceRoutingInfo(invoice.routingInfo))
+    ).flatten
+    NodeRelayPayload(TlvStream(tlvs))
   }
 
-  def createSinglePartPayload(amount: MilliSatoshi, expiry: CltvExpiry, paymentSecret: ByteVector32, userCustomTlvs: Seq[GenericTlv] = Nil): FinalPayload =
-    FinalTlvPayload(TlvStream(Seq(AmountToForward(amount), OutgoingCltv(expiry), PaymentData(paymentSecret, amount)), userCustomTlvs))
+  def createSinglePartPayload(amount: MilliSatoshi, expiry: CltvExpiry, paymentSecret: ByteVector32, paymentMetadata: Option[ByteVector], userCustomTlvs: Seq[GenericTlv] = Nil): FinalPayload = {
+    val tlvs = Seq(
+      Some(AmountToForward(amount)),
+      Some(OutgoingCltv(expiry)),
+      Some(PaymentData(paymentSecret, amount)),
+      paymentMetadata.map(m => PaymentMetadata(m))
+    ).flatten
+    FinalTlvPayload(TlvStream(tlvs, userCustomTlvs))
+  }
 
-  def createMultiPartPayload(amount: MilliSatoshi, totalAmount: MilliSatoshi, expiry: CltvExpiry, paymentSecret: ByteVector32, additionalTlvs: Seq[OnionPaymentPayloadTlv] = Nil, userCustomTlvs: Seq[GenericTlv] = Nil): FinalPayload =
-    FinalTlvPayload(TlvStream(AmountToForward(amount) +: OutgoingCltv(expiry) +: PaymentData(paymentSecret, totalAmount) +: additionalTlvs, userCustomTlvs))
+  def createMultiPartPayload(amount: MilliSatoshi, totalAmount: MilliSatoshi, expiry: CltvExpiry, paymentSecret: ByteVector32, paymentMetadata: Option[ByteVector], additionalTlvs: Seq[OnionPaymentPayloadTlv] = Nil, userCustomTlvs: Seq[GenericTlv] = Nil): FinalPayload = {
+    val tlvs = Seq(
+      Some(AmountToForward(amount)),
+      Some(OutgoingCltv(expiry)),
+      Some(PaymentData(paymentSecret, totalAmount)),
+      paymentMetadata.map(m => PaymentMetadata(m))
+    ).flatten
+    FinalTlvPayload(TlvStream(tlvs ++ additionalTlvs, userCustomTlvs))
+  }
 
   /** Create a trampoline outer payload. */
   def createTrampolinePayload(amount: MilliSatoshi, totalAmount: MilliSatoshi, expiry: CltvExpiry, paymentSecret: ByteVector32, trampolinePacket: OnionRoutingPacket): FinalPayload = {
@@ -294,13 +342,12 @@ object PaymentOnionCodecs {
   val trampolineOnionPacketCodec: Codec[OnionRoutingPacket] = OnionRoutingCodecs.onionRoutingPacketCodec(trampolineOnionPayloadLength)
 
   /**
-   * The 1.1 BOLT spec changed the payment onion frame format to use variable-length per-hop payloads.
-   * The first bytes contain a varint encoding the length of the payload data (not including the trailing mac).
-   * That varint is considered to be part of the payload, so the payload length includes the number of bytes used by
-   * the varint prefix.
-   */
-  val payloadLengthDecoder = Decoder[Long]((bits: BitVector) =>
-    varintoverflow.decode(bits).map(d => DecodeResult(d.value + (bits.length - d.remainder.length) / 8, d.remainder)))
+    * The 1.1 BOLT spec changed the payment onion frame format to use variable-length per-hop payloads.
+    * The first bytes contain a varint encoding the length of the payload data (not including the trailing mac).
+    * That varint is considered to be part of the payload, so the payload length includes the number of bytes used by
+    * the varint prefix.
+    */
+  val payloadLengthDecoder = Decoder[Long]((bits: BitVector) => varintoverflow.decode(bits).map(d => DecodeResult(d.value + (bits.length - d.remainder.length) / 8, d.remainder)))
 
   private val amountToForward: Codec[AmountToForward] = ("amount_msat" | ltmillisatoshi).as[AmountToForward]
 
@@ -315,6 +362,8 @@ object PaymentOnionCodecs {
   private val blindingPoint: Codec[BlindingPoint] = (("length" | constant(hex"21")) :: ("blinding" | publicKey)).as[BlindingPoint]
 
   private val outgoingNodeId: Codec[OutgoingNodeId] = (("length" | constant(hex"21")) :: ("node_id" | publicKey)).as[OutgoingNodeId]
+
+  private val paymentMetadata: Codec[PaymentMetadata] = variableSizeBytesLong(varintoverflow, "payment_metadata" | bytes).as[PaymentMetadata]
 
   private val invoiceFeatures: Codec[InvoiceFeatures] = variableSizeBytesLong(varintoverflow, bytes).as[InvoiceFeatures]
 
@@ -331,6 +380,7 @@ object PaymentOnionCodecs {
     .typecase(UInt64(8), paymentData)
     .typecase(UInt64(10), encryptedRecipientData)
     .typecase(UInt64(12), blindingPoint)
+    .typecase(UInt64(16), paymentMetadata)
     // Types below aren't specified - use cautiously when deploying (be careful with backwards-compatibility).
     .typecase(UInt64(66097), invoiceFeatures)
     .typecase(UInt64(66098), outgoingNodeId)
