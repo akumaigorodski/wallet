@@ -20,8 +20,11 @@ trait Feature {
   def rfcName: String
 
   def mandatory: Int
-
   def optional: Int = mandatory + 1
+
+  def init: Boolean
+  def invoice: Boolean
+  def nodeAnnouncement: Boolean
 
   def supportBit(support: FeatureSupport): Int = support match {
     case Mandatory => mandatory case Optional => optional
@@ -47,6 +50,12 @@ case class Features(activated: Map[Feature, FeatureSupport], unknown: Set[Unknow
     val unknownFeaturesOk = remoteFeatures.unknown.forall(1 == _.bitIndex % 2)
     unknownFeaturesOk && knownFeaturesOk
   }
+
+  def initFeatures: Features = Features(activated.filter { case (f, _) => f.init }, unknown)
+
+  def nodeAnnouncementFeatures: Features = Features(activated.filter { case (f, _) => f.nodeAnnouncement }, unknown)
+
+  def invoiceFeatures: Features = Features(activated.filter { case (f, _) => f.invoice }, unknown)
 
   def toByteVector: ByteVector = {
     val unknownIndexes = for (feature <- unknown) yield feature.bitIndex
@@ -94,78 +103,142 @@ object Features {
   case object OptionDataLossProtect extends Feature {
     val rfcName = "Data loss protect"
     val mandatory = 0
+
+    val init = true
+    val invoice = false
+    val nodeAnnouncement = true
   }
 
   case object InitialRoutingSync extends Feature {
     val rfcName = "Initial routing sync"
     val mandatory = 2
+
+    val init = true
+    val invoice = false
+    val nodeAnnouncement = false
   }
 
   case object ChannelRangeQueries extends Feature {
     val rfcName = "Basic gossip queries"
     val mandatory = 6
+
+    val init = true
+    val invoice = false
+    val nodeAnnouncement = true
   }
 
   case object VariableLengthOnion extends Feature {
     val rfcName = "Advanced onion"
     val mandatory = 8
+
+    val init = true
+    val invoice = true
+    val nodeAnnouncement = true
   }
 
   case object ChannelRangeQueriesExtended extends Feature {
     val rfcName = "Fast graph sync"
     val mandatory = 10
+
+    val init = true
+    val invoice = false
+    val nodeAnnouncement = true
   }
 
   case object StaticRemoteKey extends Feature {
     val rfcName = "Direct refund"
     val mandatory = 12
+
+    val init = true
+    val invoice = false
+    val nodeAnnouncement = true
   }
 
   case object PaymentSecret extends Feature {
     val rfcName = "Payment secret"
     val mandatory = 14
+
+    val init = true
+    val invoice = true
+    val nodeAnnouncement = true
   }
 
   case object BasicMultiPartPayment extends Feature {
     val rfcName = "Multipart payments"
     val mandatory = 16
+
+    val init = true
+    val invoice = true
+    val nodeAnnouncement = true
   }
 
   case object Wumbo extends Feature {
     val rfcName = "Large channels"
     val mandatory = 18
-  }
 
-  case object TrampolinePayment extends Feature {
-    val rfcName = "Trampoline payments"
-    val mandatory = 50
-  }
-
-  case object ChainSwap extends Feature {
-    val rfcName = "Chain swaps"
-    val mandatory = 32770
-  }
-
-  case object HostedChannels extends Feature {
-    val rfcName = "Hosted channels"
-    val mandatory = 32972
-  }
-
-  case object ResizeableHostedChannels extends Feature {
-    val rfcName = "Resizeable Hosted channels"
-    val mandatory = 32974
+    val init = true
+    val invoice = false
+    val nodeAnnouncement = true
   }
 
   case object ShutdownAnySegwit extends Feature {
     val rfcName = "Any shutdown script"
     val mandatory = 26
+
+    val init = true
+    val invoice = false
+    val nodeAnnouncement = true
+  }
+
+  case object PaymentMetadata extends Feature {
+    val rfcName = "Payment invoice metadata"
+    val mandatory = 48
+
+    val init = false
+    val invoice = true
+    val nodeAnnouncement = false
+  }
+
+  case object TrampolinePayment extends Feature {
+    val rfcName = "Trampoline payments"
+    val mandatory = 50
+
+    val init = true
+    val invoice = true
+    val nodeAnnouncement = true
+  }
+
+  case object ChainSwap extends Feature {
+    val rfcName = "Chain swaps"
+    val mandatory = 32770
+
+    val init = true
+    val invoice = false
+    val nodeAnnouncement = true
+  }
+
+  case object HostedChannels extends Feature {
+    val rfcName = "Hosted channels"
+    val mandatory = 32972
+
+    val init = true
+    val invoice = false
+    val nodeAnnouncement = true
+  }
+
+  case object ResizeableHostedChannels extends Feature {
+    val rfcName = "Resizeable Hosted channels"
+    val mandatory = 32974
+
+    val init = true
+    val invoice = false
+    val nodeAnnouncement = true
   }
 
   val knownFeatures: Set[Feature] =
-    Set(ChannelRangeQueriesExtended, OptionDataLossProtect, BasicMultiPartPayment,
-      ChannelRangeQueries, VariableLengthOnion, InitialRoutingSync, ShutdownAnySegwit,
-      TrampolinePayment, StaticRemoteKey, HostedChannels, ResizeableHostedChannels,
-      PaymentSecret, ChainSwap, Wumbo)
+    Set(ChannelRangeQueriesExtended, OptionDataLossProtect, BasicMultiPartPayment, ChannelRangeQueries, VariableLengthOnion,
+      InitialRoutingSync, ShutdownAnySegwit, PaymentMetadata, TrampolinePayment, StaticRemoteKey, HostedChannels,
+      ResizeableHostedChannels, PaymentSecret, ChainSwap, Wumbo)
 
   // Returns true if both feature sets are compatible
   def areCompatible(ours: Features, theirs: Features): Boolean =

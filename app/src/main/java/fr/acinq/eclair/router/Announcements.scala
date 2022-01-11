@@ -68,21 +68,6 @@ object Announcements {
     )
   }
 
-  def makeNodeAnnouncement(nodeSecret: PrivateKey, alias: String, color: Color, nodeAddresses: List[NodeAddress], features: Features, timestamp: Long = System.currentTimeMillis.milliseconds.toSeconds): NodeAnnouncement = {
-    require(alias.length <= 32)
-    val witness = nodeAnnouncementWitnessEncode(timestamp, nodeSecret.publicKey, color, alias, features, nodeAddresses, unknownFields = ByteVector.empty)
-    val sig = Crypto.sign(witness, nodeSecret)
-    NodeAnnouncement(
-      signature = sig,
-      timestamp = timestamp,
-      nodeId = nodeSecret.publicKey,
-      rgbColor = color,
-      alias = alias,
-      features = features,
-      addresses = nodeAddresses
-    )
-  }
-
   def isNode1(localNodeId: PublicKey, remoteNodeId: PublicKey): Boolean = LexicographicalOrdering.isLessThan(localNodeId.value, remoteNodeId.value)
 
   def isNode1(channelFlags: Byte): Boolean = (channelFlags & 1) == 0
