@@ -8,10 +8,10 @@
     android:padding="15dp">
 
     <TextView
+        android:gravity="center"
         android:id="@+id/qrLabel"
         android:paddingTop="10dp"
         android:paddingBottom="20dp"
-        android:textAlignment="center"
         style="@style/FillingView"/>
 
     <ImageView

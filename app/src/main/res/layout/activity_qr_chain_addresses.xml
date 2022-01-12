@@ -5,7 +5,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <TextView
-        android:textAlignment="center"
+        android:gravity="center"
         android:layout_marginTop="40dp"
         android:id="@+id/chainQrCaption"
         android:layout_alignParentTop="true"
