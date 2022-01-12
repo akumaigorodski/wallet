@@ -33,6 +33,7 @@ object PaymentFailure {
   final val RUN_OUT_OF_CAPABLE_CHANNELS = "run-out-of-capable-channels"
   final val NODE_COULD_NOT_PARSE_ONION = "node-could-not-parse-onion"
   final val NOT_RETRYING_NO_DETAILS = "not-retrying-no-details"
+  final val ONION_CREATION_FAILURE = "onion-creation-failure"
   final val TIMED_OUT = "timed-out"
 }
 
@@ -335,11 +336,17 @@ class OutgoingPaymentSender(val fullTag: FullPaymentTag, val listeners: Iterable
       data.parts.values.collectFirst {
         case wait: WaitForRouteOrInFlight if wait.flight.isEmpty && wait.partId == found.partId =>
           val payeeExpiry = data.cmd.chainExpiry.fold(fb = _.toCltvExpiry(LNParams.blockCount.get + 1L), fa = identity)
-          val finalPayload = PaymentOnion.createMultiPartPayload(wait.amount, data.cmd.split.totalSum, payeeExpiry, data.cmd.outerPaymentSecret, data.cmd.payeeMetadata, data.cmd.onionTlvs, data.cmd.userCustomTlvs)
-          val (firstAmount, firstExpiry, onion) = OutgoingPaymentPacket.buildPaymentPacket(wait.onionKey, fullTag.paymentHash, found.route.hops, finalPayload)
-          val cmdAdd = CMD_ADD_HTLC(fullTag, firstAmount, firstExpiry, PacketAndSecrets(onion.packet, onion.sharedSecrets), finalPayload)
-          become(data.copy(parts = data.parts + wait.withKnownRoute(cmdAdd, found.route).tuple), PENDING)
-          wait.cnc.chan process cmdAdd
+          val finalPayload = PaymentOnion.createMultiPartPayload(wait.amount, data.cmd.split.totalSum, payeeExpiry,
+            data.cmd.outerPaymentSecret, data.cmd.payeeMetadata, data.cmd.onionTlvs, data.cmd.userCustomTlvs)
+
+          OutgoingPaymentPacket.buildPaymentPacket(wait.onionKey, fullTag.paymentHash, found.route.hops, finalPayload) map { case (firstAmount, firstExpiry, onion) =>
+            val cmdAdd = CMD_ADD_HTLC(fullTag, firstAmount, firstExpiry, PacketAndSecrets(onion.packet, onion.sharedSecrets), finalPayload)
+            become(data.copy(parts = data.parts + wait.withKnownRoute(cmdAdd, found.route).tuple), PENDING)
+            wait.cnc.chan process cmdAdd
+          } getOrElse {
+            // One failure reason could be too much metadata, or too many routing hints if this is a trampoline payment
+            me abortMaybeNotify data.withoutPartId(wait.partId).withLocalFailure(ONION_CREATION_FAILURE, wait.amount)
+          }
       }
 
     case (reject: LocalReject, PENDING) =>
