@@ -17,6 +17,7 @@ import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.sqlite._
 import com.btcontract.wallet.utils.{AwaitService, DelayedNotification, LocalBackup}
+import com.guardanis.applock.AppLock
 import com.softwaremill.quicklens._
 import fr.acinq.bitcoin.{Block, ByteVector32, Satoshi, SatoshiLong}
 import fr.acinq.eclair._
@@ -45,7 +46,6 @@ import scala.util.Try
 
 
 object WalletApp {
-  var userSentAppToBackground: Boolean = false
   var chainWalletBag: SQLiteChainWallet = _
   var extDataBag: SQLiteDataExtended = _
   var lnUrlPayBag: SQLiteLNUrlPay = _
@@ -65,7 +65,6 @@ object WalletApp {
     def work(useDelay: Boolean): Observable[Any] = if (useDelay) Rx.ioQueue.delay(4.seconds) else Observable.just(null)
   }
 
-  final val USE_AUTH = "useAuth"
   final val FIAT_CODE = "fiatCode"
   final val BTC_DENOM = "btcDenom"
   final val ENSURE_TOR = "ensureTor"
@@ -76,7 +75,7 @@ object WalletApp {
   final val SHOW_RATE_US = "showRateUs"
   final val OPEN_HC = "openHc1"
 
-  def useAuth: Boolean = app.prefs.getBoolean(USE_AUTH, false)
+  def useAuth: Boolean = AppLock.isEnrolled(app)
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
   def ensureTor: Boolean = app.prefs.getBoolean(ENSURE_TOR, false)
   def maximizedView: Boolean = app.prefs.getBoolean(MAXIMIZED_VIEW, true)
@@ -401,9 +400,8 @@ class WalletApp extends Application { me =>
   }
 
   override def onTrimMemory(level: Int): Unit = {
-    // Most notably this will be used to determine if auth should be requested
-    val shouldSetTrue = level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN
-    if (shouldSetTrue) WalletApp.userSentAppToBackground = true
+    val shouldResetUnlock = level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN
+    if (shouldResetUnlock) AppLock.getInstance(me).setAuthenticationRequired
     super.onTrimMemory(level)
   }
 

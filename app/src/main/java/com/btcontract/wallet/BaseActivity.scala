@@ -34,6 +34,7 @@ import com.google.common.cache.{Cache, CacheBuilder}
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.{BarcodeFormat, EncodeHintType}
+import com.guardanis.applock.AppLock
 import com.journeyapps.barcodescanner.{BarcodeResult, BarcodeView}
 import com.ornach.nobobutton.NoboButton
 import com.softwaremill.quicklens._
@@ -774,10 +775,11 @@ trait BaseActivity extends AppCompatActivity { me =>
 trait BaseCheckActivity extends BaseActivity { me =>
   def PROCEED(state: Bundle): Unit
 
-  override def onResume: Unit = {
-    val shouldAskAuth = WalletApp.userSentAppToBackground && WalletApp.useAuth
-    if (shouldAskAuth) me exitTo ClassNames.mainActivityClass
-    super.onResume
+  override def onResume: Unit = runAnd(super.onResume) {
+    if (AppLock.isUnlockRequired(me) && WalletApp.useAuth) {
+      val intent: Intent = new Intent(me, ClassNames.unlockActivityClass)
+      startActivityForResult(intent, AppLock.REQUEST_CODE_UNLOCK)
+    }
   }
 
   override def START(state: Bundle): Unit = {
@@ -882,7 +884,9 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     cardViews.map(_.view).foreach(holder.addView)
   }
 
-  def update(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.zip(wallets).foreach { case (card, wallet) => card updateView wallet }
+  def update(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.zip(wallets).foreach {
+    case (card, wallet) => card updateView wallet
+  }
 
   def unPad(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.foreach(_.unPad)
 

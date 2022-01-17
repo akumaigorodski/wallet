@@ -241,7 +241,7 @@
     <string name="settings_chain_legacy">Legacy wallet</string>
     <string name="settings_chain_modern">Modern wallet</string>
 
-    <string name="settings_use_auth">Use biometric authentication</string>
+    <string name="settings_use_auth">Use PIN authentication</string>
     <string name="settings_auth_no_support">No authentication support on this phone</string>
     <string name="settings_auth_add_method">Register an authentication method in system settings</string>
     <string name="settings_auth_not_available">Authentication support is blocked at the moment, try again later</string>

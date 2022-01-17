@@ -11,6 +11,7 @@ import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.sheets.{BaseChoiceBottomSheet, PairingData}
 import com.btcontract.wallet.utils.{LocalBackup, OnListItemClickListener}
 import com.google.android.material.snackbar.Snackbar
+import com.guardanis.applock.AppLock
 import fr.acinq.bitcoin.Satoshi
 import fr.acinq.eclair.MilliSatoshi
 import fr.acinq.eclair.blockchain.EclairWallet
@@ -30,6 +31,7 @@ abstract class SettingsHolder(host: BaseActivity) {
   val settingsCheck: CheckBox = view.findViewById(R.id.settingsCheck).asInstanceOf[CheckBox]
   val settingsTitle: TextView = view.findViewById(R.id.settingsTitle).asInstanceOf[TextView]
   val settingsInfo: TextView = view.findViewById(R.id.settingsInfo).asInstanceOf[TextView]
+  val REQUEST_CODE_CREATE_LOCK: Int = 103
   def updateView: Unit
 
   def putBoolAndUpdateView(key: String, value: Boolean): Unit = {
@@ -256,18 +258,11 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
   }
 
   lazy private[this] val useBiometric: SettingsHolder = new SettingsHolder(me) {
-    private def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.settingsContainer), me, _.dismiss) {
-      def onHardwareUnavailable: Unit = WalletApp.app.quickToast(R.string.settings_auth_not_available)
-      def onNoneEnrolled: Unit = WalletApp.app.quickToast(R.string.settings_auth_add_method)
-      def onNoHardware: Unit = WalletApp.app.quickToast(R.string.settings_auth_no_support)
-      def onAuthSucceeded: Unit = putBoolAndUpdateView(WalletApp.USE_AUTH, value = true)
-      def onCanAuthenticate: Unit = callAuthDialog
-    }.checkAuth
-
     def updateView: Unit = settingsCheck.setChecked(WalletApp.useAuth)
 
     view setOnClickListener onButtonTap {
-      if (WalletApp.useAuth) putBoolAndUpdateView(WalletApp.USE_AUTH, value = false) else makeAttempt
+      if (WalletApp.useAuth) runAnd(AppLock.getInstance(me).invalidateEnrollments)(updateView)
+      else startActivityForResult(new Intent(me, ClassNames.lockCreationClass), REQUEST_CODE_CREATE_LOCK)
     }
 
     settingsTitle.setText(settings_use_auth)

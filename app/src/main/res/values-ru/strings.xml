@@ -241,7 +241,7 @@
     <string name="settings_chain_legacy">Устаревший кошелек</string>
     <string name="settings_chain_modern">Современный кошелек</string>
 
-    <string name="settings_use_auth">Биометрическая авторизация</string>
+    <string name="settings_use_auth">PIN авторизация</string>
     <string name="settings_auth_no_support">На этом телефоне нет поддержки аутентификации</string>
     <string name="settings_auth_add_method">Сначала создайте способ авторизации в настройках телефона</string>
     <string name="settings_auth_not_available">Поддержка аутентификации заблокирована, попробуйте позже</string>
