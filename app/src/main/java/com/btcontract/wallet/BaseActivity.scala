@@ -423,15 +423,15 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     def updatedFiatFromBtc: String =
       WalletApp.msatInFiat(rates, fiatCode)(resultMsat)
-        .filter(0D.!=).map(_.toString)
-        .getOrElse(null)
+        .filter(0.001D <= _).map(_.toString)
+        .getOrElse("0.00")
 
     def updatedBtcFromFiat: String =
       WalletApp.currentRate(rates, fiatCode)
         .map(perBtc => bigDecimalFrom(fiatInputAmount) / perBtc)
-        .filter(0D.!=).map(Denomination.btcBigDecimal2MSat)
+        .filter(0.000000001D <= _).map(Denomination.btcBigDecimal2MSat)
         .map(WalletApp.denom.fromMsat).map(_.toString)
-        .getOrElse(null)
+        .getOrElse("0.00")
 
     def updateFiatInput: Unit = {
       fiatInputAmount setText updatedFiatFromBtc
