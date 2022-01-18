@@ -135,7 +135,7 @@ trait BaseActivity extends AppCompatActivity { me =>
   def bringChainWalletChooser(title: TitleView)(onWalletSelected: ElectrumEclairWallet => Unit): Unit = {
     val cardsContainer = getLayoutInflater.inflate(R.layout.frag_linear_layout, null).asInstanceOf[LinearLayout]
     val alert = mkCheckForm(_.dismiss, none, titleBodyAsViewBuilder(title.view, cardsContainer), dialog_cancel, -1)
-    addFlowChip(title.flow, getString(choose_wallet), R.drawable.border_gray)
+    addFlowChip(title.flow, getString(choose_wallet), R.drawable.border_yellow)
 
     val chooser: ChainWalletCards = new ChainWalletCards(me) {
       override def onWalletTap(wallet: ElectrumEclairWallet): Unit = {
@@ -912,8 +912,8 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     val showMenuTip: ImageView = view.findViewById(R.id.showMenuTip).asInstanceOf[ImageView]
 
     def unPad: Unit = {
-      chainPaddingWrap.setPadding(0, 0, 0, 0)
-      chainWrap.setRadius(0F)
+      val padding: Int = chainPaddingWrap.getPaddingTop
+      chainPaddingWrap.setPadding(padding, padding, padding, 0)
       view.setLockDrag(true)
     }
 
