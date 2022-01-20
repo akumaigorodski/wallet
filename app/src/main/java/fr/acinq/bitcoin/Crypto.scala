@@ -1,6 +1,9 @@
 package fr.acinq.bitcoin
 
-import fr.acinq.secp256k1.Secp256k1
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.math.BigInteger
+
+import fr.acinq.secp256k1.{Secp256k1, Secp256k1JvmKt}
 import org.bouncycastle.asn1.sec.SECNamedCurves
 import org.bouncycastle.asn1.{ASN1Integer, DERSequenceGenerator}
 import org.bouncycastle.crypto.Digest
@@ -11,9 +14,6 @@ import org.bouncycastle.crypto.signers.{ECDSASigner, HMacDSAKCalculator}
 import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
-import java.math.BigInteger
-
 
 object Crypto {
   val params = SECNamedCurves.getByName("secp256k1")
@@ -22,7 +22,7 @@ object Crypto {
   val zero = BigInteger.valueOf(0)
   val one = BigInteger.valueOf(1)
 
-  private lazy val nativeSecp256k1: Option[Secp256k1] = Some(Secp256k1.Companion)
+  private lazy val nativeSecp256k1: Option[Secp256k1] = Some(Secp256k1JvmKt.getSecpk256k1)
 
   def fixSize(data: ByteVector): ByteVector32 = ByteVector32(data.padLeft(32))
 

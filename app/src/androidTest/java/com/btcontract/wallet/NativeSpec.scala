@@ -1,19 +1,20 @@
 package com.btcontract.wallet
 
-import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey, curve, one}
-import fr.acinq.bitcoin.{Base58, Base58Check, ByteVector64, Crypto}
-import org.bouncycastle.crypto.params.ECPublicKeyParameters
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.bouncycastle.crypto.signers.ECDSASigner
-import fr.acinq.bitcoin.Base58.Prefix
-import org.bitcoin.Secp256k1Context
-import org.junit.Assert.assertTrue
-import org.junit.runner.RunWith
-import scodec.bits.ByteVector
 import java.math.BigInteger
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.samourai.wallet.schnorr.Schnorr
+import fr.acinq.bitcoin.Base58.Prefix
+import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey, curve, one}
+import fr.acinq.bitcoin.{Base58, Base58Check, ByteVector64, Crypto}
+import fr.acinq.secp256k1.Secp256k1JvmKt
 import immortan.utils.Haiku
+import org.bouncycastle.crypto.params.ECPublicKeyParameters
+import org.bouncycastle.crypto.signers.ECDSASigner
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import scodec.bits.ByteVector
 
 
 @RunWith(classOf[AndroidJUnit4])
@@ -40,7 +41,7 @@ class NativeSpec {
 
   @Test
   def utxoNames: Unit = {
-    val generated = for (_ <- 0 to 100) yield Haiku.name(fr.acinq.eclair.randomBytes32)
+    val generated = for (_ <- 0 to 50) yield Haiku.name(fr.acinq.eclair.randomBytes32)
     assert(generated.toSet.size == generated.size)
   }
 
@@ -160,5 +161,17 @@ class NativeSpec {
     val sig64 = Crypto.sign(message, priv)
     val check = Crypto.recoverPublicKey(sig64, message, recid)
     assertTrue(check == pub)
+  }
+
+  @Test
+  def schnorrSignature: Unit = {
+    val seckey = ByteVector.fromValidHex("0000000000000000000000000000000000000000000000000000000000000003").toArray
+    val msg = ByteVector.fromValidHex("0000000000000000000000000000000000000000000000000000000000000000").toArray
+    val auxrand32 = ByteVector.fromValidHex("0000000000000000000000000000000000000000000000000000000000000000").toArray
+    val sig = Schnorr.sign(msg, seckey, auxrand32)
+    assertTrue("E907831F80848D1069A5371B402410364BDF1C5F8307B0084C55F1CE2DCA821525F66A4A85EA8B71E482A74F382D2CE5EBEEE8FDB2172F477DF4900D310536C0" == ByteVector(sig).toHex.toUpperCase)
+    val pubkey = Secp256k1JvmKt.getSecpk256k1.pubkeyCreate(seckey).slice(1, 33)
+    assertTrue("F9308A019258C31049344F85F89D5229B531C845836F99B08601F113BCE036F9" == ByteVector(pubkey).toHex.toUpperCase)
+    assertTrue(Schnorr.verify(msg, pubkey, sig))
   }
 }
