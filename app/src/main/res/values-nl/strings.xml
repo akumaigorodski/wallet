@@ -109,7 +109,7 @@
     <string name="dialog_ln_requested"><![CDATA[<b>verzocht</b>&#160;%1$s]]></string>
     <string name="dialog_ln_left"><![CDATA[<b>nog te betalen</b>&#160;%1$s]]></string>
 
-    <string name="btc_transfer_label"><![CDATA[oude -> hedendaagse portemonnee]]></string>
+    <string name="btc_transfer_label"><![CDATA[oude -> hedendaagse]]></string>
     <string name="btc_transfer_message"><![CDATA[Lokaal transport van Bitcoin van oudere naar hedendaagse ketenportemonnee]]></string>
     <string name="recovery_phrase_warning">Tik om de herstelzin van de portemonnee op te slaan voor het geval je je apparaat ooit verliest of vervangt.</string>
 
