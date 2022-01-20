@@ -358,7 +358,7 @@ class WalletApp extends Application { me =>
   }
 
   lazy val plur: (Array[String], Long) => String = getString(R.string.lang) match {
-    case "eng" | "esp" | "port" => (opts: Array[String], num: Long) => if (num == 1) opts(1) else opts(2)
+    case "eng" | "esp" | "port" | "nld" => (opts: Array[String], num: Long) => if (num == 1) opts(1) else opts(2)
     case "chn" | "jpn" => (phraseOptions: Array[String], _: Long) => phraseOptions(1)
     case "rus" | "ukr" => (phraseOptions: Array[String], num: Long) =>
 

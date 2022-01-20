@@ -241,14 +241,9 @@
     <string name="settings_chain_legacy">Oudere portemonnee</string>
     <string name="settings_chain_modern">Hedendaagse portemonnee</string>
 
-    <string name="settings_use_auth">Gebruik biometrische authenticatie</string>
-    <string name="settings_auth_no_support">Geen authenticatieondersteuning op dit apparaat</string>
-    <string name="settings_auth_add_method">Registreer een authenticatiemethode in de systeeminstellingen</string>
-    <string name="settings_auth_not_available">Authenticatieondersteuning is op dit moment geblokkeerd, probeer later nog eens</string>
-    <string name="settings_auth_error"><![CDATA[<b>Authenticatiefout</b><br><b>Details</b>: %1$s]]></string>
-    <string name="settings_auth_title">Portemonneeauthenticatie</string>
-
+    <string name="settings_use_auth">Gebruik PIN authenticatie</string>
     <string name="settings_ensure_tor">Gebruik Torverbinding</string>
+
     <string name="ln_sync_not_complete">LN SYNC is nog niet klaar, wacht a.u.b. even terwijl je de app open houdt en probeer dan nog eens.</string>
     <string name="ln_payee_likely_offline">Het is waarschijnlijk dat de portemonnee van de begunstigde momenteel offline is</string>
 
