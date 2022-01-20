@@ -3,7 +3,7 @@
     <string name="lang">eng</string>
     <string name="app_name">SBW</string>
     <string name="sources">View source code</string>
-    <string name="twitter">Follow us on twitter</string>
+    <string name="twitter">Follow us on Twitter</string>
     <string name="manual">Read manual</string>
 
     <string name="choose_wallet">Choose a wallet</string>
@@ -111,7 +111,7 @@
 
     <string name="btc_transfer_label"><![CDATA[legacy -> modern wallet]]></string>
     <string name="btc_transfer_message"><![CDATA[Local transfer of Bitcoin from legacy to modern chain wallet]]></string>
-    <string name="recovery_phrase_warning">Tap to save wallet recovery phrase in case you ever lose or replace your phone.</string>
+    <string name="recovery_phrase_warning">Tap to save wallet recovery phrase in case you ever lose or replace your device.</string>
 
     <!-- errors -->
 
@@ -186,7 +186,7 @@
     <string name="tx_description_refunding">Channel balance refunding</string>
     <string name="tx_description_htlc_claiming">Lightning payment claiming</string>
     <string name="tx_description_penalty">Channel breach penalty</string>
-    <string name="tx_description_rbf_cancel">RBF cancelling</string>
+    <string name="tx_description_rbf_cancel">RBF canceling</string>
     <string name="tx_description_rbf_boost">RBF boosting</string>
     <string name="tx_description_cpfp">CPFP boosting</string>
 
