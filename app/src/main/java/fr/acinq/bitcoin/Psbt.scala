@@ -10,12 +10,12 @@ import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 /**
- * A partially signed bitcoin transaction: see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki.
- *
- * @param global  global psbt data containing the transaction to be signed.
- * @param inputs  signing data for each input of the transaction to be signed (order matches the unsigned tx).
- * @param outputs signing data for each output of the transaction to be signed (order matches the unsigned tx).
- */
+  * A partially signed bitcoin transaction: see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki.
+  *
+  * @param global  global psbt data containing the transaction to be signed.
+  * @param inputs  signing data for each input of the transaction to be signed (order matches the unsigned tx).
+  * @param outputs signing data for each output of the transaction to be signed (order matches the unsigned tx).
+  */
 case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.Output]) {
 
   import Psbt._
@@ -24,17 +24,17 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   require(global.tx.txOut.length == outputs.length, "there must be one partially signed output per output of the unsigned tx")
 
   /**
-   * Implements the PSBT updater role; adds information about a given segwit utxo.
-   * When you have access to the complete input transaction, you should prefer [[updateWitnessInputTx]].
-   *
-   * @param outPoint        utxo being spent.
-   * @param txOut           transaction output for the provided outPoint.
-   * @param redeemScript    redeem script if known and applicable (when using p2sh-embedded segwit).
-   * @param witnessScript   witness script if known and applicable (when using p2wsh).
-   * @param sighashType     sighash type if one should be specified.
-   * @param derivationPaths derivation paths for keys used by this utxo.
-   * @return psbt with the matching input updated.
-   */
+    * Implements the PSBT updater role; adds information about a given segwit utxo.
+    * When you have access to the complete input transaction, you should prefer [[updateWitnessInputTx]].
+    *
+    * @param outPoint        utxo being spent.
+    * @param txOut           transaction output for the provided outPoint.
+    * @param redeemScript    redeem script if known and applicable (when using p2sh-embedded segwit).
+    * @param witnessScript   witness script if known and applicable (when using p2wsh).
+    * @param sighashType     sighash type if one should be specified.
+    * @param derivationPaths derivation paths for keys used by this utxo.
+    * @return psbt with the matching input updated.
+    */
   def updateWitnessInput(outPoint: OutPoint,
                          txOut: TxOut,
                          redeemScript: Option[Seq[ScriptElt]] = None,
@@ -72,17 +72,17 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Implements the PSBT updater role; adds information about a given segwit utxo.
-   * Note that we always fill the nonWitnessUtxo (see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#cite_note-7).
-   *
-   * @param inputTx         transaction containing the utxo.
-   * @param outputIndex     index of the utxo in the inputTx.
-   * @param redeemScript    redeem script if known and applicable (when using p2sh-embedded segwit).
-   * @param witnessScript   witness script if known and applicable (when using p2wsh).
-   * @param sighashType     sighash type if one should be specified.
-   * @param derivationPaths derivation paths for keys used by this utxo.
-   * @return psbt with the matching input updated.
-   */
+    * Implements the PSBT updater role; adds information about a given segwit utxo.
+    * Note that we always fill the nonWitnessUtxo (see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#cite_note-7).
+    *
+    * @param inputTx         transaction containing the utxo.
+    * @param outputIndex     index of the utxo in the inputTx.
+    * @param redeemScript    redeem script if known and applicable (when using p2sh-embedded segwit).
+    * @param witnessScript   witness script if known and applicable (when using p2wsh).
+    * @param sighashType     sighash type if one should be specified.
+    * @param derivationPaths derivation paths for keys used by this utxo.
+    * @return psbt with the matching input updated.
+    */
   def updateWitnessInputTx(inputTx: Transaction,
                            outputIndex: Int,
                            redeemScript: Option[Seq[ScriptElt]] = None,
@@ -123,15 +123,15 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Implements the PSBT updater role; adds information about a given non-segwit utxo.
-   *
-   * @param inputTx         transaction containing the utxo.
-   * @param outputIndex     index of the utxo in the inputTx.
-   * @param redeemScript    redeem script if known and applicable (when using p2sh).
-   * @param sighashType     sighash type if one should be specified.
-   * @param derivationPaths derivation paths for keys used by this utxo.
-   * @return psbt with the matching input updated.
-   */
+    * Implements the PSBT updater role; adds information about a given non-segwit utxo.
+    *
+    * @param inputTx         transaction containing the utxo.
+    * @param outputIndex     index of the utxo in the inputTx.
+    * @param redeemScript    redeem script if known and applicable (when using p2sh).
+    * @param sighashType     sighash type if one should be specified.
+    * @param derivationPaths derivation paths for keys used by this utxo.
+    * @return psbt with the matching input updated.
+    */
   def updateNonWitnessInput(inputTx: Transaction,
                             outputIndex: Int,
                             redeemScript: Option[Seq[ScriptElt]] = None,
@@ -188,14 +188,14 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Add details for a segwit output.
-   *
-   * @param outputIndex     index of the output in the psbt.
-   * @param witnessScript   witness script if known and applicable (when using p2wsh).
-   * @param redeemScript    redeem script if known and applicable (when using p2sh-embedded segwit).
-   * @param derivationPaths derivation paths for keys used by this output.
-   * @return psbt with the matching output updated.
-   */
+    * Add details for a segwit output.
+    *
+    * @param outputIndex     index of the output in the psbt.
+    * @param witnessScript   witness script if known and applicable (when using p2wsh).
+    * @param redeemScript    redeem script if known and applicable (when using p2sh-embedded segwit).
+    * @param derivationPaths derivation paths for keys used by this output.
+    * @return psbt with the matching output updated.
+    */
   def updateWitnessOutput(outputIndex: Int,
                           witnessScript: Option[Seq[ScriptElt]] = None,
                           redeemScript: Option[Seq[ScriptElt]] = None,
@@ -214,13 +214,13 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Add details for a non-segwit output.
-   *
-   * @param outputIndex     index of the output in the psbt.
-   * @param redeemScript    redeem script if known and applicable (when using p2sh).
-   * @param derivationPaths derivation paths for keys used by this output.
-   * @return psbt with the matching output updated.
-   */
+    * Add details for a non-segwit output.
+    *
+    * @param outputIndex     index of the output in the psbt.
+    * @param redeemScript    redeem script if known and applicable (when using p2sh).
+    * @param derivationPaths derivation paths for keys used by this output.
+    * @return psbt with the matching output updated.
+    */
   def updateNonWitnessOutput(outputIndex: Int,
                              redeemScript: Option[Seq[ScriptElt]] = None,
                              derivationPaths: Map[PublicKey, KeyPathWithMaster] = Map.empty): Try[Psbt] = Try {
@@ -237,14 +237,14 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Implements the PSBT signer role: sign a given input.
-   * The caller needs to carefully verify that it wants to spend that input, and that the unsigned transaction matches
-   * what it expects.
-   *
-   * @param priv     private key used to sign the input.
-   * @param outPoint input that should be signed.
-   * @return the psbt with a partial signature added (other inputs will not be modified).
-   */
+    * Implements the PSBT signer role: sign a given input.
+    * The caller needs to carefully verify that it wants to spend that input, and that the unsigned transaction matches
+    * what it expects.
+    *
+    * @param priv     private key used to sign the input.
+    * @param outPoint input that should be signed.
+    * @return the psbt with a partial signature added (other inputs will not be modified).
+    */
   def sign(priv: PrivateKey, outPoint: OutPoint): Try[SignPsbtResult] = {
     val inputIndex = global.tx.txIn.indexWhere(_.outPoint == outPoint)
     require(inputIndex >= 0, "psbt transaction does not spend the provided outpoint")
@@ -252,14 +252,14 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Implements the PSBT signer role: sign a given input.
-   * The caller needs to carefully verify that it wants to spend that input, and that the unsigned transaction matches
-   * what it expects.
-   *
-   * @param priv       private key used to sign the input.
-   * @param inputIndex index of the input that should be signed.
-   * @return the psbt with a partial signature added (other inputs will not be modified).
-   */
+    * Implements the PSBT signer role: sign a given input.
+    * The caller needs to carefully verify that it wants to spend that input, and that the unsigned transaction matches
+    * what it expects.
+    *
+    * @param priv       private key used to sign the input.
+    * @param inputIndex index of the input that should be signed.
+    * @return the psbt with a partial signature added (other inputs will not be modified).
+    */
   def sign(priv: PrivateKey, inputIndex: Int): Try[SignPsbtResult] = Try {
     require(inputIndex < inputs.length, "input index must exist in the input tx")
     val input = inputs(inputIndex)
@@ -270,13 +270,13 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Implements the PSBT finalizer role: finalizes a given segwit input.
-   * This will clear all fields from the input except the utxo, scriptSig, scriptWitness and unknown entries.
-   *
-   * @param outPoint      input that should be finalized.
-   * @param scriptWitness witness script.
-   * @return a psbt with the given input finalized.
-   */
+    * Implements the PSBT finalizer role: finalizes a given segwit input.
+    * This will clear all fields from the input except the utxo, scriptSig, scriptWitness and unknown entries.
+    *
+    * @param outPoint      input that should be finalized.
+    * @param scriptWitness witness script.
+    * @return a psbt with the given input finalized.
+    */
   def finalizeWitnessInput(outPoint: OutPoint, scriptWitness: ScriptWitness): Try[Psbt] = {
     val inputIndex = global.tx.txIn.indexWhere(_.outPoint == outPoint)
     require(inputIndex >= 0, "psbt transaction does not spend the provided outpoint")
@@ -284,13 +284,13 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Implements the PSBT finalizer role: finalizes a given segwit input.
-   * This will clear all fields from the input except the utxo, scriptSig, scriptWitness and unknown entries.
-   *
-   * @param inputIndex    index of the input that should be finalized.
-   * @param scriptWitness witness script.
-   * @return a psbt with the given input finalized.
-   */
+    * Implements the PSBT finalizer role: finalizes a given segwit input.
+    * This will clear all fields from the input except the utxo, scriptSig, scriptWitness and unknown entries.
+    *
+    * @param inputIndex    index of the input that should be finalized.
+    * @param scriptWitness witness script.
+    * @return a psbt with the given input finalized.
+    */
   def finalizeWitnessInput(inputIndex: Int, scriptWitness: ScriptWitness): Try[Psbt] = {
     if (inputIndex >= inputs.length) {
       Failure(new IllegalArgumentException("input index must exist in the input tx"))
@@ -300,7 +300,7 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
         case _: PartiallySignedNonWitnessInput => Failure(new IllegalArgumentException("cannot finalize: input is a non-segwit input"))
         case input: PartiallySignedWitnessInput =>
           val scriptSig = input.redeemScript.map(script => OP_PUSHDATA(Script.write(script)) :: Nil) // p2sh-embedded segwit
-          val finalizedInput = FinalizedWitnessInput(input.txOut, input.nonWitnessUtxo, scriptWitness, scriptSig, input.ripemd160, input.sha256, input.hash160, input.hash256, input.unknown)
+        val finalizedInput = FinalizedWitnessInput(input.txOut, input.nonWitnessUtxo, scriptWitness, scriptSig, input.ripemd160, input.sha256, input.hash160, input.hash256, input.unknown)
           Success(this.copy(inputs = this.inputs.updated(inputIndex, finalizedInput)))
         case _: FinalizedInput => Failure(new IllegalArgumentException("cannot finalize: input has already been finalized"))
       }
@@ -308,13 +308,13 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Implements the PSBT finalizer role: finalizes a given non-segwit input.
-   * This will clear all fields from the input except the utxo, scriptSig and unknown entries.
-   *
-   * @param outPoint  input that should be finalized.
-   * @param scriptSig signature script.
-   * @return a psbt with the given input finalized.
-   */
+    * Implements the PSBT finalizer role: finalizes a given non-segwit input.
+    * This will clear all fields from the input except the utxo, scriptSig and unknown entries.
+    *
+    * @param outPoint  input that should be finalized.
+    * @param scriptSig signature script.
+    * @return a psbt with the given input finalized.
+    */
   def finalizeNonWitnessInput(outPoint: OutPoint, scriptSig: Seq[ScriptElt]): Try[Psbt] = {
     val inputIndex = global.tx.txIn.indexWhere(_.outPoint == outPoint)
     require(inputIndex >= 0, "psbt transaction does not spend the provided outpoint")
@@ -322,13 +322,13 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Implements the PSBT finalizer role: finalizes a given non-segwit input.
-   * This will clear all fields from the input except the utxo, scriptSig and unknown entries.
-   *
-   * @param inputIndex index of the input that should be finalized.
-   * @param scriptSig  signature script.
-   * @return a psbt with the given input finalized.
-   */
+    * Implements the PSBT finalizer role: finalizes a given non-segwit input.
+    * This will clear all fields from the input except the utxo, scriptSig and unknown entries.
+    *
+    * @param inputIndex index of the input that should be finalized.
+    * @param scriptSig  signature script.
+    * @return a psbt with the given input finalized.
+    */
   def finalizeNonWitnessInput(inputIndex: Int, scriptSig: Seq[ScriptElt]): Try[Psbt] = {
     if (inputIndex >= inputs.length) {
       Failure(new IllegalArgumentException("input index must exist in the input tx"))
@@ -345,10 +345,10 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Implements the PSBT extractor role: extracts a valid transaction from the psbt data.
-   *
-   * @return a fully signed, ready-to-broadcast transaction.
-   */
+    * Implements the PSBT extractor role: extracts a valid transaction from the psbt data.
+    *
+    * @return a fully signed, ready-to-broadcast transaction.
+    */
   def extract(): Try[Transaction] = {
     val (finalTxsIn, utxos) = global.tx.txIn.zip(inputs).map {
       case (txIn, input) =>
@@ -372,9 +372,9 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
   }
 
   /**
-   * Compute the fees paid by the PSBT.
-   * Note that if some inputs have not been updated yet, the fee cannot be computed.
-   */
+    * Compute the fees paid by the PSBT.
+    * Note that if some inputs have not been updated yet, the fee cannot be computed.
+    */
   def computeFees(): Try[Satoshi] = {
     val amountOut = global.tx.txOut match {
       case Nil => 0 sat
@@ -401,24 +401,24 @@ case class Psbt(global: Psbt.Global, inputs: Seq[Psbt.Input], outputs: Seq[Psbt.
 }
 
 /**
- * Partially signed bitcoin transactions: see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki
- */
+  * Partially signed bitcoin transactions: see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki
+  */
 object Psbt {
 
   /** Only version 0 is supported for now. */
   val Version: Long = 0
 
   /**
-   * @param prefix               extended public key version bytes.
-   * @param masterKeyFingerprint fingerprint of the master key.
-   * @param extendedPublicKey    BIP32 extended public key.
-   */
+    * @param prefix               extended public key version bytes.
+    * @param masterKeyFingerprint fingerprint of the master key.
+    * @param extendedPublicKey    BIP32 extended public key.
+    */
   case class ExtendedPublicKeyWithMaster(prefix: Long, masterKeyFingerprint: Long, extendedPublicKey: ExtendedPublicKey)
 
   /**
-   * @param masterKeyFingerprint fingerprint of the master key.
-   * @param keyPath              bip 32 derivation path.
-   */
+    * @param masterKeyFingerprint fingerprint of the master key.
+    * @param keyPath              bip 32 derivation path.
+    */
   case class KeyPathWithMaster(masterKeyFingerprint: Long, keyPath: KeyPath)
 
   case class SignPsbtResult(psbt: Psbt, sig: ByteVector)
@@ -432,13 +432,13 @@ object Psbt {
   }
 
   /**
-   * Global data for the PSBT.
-   *
-   * @param version            psbt version.
-   * @param tx                 partially signed transaction.
-   * @param extendedPublicKeys (optional) extended public keys used when signing inputs and producing outputs.
-   * @param unknown            (optional) unknown global entries.
-   */
+    * Global data for the PSBT.
+    *
+    * @param version            psbt version.
+    * @param tx                 partially signed transaction.
+    * @param extendedPublicKeys (optional) extended public keys used when signing inputs and producing outputs.
+    * @param unknown            (optional) unknown global entries.
+    */
   case class Global(version: Long, tx: Transaction, extendedPublicKeys: Seq[ExtendedPublicKeyWithMaster], unknown: Seq[DataEntry]) extends DataMap
 
   /** A PSBT input. A valid PSBT must contain one such input per input of the [[Global.tx]]. */
@@ -576,9 +576,9 @@ object Psbt {
   }
 
   /**
-   * Input finalizers should keep the utxo to allow transaction extractors to verify the final network serialized
-   * transaction, but it's not mandatory so we may not have it available when parsing psbt inputs.
-   */
+    * Input finalizers should keep the utxo to allow transaction extractors to verify the final network serialized
+    * transaction, but it's not mandatory so we may not have it available when parsing psbt inputs.
+    */
   case class FinalizedInputWithoutUtxo(scriptWitness: Option[ScriptWitness],
                                        scriptSig: Option[Seq[ScriptElt]],
                                        ripemd160: Set[ByteVector],
@@ -624,11 +624,11 @@ object Psbt {
   }
 
   /**
-   * Implements the PSBT creator role; initializes a PSBT for the given unsigned transaction.
-   *
-   * @param tx unsigned transaction skeleton.
-   * @return the psbt with empty inputs and outputs.
-   */
+    * Implements the PSBT creator role; initializes a PSBT for the given unsigned transaction.
+    *
+    * @param tx unsigned transaction skeleton.
+    * @return the psbt with empty inputs and outputs.
+    */
   def apply(tx: Transaction): Psbt = Psbt(
     Global(Version, tx.copy(txIn = tx.txIn.map(_.copy(signatureScript = ByteVector.empty, witness = ScriptWitness.empty))), Nil, Nil),
     tx.txIn.map(_ => PartiallySignedInputWithoutUtxo(None, Map.empty, Set.empty, Set.empty, Set.empty, Set.empty, Seq.empty)),
@@ -693,11 +693,11 @@ object Psbt {
   }
 
   /**
-   * Implements the PSBT combiner role: combines multiple psbts for the same unsigned transaction.
-   *
-   * @param psbts partially signed bitcoin transactions to combine.
-   * @return a psbt that contains data from all the input psbts.
-   */
+    * Implements the PSBT combiner role: combines multiple psbts for the same unsigned transaction.
+    *
+    * @param psbts partially signed bitcoin transactions to combine.
+    * @return a psbt that contains data from all the input psbts.
+    */
   def combine(psbts: Psbt*): Try[Psbt] = {
     if (psbts.map(_.global.tx.txid).toSet.size != 1) {
       Failure(new IllegalArgumentException("cannot combine psbts for distinct transactions"))
@@ -744,12 +744,12 @@ object Psbt {
   )
 
   /**
-   * Joins multiple distinct PSBTs with different inputs and outputs into one PSBT with inputs and outputs from all of
-   * the PSBTs. No input in any of the PSBTs can be in more than one of the PSBTs.
-   *
-   * @param psbts partially signed bitcoin transactions to join.
-   * @return a psbt that contains data from all the input psbts.
-   */
+    * Joins multiple distinct PSBTs with different inputs and outputs into one PSBT with inputs and outputs from all of
+    * the PSBTs. No input in any of the PSBTs can be in more than one of the PSBTs.
+    *
+    * @param psbts partially signed bitcoin transactions to join.
+    * @return a psbt that contains data from all the input psbts.
+    */
   def join(psbts: Psbt*): Try[Psbt] = {
     if (psbts.isEmpty) {
       Failure(new IllegalArgumentException("cannot join psbts: no psbt provided"))

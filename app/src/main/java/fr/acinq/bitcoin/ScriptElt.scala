@@ -261,6 +261,9 @@ object ScriptElt {
   // ScriptElt -> code
   val elt2code: Map[ScriptElt, Int] = code2elt.map(_.swap)
 
+  // name -> code
+  val name2code = code2elt.mapValues(_.asInstanceOf[Product].productPrefix.stripPrefix("OP_")).map(_.swap).toMap + ("NOP2" -> 0xb1) + ("NOP3" -> 0xb2)
+
   def isPush(op: ScriptElt, size: Int): Boolean = {
     op match {
       case OP_PUSHDATA(data, _) => data.length == size

@@ -24,7 +24,6 @@
 
     <application
         android:fullBackupContent="false"
-        tools:replace="android:supportsRtl"
         android:supportsRtl="false"
         android:allowBackup="false"
         android:largeHeap="true"

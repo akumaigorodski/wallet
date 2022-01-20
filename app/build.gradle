@@ -8,7 +8,6 @@ task wrapper(type: Wrapper) {
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.3"
-    ndkVersion "22.1.7171670"
 
     defaultConfig {
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
@@ -19,20 +18,10 @@ android {
 
         versionName '2.4.27'
         versionCode 95
-
-        ndk {
-            abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
-        }
     }
 
     dexOptions {
         javaMaxHeapSize '12g'
-    }
-
-    externalNativeBuild {
-        cmake {
-            path 'CMakeLists.txt'
-        }
     }
 
     buildTypes {
@@ -79,6 +68,7 @@ dependencies {
 
     // Immortan
     implementation 'org.scala-lang:scala-library:2.11.12'
+    implementation 'fr.acinq.secp256k1:secp256k1-kmp-jni-android:0.5.2'
     implementation 'org.scala-lang.modules:scala-parser-combinators_2.11:2.1.0'
     implementation 'com.softwaremill.quicklens:quicklens_2.11:1.7.5'
     implementation 'com.typesafe.akka:akka-actor_2.11:2.3.14'

@@ -39,11 +39,6 @@ class NativeSpec {
   }
 
   @Test
-  def useAppContext: Unit = {
-    assertTrue(Secp256k1Context.isEnabled)
-  }
-
-  @Test
   def utxoNames: Unit = {
     val generated = for (_ <- 0 to 100) yield Haiku.name(fr.acinq.eclair.randomBytes32)
     assert(generated.toSet.size == generated.size)
@@ -73,10 +68,7 @@ class NativeSpec {
       System.currentTimeMillis() - a
     }
 
-    println(s"fallback: $fallback")
-    println(s"native: $native")
-
-    assertTrue(fallback / 10 > native)
+    assertTrue(fallback / 100 > native)
   }
 
   @Test
