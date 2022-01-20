@@ -241,14 +241,9 @@
     <string name="settings_chain_legacy">Carteira legacy</string>
     <string name="settings_chain_modern">Carteira moderna</string>
 
-    <string name="settings_use_auth">Use biometric authentication</string>
-    <string name="settings_auth_no_support">Autenticação não suportada neste telefone</string>
-    <string name="settings_auth_add_method">Register an authentication method in system settings</string>
-    <string name="settings_auth_not_available">Autenticação está bloqueada no momento, tente novamente mais tarde</string>
-    <string name="settings_auth_error"><![CDATA[<b>Erro de autenticação</b><br><b>Detalhes</b>: %1$s]]></string>
-    <string name="settings_auth_title">Autenticação da carteira</string>
-
+    <string name="settings_use_auth">Use PIN authentication</string>
     <string name="settings_ensure_tor">Aplicar conexão Tor</string>
+
     <string name="ln_sync_not_complete">LN SYNC is not finished yet, please wait a bit while keeping an app open and then try again.</string>
     <string name="ln_payee_likely_offline">It is likely that payee wallet is offline right now</string>
 

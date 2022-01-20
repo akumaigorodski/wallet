@@ -19,7 +19,7 @@ object Denomination {
   def msat2BtcBigDecimal(msat: MilliSatoshi): BigDecimal = BigDecimal(msat.toLong) / BtcDenomination.factor
 }
 
-trait Denomination { me =>
+trait Denomination {
   def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String
 
   def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String

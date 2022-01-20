@@ -241,14 +241,9 @@
     <string name="settings_chain_legacy">Устаревший кошелек</string>
     <string name="settings_chain_modern">Современный кошелек</string>
 
-    <string name="settings_use_auth">Биометрическая авторизация</string>
-    <string name="settings_auth_no_support">На этом телефоне нет поддержки аутентификации</string>
-    <string name="settings_auth_add_method">Сначала создайте способ авторизации в настройках телефона</string>
-    <string name="settings_auth_not_available">Поддержка аутентификации заблокирована, попробуйте позже</string>
-    <string name="settings_auth_error"><![CDATA[<b>Ошибка аутентификации</b><br><b>Детали</b>: %1$s]]></string>
-    <string name="settings_auth_title">Аутентификация кошелька</string>
-
+    <string name="settings_use_auth">PIN авторизация</string>
     <string name="settings_ensure_tor">Использовать Tor</string>
+
     <string name="ln_sync_not_complete">LN SYNC еще не завершен: подождите немного и повторите попытку позже.</string>
     <string name="ln_payee_likely_offline">Похоже что кошелек получателя сейчас в оффлайне</string>
 

@@ -3,7 +3,7 @@ package com.btcontract.wallet
 import android.content.Intent
 import android.os.Bundle
 import androidx.core.app.NotificationManagerCompat
-import com.btcontract.wallet.R.string._
+import com.guardanis.applock.activities.{LockCreationActivity, UnlockActivity}
 import immortan.LNParams
 import immortan.crypto.Tools.runAnd
 import immortan.utils.InputParser
@@ -12,6 +12,9 @@ import scala.util.{Failure, Success}
 
 
 object ClassNames {
+  val lockCreationClass: Class[LockCreationActivity] = classOf[LockCreationActivity]
+  val unlockActivityClass: Class[UnlockActivity] = classOf[UnlockActivity]
+
   val chanActivityClass: Class[ChanActivity] = classOf[ChanActivity]
   val statActivityClass: Class[StatActivity] = classOf[StatActivity]
   val qrSplitActivityClass: Class[QRSplitActivity] = classOf[QRSplitActivity]
@@ -39,53 +42,23 @@ class MainActivity extends BaseActivity { me =>
 
   def proceed(empty: Any): Unit = WalletApp.isAlive match {
     case false => runAnd(WalletApp.makeAlive)(me proceed null)
-    case true if LNParams.isOperational => if (WalletApp.useAuth) new EnsureAuth(ToHub).makeAttempt else ToHub.makeAttempt
-    case true => if (WalletApp.useAuth) new EnsureAuth(EnsureSeed).makeAttempt else EnsureSeed.makeAttempt
-  }
 
-  // Tor and auth
-
-  trait Step {
-    def makeAttempt: Unit
-  }
-
-  object ToHub extends Step {
-    def makeAttempt: Unit = {
-      // Make sure auth won't be asked for again
-      WalletApp.userSentAppToBackground = false
+    case true if LNParams.isOperational =>
       me exitTo ClassNames.hubActivityClass
-    }
-  }
 
-  object EnsureSeed extends Step {
-    def makeAttempt: Unit = WalletApp.extDataBag.tryGetSecret match {
-      case Failure(_: android.database.CursorIndexOutOfBoundsException) =>
-        // Record is not present at all, this is probaby a fresh wallet
-        me exitTo classOf[SetupActivity]
+    case true =>
+      WalletApp.extDataBag.tryGetSecret match {
+        case Failure(_: android.database.CursorIndexOutOfBoundsException) =>
+          // Record is not present at all, this is probaby a fresh wallet
+          me exitTo classOf[SetupActivity]
 
-      case Failure(reason) =>
-        // Notify user about it
-        throw reason
+        case Failure(reason) =>
+          // Notify user about it
+          throw reason
 
-      case Success(secret) =>
-        WalletApp.makeOperational(secret)
-        ToHub.makeAttempt
-    }
-  }
-
-  class EnsureAuth(next: Step) extends Step {
-    def makeAttempt: Unit = new utils.BiometricAuth(findViewById(R.id.linearLayout), me, _ => finish) {
-      def onHardwareUnavailable: Unit = WalletApp.app.quickToast(settings_auth_not_available)
-      def onNoHardware: Unit = WalletApp.app.quickToast(settings_auth_no_support)
-
-      def onNoneEnrolled: Unit = {
-        // Settings flag is on but user has removed all fingerprints from system
-        WalletApp.app.prefs.edit.putBoolean(WalletApp.USE_AUTH, false).commit
-        next.makeAttempt
+        case Success(secret) =>
+          WalletApp.makeOperational(secret)
+          me exitTo ClassNames.hubActivityClass
       }
-
-      def onCanAuthenticate: Unit = callAuthDialog
-      def onAuthSucceeded: Unit = next.makeAttempt
-    }.checkAuth
   }
 }

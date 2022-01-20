@@ -34,6 +34,7 @@ import com.google.common.cache.{Cache, CacheBuilder}
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.{BarcodeFormat, EncodeHintType}
+import com.guardanis.applock.AppLock
 import com.journeyapps.barcodescanner.{BarcodeResult, BarcodeView}
 import com.ornach.nobobutton.NoboButton
 import com.softwaremill.quicklens._
@@ -134,7 +135,7 @@ trait BaseActivity extends AppCompatActivity { me =>
   def bringChainWalletChooser(title: TitleView)(onWalletSelected: ElectrumEclairWallet => Unit): Unit = {
     val cardsContainer = getLayoutInflater.inflate(R.layout.frag_linear_layout, null).asInstanceOf[LinearLayout]
     val alert = mkCheckForm(_.dismiss, none, titleBodyAsViewBuilder(title.view, cardsContainer), dialog_cancel, -1)
-    addFlowChip(title.flow, getString(choose_wallet), R.drawable.border_gray)
+    addFlowChip(title.flow, getString(choose_wallet), R.drawable.border_yellow)
 
     val chooser: ChainWalletCards = new ChainWalletCards(me) {
       override def onWalletTap(wallet: ElectrumEclairWallet): Unit = {
@@ -423,15 +424,15 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     def updatedFiatFromBtc: String =
       WalletApp.msatInFiat(rates, fiatCode)(resultMsat)
-        .filter(0D.!=).map(_.toString)
-        .getOrElse(null)
+        .filter(0.001D <= _).map(_.toString)
+        .getOrElse("0.00")
 
     def updatedBtcFromFiat: String =
       WalletApp.currentRate(rates, fiatCode)
         .map(perBtc => bigDecimalFrom(fiatInputAmount) / perBtc)
-        .filter(0D.!=).map(Denomination.btcBigDecimal2MSat)
+        .filter(0.000000001D <= _).map(Denomination.btcBigDecimal2MSat)
         .map(WalletApp.denom.fromMsat).map(_.toString)
-        .getOrElse(null)
+        .getOrElse("0.00")
 
     def updateFiatInput: Unit = {
       fiatInputAmount setText updatedFiatFromBtc
@@ -774,10 +775,11 @@ trait BaseActivity extends AppCompatActivity { me =>
 trait BaseCheckActivity extends BaseActivity { me =>
   def PROCEED(state: Bundle): Unit
 
-  override def onResume: Unit = {
-    val shouldAskAuth = WalletApp.userSentAppToBackground && WalletApp.useAuth
-    if (shouldAskAuth) me exitTo ClassNames.mainActivityClass
-    super.onResume
+  override def onResume: Unit = runAnd(super.onResume) {
+    if (AppLock.isUnlockRequired(me) && WalletApp.useAuth) {
+      val intent: Intent = new Intent(me, ClassNames.unlockActivityClass)
+      startActivityForResult(intent, AppLock.REQUEST_CODE_UNLOCK)
+    }
   }
 
   override def START(state: Bundle): Unit = {
@@ -882,7 +884,9 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     cardViews.map(_.view).foreach(holder.addView)
   }
 
-  def update(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.zip(wallets).foreach { case (card, wallet) => card updateView wallet }
+  def update(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.zip(wallets).foreach {
+    case (card, wallet) => card updateView wallet
+  }
 
   def unPad(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.foreach(_.unPad)
 
@@ -908,8 +912,8 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     val showMenuTip: ImageView = view.findViewById(R.id.showMenuTip).asInstanceOf[ImageView]
 
     def unPad: Unit = {
-      chainPaddingWrap.setPadding(0, 0, 0, 0)
-      chainWrap.setRadius(0F)
+      val padding: Int = chainPaddingWrap.getPaddingTop
+      chainPaddingWrap.setPadding(padding, padding, padding, 0)
       view.setLockDrag(true)
     }
 
