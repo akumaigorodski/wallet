@@ -75,7 +75,6 @@
     </style>
 
     <style name="StandardXYMarginLinearLayout" parent="StandardLinearLayout">
-        <item name="android:background">@color/bg</item>
         <item name="android:padding">15dp</item>
     </style>
 
