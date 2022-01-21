@@ -34,7 +34,6 @@ import fr.acinq.eclair.wire.NodeAddress
 import immortan._
 import immortan.crypto.Tools._
 import immortan.sqlite._
-import immortan.utils.Denomination.formatFiat
 import immortan.utils._
 import rx.lang.scala.Observable
 import scodec.bits.BitVector
@@ -321,8 +320,8 @@ object WalletApp {
   // Fiat conversion
 
   def currentRate(rates: Fiat2Btc, code: String): Try[Double] = Try(rates apply code)
-  val currentMsatInFiatHuman: MilliSatoshi => String = msat => msatInFiatHuman(LNParams.fiatRates.info.rates, fiatCode, msat, formatFiat)
   def msatInFiat(rates: Fiat2Btc, code: String)(msat: MilliSatoshi): Try[Double] = currentRate(rates, code).map(perBtc => msat.toLong * perBtc / BtcDenomination.factor)
+  val currentMsatInFiatHuman: MilliSatoshi => String = msat => msatInFiatHuman(LNParams.fiatRates.info.rates, fiatCode, msat, immortan.utils.Denomination.formatFiat)
 
   def msatInFiatHuman(rates: Fiat2Btc, code: String, msat: MilliSatoshi, decimalFormat: DecimalFormat): String = {
     val fiatAmount: String = msatInFiat(rates, code)(msat).map(decimalFormat.format).getOrElse(default = "?")

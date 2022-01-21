@@ -8,10 +8,7 @@ import fr.acinq.eclair._
 object Denomination {
   val locale = new java.util.Locale("en", "US")
   val symbols = new DecimalFormatSymbols(locale)
-  val formatFiatPrecise = new DecimalFormat("#,###,###.##")
-  val formatFiat = new DecimalFormat("#,###,###")
-
-  formatFiatPrecise setDecimalFormatSymbols symbols
+  val formatFiat = new DecimalFormat("#,###,###.##")
   formatFiat setDecimalFormatSymbols symbols
 
   def btcBigDecimal2MSat(btc: BigDecimal): MilliSatoshi = (btc * BtcDenomination.factor).toLong.msat

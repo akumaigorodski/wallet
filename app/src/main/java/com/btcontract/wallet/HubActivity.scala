@@ -614,8 +614,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           val incomingFSMOpt = LNParams.cm.inProcessors.get(info.fullTag)
           val outgoingFSMOpt = LNParams.cm.opm.data.payments.get(info.fullTag)
 
-          val fiatThen = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise)
-          val fiatNow = WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise)
+          val fiatThen = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiat)
+          val fiatNow = WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiat)
 
           val liveFeePaid = outgoingFSMOpt.map(_.data.usedFee).getOrElse(info.fee)
           val offChainFeePaid = WalletApp.denom.directedWithSign(0L.msat, liveFeePaid, cardOut, cardIn, cardZero, isIncoming = false)
@@ -658,8 +658,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           val isRbfCancel = info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL)
 
           val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
-          val fiatThen = WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise)
-          val fiatNow = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiatPrecise)
+          val fiatNow = WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiat)
+          val fiatThen = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiat)
           val balanceSnapshot = WalletApp.denom.parsedWithSign(info.balanceSnapshot, cardIn, cardZero)
 
           addFlowChip(extraInfo, getString(popup_txid) format info.txidString.short, R.drawable.border_green, info.txidString.asSome)
