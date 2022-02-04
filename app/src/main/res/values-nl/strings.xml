@@ -244,6 +244,7 @@
     <string name="settings_use_auth">Gebruik PIN authenticatie</string>
     <string name="settings_ensure_tor">Gebruik Torverbinding</string>
 
+    <string name="ln_fee_expensive_omitted">Payment failed because expensive routes were omitted, would you like to retry with increased fee limits?</string>
     <string name="ln_sync_not_complete">LN SYNC is nog niet klaar, wacht a.u.b. even terwijl je de app open houdt en probeer dan nog eens.</string>
     <string name="ln_payee_likely_offline">Het is waarschijnlijk dat de portemonnee van de begunstigde momenteel offline is</string>
 

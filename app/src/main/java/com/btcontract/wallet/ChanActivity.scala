@@ -318,7 +318,7 @@ class ChanActivity extends ChanErrorHandlerActivity with ChoiceReceiver with Has
         val toSend = maxSendable.min(csAndMax.maxReceivable)
         val pd = PaymentDescription(split = None, label = getString(tx_ln_label_reflexive).asSome, semanticOrder = None, invoiceText = new String, toSelfPreimage = preimage.asSome)
         val prExt = LNParams.cm.makePrExt(toReceive = toSend, description = pd, allowedChans = csAndMax.commits, hash = Crypto.sha256(preimage), secret = randomBytes32)
-        val cmd = LNParams.cm.makeSendCmd(prExt, allowedChans = relatedHc, toSend).modify(_.split.totalSum).setTo(toSend)
+        val cmd = LNParams.cm.makeSendCmd(prExt, allowedChans = relatedHc, LNParams.cm.feeReserve(toSend), toSend).modify(_.split.totalSum).setTo(toSend)
         WalletApp.app.quickToast(getString(dialog_lnurl_processing).format(me getString tx_ln_label_reflexive).html)
         replaceOutgoingPayment(prExt, pd, action = None, sentAmount = prExt.pr.amount.get)
         LNParams.cm.localSend(cmd)

@@ -247,14 +247,13 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
 
   // Supply relative cltv expiry in case if we initiate a payment when chain tip is not yet known
   // An assumption is that toSend is at most maxSendable so max theoretically possible off-chain fee is already counted in
-  def makeSendCmd(prExt: PaymentRequestExt, allowedChans: Seq[Channel], toSend: MilliSatoshi): SendMultiPart = {
+  def makeSendCmd(prExt: PaymentRequestExt, allowedChans: Seq[Channel], feeReserve: MilliSatoshi, toSend: MilliSatoshi): SendMultiPart = {
     val fullTag = FullPaymentTag(prExt.pr.paymentHash, prExt.pr.paymentSecret.get, PaymentTagTlv.LOCALLY_SENT)
     val chainExpiry = Right(prExt.pr.minFinalCltvExpiryDelta getOrElse LNParams.minInvoiceExpiryDelta)
     val splitInfo = SplitInfo(totalSum = 0L.msat, myPart = toSend)
 
-    SendMultiPart(fullTag, chainExpiry, splitInfo, LNParams.routerConf, prExt.pr.nodeId,
-      expectedRouteFees = None, prExt.pr.paymentMetadata, feeReserve(toSend),
-      allowedChans, fullTag.paymentSecret, prExt.extraEdges)
+    SendMultiPart(fullTag, chainExpiry, splitInfo, LNParams.routerConf, prExt.pr.nodeId, expectedRouteFees = None,
+      prExt.pr.paymentMetadata, feeReserve, allowedChans, fullTag.paymentSecret, prExt.extraEdges)
   }
 
   def makePrExt(toReceive: MilliSatoshi, description: PaymentDescription, allowedChans: Seq[ChanAndCommits], hash: ByteVector32, secret: ByteVector32): PaymentRequestExt = {

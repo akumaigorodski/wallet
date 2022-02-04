@@ -9,7 +9,10 @@ object Denomination {
   val locale = new java.util.Locale("en", "US")
   val symbols = new DecimalFormatSymbols(locale)
   val formatFiat = new DecimalFormat("#,###,###.##")
+  val formatFiatShort = new DecimalFormat("#,###,###")
+
   formatFiat setDecimalFormatSymbols symbols
+  formatFiatShort setDecimalFormatSymbols symbols
 
   def btcBigDecimal2MSat(btc: BigDecimal): MilliSatoshi = (btc * BtcDenomination.factor).toLong.msat
 

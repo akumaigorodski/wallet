@@ -244,6 +244,7 @@
     <string name="settings_use_auth">Use PIN authentication</string>
     <string name="settings_ensure_tor">Obligar conexion a Tor</string>
 
+    <string name="ln_fee_expensive_omitted">Payment failed because expensive routes were omitted, would you like to retry with increased fee limits?</string>
     <string name="ln_sync_not_complete">LN SYNC is not finished yet, please wait a bit while keeping an app open and then try again.</string>
     <string name="ln_payee_likely_offline">Es probable que la billetera destino este desconectada ahorita</string>
 

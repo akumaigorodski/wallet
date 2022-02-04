@@ -185,6 +185,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     }
   }
 
+  def retryPayment(feeReserve: MilliSatoshi, info: PaymentInfo): Unit = new HasTypicalChainFee {
+    private val cmd = LNParams.cm.makeSendCmd(info.prExt, LNParams.cm.all.values.toList, feeReserve, info.sent).modify(_.split.totalSum).setTo(info.sent)
+    replaceOutgoingPayment(ext = info.prExt, description = info.description, action = info.action, sentAmount = cmd.split.myPart, seenAt = info.seenAt)
+    LNParams.cm.localSend(cmd)
+  }
+
   class PaymentLineViewHolder(itemView: View) extends RecyclerView.ViewHolder(itemView) { self =>
     val extraInfo: FlowLayout = itemView.findViewById(R.id.extraInfo).asInstanceOf[FlowLayout]
     val swipeWrap: SwipeRevealLayout = itemView.asInstanceOf[SwipeRevealLayout]
@@ -585,12 +591,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       feeView.worker addWork "RBF-INIT-CALL"
     }
 
-    def retry(info: PaymentInfo): Unit = new HasTypicalChainFee {
-      private val cmd = LNParams.cm.makeSendCmd(info.prExt, LNParams.cm.all.values.toList, info.sent).modify(_.split.totalSum).setTo(info.sent)
-      replaceOutgoingPayment(ext = info.prExt, description = info.description, action = info.action, sentAmount = cmd.split.myPart, seenAt = info.seenAt)
-      LNParams.cm.localSend(cmd)
-    }
-
     // VIEW RELATED
 
     def collapse[T <: TransactionDetails](item: T): Unit = {
@@ -613,8 +613,8 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           val incomingFSMOpt = LNParams.cm.inProcessors.get(info.fullTag)
           val outgoingFSMOpt = LNParams.cm.opm.data.payments.get(info.fullTag)
 
-          val fiatThen = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiat)
-          val fiatNow = WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiat)
+          val fiatThen = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiatShort)
+          val fiatNow = WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiatShort)
 
           val liveFeePaid = outgoingFSMOpt.map(_.data.usedFee).getOrElse(info.fee)
           val offChainFeePaid = WalletApp.denom.directedWithSign(0L.msat, liveFeePaid, cardOut, cardIn, cardZero, isIncoming = false)
@@ -631,7 +631,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           addFlowChip(extraInfo, getString(popup_prior_chain_balance) format WalletApp.denom.parsedWithSign(info.balanceSnapshot, cardIn, cardZero), R.drawable.border_gray)
           if (info.isIncoming && info.status == PaymentStatus.PENDING) addFlowChip(extraInfo, getString(popup_view_invoice), R.drawable.border_blue, _ => self doViewInvoice info)
           if (!info.isIncoming && shouldDisplayFee) addFlowChip(extraInfo, getString(popup_ln_fee).format(offChainFeePaid, ratio(amount, liveFeePaid) + PERCENT), R.drawable.border_gray)
-          if (shouldRetry) addFlowChip(extraInfo, getString(popup_retry), R.drawable.border_yellow, _ => self retry info)
+          if (shouldRetry) addFlowChip(extraInfo, getString(popup_retry), R.drawable.border_yellow, _ => retryPayment(LNParams.cm.feeReserve(info.sent), info))
 
           incomingFSMOpt.filter(info.isActivelyHolding).foreach { fsm =>
             addFlowChip(extraInfo, getString(dialog_accept), R.drawable.border_green, _ => fsm doProcess IncomingPaymentProcessor.CMDReleaseHold)
@@ -920,11 +920,12 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       val localInCount = LNParams.cm.inProcessors.count { case (fullTag, _) => fullTag.tag == PaymentTagTlv.FINAL_INCOMING }
       val trampolineCount = LNParams.cm.inProcessors.count { case (fullTag, _) => fullTag.tag == PaymentTagTlv.TRAMPLOINE_ROUTED }
       val localOutCount = LNParams.cm.opm.data.payments.count { case (fullTag, _) => fullTag.tag == PaymentTagTlv.LOCALLY_SENT }
+
       val change = LNParams.fiatRates.info.pctDifference(WalletApp.fiatCode).map(_ + "<br>").getOrElse(new String)
-      val unitPriceAndChange = s"<small>$change</small>${WalletApp currentMsatInFiatHuman 100000000000L.msat}"
+      val unitRate = WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, 100000000000L.msat, immortan.utils.Denomination.formatFiatShort)
 
       TransitionManager.beginDelayedTransition(defaultHeader)
-      fiatUnitPriceAndChange.setText(unitPriceAndChange.html)
+      fiatUnitPriceAndChange.setText(s"<small>$change</small>$unitRate".html)
       totalFiatBalance.setText(WalletApp.currentMsatInFiatHuman(BaseActivity.totalBalance).html)
       totalBalance.setText(WalletApp.denom.parsedWithSign(BaseActivity.totalBalance, cardIn, totalZero).html)
       totalLightningBalance.setText(WalletApp.denom.parsedWithSign(lnBalance, cardIn, lnCardZero).html)
@@ -990,12 +991,21 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     override def wholePaymentFailed(data: OutgoingPaymentSenderData): Unit = UITask {
       val assistedShortIds = data.cmd.assistedEdges.map(_.updExt.update.shortChannelId)
       val isIncompleteGraph = LNParams.cm.pf.data.channels.isEmpty || LNParams.cm.pf.syncMaster.isDefined
+      val canIncreaseFee = data.cmd.split.myPart + data.cmd.totalFeeReserve * 2 <= LNParams.cm.maxSendable(LNParams.cm.all.values)
 
-      val warnNoRouteFound = data.failures.exists { case lf: LocalFailure => PaymentFailure.NO_ROUTES_FOUND == lf.status case _ => false }
+      val warnNoRouteFound = data.failures.exists { case lf: LocalFailure => lf.status == PaymentFailure.NO_ROUTES_FOUND case _ => false }
       val warnPayeeOffline = data.failures.exists { case rf: RemoteFailure if rf.packet.failureMessage == UnknownNextPeer => assistedShortIds.contains(rf.originShortChanId) case _ => false }
+
+      val bld = new AlertDialog.Builder(me).setMessage(ln_fee_expensive_omitted)
+      def retryWithIncreasedFee(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
+        paymentInfos.find(_.paymentHash == data.cmd.fullTag.paymentHash) foreach { info =>
+          retryPayment(feeReserve = data.cmd.totalFeeReserve * 2, info)
+        }
+      }
 
       if (isIncompleteGraph && warnNoRouteFound) snack(contentWindow, getString(ln_sync_not_complete), dialog_ok, _.dismiss)
       else if (warnPayeeOffline && warnNoRouteFound) snack(contentWindow, getString(ln_payee_likely_offline), dialog_ok, _.dismiss)
+      else if (canIncreaseFee && warnNoRouteFound) mkCheckForm(retryWithIncreasedFee, none, bld, dialog_ok, dialog_cancel)
     }.run
 
     override def gotFirstPreimage(data: OutgoingPaymentSenderData, fulfill: RemoteFulfill): Unit = UITask {
@@ -1111,7 +1121,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
             override def neutral(alert: AlertDialog): Unit = proceedSplit(prExt, origAmount, alert)
 
             override def send(alert: AlertDialog): Unit = {
-              val cmd = LNParams.cm.makeSendCmd(prExt, LNParams.cm.all.values.toList, manager.resultMsat).modify(_.split.totalSum).setTo(origAmount)
+              val cmd = LNParams.cm.makeSendCmd(prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(manager.resultMsat), manager.resultMsat).modify(_.split.totalSum).setTo(origAmount)
               val pd = PaymentDescription(cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
               replaceOutgoingPayment(prExt, pd, action = None, sentAmount = cmd.split.myPart)
               LNParams.cm.localSend(cmd)
@@ -1629,7 +1639,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         def proceed(pf: PayRequestFinal): TimerTask = UITask {
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
             val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
-            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, manager.resultMsat).modify(_.split.totalSum).setTo(minSendable)
+            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(manager.resultMsat), manager.resultMsat).modify(_.split.totalSum).setTo(minSendable)
             val pd = PaymentDescription(cmd.split.asSome, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, data.meta.textPlain.asSome)
             goToWithValue(value = SplitParams(pf.prExt, pf.successAction, pd, cmd, typicalChainTxFee), target = ClassNames.qrSplitActivityClass)
           }
@@ -1649,7 +1659,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
           lnSendGuard(pf.prExt, container = contentWindow) { _ =>
             val linkOrder = SemanticOrder(id = lnUrl.request, order = Long.MinValue)
             val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
-            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, manager.resultMsat).modify(_.split.totalSum).setTo(manager.resultMsat)
+            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(manager.resultMsat), manager.resultMsat).modify(_.split.totalSum).setTo(manager.resultMsat)
             val pd = PaymentDescription(split = None, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, meta = data.meta.textPlain.asSome)
             replaceOutgoingPayment(pf.prExt, pd, pf.successAction, sentAmount = cmd.split.myPart)
             LNParams.cm.localSend(cmd)

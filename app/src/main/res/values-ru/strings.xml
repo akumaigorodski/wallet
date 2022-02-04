@@ -244,6 +244,7 @@
     <string name="settings_use_auth">PIN авторизация</string>
     <string name="settings_ensure_tor">Использовать Tor</string>
 
+    <string name="ln_fee_expensive_omitted">Платеж не прошел потому что дорогие маршруты были исключены: хотите попробовать еще раз с увеличенным лимитом по комиссии?</string>
     <string name="ln_sync_not_complete">LN SYNC еще не завершен: подождите немного и повторите попытку позже.</string>
     <string name="ln_payee_likely_offline">Похоже что кошелек получателя сейчас в оффлайне</string>
 
