@@ -57,22 +57,9 @@ class SetupActivity extends BaseActivity { me =>
     }
   }
 
-  lazy private[this] val openHc = new SettingsHolder(me) {
-    override def updateView: Unit = settingsCheck.setChecked(WalletApp.openHc)
-    setVis(isVisible = false, settingsInfo)
-    settingsTitle.setText(rpa_request_hc)
-
-    view setOnClickListener onButtonTap {
-      putBoolAndUpdateView(WalletApp.OPEN_HC, !WalletApp.openHc)
-    }
-  }
-
-  override def START(state: Bundle): Unit = {
+  override def START(s: Bundle): Unit = {
     setContentView(R.layout.activity_setup)
-    activitySetupMain.addView(openHc.view, 1)
-    activitySetupMain.addView(enforceTor.view, 2)
-
-    openHc.updateView
+    activitySetupMain.addView(enforceTor.view, 0)
     enforceTor.updateView
   }
 
