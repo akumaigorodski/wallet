@@ -1,5 +1,6 @@
 package immortan.fsm
 
+import fr.acinq.eclair.Features.StaticRemoteKey
 import fr.acinq.eclair.channel._
 import fr.acinq.eclair.wire._
 import immortan.Channel.{WAIT_FOR_ACCEPT, WAIT_FUNDING_DONE}
@@ -28,8 +29,7 @@ abstract class NCFundeeOpenHandler(info: RemoteNodeInfo, theirOpen: OpenChannel,
 
     override def onOperational(worker: CommsTower.Worker, theirInit: Init): Unit = {
       val localParams = LNParams.makeChannelParams(isFunder = false, theirOpen.fundingSatoshis)
-      val stickyChannelFeatures = ChannelFeatures.pickChannelFeatures(LNParams.ourInit.features, theirInit.features)
-      freshChannel process INPUT_INIT_FUNDEE(info.safeAlias, localParams, theirInit, stickyChannelFeatures, theirOpen)
+      freshChannel process INPUT_INIT_FUNDEE(info.safeAlias, localParams, theirInit, ChannelFeatures(StaticRemoteKey), theirOpen)
     }
 
     override def onBecome: PartialFunction[Transition, Unit] = {

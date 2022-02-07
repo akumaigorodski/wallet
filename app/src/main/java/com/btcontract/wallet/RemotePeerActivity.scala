@@ -55,12 +55,12 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
   private[this] lazy val viewYesFeatureSupport = findViewById(R.id.viewYesFeatureSupport).asInstanceOf[LinearLayout]
   private[this] lazy val optionHostedChannel = findViewById(R.id.optionHostedChannel).asInstanceOf[NoboButton]
 
-  private[this] lazy val criticalFeatures = Set(BasicMultiPartPayment, OptionDataLossProtect, StaticRemoteKey)
+  private[this] lazy val criticalFeatures = Set(BasicMultiPartPayment, DataLossProtect, StaticRemoteKey)
 
   private[this] lazy val featureTextViewMap = Map(
     ChannelRangeQueriesExtended -> findViewById(R.id.ChannelRangeQueriesExtended).asInstanceOf[TextView],
-    OptionDataLossProtect -> findViewById(R.id.OptionDataLossProtect).asInstanceOf[TextView],
     BasicMultiPartPayment -> findViewById(R.id.BasicMultiPartPayment).asInstanceOf[TextView],
+    DataLossProtect -> findViewById(R.id.OptionDataLossProtect).asInstanceOf[TextView],
     StaticRemoteKey -> findViewById(R.id.StaticRemoteKey).asInstanceOf[TextView],
     HostedChannels -> findViewById(R.id.HostedChannels).asInstanceOf[TextView],
     ChainSwap -> findViewById(R.id.ChainSwap).asInstanceOf[TextView],
@@ -91,7 +91,7 @@ class RemotePeerActivity extends ChanErrorHandlerActivity with ExternalDataCheck
 
   private lazy val viewUpdatingListener = new ConnectionListener {
     override def onOperational(worker: CommsTower.Worker, theirInit: Init): Unit = UITask {
-      val theirInitSupports: Feature => Boolean = LNParams.isPeerSupports(theirInit)
+      val theirInitSupports: Feature with InitFeature => Boolean = LNParams.isPeerSupports(theirInit)
       criticalSupportAvailable = criticalFeatures.forall(theirInitSupports)
 
       featureTextViewMap foreach {

@@ -44,7 +44,7 @@ import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
-import fr.acinq.eclair.payment.PaymentRequest
+import fr.acinq.eclair.payment.Bolt11Invoice
 import fr.acinq.eclair.transactions.Transactions
 import fr.acinq.eclair.wire.ChannelReestablish
 import immortan._
@@ -659,14 +659,14 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   def lnSendGuard(prExt: PaymentRequestExt, container: View)(onOK: Option[MilliSatoshi] => Unit): Unit = LNParams.cm.checkIfSendable(prExt.pr.paymentHash) match {
     case _ if !LNParams.cm.all.values.exists(Channel.isOperationalOrWaiting) => snack(container, getString(error_ln_no_chans).html, dialog_ok, _.dismiss)
+    case _ if !prExt.pr.features.hasFeature(Features.PaymentSecret) => snack(container, getString(error_ln_send_no_secret).html, dialog_ok, _.dismiss)
     case _ if !LNParams.cm.all.values.exists(Channel.isOperational) => snack(container, getString(error_ln_waiting).html, dialog_ok, _.dismiss)
-    case _ if !prExt.pr.features.allowPaymentSecret => snack(container, getString(error_ln_send_no_secret).html, dialog_ok, _.dismiss)
 
     case _ if LNParams.cm.operationalCncs(LNParams.cm.all.values).maxBy(_.commits.availableForSend).commits.availableForSend < LNParams.minPayment =>
       snack(container, getString(error_ln_send_reserve).html, dialog_ok, _.dismiss)
 
-    case _ if prExt.pr.amount.exists(_ < LNParams.minPayment) =>
-      val requestedHuman = WalletApp.denom.parsedWithSign(prExt.pr.amount.get, cardIn, cardZero)
+    case _ if prExt.pr.amountOpt.exists(_ < LNParams.minPayment) =>
+      val requestedHuman = WalletApp.denom.parsedWithSign(prExt.pr.amountOpt.get, cardIn, cardZero)
       val minHuman = WalletApp.denom.parsedWithSign(LNParams.minPayment, cardIn, cardZero)
       val msg = getString(error_ln_send_small).format(requestedHuman, minHuman).html
       snack(container, msg, dialog_ok, _.dismiss)
@@ -675,8 +675,8 @@ trait BaseActivity extends AppCompatActivity { me =>
     case _ if prExt.pr.isExpired => snack(container, getString(error_ln_send_expired).html, dialog_ok, _.dismiss)
     case Some(PaymentInfo.NOT_SENDABLE_IN_FLIGHT) => snack(container, getString(error_ln_send_in_flight).html, dialog_ok, _.dismiss)
     case Some(PaymentInfo.NOT_SENDABLE_SUCCESS) => snack(container, getString(error_ln_send_done_already).html, dialog_ok, _.dismiss)
-    case _ if prExt.pr.prefix != PaymentRequest.prefixes(LNParams.chainHash) => snack(container, getString(error_ln_send_network).html, dialog_ok, _.dismiss)
-    case _ => onOK(prExt.pr.amount)
+    case _ if prExt.pr.prefix != Bolt11Invoice.prefixes(LNParams.chainHash) => snack(container, getString(error_ln_send_network).html, dialog_ok, _.dismiss)
+    case _ => onOK(prExt.pr.amountOpt)
   }
 
   def lnReceiveGuard(into: Iterable[Channel], container: View)(onOk: => Unit): Unit = LNParams.cm.sortedReceivable(into).lastOption match {

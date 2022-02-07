@@ -14,7 +14,7 @@ import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.crypto.ChaCha20Poly1305
-import fr.acinq.eclair.payment.PaymentRequest.ExtraHop
+import fr.acinq.eclair.payment.Bolt11Invoice.ExtraHop
 import fr.acinq.eclair.router.Graph.GraphStructure.GraphEdge
 import fr.acinq.eclair.router.RouteCalculation
 import fr.acinq.eclair.router.Router.ChannelDesc

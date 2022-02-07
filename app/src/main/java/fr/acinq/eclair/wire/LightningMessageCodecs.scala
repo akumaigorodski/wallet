@@ -10,15 +10,20 @@ import scodec.codecs._
 
 object LightningMessageCodecs {
 
-  val featuresCodec: Codec[Features] = varsizebinarydata.xmap[Features](Features.apply, _.toByteVector)
+  val featuresCodec: Codec[Features[FeatureScope]] = varsizebinarydata.xmap[Features[FeatureScope]](
+    { bytes => Features(bytes) },
+    { features => features.toByteVector }
+  )
+
+  val initFeaturesCodec: Codec[Features[InitFeature]] = featuresCodec.xmap[Features[InitFeature]](_.initFeatures, _.unscoped)
 
   /** For historical reasons, features are divided into two feature bitmasks. We only send from the second one, but we allow receiving in both. */
-  val combinedFeaturesCodec: Codec[Features] = (
+  val combinedFeaturesCodec: Codec[Features[InitFeature]] = (
     ("globalFeatures" | varsizebinarydata) ::
-      ("localFeatures" | varsizebinarydata)).as[(ByteVector, ByteVector)].xmap[Features](
+      ("localFeatures" | varsizebinarydata)).as[(ByteVector, ByteVector)].xmap[Features[InitFeature]](
     { case (gf, lf) =>
       val length = gf.length.max(lf.length)
-      Features(gf.padLeft(length) | lf.padLeft(length))
+      Features(gf.padLeft(length) | lf.padLeft(length)).initFeatures()
     },
     { features => (ByteVector.empty, features.toByteVector) })
 

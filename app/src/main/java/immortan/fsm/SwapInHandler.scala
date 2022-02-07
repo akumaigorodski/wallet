@@ -1,6 +1,6 @@
 package immortan.fsm
 
-import fr.acinq.eclair.payment.PaymentRequest
+import fr.acinq.eclair.payment.Bolt11Invoice
 import fr.acinq.eclair.wire._
 import immortan.crypto.Tools.runAnd
 import immortan.utils.Rx
@@ -10,7 +10,7 @@ import rx.lang.scala.Subscription
 import scala.concurrent.duration._
 
 
-abstract class SwapInHandler(cnc: ChanAndCommits, paymentRequest: PaymentRequest, id: Long) { me =>
+abstract class SwapInHandler(cnc: ChanAndCommits, paymentRequest: Bolt11Invoice, id: Long) { me =>
   val shutdownTimer: Subscription = Rx.ioQueue.delay(30.seconds).doOnCompleted(finish).subscribe(_ => onTimeout)
   CommsTower.listenNative(Set(swapInListener), cnc.commits.remoteInfo)
 
@@ -24,7 +24,7 @@ abstract class SwapInHandler(cnc: ChanAndCommits, paymentRequest: PaymentRequest
 
   lazy private val swapInListener = new ConnectionListener {
     override def onOperational(worker: CommsTower.Worker, theirInit: Init): Unit = {
-      val swapInRequest = SwapInPaymentRequest(PaymentRequest.write(paymentRequest), id)
+      val swapInRequest = SwapInPaymentRequest(paymentRequest.toString, id)
       worker.handler process swapInRequest
     }
 

@@ -8,7 +8,7 @@ import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.TxConfirmedAt
 import fr.acinq.eclair.channel._
-import fr.acinq.eclair.payment.{IncomingPaymentPacket, PaymentRequest}
+import fr.acinq.eclair.payment.{IncomingPaymentPacket, Bolt11Invoice}
 import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, RemoteReject}
 import fr.acinq.eclair.wire._
 import immortan.Channel._
@@ -258,7 +258,7 @@ class ChannelMaster(val payBag: PaymentBag, val chanBag: ChannelBag, val dataBag
 
   def makePrExt(toReceive: MilliSatoshi, description: PaymentDescription, allowedChans: Seq[ChanAndCommits], hash: ByteVector32, secret: ByteVector32): PaymentRequestExt = {
     val hops = allowedChans.map(_.commits.updateOpt).zip(allowedChans).collect { case Some(usableUpdate) ~ ChanAndCommits(_, commits) => usableUpdate.extraHop(commits.remoteInfo.nodeId) :: Nil }
-    val pr = PaymentRequest(LNParams.chainHash, Some(toReceive), hash, secret, LNParams.secret.keys.fakeInvoiceKey(secret), description.invoiceText, LNParams.incomingFinalCltvExpiry, hops.toList)
+    val pr = Bolt11Invoice(LNParams.chainHash, Some(toReceive), hash, secret, LNParams.secret.keys.fakeInvoiceKey(secret), description.invoiceText, LNParams.incomingFinalCltvExpiry, hops.toList)
     PaymentRequestExt.from(pr)
   }
 

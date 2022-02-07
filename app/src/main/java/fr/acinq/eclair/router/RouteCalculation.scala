@@ -3,9 +3,8 @@ package fr.acinq.eclair.router
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64}
 import fr.acinq.eclair._
-import fr.acinq.eclair.payment.PaymentRequest.{ExtraHop, ExtraHops}
+import fr.acinq.eclair.payment.Bolt11Invoice.{ExtraHop, ExtraHops}
 import fr.acinq.eclair.router.Graph.GraphStructure.{DirectedGraph, GraphEdge}
-import fr.acinq.eclair.router.Graph.RichWeight
 import fr.acinq.eclair.router.Router._
 import fr.acinq.eclair.wire.ChannelUpdate
 import immortan.LNParams

@@ -101,10 +101,10 @@ object LNParams {
       (ChannelRangeQueries, FeatureSupport.Optional),
       (ChannelRangeQueriesExtended, FeatureSupport.Optional),
       (BasicMultiPartPayment, FeatureSupport.Optional),
-      (OptionDataLossProtect, FeatureSupport.Optional),
       (VariableLengthOnion, FeatureSupport.Optional),
       (ShutdownAnySegwit, FeatureSupport.Optional),
       (StaticRemoteKey, FeatureSupport.Optional),
+      (DataLossProtect, FeatureSupport.Optional),
       (HostedChannels, FeatureSupport.Optional),
       (PaymentSecret, FeatureSupport.Optional),
       (ChainSwap, FeatureSupport.Optional),
@@ -129,7 +129,7 @@ object LNParams {
 
   def currentBlockDay: Long = blockCount.get / blocksPerDay
 
-  def isPeerSupports(theirInit: Init)(feature: Feature): Boolean = Features.canUseFeature(ourInit.features, theirInit.features, feature)
+  def isPeerSupports(theirInit: Init)(feature: Feature with InitFeature): Boolean = Features.canUseFeature(ourInit.features, theirInit.features, feature)
 
   def loggedActor(childProps: Props, childName: String): ActorRef = system actorOf Props(classOf[LoggingSupervisor], childProps, childName)
 

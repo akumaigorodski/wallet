@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019 ACINQ SAS
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package fr.acinq.eclair
 
 import fr.acinq.eclair.FeatureSupport.{Mandatory, Optional}
@@ -6,107 +22,112 @@ import scodec.bits.{BitVector, ByteVector}
 
 sealed trait FeatureSupport
 
+// @formatter:off
 object FeatureSupport {
-  case object Mandatory extends FeatureSupport {
-    override def toString: String = "mandatory"
-  }
-
-  case object Optional extends FeatureSupport {
-    override def toString: String = "optional"
-  }
+  case object Mandatory extends FeatureSupport { override def toString: String = "mandatory" }
+  case object Optional extends FeatureSupport { override def toString: String = "optional" }
 }
 
-sealed trait FeatureScope
-trait InitFeature extends FeatureScope
-trait NodeFeature extends FeatureScope
-trait InvoiceFeature extends FeatureScope
+trait Feature {
 
-trait Feature { me: FeatureScope =>
-  def supportBit(support: FeatureSupport): Int = support match {
-    case Mandatory => mandatory case Optional => optional
-  }
-
-  def mandatory: Int
-
-  def optional: Int = mandatory + 1
+  this: FeatureScope =>
 
   def rfcName: String
+  def mandatory: Int
+  def optional: Int = mandatory + 1
+
+  def supportBit(support: FeatureSupport): Int = support match {
+    case Mandatory => mandatory
+    case Optional => optional
+  }
+
+  override def toString: String = rfcName
 }
+
+/** Feature scope as defined in Bolt 9. */
+sealed trait FeatureScope
+/** Feature that should be advertised in init messages. */
+trait InitFeature extends FeatureScope
+/** Feature that should be advertised in node announcements. */
+trait NodeFeature extends FeatureScope
+/** Feature that should be advertised in invoices. */
+trait InvoiceFeature extends FeatureScope
+// @formatter:on
 
 case class UnknownFeature(bitIndex: Int)
 
-case class Features(activated: Map[Feature, FeatureSupport], unknown: Set[UnknownFeature] = Set.empty) {
+case class Features[T <: FeatureScope](activated: Map[Feature with T, FeatureSupport], unknown: Set[UnknownFeature] = Set.empty) {
 
-  def hasFeature(feature: Feature, support: Option[FeatureSupport] = None): Boolean = support match {
-    case Some(sup) => activated.get(feature).contains(sup) case None => activated.contains(feature)
+  def hasFeature(feature: Feature with T, support: Option[FeatureSupport] = None): Boolean = support match {
+    case Some(s) => activated.get(feature).contains(s)
+    case None => activated.contains(feature)
   }
 
-  def areSupported(remoteFeatures: Features): Boolean = {
-    val knownFeaturesOk = remoteFeatures.activated.forall {
-      case (feature, Mandatory) => hasFeature(feature)
-      case (_, Optional) => true
-    }
+  def hasPluginFeature(feature: UnknownFeature): Boolean = unknown.contains(feature)
 
-    val unknownFeaturesOk = remoteFeatures.unknown.forall(1 == _.bitIndex % 2)
+  /** NB: this method is not reflexive, see [[Features.areCompatible]] if you want symmetric validation. */
+  def areSupported(remoteFeatures: Features[T]): Boolean = {
+    // we allow unknown odd features (it's ok to be odd)
+    val unknownFeaturesOk = remoteFeatures.unknown.forall(_.bitIndex % 2 == 1)
+    // we verify that we activated every mandatory feature they require
+    val knownFeaturesOk = remoteFeatures.activated.forall {
+      case (_, Optional) => true
+      case (feature, Mandatory) => hasFeature(feature)
+    }
     unknownFeaturesOk && knownFeaturesOk
   }
 
-  def initFeatures: Features = Features(activated.collect {
-    case (feature: InitFeature, support) => (feature: Feature, support)
-  }, unknown)
+  def initFeatures(): Features[InitFeature] = Features[InitFeature](activated.collect { case (f: InitFeature, s) => (f, s) }.toSeq:_*)
 
-  def nodeAnnouncementFeatures: Features = Features(activated.collect {
-    case (feature: NodeFeature, support) => (feature: Feature, support)
-  }, unknown)
+  def nodeAnnouncementFeatures(): Features[NodeFeature] = Features[NodeFeature](activated.collect { case (f: NodeFeature, s) => (f, s) }.toSeq:_*)
 
-  def invoiceFeatures: Map[Feature with InvoiceFeature, FeatureSupport] = activated.collect {
-    case (feature: InvoiceFeature, support) => (feature, support)
-  }
+  def invoiceFeatures(): Features[InvoiceFeature] = Features[InvoiceFeature](activated.collect { case (f: InvoiceFeature, s) => (f, s) }.toSeq:_*)
+
+  def unscoped(): Features[FeatureScope] = Features[FeatureScope](activated.collect { case (f, s) => (f: Feature with FeatureScope, s) }, unknown)
 
   def toByteVector: ByteVector = {
-    val unknownIndexes = for (feature <- unknown) yield feature.bitIndex
-    val activatedIndexes = activated.map { case (feature, sup) => feature supportBit sup }
-
-    val activatedBytes = toByteVectorFromIndex(activatedIndexes.toSet)
-    val unknownBytes = toByteVectorFromIndex(unknownIndexes)
-    val max = activatedBytes.size.max(unknownBytes.size)
-
-    activatedBytes.padLeft(max) | unknownBytes.padLeft(max)
+    val activatedFeatureBytes = toByteVectorFromIndex(activated.map { case (feature, support) => feature.supportBit(support) }.toSet)
+    val unknownFeatureBytes = toByteVectorFromIndex(unknown.map(_.bitIndex))
+    val maxSize = activatedFeatureBytes.size.max(unknownFeatureBytes.size)
+    activatedFeatureBytes.padLeft(maxSize) | unknownFeatureBytes.padLeft(maxSize)
   }
 
-  private def toByteVectorFromIndex(indexes: Set[Int] = Set.empty): ByteVector = {
+  private def toByteVectorFromIndex(indexes: Set[Int]): ByteVector = {
     if (indexes.isEmpty) return ByteVector.empty
-
+    // When converting from BitVector to ByteVector, scodec pads right instead of left, so we make sure we pad to bytes *before* setting feature bits.
     var buf = BitVector.fill(indexes.max + 1)(high = false).bytes.bits
-    indexes.foreach { index => buf = buf set index }
+    indexes.foreach { i => buf = buf.set(i) }
     buf.reverse.bytes
+  }
+
+  override def toString: String = {
+    val a = activated.map { case (feature, support) => feature.rfcName + ":" + support }.mkString(",")
+    val u = unknown.map(_.bitIndex).mkString(",")
+    s"$a" + (if (unknown.nonEmpty) s" (unknown=$u)" else "")
   }
 }
 
 object Features {
-  val empty: Features = {
-    val noFeatures = Map.empty[Feature, FeatureSupport]
-    Features(noFeatures)
-  }
 
-  def apply(features: (Feature, FeatureSupport)*): Features = Features(features.toMap)
+  def empty[T <: FeatureScope]: Features[T] = Features[T](Map.empty[Feature with T, FeatureSupport])
 
-  def apply(bytes: ByteVector): Features = apply(bytes.bits)
+  def apply[T <: FeatureScope](features: (Feature with T, FeatureSupport)*): Features[T] = Features[T](features.toMap)
 
-  def apply(bits: BitVector): Features = {
+  def apply(bytes: ByteVector): Features[FeatureScope] = apply(bytes.bits)
+
+  def apply(bits: BitVector): Features[FeatureScope] = {
     val all = bits.toIndexedSeq.reverse.zipWithIndex.collect {
       case (true, idx) if knownFeatures.exists(_.optional == idx) => Right((knownFeatures.find(_.optional == idx).get, Optional))
       case (true, idx) if knownFeatures.exists(_.mandatory == idx) => Right((knownFeatures.find(_.mandatory == idx).get, Mandatory))
       case (true, idx) => Left(UnknownFeature(idx))
     }
-
-    Features(
+    Features[FeatureScope](
       activated = all.collect { case Right((feature, support)) => feature -> support }.toMap,
       unknown = all.collect { case Left(inf) => inf }.toSet
     )
   }
 
-  case object OptionDataLossProtect extends Feature with InitFeature with NodeFeature {
+  case object DataLossProtect extends Feature with InitFeature with NodeFeature {
     val rfcName = "Data loss protect"
     val mandatory = 0
   }
@@ -156,6 +177,11 @@ object Features {
     val mandatory = 26
   }
 
+  case object OnionMessages extends Feature with InitFeature with NodeFeature {
+    val rfcName = "Onion messages"
+    val mandatory = 38
+  }
+
   case object PaymentMetadata extends Feature with InvoiceFeature {
     val rfcName = "Payment invoice metadata"
     val mandatory = 48
@@ -181,16 +207,32 @@ object Features {
     val mandatory = 32974
   }
 
-  val knownFeatures: Set[Feature] =
-    Set(ChannelRangeQueriesExtended, OptionDataLossProtect, BasicMultiPartPayment, ChannelRangeQueries, VariableLengthOnion,
-      InitialRoutingSync, ShutdownAnySegwit, PaymentMetadata, TrampolinePayment, StaticRemoteKey, HostedChannels,
-      ResizeableHostedChannels, PaymentSecret, ChainSwap, Wumbo)
+  val knownFeatures: Set[Feature with FeatureScope] = Set(
+    DataLossProtect,
+    InitialRoutingSync,
+    ChannelRangeQueries,
+    VariableLengthOnion,
+    ChannelRangeQueriesExtended,
+    PaymentSecret,
+    BasicMultiPartPayment,
+    Wumbo,
+    StaticRemoteKey,
+    ShutdownAnySegwit,
+    OnionMessages,
+    PaymentMetadata,
+    TrampolinePayment,
+    ChainSwap,
+    HostedChannels,
+    ResizeableHostedChannels
+  )
 
-  // Returns true if both feature sets are compatible
-  def areCompatible(ours: Features, theirs: Features): Boolean =
-    ours.areSupported(theirs) && theirs.areSupported(ours)
+  case class FeatureException(message: String) extends IllegalArgumentException(message)
 
-  // returns true if both have at least optional support
-  def canUseFeature(localFeatures: Features, remoteFeatures: Features, feature: Feature): Boolean =
+  /** Returns true if both feature sets are compatible. */
+  def areCompatible[T <: FeatureScope](ours: Features[T], theirs: Features[T]): Boolean = ours.areSupported(theirs) && theirs.areSupported(ours)
+
+  /** returns true if both have at least optional support */
+  def canUseFeature[T <: FeatureScope](localFeatures: Features[T], remoteFeatures: Features[T], feature: Feature with T): Boolean = {
     localFeatures.hasFeature(feature) && remoteFeatures.hasFeature(feature)
+  }
 }

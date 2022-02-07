@@ -4,7 +4,7 @@ import java.lang.{Integer => JInt, Long => JLong}
 
 import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.eclair._
-import fr.acinq.eclair.payment.PaymentRequest
+import fr.acinq.eclair.payment.Bolt11Invoice
 import fr.acinq.eclair.transactions.RemoteFulfill
 import fr.acinq.eclair.wire.FullPaymentTag
 import immortan._
@@ -37,13 +37,13 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
   def searchPayments(rawSearchQuery: String): RichCursor = db.search(PaymentTable.searchSql, rawSearchQuery.toLowerCase)
 
   def listPendingSecrets: Iterable[ByteVector32] = {
-    val incomingThreshold = System.currentTimeMillis - PaymentRequest.OUR_EXPIRY_SECONDS * 1000L // Skip incoming payments which are expired by now
+    val incomingThreshold = System.currentTimeMillis - Bolt11Invoice.OUR_EXPIRY_SECONDS * 1000L // Skip incoming payments which are expired by now
     db.select(PaymentTable.selectPendingSql, incomingThreshold.toString).iterable(_ string PaymentTable.secret).map(ByteVector32.fromValidHex)
   }
 
   def listRecentPayments(limit: Int): RichCursor = {
     val outgoingThreshold = System.currentTimeMillis - 60 * 60 * 24 * 1000L // Skip outgoing payments which have been failed more than a day ago
-    val incomingThreshold = System.currentTimeMillis - PaymentRequest.OUR_EXPIRY_SECONDS * 1000L // Skip incoming payments which are expired by now
+    val incomingThreshold = System.currentTimeMillis - Bolt11Invoice.OUR_EXPIRY_SECONDS * 1000L // Skip incoming payments which are expired by now
     db.select(PaymentTable.selectRecentSql, outgoingThreshold.toString, incomingThreshold.toString, limit.toString)
   }
 
@@ -88,7 +88,7 @@ class SQLitePayment(db: DBInterface, preimageDb: DBInterface) extends PaymentBag
       removePaymentInfo(prex.pr.paymentHash)
       val newSqlPQ = db.makePreparedQuery(PaymentTable.newSql)
       db.change(newSqlPQ, prex.raw, preimage.toHex, PaymentStatus.PENDING: JInt, System.currentTimeMillis: JLong /* SEEN */, System.currentTimeMillis: JLong /* UPDATED */, description.toJson.compactPrint,
-        PaymentInfo.NO_ACTION, prex.pr.paymentHash.toHex, prex.pr.paymentSecret.get.toHex, prex.pr.amount.getOrElse(0L.msat).toLong: JLong /* 0 WHEN UNDEFINED */, 0L: JLong /* SENT = 0 MSAT, NOTHING TO SEND */,
+        PaymentInfo.NO_ACTION, prex.pr.paymentHash.toHex, prex.pr.paymentSecret.get.toHex, prex.pr.amountOpt.getOrElse(0L.msat).toLong: JLong /* 0 WHEN UNDEFINED */, 0L: JLong /* SENT = 0 MSAT, NOTHING TO SEND */,
         0L: JLong /* NO FEE FOR INCOMING PAYMENT */, balanceSnap.toLong: JLong, fiatRateSnap.toJson.compactPrint, 0L: JLong /* NO CHAIN FEE FOR INCOMING PAYMENTS */, 1: JInt /* INCOMING TYPE = 1 */)
       ChannelMaster.next(ChannelMaster.paymentDbStream)
       newSqlPQ.close

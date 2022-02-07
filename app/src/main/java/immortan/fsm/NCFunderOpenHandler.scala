@@ -1,6 +1,7 @@
 package immortan.fsm
 
 import fr.acinq.bitcoin.{ByteVector32, Satoshi}
+import fr.acinq.eclair.Features.StaticRemoteKey
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import fr.acinq.eclair.channel._
@@ -35,9 +36,10 @@ abstract class NCFunderOpenHandler(info: RemoteNodeInfo, fundingAmount: Satoshi,
 
     override def onOperational(worker: CommsTower.Worker, theirInit: Init): Unit = {
       val localFunderParams = LNParams.makeChannelParams(isFunder = true, fundingAmount)
-      val stickyChannelFeatures = ChannelFeatures.pickChannelFeatures(LNParams.ourInit.features, theirInit.features)
+      val channelFeatures = ChannelFeatures(StaticRemoteKey)
+
       val initialFeeratePerKw = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.commitmentBlockTarget)
-      val cmd = INPUT_INIT_FUNDER(info.safeAlias, tempChannelId, fundingAmount, 0L.msat, fundingFeeratePerKw, initialFeeratePerKw, localFunderParams, theirInit, 0.toByte, stickyChannelFeatures)
+      val cmd = INPUT_INIT_FUNDER(info.safeAlias, tempChannelId, fundingAmount, 0L.msat, fundingFeeratePerKw, initialFeeratePerKw, localFunderParams, theirInit, 0.toByte, channelFeatures)
       freshChannel process cmd
     }
 

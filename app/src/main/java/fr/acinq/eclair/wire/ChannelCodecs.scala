@@ -141,9 +141,9 @@ object ChannelCodecs {
       ("htlcKey" | extendedPrivateKeyCodec)
   }.as[ChannelKeys]
 
-  val channelFeaturesCodec = lengthDelimited(bytes).xmap(
-    (b: ByteVector) => ChannelFeatures(Features(b).activated.keySet), // We make no difference between mandatory/optional, both are considered activated
-    (cf: ChannelFeatures) => Features(cf.activated.map(_ -> FeatureSupport.Mandatory).toMap).toByteVector // We encode features as mandatory, by convention
+  val channelFeaturesCodec: Codec[ChannelFeatures] = lengthDelimited(bytes).xmap(
+    (b: ByteVector) => ChannelFeatures(Features(b).activated.keySet), // we make no difference between mandatory/optional, both are considered activated
+    (cf: ChannelFeatures) => Features(cf.activated.map(f => f -> FeatureSupport.Mandatory).toMap).toByteVector // we encode features as mandatory, by convention
   )
 
   val localParamsCodec = {

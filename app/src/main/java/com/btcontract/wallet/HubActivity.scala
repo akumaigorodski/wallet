@@ -1681,7 +1681,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
         val payRequestFinal = to[PayRequestFinal](rawResponse)
         val descriptionHashOpt = payRequestFinal.prExt.pr.description.right.toOption
         require(descriptionHashOpt.contains(data.metaDataHash), s"Metadata hash mismatch, original=${data.metaDataHash}, later provided=$descriptionHashOpt")
-        require(payRequestFinal.prExt.pr.amount.contains(amount), s"Payment amount mismatch, requested by wallet=$amount, provided in invoice=${payRequestFinal.prExt.pr.amount}")
+        require(payRequestFinal.prExt.pr.amountOpt.contains(amount), s"Payment amount mismatch, requested by wallet=$amount, provided in invoice=${payRequestFinal.prExt.pr.amountOpt}")
         payRequestFinal.modify(_.successAction.each.domain).setTo(data.callbackUri.getHost.asSome)
       }
 

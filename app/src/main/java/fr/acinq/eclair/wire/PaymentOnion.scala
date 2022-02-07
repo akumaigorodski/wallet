@@ -18,7 +18,7 @@ package fr.acinq.eclair.wire
 
 import fr.acinq.bitcoin.ByteVector32
 import fr.acinq.bitcoin.Crypto.PublicKey
-import fr.acinq.eclair.payment.PaymentRequest
+import fr.acinq.eclair.payment.Bolt11Invoice
 import fr.acinq.eclair.wire.CommonCodecs._
 import fr.acinq.eclair.wire.OnionRoutingCodecs.MissingRequiredTlv
 import fr.acinq.eclair.wire.TlvCodecs._
@@ -171,7 +171,7 @@ object OnionPaymentPayloadTlv {
     * Invoice routing hints. Only included for intermediate trampoline nodes when they should convert to a legacy payment
     * because the final recipient doesn't support trampoline.
     */
-  case class InvoiceRoutingInfo(extraHops: List[List[PaymentRequest.ExtraHop]]) extends OnionPaymentPayloadTlv
+  case class InvoiceRoutingInfo(extraHops: List[Bolt11Invoice.ExtraHops]) extends OnionPaymentPayloadTlv
 
   /** An encrypted trampoline onion packet. */
   case class TrampolineOnion(packet: OnionRoutingPacket) extends OnionPaymentPayloadTlv
@@ -289,7 +289,7 @@ object PaymentOnion {
     NodeRelayPayload(TlvStream(AmountToForward(amount), OutgoingCltv(expiry), OutgoingNodeId(nextNodeId)))
 
   /** Create a trampoline inner payload instructing the trampoline node to relay via a non-trampoline payment. */
-  def createNodeRelayToNonTrampolinePayload(amount: MilliSatoshi, totalAmount: MilliSatoshi, expiry: CltvExpiry, targetNodeId: PublicKey, invoice: PaymentRequest): NodeRelayPayload = {
+  def createNodeRelayToNonTrampolinePayload(amount: MilliSatoshi, totalAmount: MilliSatoshi, expiry: CltvExpiry, targetNodeId: PublicKey, invoice: Bolt11Invoice): NodeRelayPayload = {
     val tlvs = Seq(
       Some(AmountToForward(amount)),
       Some(OutgoingCltv(expiry)),
@@ -367,7 +367,7 @@ object PaymentOnionCodecs {
 
   private val invoiceFeatures: Codec[InvoiceFeatures] = variableSizeBytesLong(varintoverflow, bytes).as[InvoiceFeatures]
 
-  private val invoiceRoutingInfo: Codec[InvoiceRoutingInfo] = variableSizeBytesLong(varintoverflow, list(listOfN(uint8, PaymentRequest.Codecs.extraHopCodec))).as[InvoiceRoutingInfo]
+  private val invoiceRoutingInfo: Codec[InvoiceRoutingInfo] = variableSizeBytesLong(varintoverflow, list(listOfN(uint8, Bolt11Invoice.Codecs.extraHopCodec))).as[InvoiceRoutingInfo]
 
   private val trampolineOnion: Codec[TrampolineOnion] = variableSizeBytesLong(varintoverflow, trampolineOnionPacketCodec).as[TrampolineOnion]
 

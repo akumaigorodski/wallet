@@ -19,7 +19,7 @@ package fr.acinq.eclair.router
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey, sha256, verifySignature}
 import fr.acinq.bitcoin.{ByteVector32, ByteVector64, Crypto, LexicographicalOrdering}
 import fr.acinq.eclair.wire._
-import fr.acinq.eclair.{CltvExpiryDelta, Features, MilliSatoshi, ShortChannelId, serializationResult}
+import fr.acinq.eclair.{CltvExpiryDelta, FeatureScope, Features, MilliSatoshi, serializationResult}
 import scodec.bits.{BitVector, ByteVector}
 import shapeless.HNil
 
@@ -28,20 +28,20 @@ import scala.concurrent.duration._
 
 object Announcements {
 
-  def channelAnnouncementWitnessEncode(chainHash: ByteVector32, shortChannelId: Long, nodeId1: PublicKey, nodeId2: PublicKey, bitcoinKey1: PublicKey, bitcoinKey2: PublicKey, features: Features, unknownFields: ByteVector): ByteVector =
+  def channelAnnouncementWitnessEncode(chainHash: ByteVector32, shortChannelId: Long, nodeId1: PublicKey, nodeId2: PublicKey, bitcoinKey1: PublicKey, bitcoinKey2: PublicKey, features: Features[FeatureScope], unknownFields: ByteVector): ByteVector =
     sha256(sha256(serializationResult(LightningMessageCodecs.channelAnnouncementWitnessCodec.encode(features :: chainHash :: shortChannelId :: nodeId1 :: nodeId2 :: bitcoinKey1 :: bitcoinKey2 :: unknownFields :: HNil))))
 
-  def nodeAnnouncementWitnessEncode(timestamp: Long, nodeId: PublicKey, rgbColor: Color, alias: String, features: Features, addresses: List[NodeAddress], unknownFields: ByteVector): ByteVector =
+  def nodeAnnouncementWitnessEncode(timestamp: Long, nodeId: PublicKey, rgbColor: Color, alias: String, features: Features[FeatureScope], addresses: List[NodeAddress], unknownFields: ByteVector): ByteVector =
     sha256(sha256(serializationResult(LightningMessageCodecs.nodeAnnouncementWitnessCodec.encode(features :: timestamp :: nodeId :: rgbColor :: alias :: addresses :: unknownFields :: HNil))))
 
   def channelUpdateWitnessEncode(chainHash: ByteVector32, shortChannelId: Long, timestamp: Long, messageFlags: Byte, channelFlags: Byte, cltvExpiryDelta: CltvExpiryDelta, htlcMinimumMsat: MilliSatoshi, feeBaseMsat: MilliSatoshi, feeProportionalMillionths: Long, htlcMaximumMsat: Option[MilliSatoshi], unknownFields: ByteVector): ByteVector =
     sha256(sha256(serializationResult(LightningMessageCodecs.channelUpdateWitnessCodec.encode(chainHash :: shortChannelId :: timestamp :: messageFlags :: channelFlags :: cltvExpiryDelta :: htlcMinimumMsat :: feeBaseMsat :: feeProportionalMillionths :: htlcMaximumMsat :: unknownFields :: HNil))))
 
-  def generateChannelAnnouncementWitness(chainHash: ByteVector32, shortChannelId: Long, localNodeId: PublicKey, remoteNodeId: PublicKey, localFundingKey: PublicKey, remoteFundingKey: PublicKey, features: Features): ByteVector =
+  def generateChannelAnnouncementWitness(chainHash: ByteVector32, shortChannelId: Long, localNodeId: PublicKey, remoteNodeId: PublicKey, localFundingKey: PublicKey, remoteFundingKey: PublicKey, features: Features[FeatureScope]): ByteVector =
     if (isNode1(localNodeId, remoteNodeId)) {
-      channelAnnouncementWitnessEncode(chainHash, shortChannelId, localNodeId, remoteNodeId, localFundingKey, remoteFundingKey, features, unknownFields = ByteVector.empty)
+      channelAnnouncementWitnessEncode(chainHash, shortChannelId, localNodeId, remoteNodeId, localFundingKey, remoteFundingKey, features, ByteVector.empty)
     } else {
-      channelAnnouncementWitnessEncode(chainHash, shortChannelId, remoteNodeId, localNodeId, remoteFundingKey, localFundingKey, features, unknownFields = ByteVector.empty)
+      channelAnnouncementWitnessEncode(chainHash, shortChannelId, remoteNodeId, localNodeId, remoteFundingKey, localFundingKey, features, ByteVector.empty)
     }
 
   def signChannelAnnouncement(witness: ByteVector, key: PrivateKey): ByteVector64 = Crypto.sign(witness, key)
