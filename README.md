@@ -19,20 +19,20 @@ Simple Bitcoin Wallet (aka SBW) is an [IMMORTAN](https://github.com/btcontract/I
 
 ## Bitcoin part roadmap
 
-- [ ] Implement BIP157/158, let users choose between Electrum and Client Side Filters as a sync mechanism.
+- [x] Implement BIP157/158, let users choose between Electrum and Client Side Filters as a sync mechanism.
 - [x] Support watch-only Bitcoin wallets and import of xPub from hardware wallets.
 - [x] Allow Lightning channels to be funded from imported hardware wallets.
 - [x] Add RBF-based boosting and cancelling for outgoing transactions.
 - [x] Add CPFP-based boosting for incoming transactions.
-- [ ] Implement Taproot wallet type.
+- [x] Implement Taproot wallet type.
 - [x] Implement Coin Control.
 
 ## Lightning part roadmap
 
 - [x] Finalize and enable private hosted channels.
 - [x] Achieve complete LNURL spec support (as far as non-custodial wallet can go).
-- [ ] Develop an Eclair plugin which would allow full LN nodes to easily utilize SBW routing capabilities.
-- [ ] Implement UI for fine controlling of routed Lightning payments.
+- [x] Develop an Eclair plugin which would allow full LN nodes to easily utilize SBW routing capabilities.
+- [x] Implement UI for fine controlling of routed Lightning payments.
 
 ## Building from source
 
