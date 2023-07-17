@@ -60,17 +60,3 @@ Signer #1 public key SHA-256 digest: dc97f0f2e34167015914600d8fa748f908d578bcedb
 Signer #1 public key SHA-1 digest: c4400469d5ad807dd9394785f1fa95003588a091
 Signer #1 public key MD5 digest: e4e1f847e0cb0a9703dc4f9323fd6d87
 ```
-
-### Project sponsors
-
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="middle">
-        <a href="https://lnbig.com/" target="_blank">
-          <img width="146px" src="https://i.imgur.com/W4A92Ym.png">
-        </a>
-      </td>
-    </tr>
-  </tbody>
-</table>
