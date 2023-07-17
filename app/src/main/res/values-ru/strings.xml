@@ -111,7 +111,6 @@
 
     <string name="btc_transfer_label"><![CDATA[Старый -> новый кошелек]]></string>
     <string name="btc_transfer_message"><![CDATA[Перевод денег со старого на современный Биткойн-кошелек]]></string>
-    <string name="recovery_phrase_warning">Нажмите, чтобы сохранить фразу восстановления на случай утери или замены телефона.</string>
 
     <!-- errors -->
 

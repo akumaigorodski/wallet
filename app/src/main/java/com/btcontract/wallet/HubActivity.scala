@@ -71,16 +71,6 @@ object HubActivity {
   var allInfos: Seq[TransactionDetails] = Nil
   var instance: HubActivity = _
 
-  def requestHostedChannel: Unit = {
-    val localParams = LNParams.makeChannelParams(isFunder = false, LNParams.minChanDustLimit)
-    def implant(cs: Commitments, channel: ChannelHosted): Unit = RemotePeerActivity.implantNewChannel(cs, channel)
-    new HCOpenHandler(LNParams.syncParams.motherbase, randomBytes32, localParams.defaultFinalScriptPubKey, LNParams.cm) {
-      // Stop automatic HC opening attempts on getting any kind of local/remote error, this won't be triggered on disconnect
-      def onEstablished(cs: Commitments, channel: ChannelHosted): Unit = implant(cs, channel)
-      def onFailure(reason: Throwable): Unit = none
-    }
-  }
-
   def dangerousHCRevealed(fullTag: FullPaymentTag): List[LocalFulfill] = ChannelMaster.dangerousHCRevealed(lastHostedReveals, LNParams.blockCount.get, fullTag.paymentHash).toList
   def itemsToTags: Map[Int, String] = Map(R.id.bitcoinPayments -> "bitcoinPayments", R.id.lightningPayments -> "lightningPayments", R.id.relayedPayments -> "relayedPayments", R.id.payMarketLinks -> "payMarketLinks")
   def incoming(amount: MilliSatoshi): String = WalletApp.denom.directedWithSign(incoming = amount, outgoing = 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
@@ -832,7 +822,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
 
   class WalletCardsViewHolder {
     val view: LinearLayout = getLayoutInflater.inflate(R.layout.frag_wallet_cards, null).asInstanceOf[LinearLayout]
-    val recoveryPhrase: TextView = view.findViewById(R.id.recoveryPhraseWarning).asInstanceOf[TextView]
+    val lnRemovalWarning: TextView = view.findViewById(R.id.lnRemovalWarning).asInstanceOf[TextView]
     val defaultHeader: LinearLayout = view.findViewById(R.id.defaultHeader).asInstanceOf[LinearLayout]
 
     val totalBalance: TextView = view.findViewById(R.id.totalBalance).asInstanceOf[TextView]
@@ -1277,7 +1267,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       if checkedButtonTags.contains(buttonTag)
     } walletCards.toggleGroup.check(itemId)
 
-    walletCards.recoveryPhrase setOnClickListener onButtonTap(viewRecoveryCode)
     walletCards.toggleGroup addOnButtonCheckedListener new OnButtonCheckedListener {
       def onButtonChecked(group: MaterialButtonToggleGroup, checkId: Int, isChecked: Boolean): Unit = {
         WalletApp.putCheckedButtons(itemsToTags.filterKeys(group.getCheckedButtonIds.contains).values.toSet)
@@ -1703,7 +1692,7 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
     setVis(isVisible = relayedPreimageInfos.nonEmpty, walletCards.relayedPayments)
     setVis(isVisible = lnUrlPayLinks.nonEmpty, walletCards.payMarketLinks)
     setVis(isVisible = hasItems && !isSearchOn, walletCards.listCaption)
-    setVis(isVisible = !hasItems, walletCards.recoveryPhrase)
+    setVis(isVisible = LNParams.cm.all.isEmpty, walletCards.lnRemovalWarning)
     paymentsAdapter.notifyDataSetChanged
   }
 
