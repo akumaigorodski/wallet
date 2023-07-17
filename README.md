@@ -1,4 +1,4 @@
-Simple Bitcoin Wallet (aka SBW) is an [IMMORTAN](https://github.com/btcontract/IMMORTAN)-powered non-custodial Bitcoin wallet for Android with extensive Lightning Network support. It is fully autonomus and does not rely on any kind of centralized service (such as Google services, routing servers, special LSP nodes etc). It is the first mobile wallet which supports routing of 3rd-party Lightning payments and thus allows users to avoid private channel closings as well as earn routing fees in a non-custodial way.    
+Simple Bitcoin Wallet (aka SBW) is a non-custodial Bitcoin wallet for Android.
 
 <table>
   <tbody>
@@ -16,23 +16,6 @@ Simple Bitcoin Wallet (aka SBW) is an [IMMORTAN](https://github.com/btcontract/I
     </tr>
   </tbody>
 </table>
-
-## Bitcoin part roadmap
-
-- [ ] Implement BIP157/158, let users choose between Electrum and Client Side Filters as a sync mechanism.
-- [x] Support watch-only Bitcoin wallets and import of xPub from hardware wallets.
-- [x] Allow Lightning channels to be funded from imported hardware wallets.
-- [x] Add RBF-based boosting and cancelling for outgoing transactions.
-- [x] Add CPFP-based boosting for incoming transactions.
-- [ ] Implement Taproot wallet type.
-- [x] Implement Coin Control.
-
-## Lightning part roadmap
-
-- [x] Finalize and enable private hosted channels.
-- [x] Achieve complete LNURL spec support (as far as non-custodial wallet can go).
-- [ ] Develop an Eclair plugin which would allow full LN nodes to easily utilize SBW routing capabilities.
-- [ ] Implement UI for fine controlling of routed Lightning payments.
 
 ## Building from source
 
