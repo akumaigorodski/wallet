@@ -6,14 +6,14 @@ task wrapper(type: Wrapper) {
 }
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
     buildToolsVersion "30.0.3"
 
     defaultConfig {
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         applicationId 'com.btcontract.wallet'
         multiDexEnabled true
-        targetSdkVersion 30
+        targetSdkVersion 31
         minSdkVersion 21
 
         versionName '2.4.28'
