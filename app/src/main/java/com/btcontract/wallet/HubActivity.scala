@@ -46,7 +46,6 @@ import immortan.utils.ImplicitJsonFormats._
 import immortan.utils._
 import org.apmem.tools.layouts.FlowLayout
 import org.ndeftools.Message
-import org.ndeftools.util.activity.NfcReaderActivity
 import rx.lang.scala.{Observable, Subscription}
 import spray.json._
 
@@ -77,7 +76,7 @@ object HubActivity {
   def hasItems: Boolean = txInfos.nonEmpty || paymentInfos.nonEmpty || lnUrlPayLinks.nonEmpty || relayedPreimageInfos.nonEmpty
 }
 
-class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener with CanBeRepliedTo { me =>
+class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with ChoiceReceiver with ChannelListener with CanBeRepliedTo { me =>
   private[this] lazy val expiresInBlocks = getResources.getStringArray(R.array.expires_in_blocks)
   private[this] lazy val partsInFlight = getResources.getStringArray(R.array.parts_in_flight)
   private[this] lazy val pctCollected = getResources.getStringArray(R.array.pct_collected)
@@ -994,17 +993,6 @@ class HubActivity extends NfcReaderActivity with ChanErrorHandlerActivity with E
       Vibrator.vibrate
     }.run
   }
-
-  // NFC
-
-  def readEmptyNdefMessage: Unit = nothingUsefulTask.run
-  def readNonNdefMessage: Unit = nothingUsefulTask.run
-  def onNfcStateChange(ok: Boolean): Unit = none
-  def onNfcFeatureNotFound: Unit = none
-  def onNfcStateDisabled: Unit = none
-  def onNfcStateEnabled: Unit = none
-
-  def readNdefMessage(nfcMessage: Message): Unit = runInFutureProcessOnUI(InputParser recordValue ndefMessageString(nfcMessage), _ => readEmptyNdefMessage)(_ => me checkExternalData noneRunnable)
 
   // Chan exceptions
 
