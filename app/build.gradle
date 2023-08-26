@@ -6,14 +6,14 @@ task wrapper(type: Wrapper) {
 }
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 30
     buildToolsVersion "30.0.3"
 
     defaultConfig {
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         applicationId 'com.btcontract.wallet'
         multiDexEnabled true
-        targetSdkVersion 31
+        targetSdkVersion 30
         minSdkVersion 21
 
         versionName '2.4.28'
@@ -80,16 +80,11 @@ dependencies {
 
     implementation 'org.bouncycastle:bcprov-jdk15to18:1.68'
     implementation 'com.google.guava:guava:29.0-android'
-    implementation 'commons-codec:commons-codec:1.10'
+    implementation 'commons-codec:commons-codec:1.11'
     implementation 'io.netty:netty-all:4.1.42.Final'
 
     // Built-in Tor
-    implementation 'com.squareup.okhttp3:okhttp:4.9.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.1'
     implementation 'info.guardianproject:tor-android:0.4.6.9'
     implementation 'info.guardianproject:jtorctl:0.4.5.7'
-
-    // Android tests
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 }

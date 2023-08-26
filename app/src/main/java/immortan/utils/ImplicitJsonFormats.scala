@@ -13,7 +13,7 @@ import fr.acinq.eclair.wire.LightningMessageCodecs._
 import immortan._
 import immortan.crypto.Tools.Fiat2Btc
 import immortan.fsm.SplitInfo
-import immortan.utils.FiatRates.{BitpayItemList, CoinGeckoItemMap}
+import immortan.utils.FiatRates.CoinGeckoItemMap
 import scodec.bits.BitVector
 import spray.json._
 
@@ -193,13 +193,9 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
 
   implicit val blockchainInfoItemFmt: JsonFormat[BlockchainInfoItem] = jsonFormat[Double, BlockchainInfoItem](BlockchainInfoItem.apply, "last")
 
-  implicit val bitpayItemFmt: JsonFormat[BitpayItem] = jsonFormat[String, Double, BitpayItem](BitpayItem.apply, "code", "rate")
-
   implicit val coinGeckoItemFmt: JsonFormat[CoinGeckoItem] = jsonFormat[Double, CoinGeckoItem](CoinGeckoItem.apply, "value")
 
   implicit val coinGeckoFmt: JsonFormat[CoinGecko] = jsonFormat[CoinGeckoItemMap, CoinGecko](CoinGecko.apply, "rates")
-
-  implicit val bitpayFmt: JsonFormat[Bitpay] = jsonFormat[BitpayItemList, Bitpay](Bitpay.apply, "data")
 
   implicit val fiatRatesInfoFmt: JsonFormat[FiatRatesInfo] = jsonFormat[Fiat2Btc, Fiat2Btc, Long, FiatRatesInfo](FiatRatesInfo.apply, "rates", "oldRates", "stamp")
 
