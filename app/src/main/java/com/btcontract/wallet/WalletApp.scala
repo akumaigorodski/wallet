@@ -328,11 +328,6 @@ object WalletApp {
   }
 }
 
-object Vibrator {
-  private val vibrator = WalletApp.app.getSystemService(Context.VIBRATOR_SERVICE).asInstanceOf[android.os.Vibrator]
-  def vibrate: Unit = if (null != vibrator && vibrator.hasVibrator) vibrator.vibrate(Array(0L, 85, 200), -1)
-}
-
 class WalletApp extends Application { me =>
   WalletApp.app = me
 

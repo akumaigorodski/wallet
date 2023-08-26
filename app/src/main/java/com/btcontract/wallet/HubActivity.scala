@@ -936,7 +936,6 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
 
   private var stateSubscription = Option.empty[Subscription]
   private var statusSubscription = Option.empty[Subscription]
-  private var inFinalizedSubscription = Option.empty[Subscription]
 
   private val chainListener = new WalletEventsListener {
     override def onChainMasterSelected(event: InetSocketAddress): Unit = UITask {
@@ -990,7 +989,6 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
     override def gotFirstPreimage(data: OutgoingPaymentSenderData, fulfill: RemoteFulfill): Unit = UITask {
       val actionOpt = paymentInfos.find(_.paymentHash == fulfill.ourAdd.paymentHash).flatMap(_.action)
       for (paymentAction <- actionOpt) resolveAction(fulfill.theirPreimage, paymentAction)
-      Vibrator.vibrate
     }.run
   }
 
@@ -1019,7 +1017,6 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
   override def onDestroy: Unit = {
     stateSubscription.foreach(_.unsubscribe)
     statusSubscription.foreach(_.unsubscribe)
-    inFinalizedSubscription.foreach(_.unsubscribe)
 
     try LNParams.chainWallets.catcher ! WalletEventsCatcher.Remove(chainListener) catch none
     try for (channel <- LNParams.cm.all.values) channel.listeners -= me catch none
@@ -1305,7 +1302,6 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
 
     stateSubscription = txEvents.merge(paymentEvents).merge(relayEvents).merge(marketEvents).merge(stateEvents).doOnNext(_ => updAllInfos).subscribe(_ => paymentAdapterDataChanged.run).asSome
     statusSubscription = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.statusUpdateStream, window).merge(stateEvents).subscribe(_ => UITask(walletCards.updateView).run).asSome
-    inFinalizedSubscription = ChannelMaster.inFinalized.collect { case _: IncomingRevealed => true }.subscribe(_ => Vibrator.vibrate).asSome
 
     timer.scheduleAtFixedRate(paymentAdapterDataChanged, 30000, 30000)
     val backupAllowed = LocalBackup.isAllowed(context = WalletApp.app)
