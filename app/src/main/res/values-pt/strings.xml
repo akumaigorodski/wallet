@@ -14,7 +14,6 @@
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Saldo total</string>
-    <string name="hosted_channel">HOSTED CHANNEL\nCustodial solution</string>
     <string name="typing_hints">Endereço Bitcoin, invoice, email&#8230;</string>
     <string name="copied_to_clipboard">Copiado para clipboard</string>
     <string name="add_address">Mais endereços novos</string>
@@ -55,16 +54,13 @@
 
     <string name="action_recovery_phrase_title">Frase de recuperação</string>
     <string name="action_recovery_phrase_hint">Palavras de recuperação</string>
-    <string name="title_chans">Canais Relâmpago</string>
 
     <string name="dialog_send">Enviar</string>
     <string name="dialog_receive">Receber</string>
 
     <string name="dialog_ok">OK</string>
-    <string name="dialog_stamp">Estampar</string>
     <string name="dialog_accept">Accept</string>
     <string name="dialog_cancel">Cancel</string>
-    <string name="dialog_split">Dividir</string>
     <string name="dialog_share">Share</string>
     <string name="dialog_break">Quebrar</string>
     <string name="dialog_boost">Boost</string>
@@ -83,7 +79,6 @@
     <string name="dialog_set_label">Rótulo do item&#8230;</string>
 
     <string name="dialog_receive_btc"><![CDATA[Receber em endereço <b>Bitcoin</b>]]></string>
-    <string name="dialog_receive_ln"><![CDATA[Receber em invoice <b>Lightning</b>]]></string>
 
     <string name="dialog_legacy_transfer_btc">Transferir para carteira moderna</string>
     <string name="dialog_legacy_send_btc">Enviar de tipo antigo</string>
@@ -101,13 +96,6 @@
     <string name="dialog_send_btc_confirm_amount">Send amount</string>
     <string name="dialog_send_btc_confirm_fiat">Fiat value</string>
     <string name="dialog_send_btc_confirm_fee">Chain fee</string>
-
-    <string name="dialog_send_ln"><![CDATA[Enviar pagamento <b>Lightning</b>%1$s]]></string>
-    <string name="dialog_split_ln"><![CDATA[Pagamento <b>Lightning</b> dividido%1$s]]></string>
-    <string name="dialog_split_ln_tip">Deixe outra pessoa ler um invoice dividido,\nEntão toquem em PAGAR, aprox ao mesmo tempo</string>
-    <string name="dialog_ln_expected_fee"><![CDATA[<b>expected fee</b> %1$s]]></string>
-    <string name="dialog_ln_requested"><![CDATA[<b>solicitado</b>&#160;%1$s]]></string>
-    <string name="dialog_ln_left"><![CDATA[<b>falta pagar</b>&#160;%1$s]]></string>
 
     <string name="btc_transfer_label"><![CDATA[Carteira legacy -> moderna]]></string>
     <string name="btc_transfer_message"><![CDATA[Transferência local de Bitcoin, de carteira on-chain legacy para moderna]]></string>
@@ -127,38 +115,12 @@
         <b>ID do node do par</b><br>%2$s
     ]]></string>
 
-    <string name="error_rejected_incoming_public">Proposta de canal público rejeitada, somente canais privados são permitidos.</string>
     <string name="error_btc_no_wallet">Can not proceed because related chain wallet is not found, please add it from app settings.</string>
     <string name="error_btc_broadcast_fail">Não foi possível transmitir a transação, por favor certifique-se de que a carteira está conectada à rede e tente novamente.</string>
     <string name="error_could_not_decrypt"><![CDATA[<b>A decodificação do backup falhou</b>.<br><br>Certifique-se de que o arquivo de backup e a frase de recuperação estão corretos.<br><br>Detalhes do erro<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>A frase fornecida está incorreta</b>.<br><br>Detalhes do erro<br><b>%1$s</b>]]></string>
     <string name="error_old_api_level">Requires API 24+, yours is %1$s</string>
     <string name="error_nothing_useful">Nada útil foi encontrado</string>
-
-    <string name="error_ln_no_chans"><![CDATA[Não é possível enviar ou receber pagamentos Relâmpago porque não há nenhum canal aberto.]]></string>
-    <string name="error_ln_waiting"><![CDATA[Não é possível enviar ou receber pagamentos Lightning porque nenhum de seus canais está aberto ainda.]]></string>
-
-    <string name="error_ln_receive_no_update"><![CDATA[Não é possível solicitar pagamento Lightning porque os parâmetros de recebimento ainda não estão disponíveis.]]></string>
-    <string name="error_ln_receive_reserve"><![CDATA[Ainda não é possível solicitar pagamentos Relâmpago porque antes você precisa gastar ao menos<b>%1$s</b> para liberar espaço para receber.]]></string>
-
-    <string name="error_ln_send_small"><![CDATA[Não é possível enviar este pagamento Relâmpago porque o valor solicitado de <b>%1$s</b> é muito baixo, o valor mínimo é <b>%2$s</b>.]]></string>
-    <string name="error_ln_send_reserve"><![CDATA[Can\'t send Lightning payments yet because your payment channel is empty and you need to receive something into it first.]]></string>
-    <string name="error_ln_send_no_secret"><![CDATA[Não é possível enviar este pagamento Lightning porque o invoice não contém um segredo]]></string>
-    <string name="error_ln_send_network"><![CDATA[Não é possível enviar este pagamento Lightning porque ele é de uma rede desconhecida]]></string>
-    <string name="error_ln_send_split"><![CDATA[Não é possível continuar pois os parâmetros de partição deste invoice dividido estão errados.]]></string>
-    <string name="error_ln_send_done_already"><![CDATA[Não é possível enviar este pagamento Relâmpago porque ele já foi enviado.]]></string>
-    <string name="error_ln_send_expired"><![CDATA[Não é possível enviar este pagamento Relâmpago porque o boleto já expirou.]]></string>
-    <string name="error_ln_send_in_flight"><![CDATA[Não é possível enviar este pagamento Relâmpago porque ele já está em andamento.]]></string>
-
-    <string name="error_hc_dangerous_state">Pagamento em situação perigosa</string>
-    <string name="error_hc_option_can_stamp"><![CDATA[Você pode publicar uma <b>prova</b> na cadeia de blocos do Bitcoin agora mesmo para formalizar o seu crédito de <b>%1$s</b>, isto custará <b>%2$s</b>.]]></string>
-    <string name="error_hc_option_can_not_stamp"><![CDATA[A obrigação do provedor pode ser imortalizada através de uma <b>prova</b> na cadeia de blocos do Bitcoin, mas isso lhe custará alguns satoshis.]]></string>
-
-    <string name="error_hc_revealed_preimage"><![CDATA[
-        Provedor do canal não está aceitando a prova revelada do seu pagamento recebido <b>%2$s</b>.<br><br>
-        Se tudo continuar assim em <b>%3$s</b> será impossível demonstrar que sua prova foi revelada em tempo.<br><br>
-        %1$s
-    ]]></string>
 
     <!-- /errors -->
 
@@ -196,7 +158,6 @@
     <string name="tx_state_double_spent">falhou</string>
 
     <string name="popup_retry">Tente novamente</string>
-    <string name="popup_view_invoice">View invoice</string>
     <string name="popup_run_action"><![CDATA[executar&#160;ação&#160;]]></string>
     <string name="popup_proof_stamp"><![CDATA[share&#160;prova&#160;]]></string>
     <string name="popup_to_address"><![CDATA[<b>endereço</b>&#160;%1$s]]></string>
@@ -211,19 +172,6 @@
     <string name="popup_hash"><![CDATA[<b>hash</b>&#160;%1$s]]></string>
 
     <!-- /special tx/payment descriptions -->
-
-    <!-- Remote peer activity -->
-
-    <string name="rpa_title">Conexão com par remoto</string>
-    <string name="rpa_disconnected">Par remoto desconectado</string>
-    <string name="rpa_no_feature_support">Não é possível abrir canais com este node pois alguns recursos importantes não são suportados pelo par remoto.</string>
-    <string name="rpa_hc_warn"><![CDATA[<br><b>Atenção!</b><br><br>Os fundos do seu canal virtual ficarão armazenados em um servidor, certifique-se de que este par é confiável.]]></string>
-    <string name="rpa_request_channel">Compartilhe o ID do seu node com o par remoto e mantenha esta página aberta para obter um canal.</string>
-    <string name="rpa_request_hc">Use Hosted Lightning channel</string>
-    <string name="rpa_share_node_id">Compartilhar ID do node</string>
-    <string name="rpa_open_nc">Custear novo canal</string>
-
-    <!-- /Remote peer activity -->
 
     <!-- Settings activity -->
 
@@ -286,20 +234,6 @@
         <item><![CDATA[<b>expires&#160;in</b>&#160;%1$d&#160;blocks]]></item>
     </array>
 
-    <!-- lnurl -->
-
-    <string name="dialog_lnurl_decrypt_fail">Falha ao decodificar a mensagem, por favor contate o fornecedor para resolver.</string>
-    <string name="dialog_lnurl_withdraw"><![CDATA[Link de saque <b>Lightning</b><br><br><b>%1$s</b>%2$s]]></string>
-    <string name="dialog_lnurl_pay"><![CDATA[Link de pagamento <b>Lightning</b><br><br><b>%1$s</b>%2$s]]></string>
-
-    <string name="dialog_lnurl_processing"><![CDATA[Processando&#8230;<br><br><b>%1$s</b>]]></string>
-    <string name="dialog_lnurl_splitting"><![CDATA[Solicitando invoice&#8230;<br><br><b>%1$s</b>]]></string>
-    <string name="dialog_lnurl_sending"><![CDATA[Enviando %1$s<br><br><b>%2$s</b>]]></string>
-    <string name="dialog_lnurl_from_vendor"><![CDATA[Resposta do fornecedor%1$s]]></string>
-
-    <string name="popup_hold">Hold up to %1$s minutes</string>
-    <string name="popup_identity">Attach wallet identity</string>
-
     <!-- lnurl-auth -->
 
     <string name="lnurl_auth_register">Registrar</string>
@@ -317,74 +251,8 @@
         <br><br>Ela será usada para autorização anônima em<i>%1$s</i>, nenhuma informação pessoal será revelada.
     ]]></string>
 
-    <!-- /lnurl -->
+    <!-- /lnurl-auth -->
 
-    <!-- Channel page -->
-
-    <string name="chan_capacity">Capacidade</string>
-    <string name="chan_can_send">Pode enviar</string>
-    <string name="chan_can_receive">Pode receber</string>
-    <string name="chan_in_flight">Valor encaminhado</string>
-    <string name="chan_refundable">Reembolsável</string>
-
-    <string name="chan_nothing"><![CDATA[<i>nada</i>]]></string>
-
-    <string name="chan_open">Obter novo canal</string>
-    <string name="chan_open_lnbig">Comprar em LNBIG.COM</string>
-    <string name="chan_open_bitrefill">Comprar em BITREFILL.COM</string>
-    <string name="chan_open_scan">Ler QR do node</string>
-
-    <string name="ln_info_no_update">Ainda não é possível receber</string>
-    <string name="ln_info_fee_mismatch">Temporary feerate mismatch</string>
-    
-    <string name="ln_info_close_coop">Fechamento cooperativo</string>
-    <string name="ln_info_close_local">Fechado à força localmente</string>
-    <string name="ln_info_close_remote">Fechado à força remotamente</string>
-    <string name="ln_info_await_close">Awaiting force-close&#8230;</string>
-    <string name="ln_info_shutdown">Desligando&#8230;</string>
-    <string name="ln_info_opening">Abrindo&#8230;</string>
-
-    <string name="ln_hosted_chan_drain_impossible_few_funds">Funds can not be drained from this hosted channel at the moment because an amount it contains is too small.</string>
-    <string name="ln_hosted_chan_drain_impossible_no_chans">Funds can not be drained from this hosted channel at the moment because there are no normal channels capable of receiving.</string>
-    <string name="ln_hosted_chan_remove_impossible">This hosted channel can not be removed right now because it contains in-flight payments, please wait until they are resolved.</string>
-
-    <!-- DO NOT TRANSLATE --> <string name="ln_chan_details">Channel details\n\nRemote peer node ID\n%1$s\n\nLocal wallet node ID\n%2$s\n\nChannel short ID\n%3$s\n\nFunding txid\n%4$s\n\nChannel started\n%5$s</string>
-    <!-- DO NOT TRANSLATE --> <string name="ln_hosted_chan_state">%1$s\n\n\nState snapshot\n%2$s\n\nRevealed preimages\n%3$s</string>
-
-    <array name="ln_normal_chan_actions">
-        <item><![CDATA[Share <b>Lightning Channel</b> details]]></item>
-        <item><![CDATA[Close channel to wallet]]></item>
-        <item><![CDATA[Close channel to address]]></item>
-        <item><![CDATA[Receive to channel]]></item>
-    </array>
-
-    <array name="ln_hosted_chan_actions">
-        <item><![CDATA[Share <b>Hosted Channel</b> details]]></item>
-        <item><![CDATA[Export channel state]]></item>
-        <item><![CDATA[Drain channel balance]]></item>
-        <item><![CDATA[Receive to channel]]></item>
-    </array>
-    
-    <string name="ln_hc_override">Substituir proposta</string>
-
-    <string name="ln_hc_override_warn"><![CDATA[
-        <br>Remote host wants to override your hosted channel balance from current <b>%1$s</b> to updated <b>%2$s</b>,
-        this can only happen with your signature provided.<br><br><strong>Make sure an updated balance looks correct before
-        proceeding with this!</strong> Would you like to sign a proposed hosted channel override?
-    ]]></string>
-    
-    <!-- /Channel page -->
-
-    <!-- action confirmations -->
-
-    <string name="confirm_remove_item">&#9888; Você quer remover este item?</string>
-    <string name="confirm_ln_normal_chan_close_address"><![CDATA[&#9888; Você quer fechar este canal para o seguinte endereço?<br><br><b>%1$s</b>]]></string>
-    <string name="confirm_ln_normal_chan_force_close">&#9888; Você quer fechar este canal à força?\n\nObserve que levará algum tempo para o reembolso e as taxas serão mais altas.</string>
-    <string name="confirm_ln_hosted_chan_remove">&#9888; Você deseja remover este canal virtual?\n\nObserve que você pode sempre trazê-lo de volta conectando-se ao node do servidor.</string>
-    <string name="confirm_ln_hosted_chan_drain">&#9888; Você deseja drenar fundos deste canal para outros canais desta carteira?</string>
-
-    <!-- /action confirmations -->
-    
     <!-- CPFP/RBF -->
 
     <string name="tx_cpfp_after">After boost</string>
@@ -401,4 +269,6 @@
 
     <!-- /CPFP/RBF -->
 
+    <string name="confirm_remove_item">&#9888; Você quer remover este item?</string>
+    <string name="dialog_requested"><![CDATA[<b>solicitado</b>&#160;%1$s]]></string>
 </resources>

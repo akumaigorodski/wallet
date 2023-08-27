@@ -136,7 +136,6 @@
             android:layout_marginStart="15dp"
             android:layout_marginEnd="15dp"
             android:layout_marginTop="5dp"
-            android:onClick="goToStatPage"
             style="@style/Card">
 
             <LinearLayout

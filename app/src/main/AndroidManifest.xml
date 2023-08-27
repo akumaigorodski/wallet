@@ -96,31 +96,7 @@
             android:windowSoftInputMode="adjustNothing"/>
 
         <activity
-            android:launchMode="singleTask"
-            android:name="RemotePeerActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/AppThemeNoActionBar"/>
-
-        <activity
             android:name="QRChainActivity"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:theme="@style/AppThemeNoActionBar"/>
-
-        <activity
-            android:launchMode="singleTask"
-            android:name="QRInvoiceActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/AppThemeNoActionBar"/>
-
-        <activity
-            android:name="QRSplitActivity"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:theme="@style/AppThemeNoActionBar"/>
-
-        <activity
-            android:name="ChanActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>

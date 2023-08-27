@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<ScrollView style="@style/StandardLinearLayout" xmlns:android="http://schemas.android.com/apk/res/android" android:scrollbars="none">
-    <include layout="@layout/frag_input_fiat_converter"/>
-</ScrollView>

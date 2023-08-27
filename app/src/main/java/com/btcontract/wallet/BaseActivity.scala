@@ -37,14 +37,12 @@ import com.google.zxing.{BarcodeFormat, EncodeHintType}
 import com.guardanis.applock.AppLock
 import com.journeyapps.barcodescanner.{BarcodeResult, BarcodeView}
 import com.ornach.nobobutton.NoboButton
-import com.softwaremill.quicklens._
 import com.sparrowwallet.hummingbird.registry.CryptoPSBT
 import com.sparrowwallet.hummingbird.{UR, UREncoder}
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
-import fr.acinq.eclair.payment.Bolt11Invoice
 import fr.acinq.eclair.transactions.Transactions
 import fr.acinq.eclair.wire.ChannelReestablish
 import immortan._
@@ -162,7 +160,7 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     for (amount <- uri.amount) {
       val amountHuman = WalletApp.denom.parsedWithSign(amount, cardIn, cardZero)
-      val requested = getString(dialog_ln_requested).format(amountHuman)
+      val requested = getString(dialog_requested).format(amountHuman)
       addFlowChip(title.flow, requested, R.drawable.border_yellow)
     }
 
@@ -409,9 +407,6 @@ trait BaseActivity extends AppCompatActivity { me =>
     val extraInputLayout: TextInputLayout = content.findViewById(R.id.extraInputLayout).asInstanceOf[TextInputLayout]
     val extraInput: EditText = content.findViewById(R.id.extraInput).asInstanceOf[EditText]
 
-    val attachIdentity: CheckBox = content.findViewById(R.id.attachIdentity).asInstanceOf[CheckBox]
-    val holdPayment: CheckBox = content.findViewById(R.id.holdPayment).asInstanceOf[CheckBox]
-
     def updateText(value: MilliSatoshi): Unit = {
       val amount = WalletApp.denom.fromMsat(value).toString
       runAnd(inputAmount.requestFocus)(inputAmount setText amount)
@@ -653,122 +648,6 @@ trait BaseActivity extends AppCompatActivity { me =>
       switchTo(circularSpinnerView)
       haltProcesses
     }
-  }
-
-  // Guards and send/receive helpers
-
-  def lnSendGuard(prExt: PaymentRequestExt, container: View)(onOK: Option[MilliSatoshi] => Unit): Unit = LNParams.cm.checkIfSendable(prExt.pr.paymentHash) match {
-    case _ if !LNParams.cm.all.values.exists(Channel.isOperationalOrWaiting) => snack(container, getString(error_ln_no_chans).html, dialog_ok, _.dismiss)
-    case _ if !prExt.pr.features.hasFeature(Features.PaymentSecret) => snack(container, getString(error_ln_send_no_secret).html, dialog_ok, _.dismiss)
-    case _ if !LNParams.cm.all.values.exists(Channel.isOperational) => snack(container, getString(error_ln_waiting).html, dialog_ok, _.dismiss)
-
-    case _ if LNParams.cm.operationalCncs(LNParams.cm.all.values).maxBy(_.commits.availableForSend).commits.availableForSend < LNParams.minPayment =>
-      snack(container, getString(error_ln_send_reserve).html, dialog_ok, _.dismiss)
-
-    case _ if prExt.pr.amountOpt.exists(_ < LNParams.minPayment) =>
-      val requestedHuman = WalletApp.denom.parsedWithSign(prExt.pr.amountOpt.get, cardIn, cardZero)
-      val minHuman = WalletApp.denom.parsedWithSign(LNParams.minPayment, cardIn, cardZero)
-      val msg = getString(error_ln_send_small).format(requestedHuman, minHuman).html
-      snack(container, msg, dialog_ok, _.dismiss)
-
-    case _ if prExt.hasSplitIssue => snack(container, getString(error_ln_send_split).html, dialog_ok, _.dismiss)
-    case _ if prExt.pr.isExpired => snack(container, getString(error_ln_send_expired).html, dialog_ok, _.dismiss)
-    case Some(PaymentInfo.NOT_SENDABLE_IN_FLIGHT) => snack(container, getString(error_ln_send_in_flight).html, dialog_ok, _.dismiss)
-    case Some(PaymentInfo.NOT_SENDABLE_SUCCESS) => snack(container, getString(error_ln_send_done_already).html, dialog_ok, _.dismiss)
-    case _ if prExt.pr.prefix != Bolt11Invoice.prefixes(LNParams.chainHash) => snack(container, getString(error_ln_send_network).html, dialog_ok, _.dismiss)
-    case _ => onOK(prExt.pr.amountOpt)
-  }
-
-  def lnReceiveGuard(into: Iterable[Channel], container: View)(onOk: => Unit): Unit = LNParams.cm.sortedReceivable(into).lastOption match {
-    case _ if !into.exists(Channel.isOperationalOrWaiting) => snack(container, getString(error_ln_no_chans).html, dialog_ok, _.dismiss)
-    case _ if !into.exists(Channel.isOperational) => snack(container, getString(error_ln_waiting).html, dialog_ok, _.dismiss)
-    case None => snack(container, getString(error_ln_receive_no_update).html, dialog_ok, _.dismiss)
-
-    case Some(cnc) =>
-      if (cnc.commits.availableForReceive < 0L.msat) {
-        val reservePlusMinPayment = cnc.commits.availableForReceive + LNParams.minPayment
-        val reserveHuman = WalletApp.denom.parsedWithSign(-reservePlusMinPayment, cardIn, cardZero)
-        snack(container, getString(error_ln_receive_reserve).format(reserveHuman).html, dialog_ok, _.dismiss)
-      } else onOk
-  }
-
-  abstract class OffChainSender(val maxSendable: MilliSatoshi, val minSendable: MilliSatoshi) extends HasTypicalChainFee {
-    val body: android.view.ViewGroup = getLayoutInflater.inflate(R.layout.frag_input_off_chain, null).asInstanceOf[android.view.ViewGroup]
-    lazy val manager = new RateManager(body, getString(dialog_set_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-    val alert: AlertDialog
-
-    val canSendFiatHuman: String = WalletApp.currentMsatInFiatHuman(maxSendable)
-    val canSendHuman: String = WalletApp.denom.parsedWithSign(maxSendable, cardIn, cardZero)
-    manager.hintFiatDenom.setText(getString(dialog_up_to).format(canSendFiatHuman).html)
-    manager.hintDenom.setText(getString(dialog_up_to).format(canSendHuman).html)
-
-    manager.inputAmount addTextChangedListener onTextChange { _ =>
-      updatePopupButton(getNeutralButton(alert), isNeutralEnabled)
-      updatePopupButton(getPositiveButton(alert), isPayEnabled)
-    }
-
-    def neutral(alert: AlertDialog): Unit
-    def send(alert: AlertDialog): Unit
-    def isNeutralEnabled: Boolean
-    def isPayEnabled: Boolean
-
-    def baseSendNow(prExt: PaymentRequestExt, alert: AlertDialog): Unit = {
-      val cmd = LNParams.cm.makeSendCmd(prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(manager.resultMsat), manager.resultMsat).modify(_.split.totalSum).setTo(manager.resultMsat)
-      val pd = PaymentDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
-      replaceOutgoingPayment(prExt, pd, action = None, sentAmount = cmd.split.myPart)
-      LNParams.cm.localSend(cmd)
-      alert.dismiss
-    }
-
-    def proceedSplit(prExt: PaymentRequestExt, origAmount: MilliSatoshi, alert: AlertDialog): Unit = {
-      val cmd = LNParams.cm.makeSendCmd(prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(manager.resultMsat), manager.resultMsat).modify(_.split.totalSum).setTo(origAmount)
-      val pd = PaymentDescription(cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
-      goToWithValue(value = SplitParams(prExt, action = None, pd, cmd, typicalChainTxFee), target = ClassNames.qrSplitActivityClass)
-      alert.dismiss
-    }
-  }
-
-  abstract class OffChainReceiver(into: Iterable[Channel], initMaxReceivable: MilliSatoshi, initMinReceivable: MilliSatoshi) {
-    val body: ViewGroup = getLayoutInflater.inflate(R.layout.frag_input_off_chain, null).asInstanceOf[ViewGroup]
-    val CommitsAndMax(cs, maxReceivable) = LNParams.cm.maxReceivable(LNParams.cm sortedReceivable into).get
-    val manager: RateManager = getManager
-
-    // It's important to cut down any msat leftover here, otherwise payment may become undeliverable
-    val finalMaxReceivable: MilliSatoshi = initMaxReceivable.min(maxReceivable).truncateToSatoshi.toMilliSatoshi
-    val finalMinReceivable: MilliSatoshi = initMinReceivable.min(finalMaxReceivable).max(LNParams.minPayment)
-    val canReceiveHuman: String = WalletApp.denom.parsedWithSign(finalMaxReceivable, cardIn, cardZero)
-    val canReceiveFiatHuman: String = WalletApp.currentMsatInFiatHuman(finalMaxReceivable)
-
-    def receive(alert: AlertDialog): Unit = {
-      val preimage: ByteVector32 = randomBytes32
-      val description: PaymentDescription = getDescription
-      val prExt = LNParams.cm.makePrExt(toReceive = manager.resultMsat, description, allowedChans = cs, Crypto.sha256(preimage), randomBytes32)
-      LNParams.cm.payBag.replaceIncomingPayment(prExt, preimage, description, BaseActivity.totalBalance, LNParams.fiatRates.info.rates)
-      WalletApp.app.showStickyNotification(incoming_notify_title, incoming_notify_body, manager.resultMsat)
-      // This must be called AFTER PaymentInfo is present in db
-      processInvoice(prExt)
-      alert.dismiss
-    }
-
-    val alert: AlertDialog = {
-      def setMax(alert1: AlertDialog): Unit = manager.updateText(finalMaxReceivable)
-      val builder = titleBodyAsViewBuilder(getTitleText.asColoredView(R.color.cardLightning), manager.content)
-      mkCheckFormNeutral(receive, none, setMax, builder, dialog_ok, dialog_cancel, dialog_max)
-    }
-
-    manager.inputAmount addTextChangedListener onTextChange { _ =>
-      val withinBounds = finalMinReceivable <= manager.resultMsat && finalMaxReceivable >= manager.resultMsat
-      updatePopupButton(button = getPositiveButton(alert), isEnabled = withinBounds)
-    }
-
-    manager.hintFiatDenom.setText(getString(dialog_up_to).format(canReceiveFiatHuman).html)
-    manager.hintDenom.setText(getString(dialog_up_to).format(canReceiveHuman).html)
-    updatePopupButton(getPositiveButton(alert), isEnabled = false)
-
-    def getTitleText: String
-    def getManager: RateManager
-    def getDescription: PaymentDescription
-    def processInvoice(prExt: PaymentRequestExt): Unit
   }
 }
 

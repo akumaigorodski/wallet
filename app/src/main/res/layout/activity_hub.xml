@@ -50,7 +50,7 @@
 
         <com.ornach.nobobutton.NoboButton
             app:nb_text="@string/dialog_receive"
-            android:onClick="bringReceiveOptions"
+            android:onClick="gotoReceivePage"
             android:layout_width="110dp"
             android:layout_margin="10dp"
             style="@style/GrayButton"/>

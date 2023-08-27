@@ -67,7 +67,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     val maxMsat = Btc(21000000L).toSatoshi.toMilliSatoshi
     val canReceiveFiatHuman = WalletApp.currentMsatInFiatHuman(maxMsat)
     val canReceiveHuman = WalletApp.denom.parsedWithSign(maxMsat, cardIn, cardZero)
-    val body = getLayoutInflater.inflate(R.layout.frag_input_off_chain, null).asInstanceOf[ViewGroup]
+    val body = getLayoutInflater.inflate(R.layout.frag_input_fiat_converter, null).asInstanceOf[ViewGroup]
     lazy val manager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
     mkCheckForm(proceed, none, titleBodyAsViewBuilder(getString(dialog_receive_btc).asColoredView(me chainWalletBackground wallet), manager.content), dialog_ok, dialog_cancel)
     manager.hintFiatDenom.setText(getString(dialog_up_to).format(canReceiveFiatHuman).html)

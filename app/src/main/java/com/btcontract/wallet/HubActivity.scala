@@ -32,22 +32,17 @@ import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, R
 import fr.acinq.eclair.blockchain.electrum.{ElectrumEclairWallet, ElectrumWallet}
 import fr.acinq.eclair.blockchain.fee.FeeratePerByte
 import fr.acinq.eclair.channel._
-import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, Scripts}
-import fr.acinq.eclair.wire.{FullPaymentTag, NodeAnnouncement, PaymentTagTlv, UnknownNextPeer}
+import fr.acinq.eclair.transactions.{LocalFulfill, Scripts}
+import fr.acinq.eclair.wire.{FullPaymentTag, NodeAnnouncement, PaymentTagTlv}
 import immortan.ChannelListener.Malfunction
 import immortan.ChannelMaster.{OutgoingAdds, RevealedLocalFulfills}
-import immortan.PathFinder.{ExpectedFees, GetExpectedRouteFees}
 import immortan._
 import immortan.crypto.CanBeRepliedTo
 import immortan.crypto.Tools._
 import immortan.fsm._
-import immortan.sqlite.SQLiteData
-import immortan.utils.ImplicitJsonFormats._
 import immortan.utils._
 import org.apmem.tools.layouts.FlowLayout
-import org.ndeftools.Message
 import rx.lang.scala.{Observable, Subscription}
-import spray.json._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -95,7 +90,6 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
 
   lazy val walletCards = new WalletCardsViewHolder
   private[this] val viewBinderHelper = new ViewBinderHelper
-  private[this] val CHOICE_RECEIVE_TAG: String = "choiceReceiveTag"
   var openListItems = Set.empty[String]
 
   private def updateLnCaches: Unit = {
@@ -215,9 +209,6 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
 
     // MENU BUTTONS
 
-    def doViewInvoice(info: PaymentInfo): Unit = goToWithValue(ClassNames.qrInvoiceActivityClass, info.prExt)
-    def doCallPayLink(info: LNUrlPayLink): Unit = runAnd(InputParser.value = info.payLink.get)(me checkExternalData noneRunnable)
-
     def doSetItemLabel: Unit = {
       val (container, extraInputLayout, extraInput) = singleInputPopup
       val builder = titleBodyAsViewBuilder(title = null, body = container)
@@ -261,59 +252,9 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
 
     def ractOnTap: Unit = currentDetails match {
       case info: DelayedRefunds => showPending(info)
-      case info: LNUrlPayLink => doCallPayLink(info)
       case info: TransactionDetails =>
         val isVisible = extraInfo.getVisibility == View.VISIBLE
         if (isVisible) collapse(info) else expand(info)
-    }
-
-    // DANGEROUS HC STUFF
-
-    def getStallingCommits(localFulfills: List[LocalFulfill], info: PaymentInfo): String = {
-      val hcStates = LNParams.cm.allHostedCommits.map(commits => commits.channelId -> commits).toMap
-      val affectedHcStates = localFulfills.map(_.theirAdd.channelId).toSet.flatMap(hcStates.get)
-      val details = for (hc <- affectedHcStates) yield ChanActivity.getDetails(hc, "n/a")
-      details.mkString("\n\n====\n\n")
-    }
-
-    def warnDangerousHc(info: PaymentInfo): Unit = {
-      val myFulfills = dangerousHCRevealed(info.fullTag)
-      val title = getString(error_hc_dangerous_state).asColoredView(R.color.buttonRed)
-      val paymentAmount = WalletApp.denom.parsedWithSign(myFulfills.map(_.theirAdd.amountMsat).sum, cardOut, cardZero)
-      val closestExpiry = WalletApp.app.plurOrZero(myFulfills.map(_.theirAdd.cltvExpiry.underlying).min - LNParams.blockCount.get, inBlocks)
-
-      def stampProof(tx: Transaction)(alert: AlertDialog): Unit = {
-        val txOrder = SemanticOrder(id = info.identity, order = Long.MinValue).asSome
-        val infoOrder = SemanticOrder(id = info.identity, order = -System.currentTimeMillis).asSome
-        val infoDesc1 = info.description.modify(_.proofTxid).setTo(tx.txid.toHex.asSome).modify(_.semanticOrder).setTo(infoOrder)
-        WalletApp.txDescriptions(tx.txid) = OpReturnTxDescription(myFulfills.map(_.ourPreimage), label = None, semanticOrder = txOrder)
-        alert.dismiss
-
-        runFutureProcessOnUI(notifyAndBroadcast(LNParams.chainWallets.lnWallet, tx), onFail) {
-          case true => LNParams.cm.payBag.updDescription(infoDesc1, info.paymentHash)
-          case false => onFail(error = me getString error_btc_broadcast_fail)
-        }
-      }
-
-      def shareDetails(alert: AlertDialog): Unit = {
-        me share getStallingCommits(myFulfills, info)
-        alert.dismiss
-      }
-
-      def onCan(response: GenerateTxResponse): Unit = {
-        val formattedFee = WalletApp.denom.directedWithSign(0L.msat, response.fee.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
-        val msg = getString(error_hc_revealed_preimage).format(getString(error_hc_option_can_stamp).format(paymentAmount, formattedFee), paymentAmount, closestExpiry).html
-        mkCheckFormNeutral(stampProof(response.tx), none, shareDetails, new AlertDialog.Builder(me).setCustomTitle(title).setMessage(msg), dialog_stamp, dialog_cancel, dialog_share)
-      }
-
-      def onCanNot(error: Throwable): Unit = {
-        val msg = getString(error_hc_revealed_preimage).format(getString(error_hc_option_can_not_stamp), paymentAmount, closestExpiry).html
-        mkCheckFormNeutral(_.dismiss, none, shareDetails, new AlertDialog.Builder(me).setCustomTitle(title).setMessage(msg), dialog_ok, noRes = -1, dialog_share)
-      }
-
-      val chainAddress = Await.result(LNParams.chainWallets.lnWallet.getReceiveAddresses, atMost = 40.seconds).firstAccountAddress
-      val rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget)
-      runFutureProcessOnUI(LNParams.chainWallets.lnWallet.sendPreimageBroadcast(myFulfills.map(_.ourPreimage).toSet, LNParams.addressToPubKeyScript(chainAddress), rate), onCanNot)(onCan)
     }
 
     // PENDING CHANNEL REFUNDS
@@ -607,24 +548,16 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
           val shouldShowPayee = !info.isIncoming && info.description.toSelfPreimage.isEmpty
 
           addFlowChip(extraInfo, getString(popup_hash) format info.paymentHash.toHex.short, R.drawable.border_green, info.paymentHash.toHex.asSome)
-          if (info.isIncoming && myFulfills.nonEmpty) addFlowChip(extraInfo, getString(error_hc_dangerous_state), R.drawable.border_red, _ => self warnDangerousHc info)
-          for (txid <- info.description.proofTxid) addFlowChip(extraInfo, getString(popup_proof_stamp), R.drawable.border_yellow, _ => me share getStallingCommits(myFulfills, info) + "\n\n====\n\n" + txid)
           if (shouldShowPayee) addFlowChip(extraInfo, getString(popup_ln_payee) format info.prExt.pr.nodeId.toString.short, R.drawable.border_blue, info.prExt.pr.nodeId.toString.asSome)
 
           addFlowChip(extraInfo, getString(popup_fiat).format(s"<font color=$cardIn>$fiatNow</font>", fiatThen), R.drawable.border_gray)
           addFlowChip(extraInfo, getString(popup_prior_chain_balance) format WalletApp.denom.parsedWithSign(info.balanceSnapshot, cardIn, cardZero), R.drawable.border_gray)
-          if (info.isIncoming && info.status == PaymentStatus.PENDING) addFlowChip(extraInfo, getString(popup_view_invoice), R.drawable.border_blue, _ => self doViewInvoice info)
           if (!info.isIncoming && shouldDisplayFee) addFlowChip(extraInfo, getString(popup_ln_fee).format(offChainFeePaid, ratio(amount, liveFeePaid) + PERCENT), R.drawable.border_gray)
           if (shouldRetry) addFlowChip(extraInfo, getString(popup_retry), R.drawable.border_yellow, _ => retryPayment(LNParams.cm.feeReserve(info.sent), info))
 
           incomingFSMOpt.filter(info.isActivelyHolding).foreach { fsm =>
             addFlowChip(extraInfo, getString(dialog_accept), R.drawable.border_green, _ => fsm doProcess IncomingPaymentProcessor.CMDReleaseHold)
             addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => fsm doProcess IncomingPaymentProcessor.CMDTimeout)
-          }
-
-          for (action <- info.action if info.status == PaymentStatus.SUCCEEDED) {
-            def run: Unit = resolveAction(theirPreimage = info.preimage, paymentAction = action)
-            addFlowChip(extraInfo, getString(popup_run_action), R.drawable.border_green, _ => run)
           }
 
           lastInChannelOutgoing.get(info.fullTag).map(_.maxBy(_.cltvExpiry.underlying).cltvExpiry.underlying - LNParams.blockCount.get) match {
@@ -960,33 +893,6 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
     def onFiatRates(rates: FiatRatesInfo): Unit = UITask(walletCards.updateView).run
   }
 
-  private val extraOutgoingListener = new OutgoingPaymentListener {
-    override def wholePaymentFailed(data: OutgoingPaymentSenderData): Unit = UITask {
-      val assistedShortIds = data.cmd.assistedEdges.map(_.updExt.update.shortChannelId)
-      val isIncompleteGraph = LNParams.cm.pf.data.channels.isEmpty || LNParams.cm.pf.syncMaster.isDefined
-      val canIncreaseFee = data.cmd.split.myPart + data.cmd.totalFeeReserve * 2 <= LNParams.cm.maxSendable(LNParams.cm.all.values)
-
-      val warnNoRouteFound = data.failures.exists { case lf: LocalFailure => lf.status == PaymentFailure.NO_ROUTES_FOUND case _ => false }
-      val warnPayeeOffline = data.failures.exists { case rf: RemoteFailure if rf.packet.failureMessage == UnknownNextPeer => assistedShortIds.contains(rf.originShortChanId) case _ => false }
-
-      val bld = new AlertDialog.Builder(me).setMessage(ln_fee_expensive_omitted)
-      def retryWithIncreasedFee(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-        paymentInfos.find(_.paymentHash == data.cmd.fullTag.paymentHash) foreach { info =>
-          retryPayment(feeReserve = data.cmd.totalFeeReserve * 2, info)
-        }
-      }
-
-      if (isIncompleteGraph && warnNoRouteFound) snack(contentWindow, getString(ln_sync_not_complete), dialog_ok, _.dismiss)
-      else if (warnPayeeOffline && warnNoRouteFound) snack(contentWindow, getString(ln_payee_likely_offline), dialog_ok, _.dismiss)
-      else if (canIncreaseFee && warnNoRouteFound) mkCheckForm(retryWithIncreasedFee, none, bld, dialog_ok, dialog_cancel)
-    }.run
-
-    override def gotFirstPreimage(data: OutgoingPaymentSenderData, fulfill: RemoteFulfill): Unit = UITask {
-      val actionOpt = paymentInfos.find(_.paymentHash == fulfill.ourAdd.paymentHash).flatMap(_.action)
-      for (paymentAction <- actionOpt) resolveAction(fulfill.theirPreimage, paymentAction)
-    }.run
-  }
-
   // Chan exceptions
 
   override def onException: PartialFunction[Malfunction, Unit] = {
@@ -1015,7 +921,6 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
 
     try LNParams.chainWallets.catcher ! WalletEventsCatcher.Remove(chainListener) catch none
     try for (channel <- LNParams.cm.all.values) channel.listeners -= me catch none
-    try LNParams.cm.localPaymentListeners remove extraOutgoingListener catch none
     try LNParams.fiatRates.listeners -= fiatRatesListener catch none
     try LNParams.cm.pf.listeners -= me catch none
     super.onDestroy
@@ -1067,121 +972,11 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
         bringSendMultiBitcoinPopup(a2a, wallet)
       }
 
-    case info: RemoteNodeInfo =>
-      // In case if IP address has changed
-      LNParams.cm.all.values.foreach(_ process info)
-      goTo(ClassNames.remotePeerActivityClass)
-
-    case prExt: PaymentRequestExt =>
-      lnSendGuard(prExt, contentWindow) {
-        case Some(origAmount) if prExt.splits.nonEmpty =>
-          new OffChainSender(maxSendable = LNParams.cm.maxSendable(LNParams.cm.all.values).min(prExt.splitLeftover * 2), minSendable = LNParams.minPayment) {
-            override def isNeutralEnabled: Boolean = manager.resultMsat >= minSendable && manager.resultMsat < prExt.splitLeftover - minSendable
-            override def isPayEnabled: Boolean = manager.resultMsat >= prExt.splitLeftover && manager.resultMsat <= maxSendable
-            override def neutral(alert: AlertDialog): Unit = proceedSplit(prExt, origAmount, alert)
-
-            override def send(alert: AlertDialog): Unit = {
-              val cmd = LNParams.cm.makeSendCmd(prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(manager.resultMsat), manager.resultMsat).modify(_.split.totalSum).setTo(origAmount)
-              val pd = PaymentDescription(cmd.split.asSome, label = manager.resultExtraInput, semanticOrder = None, invoiceText = prExt.descriptionOpt getOrElse new String)
-              replaceOutgoingPayment(prExt, pd, action = None, sentAmount = cmd.split.myPart)
-              LNParams.cm.localSend(cmd)
-              alert.dismiss
-            }
-
-            override val alert: AlertDialog = {
-              val title = new TitleView(getString(dialog_split_ln) format prExt.brDescription)
-              val builder = titleBodyAsViewBuilder(title.asColoredView(R.color.cardLightning), manager.content)
-              addFlowChip(title.flow, getString(dialog_ln_requested) format WalletApp.denom.parsedWithSign(origAmount, cardIn, cardZero), R.drawable.border_blue)
-              addFlowChip(title.flow, getString(dialog_ln_left) format WalletApp.denom.parsedWithSign(prExt.splitLeftover, cardIn, cardZero), R.drawable.border_blue)
-              mkCheckFormNeutral(send, none, neutral, builder, dialog_ok, dialog_cancel, dialog_split)
-            }
-
-            // Prefill with what's left to pay
-            manager.updateText(prExt.splitLeftover)
-          }
-
-        case Some(origAmount) =>
-          new OffChainSender(maxSendable = LNParams.cm.maxSendable(LNParams.cm.all.values).min(origAmount * 2), minSendable = LNParams.minPayment) {
-            override def isNeutralEnabled: Boolean = manager.resultMsat >= minSendable && manager.resultMsat < origAmount - minSendable
-            override def isPayEnabled: Boolean = manager.resultMsat >= origAmount && manager.resultMsat <= maxSendable
-            override def neutral(alert: AlertDialog): Unit = proceedSplit(prExt, origAmount, alert)
-            override def send(alert: AlertDialog): Unit = baseSendNow(prExt, alert)
-
-            override val alert: AlertDialog = {
-              val totalHuman = WalletApp.denom.parsedWithSign(origAmount, cardIn, cardZero)
-              val title = new TitleView(getString(dialog_send_ln) format prExt.brDescription)
-              val builder = titleBodyAsViewBuilder(title.asColoredView(R.color.cardLightning), manager.content)
-              val popup = mkCheckFormNeutral(send, none, neutral, builder, dialog_ok, dialog_cancel, dialog_split)
-
-              def fillFlow(value: CharSequence) = UITask {
-                runAnd(title.flow.removeAllViewsInLayout) {
-                  addFlowChip(title.flow, getString(dialog_ln_requested).format(totalHuman), R.drawable.border_blue)
-                  addFlowChip(title.flow, getString(dialog_ln_expected_fee).format(value), R.drawable.border_blue)
-                }
-              }
-
-              val sender = new CanBeRepliedTo {
-                override def process(reply: Any): Unit = Try {
-                  val expectedFees = reply.asInstanceOf[ExpectedFees]
-                  val percent = expectedFees.percentOf(origAmount, interHops = 4)
-                  fillFlow(getString(dialog_up_to).format(percent) + PERCENT).run
-                }
-              }
-
-              for (extraEdge <- prExt.extraEdges) LNParams.cm.pf process extraEdge
-              LNParams.cm.pf process GetExpectedRouteFees(sender, prExt.pr.nodeId)
-              fillFlow(pctCollected.head).run
-              popup
-            }
-
-            // Prefill with asked amount
-            manager.updateText(origAmount)
-          }
-
-        case None =>
-          new OffChainSender(maxSendable = LNParams.cm.maxSendable(LNParams.cm.all.values), minSendable = LNParams.minPayment) {
-            override def isPayEnabled: Boolean = manager.resultMsat >= minSendable && manager.resultMsat <= maxSendable
-            override def neutral(alert: AlertDialog): Unit = manager.updateText(maxSendable)
-            override def send(alert: AlertDialog): Unit = baseSendNow(prExt, alert)
-            override def isNeutralEnabled: Boolean = true
-
-            override val alert: AlertDialog = {
-              val title = getString(dialog_send_ln).format(prExt.brDescription).asColoredView(R.color.cardLightning)
-              mkCheckFormNeutral(send, none, neutral, titleBodyAsViewBuilder(title, manager.content), dialog_ok, dialog_cancel, dialog_max)
-            }
-
-            // Do not prefill since amount is unknown, disable pay button
-            updatePopupButton(getPositiveButton(alert), isEnabled = false)
-          }
-      }
-
-    case lnUrl: LNUrl =>
-      lnUrl.fastWithdrawAttempt.toOption match {
-        case Some(withdraw) => bringWithdrawPopup(withdraw)
-        case None if lnUrl.isAuth => showAuthForm(lnUrl)
-        case None => resolveLnurl(lnUrl)
-      }
+    case lnUrl: LNUrl if lnUrl.isAuth =>
+      showAuthForm(lnUrl)
 
     case _ =>
       whenNone.run
-  }
-
-  def resolveLnurl(lnUrl: LNUrl): Unit = {
-    val resolve: PartialFunction[LNUrlData, Unit] = {
-      case pay: PayRequest => bringPayPopup(pay, lnUrl).run
-      case withdraw: WithdrawRequest => UITask(me bringWithdrawPopup withdraw).run
-      case nc: NormalChannelRequest => goToWithValue(ClassNames.remotePeerActivityClass, nc)
-      case hc: HostedChannelRequest => goToWithValue(ClassNames.remotePeerActivityClass, hc)
-      case _ => nothingUsefulTask.run
-    }
-
-    snack(contentWindow, getString(dialog_lnurl_processing).format(lnUrl.warnUri).html, dialog_cancel) foreach { snack =>
-      def onErrorFromVendor(error: Throwable): Unit = onFail(s"Error from vendor:<br><br><tt>${error.toString}</tt>")
-      val level1Sub = lnUrl.level1DataResponse.doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
-      val level2Sub = level1Sub.subscribe(resolve, onErrorFromVendor)
-      val listener = onButtonTap(level2Sub.unsubscribe)
-      snack.setAction(dialog_cancel, listener).show
-    }
   }
 
   def showAuthForm(lnUrl: LNUrl): Unit = lnUrl.k1.foreach { k1 =>
@@ -1202,7 +997,7 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
     }
 
     def doAuth(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-      snack(contentWindow, getString(dialog_lnurl_processing).format(lnUrl.warnUri).html, dialog_cancel) foreach { snack =>
+      snack(contentWindow, lnUrl.warnUri.html, dialog_cancel) foreach { snack =>
         val uri = lnUrl.uri.buildUpon.appendQueryParameter("sig", spec.derSignatureHex).appendQueryParameter("key", spec.linkingPubKey)
         val level2Obs = LNUrl.level2DataResponse(uri).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
         val level2Sub = level2Obs.subscribe(_ => UITask(WalletApp.app quickToast successResource).run, onFail)
@@ -1217,15 +1012,12 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
   override def onChoiceMade(tag: AnyRef, pos: Int): Unit = (tag, pos) match {
     case (legacy: ElectrumEclairWallet, 0) if legacy.isSigning => transferFromLegacyToModern(legacy)
     case (legacy: ElectrumEclairWallet, 1) if legacy.isSigning => bringBitcoinSpecificScanner(legacy)
-    case (CHOICE_RECEIVE_TAG, 0) => goToWithValue(ClassNames.qrChainActivityClass, LNParams.chainWallets.lnWallet)
-    case (CHOICE_RECEIVE_TAG, 1) => bringReceivePopup
     case _ =>
   }
 
   override def PROCEED(state: Bundle): Unit = {
     setContentView(com.btcontract.wallet.R.layout.activity_hub)
     for (channel <- LNParams.cm.all.values) channel.listeners += me
-    LNParams.cm.localPaymentListeners add extraOutgoingListener
     LNParams.fiatRates.listeners += fiatRatesListener
     LNParams.chainWallets.catcher ! chainListener
     LNParams.cm.pf.listeners += me
@@ -1371,19 +1163,13 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
     callScanner(sheet)
   }
 
-  def bringReceiveOptions(view: View): Unit = {
-    val options = Array(dialog_receive_btc, dialog_receive_ln).map(getString).map(_.html)
-    val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
-    new sheets.ChoiceBottomSheet(list, CHOICE_RECEIVE_TAG, me).show(getSupportFragmentManager, "unused-tag")
-  }
+  def gotoReceivePage(view: View): Unit = goToWithValue(ClassNames.qrChainActivityClass, LNParams.chainWallets.lnWallet)
 
   def bringLegacyWalletMenuSpendOptions(wallet: ElectrumEclairWallet): Unit = {
     val options = Array(dialog_legacy_transfer_btc, dialog_legacy_send_btc).map(getString)
     val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
     new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-legacy-tag")
   }
-
-  def goToStatPage(view: View): Unit = goTo(ClassNames.chanActivityClass)
 
   def goToSettingsPage(view: View): Unit = goTo(ClassNames.settingsActivityClass)
 
@@ -1548,151 +1334,12 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
     feeView.worker addWork "MULTI-SEND-INIT-CALL"
   }
 
-  def bringReceivePopup: Unit = lnReceiveGuard(LNParams.cm.all.values, contentWindow) {
-    val holdPeriodInMinutes: String = getString(popup_hold).format(LNParams.maxHoldSecs / 60)
-    new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = Long.MaxValue.msat, initMinReceivable = 0L.msat) {
-      override def getManager: RateManager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-      override def processInvoice(payRequestExt: PaymentRequestExt): Unit = goToWithValue(ClassNames.qrInvoiceActivityClass, payRequestExt)
-      override def getTitleText: String = getString(dialog_receive_ln)
-
-      override def getDescription: PaymentDescription = {
-        val invoiceText = manager.resultExtraInput.getOrElse(new String)
-        val hold = if (manager.holdPayment.isChecked) Some(LNParams.maxHoldSecs) else None
-        PaymentDescription(split = None, label = None, semanticOrder = None, invoiceText, holdPeriodSec = hold)
-      }
-
-      manager.holdPayment.setText(holdPeriodInMinutes.html)
-      setVis(isVisible = true, manager.holdPayment)
-    }
-  }
-
-  def bringWithdrawPopup(data: WithdrawRequest): Unit = lnReceiveGuard(LNParams.cm.all.values, contentWindow) {
-    new OffChainReceiver(LNParams.cm.all.values, initMaxReceivable = data.maxWithdrawable.msat, initMinReceivable = data.minCanReceive) {
-      override def getManager: RateManager = new RateManager(body, getString(dialog_set_label).asSome, dialog_visibility_private, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-      override def getDescription: PaymentDescription = PaymentDescription(split = None, label = manager.resultExtraInput, semanticOrder = None, invoiceText = new String, meta = data.descriptionOpt)
-      override def getTitleText: String = getString(dialog_lnurl_withdraw).format(data.callbackUri.getHost, data.descriptionOpt.map(desc => s"<br><br>$desc") getOrElse new String)
-      override def processInvoice(prExt: PaymentRequestExt): Unit = data.requestWithdraw(prExt).foreach(none, onFail)
-    }
-  }
-
-  def bringPayPopup(data: PayRequest, lnUrl: LNUrl): TimerTask = UITask {
-    new OffChainSender(maxSendable = LNParams.cm.maxSendable(LNParams.cm.all.values) min data.maxSendable.msat, minSendable = data.minSendable.msat max LNParams.minPayment) {
-      override lazy val manager: RateManager = new RateManager(body, data.commentAllowed.map(_ => me getString dialog_add_comment), dialog_visibility_receiver, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
-      val expectedIds: ExpectedIds = ExpectedIds(wantsAuth = None, wantsRandomKey = false)
-      val maxCommentLength: Int = data.commentAllowed.getOrElse(0)
-      val randKey: Crypto.PrivateKey = randomKey
-
-      override def isNeutralEnabled: Boolean = manager.resultMsat >= LNParams.minPayment && manager.resultMsat <= minSendable - LNParams.minPayment
-      override def isPayEnabled: Boolean = manager.resultMsat >= minSendable && manager.resultMsat <= maxSendable
-      private def getComment: String = manager.resultExtraInput.getOrElse(new String).take(maxCommentLength)
-
-      override def neutral(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-        snack(contentWindow, getString(dialog_lnurl_splitting).format(data.callbackUri.getHost).html, dialog_cancel) foreach { snack =>
-          val level2Obs = getFinal(amount = minSendable).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
-          val level2Sub = level2Obs.subscribe(payReqFinal => proceed(payReqFinal).run, onFail)
-          val listener = onButtonTap(level2Sub.unsubscribe)
-          snack.setAction(dialog_cancel, listener).show
-        }
-
-        def proceed(pf: PayRequestFinal): TimerTask = UITask {
-          lnSendGuard(pf.prExt, container = contentWindow) { _ =>
-            val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
-            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(manager.resultMsat), manager.resultMsat).modify(_.split.totalSum).setTo(minSendable)
-            val pd = PaymentDescription(cmd.split.asSome, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, data.meta.textPlain.asSome)
-            goToWithValue(value = SplitParams(pf.prExt, pf.successAction, pd, cmd, typicalChainTxFee), target = ClassNames.qrSplitActivityClass)
-          }
-        }
-      }
-
-      override def send(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-        val amountHuman = WalletApp.denom.parsedWithSign(manager.resultMsat, cardIn, cardZero).html
-        snack(contentWindow, getString(dialog_lnurl_sending).format(amountHuman, data.callbackUri.getHost).html, dialog_cancel) foreach { snack =>
-          val level2Obs = getFinal(manager.resultMsat).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
-          val level2Sub = level2Obs.subscribe(payReqFinal => proceed(payReqFinal).run, onFail)
-          val listener = onButtonTap(level2Sub.unsubscribe)
-          snack.setAction(dialog_cancel, listener).show
-        }
-
-        def proceed(pf: PayRequestFinal): TimerTask = UITask {
-          lnSendGuard(pf.prExt, container = contentWindow) { _ =>
-            val linkOrder = SemanticOrder(id = lnUrl.request, order = Long.MinValue)
-            val paymentOrder = SemanticOrder(id = lnUrl.request, order = -System.currentTimeMillis)
-            val cmd = LNParams.cm.makeSendCmd(pf.prExt, LNParams.cm.all.values.toList, LNParams.cm.feeReserve(manager.resultMsat), manager.resultMsat).modify(_.split.totalSum).setTo(manager.resultMsat)
-            val pd = PaymentDescription(split = None, label = None, semanticOrder = paymentOrder.asSome, invoiceText = new String, meta = data.meta.textPlain.asSome)
-            replaceOutgoingPayment(pf.prExt, pd, pf.successAction, sentAmount = cmd.split.myPart)
-            LNParams.cm.localSend(cmd)
-
-            if (!pf.isThrowAway) {
-              val currentLabel = lnUrlPayLinks.find(_.payString == lnUrl.request).flatMap(_.description.label)
-              val desc = LNUrlDescription(currentLabel, linkOrder.asSome, randKey.value.toHex, pf.prExt.pr.paymentHash, pf.prExt.pr.paymentSecret.get, manager.resultMsat)
-              val info = LNUrlPayLink(domain = lnUrl.uri.getHost, payString = lnUrl.request, data.metadata, updatedAt = System.currentTimeMillis, desc, pf.prExt.pr.nodeId.toString, getComment)
-              WalletApp.lnUrlPayBag.saveLink(info)
-            }
-          }
-        }
-      }
-
-      override val alert: AlertDialog = {
-        val text = getString(dialog_lnurl_pay).format(data.callbackUri.getHost, s"<br><br>${data.meta.textPlain}")
-        val title = titleBodyAsViewBuilder(text.asColoredView(R.color.cardLightning), manager.content)
-        mkCheckFormNeutral(send, none, neutral, title, dialog_ok, dialog_cancel, dialog_split)
-      }
-
-      private def getFinal(amount: MilliSatoshi) = LNUrl level2DataResponse {
-        val ids1 = if (expectedIds.wantsRandomKey) List("application/pubkey", randKey.publicKey.toString) :: Nil else Nil
-        val ids2 = expectedIds.wantsAuth.filter(_ => manager.attachIdentity.isChecked).map(_.getRecord(lnUrl.uri.getHost) :: ids1) getOrElse ids1
-
-        val base1 = data.callbackUri.buildUpon.appendQueryParameter("amount", amount.toLong.toString)
-        val base2 = if (ids2.nonEmpty) base1.appendQueryParameter("payerid", ids2.toJson.compactPrint) else base1
-        if (manager.resultExtraInput.isDefined) base2.appendQueryParameter("comment", getComment) else base2
-      } map { rawResponse =>
-        val payRequestFinal = to[PayRequestFinal](rawResponse)
-        val descriptionHashOpt = payRequestFinal.prExt.pr.description.right.toOption
-        require(descriptionHashOpt.contains(data.metaDataHash), s"Metadata hash mismatch, original=${data.metaDataHash}, later provided=$descriptionHashOpt")
-        require(payRequestFinal.prExt.pr.amountOpt.contains(amount), s"Payment amount mismatch, requested by wallet=$amount, provided in invoice=${payRequestFinal.prExt.pr.amountOpt}")
-        payRequestFinal.modify(_.successAction.each.domain).setTo(data.callbackUri.getHost.asSome)
-      }
-
-      manager.updateText(minSendable)
-      expectedIds.wantsAuth.foreach { expectedAuth =>
-        manager.attachIdentity.setChecked(expectedAuth.isMandatory)
-        manager.attachIdentity.setEnabled(!expectedAuth.isMandatory)
-        setVis(isVisible = true, manager.attachIdentity)
-      }
-
-      data.commentAllowed.foreach { limit =>
-        manager.extraInputLayout.setCounterEnabled(true)
-        manager.extraInputLayout.setCounterMaxLength(limit)
-      }
-    }
-  }
-
   def paymentAdapterDataChanged: TimerTask = UITask {
     setVis(isVisible = relayedPreimageInfos.nonEmpty, walletCards.relayedPayments)
     setVis(isVisible = lnUrlPayLinks.nonEmpty, walletCards.payMarketLinks)
     setVis(isVisible = hasItems && !isSearchOn, walletCards.listCaption)
     setVis(isVisible = LNParams.cm.all.isEmpty, walletCards.lnRemovalWarning)
     paymentsAdapter.notifyDataSetChanged
-  }
-
-  // Payment actions
-
-  def resolveAction(theirPreimage: ByteVector32, paymentAction: PaymentAction): Unit = paymentAction match {
-    case data: MessageAction => mkCheckFormNeutral(_.dismiss, none, _ => share(data.message), actionPopup(data.finalMessage.html, data), dialog_ok, noRes = -1, dialog_share)
-    case data: UrlAction => mkCheckFormNeutral(_ => browse(data.url), none, _ => share(data.url), actionPopup(data.finalMessage.html, data), dialog_open, dialog_cancel, dialog_share)
-    case data: AESAction => showAesAction(theirPreimage, data) getOrElse mkCheckForm(_.dismiss, none, actionPopup(getString(dialog_lnurl_decrypt_fail), data), dialog_ok, noRes = -1)
-  }
-
-  private def showAesAction(preimage: ByteVector32, aes: AESAction) = Try {
-    val secret = SQLiteData byteVecToString AES.decode(data = aes.ciphertextBytes, key = preimage.toArray, initVector = aes.ivBytes)
-    val msg = if (secret.length > 36) s"${aes.finalMessage}<br><br><tt>$secret</tt><br>" else s"${aes.finalMessage}<br><br><tt><big>$secret</big></tt><br>"
-    mkCheckFormNeutral(_.dismiss, none, _ => share(secret), actionPopup(msg.html, aes), dialog_ok, dialog_cancel, dialog_share)
-  }
-
-  private def actionPopup(msg: CharSequence, action: PaymentAction) = {
-    val fromVendor = action.domain.map(site => s"<br><br><b>$site</b>").getOrElse(new String)
-    val title = getString(dialog_lnurl_from_vendor).format(fromVendor).asDefView
-    new AlertDialog.Builder(me).setCustomTitle(title).setMessage(msg)
   }
 
   def notifyAndBroadcast(fromWallet: ElectrumEclairWallet, tx: Transaction): Future[Boolean] = {

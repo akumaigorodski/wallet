@@ -15,14 +15,10 @@ object ClassNames {
   val lockCreationClass: Class[LockCreationActivity] = classOf[LockCreationActivity]
   val unlockActivityClass: Class[UnlockActivity] = classOf[UnlockActivity]
 
-  val chanActivityClass: Class[ChanActivity] = classOf[ChanActivity]
-  val qrSplitActivityClass: Class[QRSplitActivity] = classOf[QRSplitActivity]
   val qrChainActivityClass: Class[QRChainActivity] = classOf[QRChainActivity]
-  val qrInvoiceActivityClass: Class[QRInvoiceActivity] = classOf[QRInvoiceActivity]
   val coinControlActivityClass: Class[CoinControlActivity] = classOf[CoinControlActivity]
 
   val settingsActivityClass: Class[SettingsActivity] = classOf[SettingsActivity]
-  val remotePeerActivityClass: Class[RemotePeerActivity] = classOf[RemotePeerActivity]
   val mainActivityClass: Class[MainActivity] = classOf[MainActivity]
   val hubActivityClass: Class[HubActivity] = classOf[HubActivity]
 }
