@@ -5,18 +5,16 @@ import java.text.{DecimalFormat, SimpleDateFormat}
 import java.util.Date
 
 import akka.actor.Props
-import android.app.{Application, NotificationChannel, NotificationManager}
+import android.app.Application
 import android.content._
-import android.os.Build
 import android.text.format.DateFormat
 import android.view.inputmethod.InputMethodManager
 import android.widget.{EditText, Toast}
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.multidex.MultiDex
-import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.sqlite._
-import com.btcontract.wallet.utils.{AwaitService, DelayedNotification, LocalBackup}
+import com.btcontract.wallet.utils.LocalBackup
 import com.guardanis.applock.AppLock
 import com.softwaremill.quicklens._
 import fr.acinq.bitcoin.{Block, ByteVector32, Satoshi, SatoshiLong}
@@ -46,8 +44,8 @@ import scala.util.Try
 
 object WalletApp {
   var chainWalletBag: SQLiteChainWallet = _
-  var extDataBag: SQLiteDataExtended = _
   var lnUrlPayBag: SQLiteLNUrlPay = _
+  var extDataBag: SQLiteData = _
   var txDataBag: SQLiteTx = _
   var app: WalletApp = _
 
@@ -125,7 +123,7 @@ object WalletApp {
       txDataBag = new SQLiteTx(miscInterface)
       lnUrlPayBag = new SQLiteLNUrlPay(miscInterface)
       chainWalletBag = new SQLiteChainWallet(miscInterface)
-      extDataBag = new SQLiteDataExtended(miscInterface)
+      extDataBag = new SQLiteData(miscInterface)
     }
 
     // In case these are needed early
@@ -266,21 +264,8 @@ object WalletApp {
     // This inital notification will create all in/routed/out FSMs
     LNParams.cm.notifyResolvers
 
-    Rx.repeat(Rx.ioQueue.delay(1.second), Rx.incHour, 1 to Int.MaxValue).foreach { _ =>
-      // We need this in case if in/out HTLC is pending for a long time and app is still open
-      DelayedNotification.cancel(app, DelayedNotification.IN_FLIGHT_HTLC_TAG)
-      if (LNParams.cm.channelsContainHtlc) reScheduleInFlight
-    }
-
-    Rx.repeat(Rx.ioQueue.delay(2.seconds), Rx.incHour, 1 to Int.MaxValue).foreach { _ =>
-      DelayedNotification.cancel(app, DelayedNotification.WATCH_TOWER_TAG)
-      if (vulnerableChannelsExist) reScheduleWatchtower
-    }
-
     LNParams.connectionProvider doWhenReady {
       electrumPool ! ElectrumClientPool.InitConnect
-      // Only schedule periodic resync if Lightning channels are being present
-      if (LNParams.cm.all.nonEmpty) pf process PathFinder.CMDStartPeriodicResync
 
       val feeratePeriodHours = 6
       val rateRetry = Rx.retry(Rx.ioQueue.map(_ => LNParams.feeRates.reloadData), Rx.incSec, 3 to 18 by 3)
@@ -301,20 +286,6 @@ object WalletApp {
     case _ => false
   }
 
-  def reScheduleWatchtower: Unit =
-    DelayedNotification.schedule(app,
-      DelayedNotification.WATCH_TOWER_TAG,
-      title = app.getString(delayed_notify_wt_title),
-      body = app.getString(delayed_notify_wt_body),
-      DelayedNotification.WATCH_TOWER_PERIOD_MSEC)
-
-  def reScheduleInFlight: Unit =
-    DelayedNotification.schedule(app,
-      DelayedNotification.IN_FLIGHT_HTLC_TAG,
-      title = app.getString(delayed_notify_pending_payment_title),
-      body = app.getString(delayed_notify_pending_payment_body),
-      DelayedNotification.IN_FLIGHT_HTLC_PERIOD_MSEC)
-
   // Fiat conversion
 
   def currentRate(rates: Fiat2Btc, code: String): Try[Double] = Try(rates apply code)
@@ -331,10 +302,8 @@ object WalletApp {
 class WalletApp extends Application { me =>
   WalletApp.app = me
 
-  lazy val foregroundServiceIntent = new Intent(me, AwaitService.awaitServiceClass)
-  lazy val prefs: SharedPreferences = getSharedPreferences("prefs", Context.MODE_PRIVATE)
-
   private[this] lazy val metrics = getResources.getDisplayMetrics
+  lazy val prefs: SharedPreferences = getSharedPreferences("prefs", Context.MODE_PRIVATE)
   lazy val scrWidth: Double = metrics.widthPixels.toDouble / metrics.densityDpi
   lazy val maxDialog: Double = metrics.densityDpi * 2.3
 
@@ -370,25 +339,6 @@ class WalletApp extends Application { me =>
   override def onCreate: Unit = runAnd(super.onCreate) {
     // Currently night theme is the only option, should be set by default
     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-
-    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
-      val manager = this getSystemService classOf[NotificationManager]
-      val chan1 = new NotificationChannel(AwaitService.CHANNEL_ID, "Foreground notifications", NotificationManager.IMPORTANCE_LOW)
-      val chan2 = new NotificationChannel(DelayedNotification.CHANNEL_ID, "Scheduled notifications", NotificationManager.IMPORTANCE_LOW)
-      manager.createNotificationChannel(chan1)
-      manager.createNotificationChannel(chan2)
-    }
-
-    ChannelMaster.inFinalized.foreach { _ =>
-      // Delayed notification is removed when payment gets either failed or fulfilled
-      if (LNParams.cm.inProcessors.isEmpty) stopService(foregroundServiceIntent)
-    }
-
-    Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.stateUpdateStream, 500.millis).foreach { _ =>
-      // This might be the last channel state update which clears all in-flight HTLCs
-      DelayedNotification.cancel(me, DelayedNotification.IN_FLIGHT_HTLC_TAG)
-      if (LNParams.cm.channelsContainHtlc) WalletApp.reScheduleInFlight
-    }
   }
 
   override def onTrimMemory(level: Int): Unit = {
@@ -400,13 +350,6 @@ class WalletApp extends Application { me =>
   def when(thenDate: Date, simpleFormat: SimpleDateFormat, now: Long = System.currentTimeMillis): String = thenDate.getTime match {
     case tooLongAgo if now - tooLongAgo > 12960000 || tooFewSpace || WalletApp.denom == BtcDenomination => simpleFormat.format(thenDate)
     case ago => android.text.format.DateUtils.getRelativeTimeSpanString(ago, now, 0).toString
-  }
-
-  def showStickyNotification(titleRes: Int, bodyRes: Int, amount: MilliSatoshi): Unit = {
-    val withTitle = foregroundServiceIntent.putExtra(AwaitService.TITLE_TO_DISPLAY, me getString titleRes)
-    val bodyText = getString(bodyRes).format(WalletApp.denom.parsedWithSign(amount, Colors.cardIn, Colors.cardZero).html)
-    val withBodyAction = withTitle.putExtra(AwaitService.BODY_TO_DISPLAY, bodyText).setAction(AwaitService.ACTION_SHOW)
-    androidx.core.content.ContextCompat.startForegroundService(me, withBodyAction)
   }
 
   def quickToast(code: Int): Unit = quickToast(me getString code)

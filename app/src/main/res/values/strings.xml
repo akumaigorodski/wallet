@@ -125,19 +125,6 @@
 
     <!-- /errors -->
 
-    <!-- Notifications -->
-
-    <string name="incoming_notify_title">Awaiting for payment</string>
-    <string name="incoming_notify_body">Running an app to receive %1$s</string>
-
-    <string name="delayed_notify_wt_title">Watchtower notification</string>
-    <string name="delayed_notify_wt_body">Open a wallet to check channels</string>
-
-    <string name="delayed_notify_pending_payment_title">Lightning payment is still pending</string>
-    <string name="delayed_notify_pending_payment_body">Open a wallet to check its condition</string>
-
-    <!-- /Notifications -->
-
     <!-- special tx/payment descriptions -->
 
     <string name="tx_ln_label_reflexive">Payment to self</string>

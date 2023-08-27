@@ -124,19 +124,6 @@
 
     <!-- /errors -->
 
-    <!-- Notifications -->
-
-    <string name="incoming_notify_title">Esperando por el pago</string>
-    <string name="delayed_notify_wt_body">Abrir la billetera para verificar canales</string>
-
-    <string name="delayed_notify_wt_title">Notificación de torre de vigilancia</string>
-    <string name="incoming_notify_body">Ejecutando la aplicación para recibir %1$s</string>
-
-    <string name="delayed_notify_pending_payment_title">El pago Lightning está pendiente</string>
-    <string name="delayed_notify_pending_payment_body">Abra una billetera para resolverlo</string>
-
-    <!-- /Notifications -->
-
     <!-- special tx/payment descriptions -->
 
     <string name="tx_ln_label_reflexive">Pago propio</string>
