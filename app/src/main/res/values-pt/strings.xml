@@ -3,7 +3,6 @@
     <string name="lang">port</string>
     <string name="app_name">SBW</string>
     <string name="sources">Ver código fonte</string>
-    <string name="twitter">Siga-nos no Twitter</string>
     <string name="manual">Ler manual</string>
 
     <string name="choose_wallet">Choose a wallet</string>
@@ -26,31 +25,12 @@
     <string name="setup_title">Configuração inicial</string>
     <string name="setup_create_new">Criar nova carteira</string>
     <string name="setup_restore_existing">Restaurar carteira existente</string>
-    <string name="setup_recovery_phrase">Apenas frase de recuperação</string>
-    <string name="setup_backup_file">Backup + frase de recuperação</string>
 
     <string name="delayed_refunding">Reembolso demorado</string>
     <string name="delayed_refunding_ext">Do not erase wallet data until all delayed refunds are cleared!</string>
     <string name="setup_create_new_hint">Uma carteira de Bitcoin completamente nova com uma nova frase de recuperação será criada</string>
     <!-- DO NOT TRANSLATE --> <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
     <!-- DO NOT TRANSLATE --> <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
-
-    <string name="setup_backup_file_hint">
-        Forneça um arquivo contendo o backup Lightning, depois forneça a
-        frase de recuperação para restaurar a carteira Bitcoin junto com os canais Lightning. 
-        Desative outras cópias de sua carteira antes de proceder.
-    </string>
-
-    <string name="setup_recovery_phrase_hint">
-        Forneça uma frase de recuperação para restaurar apenas a carteira Bitcoin e canais virtuais.
-        Os saldos dos canais Lightning em dispositivos anteriores serão recuperados
-        conectando-se manualmente aos nodes remotos com os quais você tinha esses canais.
-    </string>
-
-    <string name="action_backup_present_title"><![CDATA[
-        <b>Existe um backup Lightning</b><br><br>A frase de recuperação será usada para
-        descriptografá-lo e recuperar canais totalmente funcionais neste dispositivo
-    ]]></string>
 
     <string name="action_recovery_phrase_title">Frase de recuperação</string>
     <string name="action_recovery_phrase_hint">Palavras de recuperação</string>
@@ -117,7 +97,6 @@
 
     <string name="error_btc_no_wallet">Can not proceed because related chain wallet is not found, please add it from app settings.</string>
     <string name="error_btc_broadcast_fail">Não foi possível transmitir a transação, por favor certifique-se de que a carteira está conectada à rede e tente novamente.</string>
-    <string name="error_could_not_decrypt"><![CDATA[<b>A decodificação do backup falhou</b>.<br><br>Certifique-se de que o arquivo de backup e a frase de recuperação estão corretos.<br><br>Detalhes do erro<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>A frase fornecida está incorreta</b>.<br><br>Detalhes do erro<br><b>%1$s</b>]]></string>
     <string name="error_old_api_level">Requires API 24+, yours is %1$s</string>
     <string name="error_nothing_useful">Nada útil foi encontrado</string>
@@ -162,11 +141,6 @@
 
     <!-- Settings activity -->
 
-    <string name="settings_backup_disabled">Habilitar backup do canal</string>
-    <string name="settings_backup_enabled">Backup do canal está habilitado</string>
-    <string name="settings_backup_where">Armazenado na pasta Download</string>
-    <string name="settings_backup_how">Permissões do app -> Armazenar</string>
-
     <string name="settings_hardware_add">Add hardware wallet</string>
     <string name="settings_hardware_label">Set hardware wallet label</string>
     <string name="settings_hw_zpub_tip">Hardware wallet or zpub</string>
@@ -177,10 +151,6 @@
 
     <string name="settings_use_auth">Use PIN authentication</string>
     <string name="settings_ensure_tor">Aplicar conexão Tor</string>
-
-    <string name="ln_fee_expensive_omitted">Payment failed because expensive routes were omitted, would you like to retry with increased fee limits?</string>
-    <string name="ln_sync_not_complete">LN SYNC is not finished yet, please wait a bit while keeping an app open and then try again.</string>
-    <string name="ln_payee_likely_offline">It is likely that payee wallet is offline right now</string>
 
     <string name="settings_btc_unit">Unidade de bitcoin</string>
     <string name="settings_fiat_currency">Moeda fiduciária</string>

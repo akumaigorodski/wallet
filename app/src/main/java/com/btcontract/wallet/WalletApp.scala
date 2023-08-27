@@ -14,7 +14,6 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.multidex.MultiDex
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.sqlite._
-import com.btcontract.wallet.utils.LocalBackup
 import com.guardanis.applock.AppLock
 import com.softwaremill.quicklens._
 import fr.acinq.bitcoin.{Block, ByteVector32, Satoshi, SatoshiLong}
@@ -25,7 +24,7 @@ import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{TransactionReceived, 
 import fr.acinq.eclair.blockchain.electrum._
 import fr.acinq.eclair.blockchain.electrum.db.{CompleteChainWalletInfo, SigningWallet, WatchingWallet}
 import fr.acinq.eclair.blockchain.{CurrentBlockCount, EclairWallet}
-import fr.acinq.eclair.channel.{CMD_CHECK_FEERATE, NormalCommits, PersistentChannelData}
+import fr.acinq.eclair.channel.{CMD_CHECK_FEERATE, NormalCommits}
 import fr.acinq.eclair.router.Router.RouterConf
 import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
 import fr.acinq.eclair.wire.NodeAddress
@@ -33,12 +32,10 @@ import immortan._
 import immortan.crypto.Tools._
 import immortan.sqlite._
 import immortan.utils._
-import rx.lang.scala.Observable
 import scodec.bits.BitVector
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.duration._
 import scala.util.Try
 
 
@@ -55,12 +52,6 @@ object WalletApp {
   final val dbFileNameMisc = "misc.db"
   final val dbFileNameGraph = "graph.db"
   final val dbFileNameEssential = "essential.db"
-
-  val backupSaveWorker: ThrottledWork[Boolean, Any] = new ThrottledWork[Boolean, Any] {
-    private def doAttemptStore: Unit = LocalBackup.encryptAndWritePlainBackup(app, dbFileNameEssential, LNParams.chainHash, LNParams.secret.seed)
-    def process(useDelay: Boolean, unitAfterDelay: Any): Unit = if (LocalBackup isAllowed app) try doAttemptStore catch none
-    def work(useDelay: Boolean): Observable[Any] = if (useDelay) Rx.ioQueue.delay(4.seconds) else Observable.just(null)
-  }
 
   final val FIAT_CODE = "fiatCode"
   final val BTC_DENOM = "btcDenom"
@@ -144,14 +135,8 @@ object WalletApp {
 
     val normalBag = new SQLiteNetwork(graphInterface, NormalChannelUpdateTable, NormalChannelAnnouncementTable, NormalExcludedChannelTable)
     val hostedBag = new SQLiteNetwork(graphInterface, HostedChannelUpdateTable, HostedChannelAnnouncementTable, HostedExcludedChannelTable)
+    val chanBag = new SQLiteChannel(essentialInterface, channelTxFeesDb = extDataBag.db)
     val payBag = new SQLitePayment(extDataBag.db, preimageDb = essentialInterface)
-
-    val chanBag = new SQLiteChannel(essentialInterface, channelTxFeesDb = extDataBag.db) {
-      override def put(data: PersistentChannelData): PersistentChannelData = {
-        backupSaveWorker.replaceWork(true)
-        super.put(data)
-      }
-    }
 
     extDataBag.db txWrap {
       LNParams.feeRates = new FeeRates(extDataBag)

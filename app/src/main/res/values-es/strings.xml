@@ -3,7 +3,6 @@
     <string name="lang">esp</string>
     <string name="app_name">SBW</string>
     <string name="sources">Ver código fuente</string>
-    <string name="twitter">Síguenos en Twitter</string>
     <string name="manual">Leer manual</string>
 
     <string name="choose_wallet">Escoja una billetera</string>
@@ -26,31 +25,12 @@
     <string name="setup_title">Configuración de billetera</string>
     <string name="setup_create_new">Crear billetera nueva</string>
     <string name="setup_restore_existing">Restaurar billetera existente</string>
-    <string name="setup_recovery_phrase">Solo frase de recuperación</string>
-    <string name="setup_backup_file">Respaldo + frase de recuperación</string>
 
     <string name="delayed_refunding">Reembolso demorado</string>
     <string name="delayed_refunding_ext">No borre los datos de la billetera hasta que todos los reembolsos demorados hayan sido liquidados!</string>
     <string name="setup_create_new_hint">Una billetera completamente nueva con una nueva frase de recuperación será generada desde cero.</string>
     <!-- DO NOT TRANSLATE --> <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
     <!-- DO NOT TRANSLATE --> <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
-
-    <string name="setup_backup_file_hint">
-        Proporcione un archivo que contenga un respaldo de Lightning, luego proporcione
-        una frase de recuperación para restaurar completamente la billetera Bitcoin con los canales Lightning.
-        Cierre otras copias de su billetera antes de proceder.
-    </string>
-
-    <string name="setup_recovery_phrase_hint">
-        Proporcione una frase de recuperación únicamente para restaurar la billetera de Bitcoin y los canales hospedados.
-        El saldo de canales Lightning en dispositivos anteriores será reintegrado manualmente
-        al conectarse a los nodos remotos con los que tenía esos canales.
-    </string>
-
-    <string name="action_backup_present_title"><![CDATA[
-        <b>Archivo de respaldo de Lightning presente</b><br><br>Frase de recuperación será
-        usada para descifrarlo y restaurar completamente los canales en este dispositivo
-    ]]></string>
 
     <string name="action_recovery_phrase_title">Frase de recuperación de la billetera</string>
     <string name="action_recovery_phrase_hint">Escriba las palabras de recuperación</string>
@@ -117,7 +97,6 @@
 
     <string name="error_btc_no_wallet">No se puede continuar porque no se encuentra la billetera asociada, por favor añadala desde la configuracion de la app.</string>
     <string name="error_btc_broadcast_fail">No se pudo transmitir la transacción, por favor asegúrese de que la billetera tenga conexión de red e intente de nuevo.</string>
-    <string name="error_could_not_decrypt"><![CDATA[<b>Falló el descifrado del respaldo</b>.<br><br>Asegúrese que tanto el archivo de respaldo como la frase de recuperación sean las correctas.<br><br>Detalles del error<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>La frase introducida es incorrecta</b>.<br><br>Detalles del error<br><b>%1$s</b>]]></string>
     <string name="error_old_api_level">Requiere API 24+, el tuyo es %1$s</string>
     <string name="error_nothing_useful">No se encontró nada útil</string>
@@ -162,11 +141,6 @@
 
     <!-- Settings activity -->
 
-    <string name="settings_backup_disabled">Habilitar respaldo de canal local</string>
-    <string name="settings_backup_enabled">Respaldo de canal local ha sido habilitado</string>
-    <string name="settings_backup_where">El archivo se guarda en la carpeta Descargas</string>
-    <string name="settings_backup_how">Permisos -> Almacenamiento</string>
-
     <string name="settings_hardware_add">Agregar billetera hardware</string>
     <string name="settings_hardware_label">Nombrar billetera hardware</string>
     <string name="settings_hw_zpub_tip">Billetera hardware o zpub</string>
@@ -177,10 +151,6 @@
 
     <string name="settings_use_auth">Use PIN authentication</string>
     <string name="settings_ensure_tor">Obligar conexion a Tor</string>
-
-    <string name="ln_fee_expensive_omitted">Payment failed because expensive routes were omitted, would you like to retry with increased fee limits?</string>
-    <string name="ln_sync_not_complete">LN SYNC is not finished yet, please wait a bit while keeping an app open and then try again.</string>
-    <string name="ln_payee_likely_offline">Es probable que la billetera destino este desconectada ahorita</string>
 
     <string name="settings_btc_unit">Unidad de Bitcoin</string>
     <string name="settings_fiat_currency">Moneda fiduciaria</string>

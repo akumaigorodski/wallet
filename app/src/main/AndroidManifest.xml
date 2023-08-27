@@ -4,12 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.btcontract.wallet">
 
+    <uses-sdk tools:overrideLibrary="com.google.zxing.client.android"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
-
-    <uses-sdk tools:overrideLibrary="com.google.zxing.client.android"/>
 
     <supports-screens
         android:resizeable="true"

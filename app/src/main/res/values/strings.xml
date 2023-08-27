@@ -3,7 +3,6 @@
     <string name="lang">eng</string>
     <string name="app_name">SBW</string>
     <string name="sources">View source code</string>
-    <string name="twitter">Follow us on Twitter</string>
     <string name="manual">Read manual</string>
 
     <string name="choose_wallet">Choose a wallet</string>
@@ -26,31 +25,12 @@
     <string name="setup_title">Wallet setup</string>
     <string name="setup_create_new">Create new wallet</string>
     <string name="setup_restore_existing">Restore existing wallet</string>
-    <string name="setup_recovery_phrase">Recovery phrase only</string>
-    <string name="setup_backup_file">Backup + recovery phrase</string>
 
     <string name="delayed_refunding">Delayed channel refunding</string>
     <string name="delayed_refunding_ext">Do not erase wallet data until all delayed refunds are cleared!</string>
     <string name="setup_create_new_hint">A completely fresh Bitcoin wallet with a new recovery phrase will be generated from scratch.</string>
     <!-- DO NOT TRANSLATE --> <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
     <!-- DO NOT TRANSLATE --> <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
-
-    <string name="setup_backup_file_hint">
-        Provide a file containing Lightning backup, then provide a recovery
-        phrase to fully restore Bitcoin wallet along with Lightning channels.
-        Turn other copies of your wallet off before proceeding.
-    </string>
-
-    <string name="setup_recovery_phrase_hint">
-        Provide a recovery phrase to restore Bitcoin wallet and hosted channels only.
-        Lightning channel balances on previous devices will be refunded on manually
-        connecting to remote nodes you had those channels with.
-    </string>
-
-    <string name="action_backup_present_title"><![CDATA[
-        <b>Lightning backup file is present</b><br><br>Recovery phrase will be
-        used to decrypt it and restore fully working channels on this device
-    ]]></string>
 
     <string name="action_recovery_phrase_title">Wallet recovery phrase</string>
     <string name="action_recovery_phrase_hint">Type recovery words</string>
@@ -118,7 +98,6 @@
 
     <string name="error_btc_no_wallet">Can not proceed because related chain wallet is not found, please add it from app settings.</string>
     <string name="error_btc_broadcast_fail">Could not broadcast a transaction, please make sure that wallet has network connection and then try again.</string>
-    <string name="error_could_not_decrypt"><![CDATA[<b>Backup decryption failed</b>.<br><br>Make sure that backup file and recovery phrase are correct and belong to the same wallet.<br><br>Error details<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>Provided phrase is incorrect</b>.<br><br>Error details<br><b>%1$s</b>]]></string>
     <string name="error_old_api_level">Requires API 24+, yours is %1$s</string>
     <string name="error_nothing_useful">Nothing useful is found</string>
@@ -163,11 +142,6 @@
 
     <!-- Settings activity -->
 
-    <string name="settings_backup_disabled">Enable local channel backup</string>
-    <string name="settings_backup_enabled">Local channel backup is enabled</string>
-    <string name="settings_backup_where">File gets stored in Download folder</string>
-    <string name="settings_backup_how">App permissions -> Storage</string>
-
     <string name="settings_hardware_add">Add hardware wallet</string>
     <string name="settings_hardware_label">Set hardware wallet label</string>
     <string name="settings_hw_zpub_tip">Hardware wallet or zpub</string>
@@ -178,10 +152,6 @@
 
     <string name="settings_use_auth">Use PIN authentication</string>
     <string name="settings_ensure_tor">Use Tor connection</string>
-
-    <string name="ln_fee_expensive_omitted">Payment failed because expensive routes were omitted, would you like to retry with increased fee limits?</string>
-    <string name="ln_sync_not_complete">LN SYNC is not finished yet, please wait a bit while keeping an app open and then try again.</string>
-    <string name="ln_payee_likely_offline">It is likely that payee wallet is offline right now</string>
 
     <string name="settings_btc_unit">Bitcoin units</string>
     <string name="settings_fiat_currency">Fiat currency</string>

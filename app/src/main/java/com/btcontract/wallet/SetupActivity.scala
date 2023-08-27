@@ -1,24 +1,15 @@
 package com.btcontract.wallet
 
-import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.{ArrayAdapter, LinearLayout}
 import androidx.appcompat.app.AlertDialog
-import androidx.documentfile.provider.DocumentFile
 import androidx.transition.TransitionManager
 import com.btcontract.wallet.R.string._
-import com.btcontract.wallet.utils.LocalBackup
-import com.google.common.io.ByteStreams
-import com.ornach.nobobutton.NoboButton
 import fr.acinq.bitcoin.MnemonicCode
 import immortan.crypto.Tools.{SEPARATOR, none}
-import immortan.wire.ExtCodecs
-import immortan.{LNParams, LightningNodeKeys, WalletSecret}
-import scodec.bits.{BitVector, ByteVector}
-
-import scala.util.{Failure, Success}
+import immortan.{LightningNodeKeys, WalletSecret}
+import scodec.bits.ByteVector
 
 
 object SetupActivity {
@@ -26,15 +17,6 @@ object SetupActivity {
     val walletSeed = MnemonicCode.toSeed(mnemonics, passphrase = new String)
     val keys = LightningNodeKeys.makeFromSeed(seed = walletSeed.toArray)
     val secret = WalletSecret(keys, mnemonics, walletSeed)
-
-    try {
-      // Implant graph into db file from resources
-      val snapshotName = LocalBackup.getGraphResourceName(LNParams.chainHash)
-      val compressedPlainBytes = ByteStreams.toByteArray(host.getAssets open snapshotName)
-      val plainBytes = ExtCodecs.compressedByteVecCodec.decode(BitVector view compressedPlainBytes)
-      LocalBackup.copyPlainDataToDbLocation(host, WalletApp.dbFileNameGraph, plainBytes.require.value)
-    } catch none
-
     WalletApp.extDataBag.putSecret(secret)
     WalletApp.makeOperational(secret)
   }
@@ -42,9 +24,6 @@ object SetupActivity {
 
 class SetupActivity extends BaseActivity { me =>
   private[this] lazy val activitySetupMain = findViewById(R.id.activitySetupMain).asInstanceOf[LinearLayout]
-  private[this] lazy val restoreOptionsButton = findViewById(R.id.restoreOptionsButton).asInstanceOf[NoboButton]
-  private[this] lazy val restoreOptions = findViewById(R.id.restoreOptions).asInstanceOf[LinearLayout]
-  private[this] final val FILE_REQUEST_CODE = 112
 
   lazy private[this] val enforceTor = new SettingsHolder(me) {
     override def updateView: Unit = settingsCheck.setChecked(WalletApp.ensureTor)
@@ -76,46 +55,13 @@ class SetupActivity extends BaseActivity { me =>
     proceedWithMnemonics = none
   }
 
-  override def onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent): Unit =
-    if (requestCode == FILE_REQUEST_CODE && resultCode == Activity.RESULT_OK && resultData != null) {
-      val cipherBytes = ByteStreams.toByteArray(getContentResolver openInputStream resultData.getData)
-
-      showMnemonicPopup(R.string.action_backup_present_title) { mnemonics =>
-        val walletSeed = MnemonicCode.toSeed(mnemonics, passphrase = new String)
-        LocalBackup.decryptBackup(ByteVector.view(cipherBytes), walletSeed) match {
-
-          case Success(plainEssentialBytes) =>
-            // We were able to decrypt a file, implant it into db location and proceed
-            LocalBackup.copyPlainDataToDbLocation(me, WalletApp.dbFileNameEssential, plainEssentialBytes)
-            // Delete user-selected backup file while we can here and make an app-owned backup shortly
-            DocumentFile.fromSingleUri(me, resultData.getData).delete
-            WalletApp.backupSaveWorker.replaceWork(true)
-            proceedWithMnemonics(mnemonics)
-
-          case Failure(exception) =>
-            val msg = getString(R.string.error_could_not_decrypt)
-            onFail(msg format exception.getMessage)
-        }
-      }
-    }
-
   def createNewWallet(view: View): Unit = {
     val twelveWordsEntropy: ByteVector = fr.acinq.eclair.randomBytes(16)
     val mnemonic = MnemonicCode.toMnemonics(twelveWordsEntropy, englishWordList)
     proceedWithMnemonics(mnemonic)
   }
 
-  def showRestoreOptions(view: View): Unit = {
-    TransitionManager.beginDelayedTransition(activitySetupMain)
-    restoreOptionsButton.setVisibility(View.GONE)
-    restoreOptions.setVisibility(View.VISIBLE)
-  }
-
-  def useBackupFile(view: View): Unit = startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*"), FILE_REQUEST_CODE)
-
-  def useRecoveryPhrase(view: View): Unit = showMnemonicPopup(R.string.action_recovery_phrase_title)(proceedWithMnemonics)
-
-  def showMnemonicPopup(title: Int)(onMnemonic: List[String] => Unit): Unit = {
+  def showMnemonicPopup(view: View): Unit = {
     val mnemonicWrap = getLayoutInflater.inflate(R.layout.frag_mnemonic, null).asInstanceOf[LinearLayout]
     val recoveryPhrase = mnemonicWrap.findViewById(R.id.recoveryPhrase).asInstanceOf[com.hootsuite.nachos.NachoTextView]
     recoveryPhrase.addChipTerminator(' ', com.hootsuite.nachos.terminator.ChipTerminatorHandler.BEHAVIOR_CHIPIFY_TO_TERMINATOR)
@@ -132,7 +78,7 @@ class SetupActivity extends BaseActivity { me =>
 
     def proceed(alert: AlertDialog): Unit = try {
       MnemonicCode.validate(getMnemonicList, englishWordList)
-      onMnemonic(getMnemonicList)
+      proceedWithMnemonics(getMnemonicList)
       alert.dismiss
     } catch {
       case exception: Throwable =>
@@ -140,7 +86,7 @@ class SetupActivity extends BaseActivity { me =>
         onFail(msg format exception.getMessage)
     }
 
-    val builder = titleBodyAsViewBuilder(getString(title).asDefView, mnemonicWrap)
+    val builder = titleBodyAsViewBuilder(getString(R.string.action_recovery_phrase_title).asDefView, mnemonicWrap)
     val alert = mkCheckForm(proceed, none, builder, R.string.dialog_ok, R.string.dialog_cancel)
     updatePopupButton(getPositiveButton(alert), isEnabled = false)
 

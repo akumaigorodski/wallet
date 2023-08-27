@@ -16,7 +16,6 @@ import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.HubActivity._
 import com.btcontract.wallet.R.string._
-import com.btcontract.wallet.utils.LocalBackup
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
 import com.danilomendes.progressbar.InvertedTextProgressbar
 import com.github.mmin18.widget.RealtimeBlurView
@@ -1089,10 +1088,7 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
 
     stateSubscription = txEvents.merge(paymentEvents).merge(relayEvents).merge(marketEvents).merge(stateEvents).doOnNext(_ => updAllInfos).subscribe(_ => paymentAdapterDataChanged.run).asSome
     statusSubscription = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.statusUpdateStream, window).merge(stateEvents).subscribe(_ => UITask(walletCards.updateView).run).asSome
-
     timer.scheduleAtFixedRate(paymentAdapterDataChanged, 30000, 30000)
-    val backupAllowed = LocalBackup.isAllowed(context = WalletApp.app)
-    if (!backupAllowed) LocalBackup.askPermission(activity = me)
   }
 
   // VIEW HANDLERS

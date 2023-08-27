@@ -9,7 +9,7 @@ import com.btcontract.wallet.BuildConfig.{VERSION_CODE, VERSION_NAME}
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.sheets.{BaseChoiceBottomSheet, PairingData}
-import com.btcontract.wallet.utils.{LocalBackup, OnListItemClickListener}
+import com.btcontract.wallet.utils.OnListItemClickListener
 import com.google.android.material.snackbar.Snackbar
 import com.guardanis.applock.AppLock
 import fr.acinq.bitcoin.Satoshi
@@ -57,7 +57,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
   private[this] val units = List(SatDenomination, BtcDenomination)
 
   override def onResume: Unit = {
-    storeLocalBackup.updateView
     chainWallets.updateView
     electrum.updateView
     setFiat.updateView
@@ -83,25 +82,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
       setBtc.updateView
 
     case _ =>
-  }
-
-  lazy private[this] val storeLocalBackup = new SettingsHolder(me) {
-    setVis(isVisible = false, settingsCheck)
-
-    def updateView: Unit = {
-      val backupAllowed = LocalBackup.isAllowed(context = WalletApp.app)
-      if (backupAllowed && LNParams.cm.all.nonEmpty) WalletApp.backupSaveWorker.replaceWork(false)
-      val title = if (backupAllowed) settings_backup_enabled else settings_backup_disabled
-      val info = if (backupAllowed) settings_backup_where else settings_backup_how
-      settingsTitle.setText(title)
-      settingsInfo.setText(info)
-    }
-
-    view setOnClickListener onButtonTap {
-      val intent = (new Intent).setAction(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-      val intent1 = intent setData android.net.Uri.fromParts("package", getPackageName, null)
-      startActivity(intent1)
-    }
   }
 
   lazy private[this] val chainWallets: SettingsHolder = new SettingsHolder(me) {
@@ -300,7 +280,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     val links = new TitleView("&#9996;")
     addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://sbw.app/posts/manual")
     addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/akumaigorodski/wallet")
-    addFlowChip(links.flow, getString(twitter), R.drawable.border_blue, _ => me browse "https://twitter.com/SimpleBtcWallet")
     addFlowChip(links.flow, "&#9825; RATE US", R.drawable.border_green, _ => me bringRateDialog null)
 
     for (count <- LNParams.logBag.count if count > 0) {
@@ -310,7 +289,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     }
 
     settingsContainer.addView(settingsPageitle.view)
-    settingsContainer.addView(storeLocalBackup.view)
     settingsContainer.addView(chainWallets.view)
     settingsContainer.addView(addHardware.view)
     settingsContainer.addView(electrum.view)

@@ -3,7 +3,6 @@
     <string name="lang">nld</string>
     <string name="app_name">SBW</string>
     <string name="sources">Bekijk broncode</string>
-    <string name="twitter">Volg ons op Twitter</string>
     <string name="manual">Lees de handleiding</string>
 
     <string name="choose_wallet">Kies een portemonnee</string>
@@ -26,31 +25,12 @@
     <string name="setup_title">Portemonnee-intestellingen</string>
     <string name="setup_create_new">Maak nieuwe portemonnee aan</string>
     <string name="setup_restore_existing">Herstel bestaande portemonnee</string>
-    <string name="setup_recovery_phrase">Alleen herstelzin</string>
-    <string name="setup_backup_file">Back-up + herstelzin</string>
 
     <string name="delayed_refunding">Vertraagde herfinanciering kanaal</string>
     <string name="delayed_refunding_ext">Wis niet de portemonneedata voordat alle vertraagde gelden zijn vrijgegeven!</string>
     <string name="setup_create_new_hint">Een volledig verse Bitcoinportemonnee met een nieuwe herstelzin wordt vanaf vanaf het begin gegenereerd.</string>
     <!-- DO NOT TRANSLATE --> <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
     <!-- DO NOT TRANSLATE --> <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
-
-    <string name="setup_backup_file_hint">
-        Bied een bestand aan met daarin de Lightningback-up, voer daarna een herstelzin
-        in om de Bitcoinportemonnee volledig te herstellen met Lightningkanalen.
-        Schakel alle andere kopieën van je portemonnee uit voordat je verdergaat.
-    </string>
-
-    <string name="setup_recovery_phrase_hint">
-        Voer een herstelzin in om alleen de Bitcoinportemonnee en gehoste kanalen te herstellen.
-        Lightningkanaalbalans op eerdere apparaten worden teruggestort nadat handmatig
-        contact wordt gemaakt met remote nodes waar je die kanalen mee had.
-    </string>
-
-    <string name="action_backup_present_title"><![CDATA[
-        <b>Lightningback-upbestand is aanwezig</b><br><br>Herstelzin zal gebruikt worden
-        om deze te ontsleutelen en volledig werkende kanalen te herstellen op dit apparaat
-    ]]></string>
 
     <string name="action_recovery_phrase_title">Portemonneeherstelzin</string>
     <string name="action_recovery_phrase_hint">Voer de herstelwoorden in</string>
@@ -117,7 +97,6 @@
 
     <string name="error_btc_no_wallet">Kan niet verder gaan omdat gerelateerde ketenportemonnee niet is gevonden, voeg die a.u.b. toe vanuit de appinstellingen.</string>
     <string name="error_btc_broadcast_fail">Kon transactie niet uitzenden, ga a.u.b. na dat de portemonnee een netwerkverbinding heeft en probeer het dan opnieuw.</string>
-    <string name="error_could_not_decrypt"><![CDATA[<b>Ontsleuteling van backp-up is mislukt</b>.<br><br>Zorg dat het back-upbestand en de herstelzin correct zijn en tot dezelfde portemonnee behoren.<br><br>Foutdetails<br><b>%1$s</b>]]></string>
     <string name="error_wrong_phrase"><![CDATA[<b>Ingevoerde wachtwoordzin is incorrect</b>.<br><br>Foutdetails<br><b>%1$s</b>]]></string>
     <string name="error_old_api_level">Vereist API 24+, die van jou is %1$s</string>
     <string name="error_nothing_useful">Niets bruikbaars is gevonden</string>
@@ -162,11 +141,6 @@
 
     <!-- Settings activity -->
 
-    <string name="settings_backup_disabled">Schakel lokale kanaalback-up in</string>
-    <string name="settings_backup_enabled">Lokale kanaalback-up is ingeschakeld</string>
-    <string name="settings_backup_where">Bestand wordt opgeslagen in de Download-map</string>
-    <string name="settings_backup_how">Apprechten -> Opslag</string>
-
     <string name="settings_hardware_add">Voeg hardwareportemonnee toe</string>
     <string name="settings_hardware_label">Stel label hardwareportemonnee in</string>
     <string name="settings_hw_zpub_tip">Hardwareportemonnee of zpub</string>
@@ -177,10 +151,6 @@
 
     <string name="settings_use_auth">Gebruik PIN authenticatie</string>
     <string name="settings_ensure_tor">Gebruik Torverbinding</string>
-
-    <string name="ln_fee_expensive_omitted">Payment failed because expensive routes were omitted, would you like to retry with increased fee limits?</string>
-    <string name="ln_sync_not_complete">LN SYNC is nog niet klaar, wacht a.u.b. even terwijl je de app open houdt en probeer dan nog eens.</string>
-    <string name="ln_payee_likely_offline">Het is waarschijnlijk dat de portemonnee van de begunstigde momenteel offline is</string>
 
     <string name="settings_btc_unit">Bitcoineenheden</string>
     <string name="settings_fiat_currency">Fiatvaluta</string>
