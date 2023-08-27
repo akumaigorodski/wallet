@@ -79,6 +79,7 @@
 
     <string name="btc_transfer_label"><![CDATA[Carteira legacy -> moderna]]></string>
     <string name="btc_transfer_message"><![CDATA[Transferência local de Bitcoin, de carteira on-chain legacy para moderna]]></string>
+    <string name="recovery_phrase_warning">Toque para salvar a frase de recuperação da carteira no caso de você perder ou substituir seu telefone.</string>
 
     <!-- errors -->
 

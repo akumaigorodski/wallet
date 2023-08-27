@@ -748,7 +748,7 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
 
   class WalletCardsViewHolder {
     val view: LinearLayout = getLayoutInflater.inflate(R.layout.frag_wallet_cards, null).asInstanceOf[LinearLayout]
-    val lnRemovalWarning: TextView = view.findViewById(R.id.lnRemovalWarning).asInstanceOf[TextView]
+    val recoveryPhraseWarning: TextView = view.findViewById(R.id.recoveryPhraseWarning).asInstanceOf[TextView]
     val defaultHeader: LinearLayout = view.findViewById(R.id.defaultHeader).asInstanceOf[LinearLayout]
 
     val totalBalance: TextView = view.findViewById(R.id.totalBalance).asInstanceOf[TextView]
@@ -1038,6 +1038,7 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
       if checkedButtonTags.contains(buttonTag)
     } walletCards.toggleGroup.check(itemId)
 
+    walletCards.recoveryPhraseWarning setOnClickListener onButtonTap(viewRecoveryCode)
     walletCards.toggleGroup addOnButtonCheckedListener new OnButtonCheckedListener {
       def onButtonChecked(group: MaterialButtonToggleGroup, checkId: Int, isChecked: Boolean): Unit = {
         WalletApp.putCheckedButtons(itemsToTags.filterKeys(group.getCheckedButtonIds.contains).values.toSet)
@@ -1160,14 +1161,13 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
   }
 
   def gotoReceivePage(view: View): Unit = goToWithValue(ClassNames.qrChainActivityClass, LNParams.chainWallets.lnWallet)
+  def goToSettingsPage(view: View): Unit = goTo(ClassNames.settingsActivityClass)
 
   def bringLegacyWalletMenuSpendOptions(wallet: ElectrumEclairWallet): Unit = {
     val options = Array(dialog_legacy_transfer_btc, dialog_legacy_send_btc).map(getString)
     val list = me selectorList new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options)
     new sheets.ChoiceBottomSheet(list, wallet, me).show(getSupportFragmentManager, "unused-legacy-tag")
   }
-
-  def goToSettingsPage(view: View): Unit = goTo(ClassNames.settingsActivityClass)
 
   def transferFromLegacyToModern(legacy: ElectrumEclairWallet): Unit = {
     runFutureProcessOnUI(LNParams.chainWallets.lnWallet.getReceiveAddresses, onFail) { addresses =>
@@ -1334,7 +1334,7 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
     setVis(isVisible = relayedPreimageInfos.nonEmpty, walletCards.relayedPayments)
     setVis(isVisible = lnUrlPayLinks.nonEmpty, walletCards.payMarketLinks)
     setVis(isVisible = hasItems && !isSearchOn, walletCards.listCaption)
-    setVis(isVisible = LNParams.cm.all.isEmpty, walletCards.lnRemovalWarning)
+    setVis(isVisible = !hasItems, walletCards.recoveryPhraseWarning)
     paymentsAdapter.notifyDataSetChanged
   }
 

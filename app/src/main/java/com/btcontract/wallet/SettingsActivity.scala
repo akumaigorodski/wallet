@@ -92,7 +92,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     private val wallets = Map(
       BIP32 -> ("BRD, legacy wallet", "m/0'/0/n"),
       BIP44 -> ("Bitcoin.com, Mycelium, Exodus...", "m/44'/0'/0'/0/n"),
-      BIP49 -> ("JoinMarket, Eclair Mobile, Pine...", "m/49'/0'/0'/0/n"),
       BIP84 -> (getString(settings_chain_modern), "m/84'/0'/0'/0/n")
     )
 

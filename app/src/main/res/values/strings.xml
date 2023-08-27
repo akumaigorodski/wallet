@@ -79,7 +79,7 @@
 
     <string name="btc_transfer_label"><![CDATA[legacy -> modern wallet]]></string>
     <string name="btc_transfer_message"><![CDATA[Local transfer of Bitcoin from legacy to modern chain wallet]]></string>
-    <string name="ln_removal_warning" translatable="false">Lightning network support will be completely removed in next wallet update! Please close your Lightning channels to prevent funds loss.</string>
+    <string name="recovery_phrase_warning">Tap to save wallet recovery phrase in case you ever lose or replace your device.</string>
 
     <!-- errors -->
 
