@@ -2,18 +2,29 @@ package com.sparrowwallet.hummingbird;
 
 import android.annotation.TargetApi;
 
+import com.sparrowwallet.hummingbird.registry.CryptoAccount;
+import com.sparrowwallet.hummingbird.registry.CryptoAddress;
+import com.sparrowwallet.hummingbird.registry.CryptoBip39;
+import com.sparrowwallet.hummingbird.registry.CryptoCoinInfo;
+import com.sparrowwallet.hummingbird.registry.CryptoECKey;
+import com.sparrowwallet.hummingbird.registry.CryptoHDKey;
+import com.sparrowwallet.hummingbird.registry.CryptoKeypath;
+import com.sparrowwallet.hummingbird.registry.CryptoOutput;
+import com.sparrowwallet.hummingbird.registry.CryptoPSBT;
+import com.sparrowwallet.hummingbird.registry.CryptoSeed;
+import com.sparrowwallet.hummingbird.registry.RegistryType;
+
+import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
 import co.nstant.in.cbor.CborBuilder;
 import co.nstant.in.cbor.CborDecoder;
 import co.nstant.in.cbor.CborEncoder;
 import co.nstant.in.cbor.CborException;
 import co.nstant.in.cbor.model.ByteString;
 import co.nstant.in.cbor.model.DataItem;
-import com.sparrowwallet.hummingbird.registry.*;
-
-import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
 
 @TargetApi(24)
 public class UR {

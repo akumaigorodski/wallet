@@ -26,11 +26,11 @@
 
 package com.google.zxing.client.result;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.Result;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Parses strings of digits that represent a RSS Extended code.

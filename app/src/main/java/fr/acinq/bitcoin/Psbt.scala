@@ -1,11 +1,12 @@
 package fr.acinq.bitcoin
 
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
+import java.nio.ByteOrder
+
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.DeterministicWallet.{ExtendedPublicKey, KeyPath}
 import scodec.bits.{ByteVector, HexStringSyntax}
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
-import java.nio.ByteOrder
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 

@@ -1,5 +1,7 @@
 package immortan
 
+import java.util.concurrent.Executors
+
 import com.softwaremill.quicklens._
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.eclair.Features.ChannelRangeQueriesExtended
@@ -13,7 +15,6 @@ import immortan.crypto.Tools._
 import immortan.crypto.{CanBeRepliedTo, StateMachine, Tools}
 import immortan.utils.Rx
 
-import java.util.concurrent.Executors
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}

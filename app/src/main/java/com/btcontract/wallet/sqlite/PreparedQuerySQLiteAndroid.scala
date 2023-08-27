@@ -1,9 +1,10 @@
 package com.btcontract.wallet.sqlite
 
 import java.lang.{Double => JDouble, Integer => JInt, Long => JLong}
-import immortan.sqlite.{PreparedQuery, RichCursor}
+
 import android.database.sqlite.SQLiteStatement
 import immortan.crypto.Tools.Bytes
+import immortan.sqlite.{PreparedQuery, RichCursor}
 
 
 case class PreparedQuerySQLiteAndroid(prepared: SQLiteStatement) extends PreparedQuery { me =>

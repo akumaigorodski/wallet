@@ -5,8 +5,8 @@ import fr.acinq.eclair.channel.{CMD_SOCKET_ONLINE, Commitments, PersistentChanne
 import fr.acinq.eclair.wire._
 import immortan.Channel.{OPEN, WAIT_FOR_ACCEPT}
 import immortan.ChannelListener.{Malfunction, Transition}
-import immortan.crypto.Tools
 import immortan._
+import immortan.crypto.Tools
 import scodec.bits.ByteVector
 
 

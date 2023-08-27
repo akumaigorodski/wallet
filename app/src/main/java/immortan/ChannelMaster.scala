@@ -8,7 +8,7 @@ import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.TxConfirmedAt
 import fr.acinq.eclair.channel._
-import fr.acinq.eclair.payment.{IncomingPaymentPacket, Bolt11Invoice}
+import fr.acinq.eclair.payment.{Bolt11Invoice, IncomingPaymentPacket}
 import fr.acinq.eclair.transactions.{LocalFulfill, RemoteFulfill, RemoteReject}
 import fr.acinq.eclair.wire._
 import immortan.Channel._

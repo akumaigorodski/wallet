@@ -1,7 +1,7 @@
 package com.btcontract.wallet.sqlite
 
-import immortan.sqlite.{DBInterface, PreparedQuery, RichCursor}
 import android.database.sqlite.SQLiteDatabase
+import immortan.sqlite.{DBInterface, PreparedQuery, RichCursor}
 
 
 trait DBInterfaceSQLiteAndroid extends DBInterface {

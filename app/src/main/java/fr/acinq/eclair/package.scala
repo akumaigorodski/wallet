@@ -16,13 +16,14 @@
 
 package fr.acinq
 
+import java.security.SecureRandom
+
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.DeterministicWallet.{ExtendedPrivateKey, KeyPath}
 import fr.acinq.bitcoin._
 import scodec.Attempt
 import scodec.bits.{BitVector, ByteVector}
 
-import java.security.SecureRandom
 import scala.util.{Failure, Success, Try}
 
 

@@ -1,12 +1,12 @@
 package com.sparrowwallet.hummingbird.registry;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import co.nstant.in.cbor.model.Array;
 import co.nstant.in.cbor.model.DataItem;
 import co.nstant.in.cbor.model.Map;
 import co.nstant.in.cbor.model.UnsignedInteger;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class MultiKey implements CborSerializable {
     public static final int THRESHOLD_KEY = 1;

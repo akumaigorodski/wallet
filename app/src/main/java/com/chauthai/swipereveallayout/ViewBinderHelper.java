@@ -24,8 +24,6 @@
 
 package com.chauthai.swipereveallayout;
 
-import android.os.Bundle;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;

@@ -1,8 +1,9 @@
 package com.azoft.carousellayoutmanager;
 
+import android.view.View;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import android.view.View;
 
 public abstract class CarouselChildSelectionListener {
 

@@ -1,15 +1,17 @@
 package com.indicator;
 
-import immortan.Channel;
-import immortan.Channel$;
 import android.content.Context;
-import android.util.DisplayMetrics;
-import android.widget.LinearLayout;
 import android.util.AttributeSet;
-import com.btcontract.wallet.R;
+import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.LinearLayout;
+
+import com.btcontract.wallet.R;
+
+import immortan.Channel;
+import immortan.Channel$;
 
 
 public class ChannelIndicatorLine extends LinearLayout {

@@ -1,8 +1,12 @@
 package com.sparrowwallet.hummingbird.registry;
 
-import co.nstant.in.cbor.model.*;
-
 import java.util.Date;
+
+import co.nstant.in.cbor.model.ByteString;
+import co.nstant.in.cbor.model.DataItem;
+import co.nstant.in.cbor.model.Map;
+import co.nstant.in.cbor.model.UnicodeString;
+import co.nstant.in.cbor.model.UnsignedInteger;
 
 public class CryptoSeed extends RegistryItem {
     public static final long PAYLOAD_KEY = 1;

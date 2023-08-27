@@ -1,8 +1,9 @@
 package com.btcontract.wallet.sqlite
 
+import android.database.Cursor
 import immortan.crypto.Tools.{Bytes, runAnd}
 import immortan.sqlite.RichCursor
-import android.database.Cursor
+
 import scala.util.Try
 
 

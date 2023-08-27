@@ -1,9 +1,10 @@
 package com.btcontract.wallet
 
 import java.lang.Thread.UncaughtExceptionHandler
-import immortan.crypto.Tools.ThrowableOps
-import android.content.Intent
+
 import android.app.Activity
+import android.content.Intent
+import immortan.crypto.Tools.ThrowableOps
 
 
 object UncaughtHandler {

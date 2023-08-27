@@ -1,11 +1,11 @@
 package com.btcontract.wallet.sheets
 
-import android.view.{LayoutInflater, View, ViewGroup}
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.btcontract.wallet.utils.OnListItemClickListener
-import com.btcontract.wallet.ChoiceReceiver
-import android.widget.ListView
 import android.os.Bundle
+import android.view.{LayoutInflater, View, ViewGroup}
+import android.widget.ListView
+import com.btcontract.wallet.ChoiceReceiver
+import com.btcontract.wallet.utils.OnListItemClickListener
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 
 class BaseChoiceBottomSheet(list: ListView) extends BottomSheetDialogFragment { me =>

@@ -1,12 +1,13 @@
 package com.sparrowwallet.hummingbird.registry;
 
-import co.nstant.in.cbor.CborEncoder;
-import co.nstant.in.cbor.CborException;
 import com.sparrowwallet.hummingbird.UR;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.util.Arrays;
+
+import co.nstant.in.cbor.CborEncoder;
+import co.nstant.in.cbor.CborException;
 
 public abstract class RegistryItem implements CborSerializable {
     public abstract RegistryType getRegistryType();

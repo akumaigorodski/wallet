@@ -1,9 +1,10 @@
 package immortan
 
-import okhttp3.{OkHttpClient, Request, ResponseBody}
 import java.net.{InetSocketAddress, Socket}
 import java.util.concurrent.TimeUnit
+
 import immortan.crypto.Tools
+import okhttp3.{OkHttpClient, Request, ResponseBody}
 
 
 trait ConnectionProvider {

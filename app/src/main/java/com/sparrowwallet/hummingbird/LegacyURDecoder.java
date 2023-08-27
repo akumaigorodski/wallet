@@ -3,7 +3,9 @@ package com.sparrowwallet.hummingbird;
 import android.annotation.TargetApi;
 
 import java.security.MessageDigest;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @TargetApi(24)
 public class LegacyURDecoder {

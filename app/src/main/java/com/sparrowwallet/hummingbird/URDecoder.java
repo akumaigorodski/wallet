@@ -2,7 +2,6 @@ package com.sparrowwallet.hummingbird;
 
 import android.annotation.TargetApi;
 
-import co.nstant.in.cbor.CborException;
 import com.sparrowwallet.hummingbird.fountain.FountainDecoder;
 import com.sparrowwallet.hummingbird.fountain.FountainEncoder;
 
@@ -10,6 +9,8 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import co.nstant.in.cbor.CborException;
 
 @TargetApi(24)
 public class URDecoder {

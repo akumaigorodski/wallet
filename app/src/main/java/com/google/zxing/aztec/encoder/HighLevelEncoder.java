@@ -20,7 +20,6 @@ import com.google.zxing.common.BitArray;
 import com.google.zxing.common.CharacterSetECI;
 
 import java.nio.charset.Charset;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;

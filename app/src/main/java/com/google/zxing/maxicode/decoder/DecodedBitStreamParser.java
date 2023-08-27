@@ -17,6 +17,7 @@
 package com.google.zxing.maxicode.decoder;
 
 import com.google.zxing.common.DecoderResult;
+
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 

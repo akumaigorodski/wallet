@@ -41,13 +41,13 @@ import com.google.zxing.oned.rss.FinderPattern;
 import com.google.zxing.oned.rss.RSSUtils;
 import com.google.zxing.oned.rss.expanded.decoders.AbstractExpandedDecoder;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections;
 
 /**
  * @author Pablo Orduña, University of Deusto (pablo.orduna@deusto.es)

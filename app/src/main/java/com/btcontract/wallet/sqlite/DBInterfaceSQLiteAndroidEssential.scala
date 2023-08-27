@@ -1,8 +1,8 @@
 package com.btcontract.wallet.sqlite
 
-import immortan.sqlite._
-import android.database.sqlite._
 import android.content.Context
+import android.database.sqlite._
+import immortan.sqlite._
 
 
 class DBInterfaceSQLiteAndroidEssential(context: Context, name: String) extends SQLiteOpenHelper(context, name, null, 1) with DBInterfaceSQLiteAndroid {

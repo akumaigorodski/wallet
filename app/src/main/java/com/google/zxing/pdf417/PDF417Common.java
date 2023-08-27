@@ -15,10 +15,10 @@
  */
 package com.google.zxing.pdf417;
 
+import com.google.zxing.common.detector.MathUtils;
+
 import java.util.Arrays;
 import java.util.Collection;
-
-import com.google.zxing.common.detector.MathUtils;
 
 /**
  * @author SITA Lab (kevin.osullivan@sita.aero)

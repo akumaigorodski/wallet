@@ -1,12 +1,12 @@
 package com.sparrowwallet.hummingbird.registry;
 
-import co.nstant.in.cbor.model.DataItem;
-import co.nstant.in.cbor.model.Map;
-import co.nstant.in.cbor.model.Tag;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import co.nstant.in.cbor.model.DataItem;
+import co.nstant.in.cbor.model.Map;
+import co.nstant.in.cbor.model.Tag;
 
 public class CryptoOutput extends RegistryItem {
     private final List<ScriptExpression> scriptExpressions;

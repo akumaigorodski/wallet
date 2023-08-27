@@ -16,14 +16,15 @@
 
 package fr.acinq.eclair.payment
 
+import java.util.concurrent.TimeUnit
+
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.{Base58, Base58Check, Bech32, Block, ByteVector32, ByteVector64, Crypto}
-import fr.acinq.eclair.{CltvExpiryDelta, FeatureScope, FeatureSupport, Features, InvoiceFeature, MilliSatoshi, MilliSatoshiLong, randomBytes32}
+import fr.acinq.eclair.{CltvExpiryDelta, FeatureScope, FeatureSupport, Features, InvoiceFeature, MilliSatoshi, MilliSatoshiLong}
 import scodec.bits.{BitVector, ByteOrdering, ByteVector}
 import scodec.codecs.{list, ubyte}
 import scodec.{Codec, Err}
 
-import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 

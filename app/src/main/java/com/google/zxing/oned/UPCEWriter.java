@@ -16,12 +16,12 @@
 
 package com.google.zxing.oned;
 
-import java.util.Collection;
-import java.util.Collections;
-
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.FormatException;
 import com.google.zxing.common.BitMatrix;
+
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * This object renders an UPC-E code as a {@link BitMatrix}.

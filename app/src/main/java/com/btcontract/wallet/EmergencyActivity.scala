@@ -2,6 +2,7 @@ package com.btcontract.wallet
 
 import android.os.Bundle
 import android.view.View
+
 import scala.util.Try
 
 

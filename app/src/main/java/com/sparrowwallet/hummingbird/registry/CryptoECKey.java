@@ -1,6 +1,10 @@
 package com.sparrowwallet.hummingbird.registry;
 
-import co.nstant.in.cbor.model.*;
+import co.nstant.in.cbor.model.ByteString;
+import co.nstant.in.cbor.model.DataItem;
+import co.nstant.in.cbor.model.Map;
+import co.nstant.in.cbor.model.SimpleValue;
+import co.nstant.in.cbor.model.UnsignedInteger;
 
 public class CryptoECKey extends RegistryItem {
     public static final long CURVE = 1;

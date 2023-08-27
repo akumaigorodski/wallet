@@ -13,6 +13,7 @@ import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+
 import com.btcontract.wallet.R;
 
 /**

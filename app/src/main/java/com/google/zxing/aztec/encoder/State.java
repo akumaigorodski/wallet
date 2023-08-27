@@ -16,12 +16,11 @@
 
 package com.google.zxing.aztec.encoder;
 
-import java.nio.charset.StandardCharsets;
+import com.google.zxing.common.BitArray;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.google.zxing.common.BitArray;
 
 /**
  * State represents all information about a sequence necessary to generate the current output.

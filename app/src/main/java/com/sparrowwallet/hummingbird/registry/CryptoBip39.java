@@ -1,9 +1,13 @@
 package com.sparrowwallet.hummingbird.registry;
 
-import co.nstant.in.cbor.model.*;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import co.nstant.in.cbor.model.Array;
+import co.nstant.in.cbor.model.DataItem;
+import co.nstant.in.cbor.model.Map;
+import co.nstant.in.cbor.model.UnicodeString;
+import co.nstant.in.cbor.model.UnsignedInteger;
 
 public class CryptoBip39 extends RegistryItem {
     public static final long WORDS = 1;

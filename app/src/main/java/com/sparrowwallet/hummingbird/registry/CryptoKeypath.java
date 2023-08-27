@@ -2,13 +2,17 @@ package com.sparrowwallet.hummingbird.registry;
 
 import android.annotation.TargetApi;
 
-import co.nstant.in.cbor.model.*;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
+
+import co.nstant.in.cbor.model.Array;
+import co.nstant.in.cbor.model.DataItem;
+import co.nstant.in.cbor.model.Map;
+import co.nstant.in.cbor.model.SimpleValue;
+import co.nstant.in.cbor.model.UnsignedInteger;
 
 @TargetApi(24)
 public class CryptoKeypath extends RegistryItem {

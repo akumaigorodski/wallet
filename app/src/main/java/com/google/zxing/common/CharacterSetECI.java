@@ -19,7 +19,6 @@ package com.google.zxing.common;
 import com.google.zxing.FormatException;
 
 import java.nio.charset.Charset;
-
 import java.util.HashMap;
 import java.util.Map;
 

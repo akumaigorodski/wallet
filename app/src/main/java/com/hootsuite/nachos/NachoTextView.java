@@ -33,6 +33,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatMultiAutoCompleteTextView;
 import androidx.core.content.ContextCompat;
 
+import com.btcontract.wallet.R;
 import com.hootsuite.nachos.chip.Chip;
 import com.hootsuite.nachos.chip.ChipInfo;
 import com.hootsuite.nachos.chip.ChipSpan;
@@ -44,7 +45,6 @@ import com.hootsuite.nachos.tokenizer.SpanChipTokenizer;
 import com.hootsuite.nachos.validator.ChipifyingNachoValidator;
 import com.hootsuite.nachos.validator.IllegalCharacterIdentifier;
 import com.hootsuite.nachos.validator.NachoValidator;
-import com.btcontract.wallet.R;
 
 import java.util.ArrayList;
 import java.util.Arrays;

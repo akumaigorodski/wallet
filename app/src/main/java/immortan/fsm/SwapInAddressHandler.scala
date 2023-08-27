@@ -4,11 +4,11 @@ import java.util.concurrent.Executors
 
 import fr.acinq.eclair.Features
 import fr.acinq.eclair.wire.{Init, SwapIn, SwapInRequest, SwapInResponse}
+import immortan._
 import immortan.crypto.StateMachine
 import immortan.crypto.Tools._
 import immortan.fsm.SwapInAddressHandler._
 import immortan.utils.Rx
-import immortan._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}

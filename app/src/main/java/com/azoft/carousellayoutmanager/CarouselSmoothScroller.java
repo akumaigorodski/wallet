@@ -1,9 +1,10 @@
 package com.azoft.carousellayoutmanager;
 
 import android.graphics.PointF;
+import android.view.View;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import android.view.View;
 
 /**
  * Custom implementation of {@link RecyclerView.SmoothScroller} that can work only with {@link CarouselLayoutManager}.

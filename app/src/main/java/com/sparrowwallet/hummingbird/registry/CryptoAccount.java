@@ -1,11 +1,14 @@
 package com.sparrowwallet.hummingbird.registry;
 
-import co.nstant.in.cbor.model.*;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import co.nstant.in.cbor.model.Array;
+import co.nstant.in.cbor.model.DataItem;
+import co.nstant.in.cbor.model.Map;
+import co.nstant.in.cbor.model.UnsignedInteger;
 
 public class CryptoAccount extends RegistryItem {
     public static final long MASTER_FINGERPRINT_KEY = 1;
