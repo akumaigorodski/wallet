@@ -258,7 +258,6 @@
 
     <string name="settings_view_revocery_phrase_ext">These words allow to restore wallet balance on any device, please keep it secret at all times!</string>
     <string name="settings_view_revocery_phrase">View BIP39 recovery phrase</string>
-    <string name="settings_stats">Usage statistics</string>
 
     <!-- /Settings activity -->
 
@@ -322,23 +321,6 @@
     <!-- /lnurl -->
 
     <!-- Channel page -->
-
-    <string name="stats_title_chan_loss"><![CDATA[<b>Channel closing fees</b>]]></string>
-    <string name="stats_title_chain"><![CDATA[<b>Bitcoin transactions</b>]]></string>
-    <string name="stats_title_relays"><![CDATA[<b>Lightning relays</b>]]></string>
-    <string name="stats_title_ln"><![CDATA[<b>Lightning payments</b>]]></string>
-
-    <string name="stats_item_sent"><![CDATA[<b>sent</b>&#160;%1$s]]></string>
-    <string name="stats_item_received"><![CDATA[<b>received</b>&#160;%1$s]]></string>
-    <string name="stats_item_payments"><![CDATA[<b>payments</b>&#160;%1$s]]></string>
-    <string name="stats_item_transactions"><![CDATA[<b>transactions</b>&#160;%1$s]]></string>
-
-    <string name="stats_item_fees"><![CDATA[<b>fees</b>&#160;%1$s]]></string>
-    <string name="stats_item_fees_saved"><![CDATA[<b>chain&#160;fees&#160;saved</b>&#160;%1$s]]></string>
-
-    <string name="stats_item_relays"><![CDATA[<b>quantity</b>&#160;%1$s]]></string>
-    <string name="stats_item_relayed"><![CDATA[<b>volume</b>&#160;%1$s]]></string>
-    <string name="stats_item_earned"><![CDATA[<b>earned</b>&#160;%1$s]]></string>
 
     <string name="chan_capacity">Capacity</string>
     <string name="chan_can_send">Can send</string>

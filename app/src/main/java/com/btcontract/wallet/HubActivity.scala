@@ -657,11 +657,6 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
           if (isFromSigningWallet && canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
           if (isFromSigningWallet && canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
 
-        case info: RelayedPreimageInfo =>
-          val relayedHuman = WalletApp.denom.parsedWithSign(info.relayed, cardIn, cardZero)
-          addFlowChip(extraInfo, getString(popup_hash) format info.paymentHashString.short, R.drawable.border_green)
-          addFlowChip(extraInfo, getString(stats_item_relayed) format relayedHuman, R.drawable.border_gray)
-
         case _ =>
           // Do nothing
       }

@@ -257,7 +257,6 @@
 
     <string name="settings_view_revocery_phrase_ext">Met deze woorden kun je je portemonneesaldo herstellen op elk apparaat, hou het te allen tijde geheim!</string>
     <string name="settings_view_revocery_phrase">Bekijk BIP39-herstelzin</string>
-    <string name="settings_stats">Gebruiksstatistieken</string>
 
     <!-- /Settings activity -->
 
@@ -321,23 +320,6 @@
     <!-- /lnurl -->
 
     <!-- Channel page -->
-
-    <string name="stats_title_chan_loss"><![CDATA[<b>Kanaalafsluittarief</b>]]></string>
-    <string name="stats_title_chain"><![CDATA[<b>Bitcointransacties</b>]]></string>
-    <string name="stats_title_relays"><![CDATA[<b>Lightningrelays</b>]]></string>
-    <string name="stats_title_ln"><![CDATA[<b>Lightningbetalingen</b>]]></string>
-
-    <string name="stats_item_sent"><![CDATA[<b>verzonden</b>&#160;%1$s]]></string>
-    <string name="stats_item_received"><![CDATA[<b>ontvangen</b>&#160;%1$s]]></string>
-    <string name="stats_item_payments"><![CDATA[<b>betalingen</b>&#160;%1$s]]></string>
-    <string name="stats_item_transactions"><![CDATA[<b>transacties</b>&#160;%1$s]]></string>
-
-    <string name="stats_item_fees"><![CDATA[<b>tarieven</b>&#160;%1$s]]></string>
-    <string name="stats_item_fees_saved"><![CDATA[<b>keten&#160;tarieven&#160;opgeslagen</b>&#160;%1$s]]></string>
-
-    <string name="stats_item_relays"><![CDATA[<b>quantiteit</b>&#160;%1$s]]></string>
-    <string name="stats_item_relayed"><![CDATA[<b>volume</b>&#160;%1$s]]></string>
-    <string name="stats_item_earned"><![CDATA[<b>verdiend</b>&#160;%1$s]]></string>
 
     <string name="chan_capacity">Capaciteit</string>
     <string name="chan_can_send">Kan verzenden</string>

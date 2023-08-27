@@ -132,12 +132,6 @@
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
-            android:name="StatActivity"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:theme="@style/AppThemeNoActionBar"/>
-
-        <activity
             android:launchMode="singleTask"
             android:name="CoinControlActivity"
             android:screenOrientation="portrait"

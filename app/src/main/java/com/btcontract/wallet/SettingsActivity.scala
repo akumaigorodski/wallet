@@ -290,13 +290,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     override def updateView: Unit = none
   }
 
-  lazy private[this] val viewStat = new SettingsHolder(me) {
-    setVisMany(false -> settingsCheck, false -> settingsInfo)
-    view setOnClickListener onButtonTap(me goTo ClassNames.statActivityClass)
-    settingsTitle.setText(settings_stats)
-    override def updateView: Unit = none
-  }
-
   override def PROCEED(state: Bundle): Unit = {
     setContentView(R.layout.activity_settings)
 
@@ -306,7 +299,7 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
 
     val links = new TitleView("&#9996;")
     addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://sbw.app/posts/manual")
-    addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/btcontract/wallet")
+    addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/akumaigorodski/wallet")
     addFlowChip(links.flow, getString(twitter), R.drawable.border_blue, _ => me browse "https://twitter.com/SimpleBtcWallet")
     addFlowChip(links.flow, "&#9825; RATE US", R.drawable.border_green, _ => me bringRateDialog null)
 
@@ -327,7 +320,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     settingsContainer.addView(useBiometric.view)
     settingsContainer.addView(enforceTor.view)
     settingsContainer.addView(viewCode.view)
-    settingsContainer.addView(viewStat.view)
     settingsContainer.addView(links.view)
   }
 }

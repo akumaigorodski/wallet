@@ -258,7 +258,6 @@
 
     <string name="settings_view_revocery_phrase_ext">Estas palabras permiten restaurar el saldo de la billetera en cualquier dispositivo, por favor mantenlas en secreto en todo momento!</string>
     <string name="settings_view_revocery_phrase">Ver la frase de recuperación BIP39</string>
-    <string name="settings_stats">Estadísticas de uso</string>
 
     <!-- /Settings activity -->
 
@@ -322,23 +321,6 @@
     <!-- /lnurl -->
 
     <!-- Channel page -->
-
-    <string name="stats_title_chan_loss"><![CDATA[<b>Tarifa de clausura de canal</b>]]></string>
-    <string name="stats_title_chain"><![CDATA[<b>Transacciones Bitcoin</b>]]></string>
-    <string name="stats_title_relays"><![CDATA[<b>Retransmisiones Lightning</b>]]></string>
-    <string name="stats_title_ln"><![CDATA[<b>Pagos Lightning</b>]]></string>
-
-    <string name="stats_item_sent"><![CDATA[<b>enviado</b>&#160;%1$s]]></string>
-    <string name="stats_item_received"><![CDATA[<b>recibido</b>&#160;%1$s]]></string>
-    <string name="stats_item_payments"><![CDATA[<b>pagos</b>&#160;%1$s]]></string>
-    <string name="stats_item_transactions"><![CDATA[<b>transacciones</b>&#160;%1$s]]></string>
-
-    <string name="stats_item_fees"><![CDATA[<b>tarifas</b>&#160;%1$s]]></string>
-    <string name="stats_item_fees_saved"><![CDATA[<b>tarifas&#160;cadena&#160;ahorrado</b>&#160;%1$s]]></string>
-
-    <string name="stats_item_relays"><![CDATA[<b>cantidad</b>&#160;%1$s]]></string>
-    <string name="stats_item_relayed"><![CDATA[<b>volumen</b>&#160;%1$s]]></string>
-    <string name="stats_item_earned"><![CDATA[<b>ganado</b>&#160;%1$s]]></string>
 
     <string name="chan_capacity">Capacidad</string>
     <string name="chan_can_send">Puede enviar</string>
