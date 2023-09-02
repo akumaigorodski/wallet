@@ -34,7 +34,6 @@ import immortan.sqlite._
 import immortan.utils._
 import scodec.bits.BitVector
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.Try
 
@@ -56,21 +55,13 @@ object WalletApp {
   final val FIAT_CODE = "fiatCode"
   final val BTC_DENOM = "btcDenom"
   final val ENSURE_TOR = "ensureTor"
-  final val MAXIMIZED_VIEW = "maximizedView"
   final val LAST_TOTAL_GOSSIP_SYNC = "lastTotalGossipSync"
   final val LAST_NORMAL_GOSSIP_SYNC = "lastNormalGossipSync"
   final val CUSTOM_ELECTRUM_ADDRESS = "customElectrumAddress"
-  final val SHOW_RATE_US = "showRateUs"
 
   def useAuth: Boolean = AppLock.isEnrolled(app)
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
   def ensureTor: Boolean = app.prefs.getBoolean(ENSURE_TOR, false)
-  def maximizedView: Boolean = app.prefs.getBoolean(MAXIMIZED_VIEW, true)
-  def showRateUs: Boolean = app.prefs.getBoolean(SHOW_RATE_US, true)
-
-  final val CHECKED_BUTTONS = "checkedButtons"
-  def getCheckedButtons(default: Set[String] = Set.empty): mutable.Set[String] = app.prefs.getStringSet(CHECKED_BUTTONS, default.asJava).asScala
-  def putCheckedButtons(buttons: Set[String] = Set.empty): Unit = app.prefs.edit.putStringSet(CHECKED_BUTTONS, buttons.asJava).commit
 
   def denom: Denomination = {
     val denom = app.prefs.getString(BTC_DENOM, BtcDenomination.sign)
@@ -224,22 +215,16 @@ object WalletApp {
       override def onChainDisconnected: Unit = currentChainNode = None
 
       override def onTransactionReceived(event: TransactionReceived): Unit = {
-        def addChainTx(received: Satoshi, sent: Satoshi, description: TxDescription, isIncoming: Long): Unit = description match {
-          case _: ChanFundingTxDescription => doAddChainTx(received, sent, description, isIncoming, BaseActivity.totalBalance - sent)
-          case _ => doAddChainTx(received, sent, description, isIncoming, BaseActivity.totalBalance)
-        }
-
-        def doAddChainTx(received: Satoshi, sent: Satoshi, description: TxDescription, isIncoming: Long, totalBalance: MilliSatoshi): Unit = txDataBag.db txWrap {
+        def addChainTx(received: Satoshi, sent: Satoshi, description: TxDescription, isIncoming: Long, totalBalance: MilliSatoshi): Unit = txDataBag.db txWrap {
           txDataBag.addTx(event.tx, event.depth, received, sent, event.feeOpt, event.xPub, description, isIncoming, totalBalance, LNParams.fiatRates.info.rates, event.stamp)
           txDataBag.addSearchableTransaction(description.queryText(event.tx.txid), event.tx.txid)
         }
 
         val fee = event.feeOpt.getOrElse(0L.sat)
-        val defDescription = TxDescription.define(LNParams.cm.all.values, Nil, event.tx)
-        val sentTxDescription = txDescriptions.getOrElse(event.tx.txid, default = defDescription)
-        if (event.sent == event.received + fee) addChainTx(event.received, event.sent, sentTxDescription, isIncoming = 1L)
-        else if (event.sent > event.received) addChainTx(event.received, event.sent - event.received - fee, sentTxDescription, isIncoming = 0L)
-        else addChainTx(event.received - event.sent, event.sent, TxDescription.define(LNParams.cm.all.values, event.walletAddreses, event.tx), isIncoming = 1L)
+        val sentTxDesc = txDescriptions.getOrElse(default = PlainTxDescription(Nil), key = event.tx.txid)
+        if (event.sent == event.received + fee) addChainTx(event.received, event.sent, sentTxDesc, isIncoming = 1L, BaseActivity.totalBalance)
+        else if (event.sent > event.received) addChainTx(event.received, event.sent - event.received - fee, sentTxDesc, isIncoming = 0L, BaseActivity.totalBalance)
+        else addChainTx(event.received - event.sent, event.sent, PlainTxDescription(event.walletAddreses), isIncoming = 1L, BaseActivity.totalBalance)
       }
     }
 

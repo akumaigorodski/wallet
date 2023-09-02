@@ -1,8 +1,6 @@
 package com.btcontract.wallet
 
 import java.io.{File, FileOutputStream}
-import java.lang.{Integer => JInt}
-import java.util.concurrent.TimeUnit
 
 import android.content.pm.PackageManager
 import android.content.{DialogInterface, Intent}
@@ -30,7 +28,6 @@ import com.cottacush.android.currencyedittext.CurrencyEditText
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.{BaseTransientBottomBar, Snackbar}
 import com.google.android.material.textfield.TextInputLayout
-import com.google.common.cache.{Cache, CacheBuilder}
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.{BarcodeFormat, EncodeHintType}
@@ -43,8 +40,6 @@ import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
-import fr.acinq.eclair.transactions.Transactions
-import fr.acinq.eclair.wire.ChannelReestablish
 import immortan._
 import immortan.crypto.Tools._
 import immortan.utils._
@@ -82,12 +77,13 @@ object Colors {
   val cardZero: String = "#" + WalletApp.app.getResources.getString(R.color.cardZeroText).substring(3)
   val totalZero: String = "#" + WalletApp.app.getResources.getString(R.color.totalZeroText).substring(3)
   val btcCardZero: String = "#" + WalletApp.app.getResources.getString(R.color.btcCardZeroText).substring(3)
-  val lnCardZero: String = "#" + WalletApp.app.getResources.getString(R.color.lnCardZeroText).substring(3)
 }
 
 trait ExternalDataChecker {
   def checkExternalData(onNothing: Runnable): Unit
-  val noneRunnable: Runnable = new Runnable { def run: Unit = none }
+  val noneRunnable: Runnable = new Runnable {
+    def run: Unit = none
+  }
 }
 
 trait ChoiceReceiver {
@@ -170,13 +166,6 @@ trait BaseActivity extends AppCompatActivity { me =>
   def chainWalletBackground(wallet: ElectrumEclairWallet): Int = if (wallet.isBuiltIn) R.color.cardBitcoinModern else R.color.cardBitcoinLegacy
   def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] = if (wallet.hasFingerprint) Some(hardware_wallet) else if (!wallet.isSigning) Some(watching_wallet) else None
   def browse(maybeUri: String): Unit = try me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri) catch { case exception: Throwable => me onFail exception }
-
-  def bringRateDialog(view: View): Unit = {
-    val marketUri = Uri.parse(s"market://details?id=$getPackageName")
-    WalletApp.app.prefs.edit.putBoolean(WalletApp.SHOW_RATE_US, false).commit
-    me startActivity new Intent(Intent.ACTION_VIEW, marketUri)
-    if (null != view) view.setVisibility(View.GONE)
-  }
 
   def share(text: CharSequence): Unit = startActivity {
     val shareAction = (new Intent).setAction(Intent.ACTION_SEND)
@@ -669,42 +658,6 @@ trait BaseCheckActivity extends BaseActivity { me =>
       me exitTo ClassNames.mainActivityClass
     }
   }
-}
-
-trait HasTypicalChainFee {
-  lazy val typicalChainTxFee: MilliSatoshi = {
-    val target = LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget
-    val feerate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(target)
-    // Should not be used by long-lived instances since this info is getting outdated
-    Transactions.weight2fee(feerate, weight = 750).toMilliSatoshi
-  }
-
-  def replaceOutgoingPayment(ext: PaymentRequestExt, description: PaymentDescription, action: Option[PaymentAction], sentAmount: MilliSatoshi, seenAt: Long = System.currentTimeMillis): Unit =
-    LNParams.cm.payBag.replaceOutgoingPayment(ext, description, action, sentAmount, BaseActivity.totalBalance, LNParams.fiatRates.info.rates, typicalChainTxFee, seenAt)
-}
-
-trait ChanErrorHandlerActivity extends BaseCheckActivity { me =>
-  // Activities extending from this trait process unknown channel errors by default, also can be configured to handle other types of channel-related exceptions
-  val channelErrors: Cache[ByteVector32, JInt] = CacheBuilder.newBuilder.expireAfterAccess(30, TimeUnit.SECONDS).maximumSize(500).build[ByteVector32, JInt]
-  val MAX_ERROR_COUNT_WITHIN_WINDOW = 4
-
-  def chanUnknown(worker: CommsTower.Worker, reestablish: ChannelReestablish): Unit = UITask {
-    val errorCount = Option(channelErrors getIfPresent reestablish.channelId).getOrElse(0: JInt)
-    if (errorCount >= MAX_ERROR_COUNT_WITHIN_WINDOW) return
-
-    def break(alert: AlertDialog): Unit = runAnd(alert.dismiss)(worker requestRemoteForceClose reestablish.channelId)
-    val msg = getString(error_channel_unknown).format(reestablish.channelId.toHex, worker.info.nodeSpecificPubKey.toString, worker.info.nodeId.toString).html
-    val builder = new AlertDialog.Builder(me).setCustomTitle(getString(error_channel).asDefView).setCancelable(true).setMessage(msg)
-    mkCheckFormNeutral(_.dismiss, share(msg), break, builder, dialog_ok, dialog_share, dialog_break)
-    channelErrors.put(reestablish.channelId, errorCount + 1)
-  }.run
-
-  def chanError(chanId: ByteVector32, msg: String, info: RemoteNodeInfo): Unit = UITask {
-    val errorCount = Option(channelErrors getIfPresent chanId).getOrElse(default = 0: JInt)
-    val builder = new AlertDialog.Builder(me).setCustomTitle(getString(error_channel).asDefView).setMessage(msg.html)
-    if (errorCount < MAX_ERROR_COUNT_WITHIN_WINDOW) mkCheckForm(_.dismiss, share(msg), builder, dialog_ok, dialog_share)
-    channelErrors.put(chanId, errorCount + 1)
-  }.run
 }
 
 trait QRActivity extends BaseCheckActivity { me =>

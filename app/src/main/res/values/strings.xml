@@ -11,7 +11,6 @@
     <string name="coin_control">Coin control</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
-    <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Total balance</string>
     <string name="typing_hints">Bitcoin address</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
@@ -26,11 +25,8 @@
     <string name="setup_create_new">Create new wallet</string>
     <string name="setup_restore_existing">Restore existing wallet</string>
 
-    <string name="delayed_refunding">Delayed channel refunding</string>
-    <string name="delayed_refunding_ext">Do not erase wallet data until all delayed refunds are cleared!</string>
     <string name="setup_create_new_hint">A completely fresh Bitcoin wallet with a new recovery phrase will be generated from scratch.</string>
-    <!-- DO NOT TRANSLATE --> <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
-    <!-- DO NOT TRANSLATE --> <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
+    <string name="share_chain_tx" translatable="false">Bitcoin transaction hex\n\n%1$s</string>
 
     <string name="action_recovery_phrase_title">Wallet recovery phrase</string>
     <string name="action_recovery_phrase_hint">Type recovery words</string>
@@ -106,9 +102,6 @@
 
     <!-- special tx/payment descriptions -->
 
-    <string name="tx_ln_label_reflexive">Payment to self</string>
-    <string name="tx_ln_notice_split">%1$d\%% split&#160;|&#160;</string>
-
     <string name="tx_description_op_return">Payment proof stamp</string>
     <string name="tx_description_funding">Lightning channel funding</string>
     <string name="tx_description_refunding">Channel balance refunding</string>
@@ -119,7 +112,6 @@
     <string name="tx_description_cpfp">CPFP boosting</string>
 
     <string name="tx_btc">Bitcoin Transaction</string>
-    <string name="tx_ln">Lightning Payment</string>
 
     <string name="tx_state_confs">depth %1$s of %2$s</string>
     <string name="tx_state_double_spent">failed</string>
@@ -129,7 +121,6 @@
     <string name="popup_proof_stamp"><![CDATA[share&#160;proof&#160;stamp]]></string>
     <string name="popup_to_address"><![CDATA[<b>address</b>&#160;%1$s]]></string>
     <string name="popup_ln_payee"><![CDATA[<b>payee</b>&#160;%1$s]]></string>
-    <string name="popup_ln_node"><![CDATA[<b>node</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 
     <string name="popup_prior_chain_balance"><![CDATA[<b>prior&#160;balance</b>&#160;%1$s]]></string>
@@ -165,32 +156,6 @@
     <string name="settings_view_revocery_phrase">View BIP39 recovery phrase</string>
 
     <!-- /Settings activity -->
-
-    <array name="parts_in_flight">
-        <item>preparing</item>
-        <item>%1$d part in-flight</item>
-        <item>%1$d parts in-flight</item>
-    </array>
-
-    <array name="pct_collected">
-        <item>waiting</item>
-        <item>%1$d\%% collected</item>
-        <item>%1$d\%% collected</item>
-        <item>finalizing</item>
-    </array>
-
-    <array name="in_blocks">
-        <item>waiting</item>
-        <item>%1$d block</item>
-        <item>%1$d blocks</item>
-        <item>%1$d+ blocks</item>
-    </array>
-
-    <array name="expires_in_blocks">
-        <item><![CDATA[<b>expired</b>]]></item>
-        <item><![CDATA[<b>expires&#160;in</b>&#160;%1$d&#160;block]]></item>
-        <item><![CDATA[<b>expires&#160;in</b>&#160;%1$d&#160;blocks]]></item>
-    </array>
 
     <!-- lnurl-auth -->
 
@@ -229,6 +194,4 @@
 
     <string name="confirm_remove_item">&#9888; Do you want to remove this item?</string>
     <string name="dialog_requested"><![CDATA[<b>requested</b>&#160;%1$s]]></string>
-
-    <string name="ln_end_warn" translatable="false">LN support in SBW will end completely since the next update!\n\nYou appear to have active LN channels, would you like to close them right now to prevent funds loss?</string>
 </resources>

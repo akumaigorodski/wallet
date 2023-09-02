@@ -24,20 +24,6 @@
                 style="@style/FillingView"/>
 
             <TextView
-                android:clickable="true"
-                android:focusable="true"
-                style="@style/ChipTextGray"
-                android:onClick="bringRateDialog"
-                android:textSize="@dimen/text_size_12"
-                android:background="@drawable/border_green"
-                android:layout_toStartOf="@id/offlineIndicator"
-                android:layout_centerVertical="true"
-                android:layout_marginEnd="6dp"
-                android:text="&#9825; RATE US"
-                android:id="@+id/rateTeaser"
-                android:visibility="gone"/>
-
-            <TextView
                 style="@style/ChipTextGray"
                 android:layout_toStartOf="@id/chainSyncIndicator"
                 android:textSize="@dimen/text_size_12"
@@ -47,41 +33,40 @@
                 android:visibility="gone"
                 android:text="OFFLINE"/>
 
-            <TextView
-                style="@style/ChipTextGray"
-                android:textSize="@dimen/text_size_12"
-                android:background="@drawable/border_yellow"
-                android:layout_toStartOf="@id/lnSyncIndicator"
-                android:layout_centerVertical="true"
-                android:id="@+id/chainSyncIndicator"
-                android:layout_marginEnd="6dp"
-                android:visibility="gone"
-                android:text="SYNC"/>
-
             <com.danilomendes.progressbar.InvertedTextProgressbar
                 card_view:text_inverted_color="@android:color/black"
+                android:background="@drawable/border_yellow"
                 android:layout_toStartOf="@id/torIndicator"
                 card_view:text_color="@android:color/white"
-                android:background="@drawable/border_blue"
                 android:src="@color/paymentActiveBorder"
                 android:layout_centerVertical="true"
-                android:id="@+id/lnSyncIndicator"
+                android:id="@+id/chainSyncIndicator"
                 android:layout_marginEnd="6dp"
                 android:layout_height="24sp"
                 android:layout_width="65sp"
                 android:visibility="gone"
-                card_view:text="LN SYNC"
+                card_view:text="SYNC"
                 android:padding="1dp"/>
 
             <TextView
                 style="@style/ChipTextGray"
-                android:layout_toStartOf="@id/settingsButton"
+                android:layout_toStartOf="@id/enterSearchMode"
                 android:textSize="@dimen/text_size_12"
                 android:layout_centerVertical="true"
                 android:id="@+id/torIndicator"
                 android:layout_marginEnd="2dp"
                 android:visibility="gone"
                 android:text="TOR"/>
+
+            <ImageButton
+                android:padding="6dp"
+                android:onClick="bringSearch"
+                android:id="@+id/enterSearchMode"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_search_white_24dp"
+                android:layout_toStartOf="@id/settingsButton"
+                android:background="?android:selectableItemBackground"
+                style="@style/BoundedView"/>
 
             <ImageButton
                 android:padding="6dp"
@@ -129,93 +114,6 @@
             android:id="@+id/chainCardsContainer"
             android:orientation="vertical"/>
 
-        <!-- Lightning card -->
-
-        <androidx.cardview.widget.CardView
-            card_view:cardCornerRadius="@dimen/corner_radius"
-            android:layout_marginStart="15dp"
-            android:layout_marginEnd="15dp"
-            android:layout_marginTop="5dp"
-            style="@style/Card">
-
-            <LinearLayout
-                android:padding="15dp"
-                android:orientation="vertical"
-                android:background="@color/cardLightning"
-                style="@style/FillingView">
-
-                <!-- Text and balance -->
-
-                <RelativeLayout style="@style/FillingView">
-
-                    <TextView
-                        android:layout_marginEnd="3dp"
-                        android:textColor="@color/colorAccent"
-                        android:text="@string/lightning_wallet"
-                        android:layout_centerVertical="true"
-                        style="@style/BoundedView"/>
-
-                    <TextView
-                        android:id="@+id/totalLightningBalance"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true"
-                        style="@style/Emphasized"/>
-
-                    <ImageView
-                        android:background="@drawable/baseline_add_24"
-                        android:layout_centerVertical="true"
-                        android:layout_alignParentEnd="true"
-                        android:id="@+id/addChannelTip"
-                        style="@style/BoundedView"/>
-
-                </RelativeLayout>
-
-                <!-- Indicators and payment state -->
-
-                <RelativeLayout
-                    style="@style/FillingView"
-                    android:id="@+id/channelStateIndicators">
-
-                    <com.indicator.ChannelIndicatorLine
-                        android:id="@+id/channelIndicator"
-                        android:layout_centerVertical="true"
-                        style="@style/BoundedView"/>
-
-                    <LinearLayout
-                        android:layout_marginTop="6dp"
-                        android:layout_centerVertical="true"
-                        android:layout_alignParentEnd="true"
-                        android:orientation="horizontal"
-                        style="@style/BoundedView">
-
-                        <TextView
-                            style="@style/InFlightView"
-                            android:id="@+id/inFlightIncoming"
-                            android:drawableStart="@drawable/baseline_arrow_downward_18"/>
-
-                        <TextView
-                            style="@style/InFlightView"
-                            android:id="@+id/inFlightOutgoing"
-                            android:drawableStart="@drawable/baseline_arrow_upward_18"/>
-
-                        <TextView
-                            style="@style/InFlightView"
-                            android:id="@+id/inFlightRelayed"
-                            android:drawableStart="@drawable/baseline_swap_horiz_18"/>
-
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_marginTop="6dp"
-                        android:layout_centerVertical="true"
-                        android:layout_alignParentEnd="true"
-                        android:id="@+id/lnBalanceFiat"
-                        style="@style/BoundedView"/>
-
-                </RelativeLayout>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
         <!-- Recovery phrase warning -->
 
         <TextView
@@ -235,88 +133,6 @@
             android:maxLines="4"/>
 
     </LinearLayout>
-
-    <!-- Button and search bar -->
-
-    <RelativeLayout
-        android:layout_marginTop="15dp"
-        android:layout_marginBottom="-5dp"
-        android:layout_marginStart="15dp"
-        android:layout_marginEnd="15dp"
-        android:id="@+id/listCaption"
-        style="@style/FillingView">
-
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/toggleGroup"
-            style="@style/BoundedView">
-
-            <com.google.android.material.button.MaterialButton
-                card_view:icon="@drawable/ic_logo_bitcoin_24dp"
-                android:id="@+id/bitcoinPayments"
-                card_view:iconGravity="start"
-                card_view:iconPadding="0dp"
-                style="@style/ToggleButton"
-                card_view:iconSize="18dp"/>
-
-            <com.google.android.material.button.MaterialButton
-                card_view:icon="@drawable/ic_logo_lightning_24dp"
-                android:id="@+id/lightningPayments"
-                card_view:iconGravity="start"
-                card_view:iconPadding="0dp"
-                style="@style/ToggleButton"
-                card_view:iconSize="18dp"/>
-
-            <com.google.android.material.button.MaterialButton
-                card_view:icon="@drawable/baseline_swap_horiz_18"
-                android:id="@+id/relayedPayments"
-                card_view:iconGravity="start"
-                card_view:iconPadding="0dp"
-                style="@style/ToggleButton"
-                card_view:iconSize="18dp"
-                android:visibility="gone"/>
-
-            <com.google.android.material.button.MaterialButton
-                card_view:icon="@drawable/baseline_storefront_24"
-                android:id="@+id/payMarketLinks"
-                card_view:iconGravity="start"
-                card_view:iconPadding="0dp"
-                style="@style/ToggleButton"
-                card_view:iconSize="18dp"
-                android:visibility="gone"/>
-
-        </com.google.android.material.button.MaterialButtonToggleGroup>
-
-        <ImageButton
-            android:padding="6dp"
-            android:onClick="maxMinView"
-            android:id="@+id/minimizeView"
-            android:layout_centerVertical="true"
-            android:layout_toStartOf="@id/maximizeView"
-            android:src="@drawable/baseline_visibility_off_24"
-            android:background="?android:selectableItemBackground"
-            style="@style/BoundedView"/>
-
-        <ImageButton
-            android:padding="6dp"
-            android:onClick="maxMinView"
-            android:id="@+id/maximizeView"
-            android:layout_centerVertical="true"
-            android:layout_toStartOf="@+id/enterSearchMode"
-            android:src="@drawable/baseline_visibility_on_24"
-            android:background="?android:selectableItemBackground"
-            style="@style/BoundedView"/>
-
-        <ImageButton
-            android:padding="6dp"
-            android:onClick="bringSearch"
-            android:id="@+id/enterSearchMode"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:src="@drawable/ic_search_white_24dp"
-            android:background="?android:selectableItemBackground"
-            style="@style/BoundedView"/>
-
-    </RelativeLayout>
 
     <!-- Search field -->
 

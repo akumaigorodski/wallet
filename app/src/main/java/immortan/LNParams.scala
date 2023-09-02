@@ -63,7 +63,6 @@ object LNParams {
   val minForceClosableOutgoingHtlcAmountToFeeRatio = 5 // When peer sends a suspiciously low feerate, how much higher than trim threshold should our outgoing HTLC be for us to force-close
   val minPayment: MilliSatoshi = MilliSatoshi(1000L) // We can neither send nor receive LN payments which are below this value
   val minChanDustLimit: Satoshi = Satoshi(354L)
-  val minDepthBlocks: Int = 3
 
   // Variables to be assigned at runtime
 

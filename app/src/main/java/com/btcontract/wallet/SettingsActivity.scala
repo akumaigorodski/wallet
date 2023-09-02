@@ -49,7 +49,7 @@ abstract class SettingsHolder(host: BaseActivity) {
     }
 }
 
-class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with ChoiceReceiver { me =>
+class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
   lazy private[this] val settingsContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
   private[this] val fiatSymbols = LNParams.fiatRates.universallySupportedSymbols.toList.sorted
   private[this] val CHOICE_FIAT_DENOMINATION_TAG = "choiceFiatDenominationTag"
@@ -279,7 +279,6 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     val links = new TitleView("// Simple Bitcoin Wallet")
     addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://sbw.app/posts/manual")
     addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/akumaigorodski/wallet")
-    addFlowChip(links.flow, "&#9825; RATE US", R.drawable.border_green, _ => me bringRateDialog null)
 
     for (count <- LNParams.logBag.count if count > 0) {
       def exportLog: Unit = me share LNParams.logBag.recent.map(_.asString).mkString("\n\n")

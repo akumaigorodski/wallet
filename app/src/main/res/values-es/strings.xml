@@ -11,7 +11,6 @@
     <string name="coin_control">Control de monedas</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
-    <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Saldo total</string>
     <string name="typing_hints">Dirección de Bitcoin</string>
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
@@ -26,11 +25,7 @@
     <string name="setup_create_new">Crear billetera nueva</string>
     <string name="setup_restore_existing">Restaurar billetera existente</string>
 
-    <string name="delayed_refunding">Reembolso demorado</string>
-    <string name="delayed_refunding_ext">No borre los datos de la billetera hasta que todos los reembolsos demorados hayan sido liquidados!</string>
     <string name="setup_create_new_hint">Una billetera completamente nueva con una nueva frase de recuperación será generada desde cero.</string>
-    <!-- DO NOT TRANSLATE --> <string name="share_ln_payment">Signed invoice\n%1$s\n\nPayment hash\n%2$s\n\nPayment description\n%3$s\n\nReceiver Node ID\n%4$s\n\nProof of payment\n%5$s\n\nDebug info\n%6$s</string>
-    <!-- DO NOT TRANSLATE --> <string name="share_chain_tx">Bitcoin transaction hex\n\n%1$s</string>
 
     <string name="action_recovery_phrase_title">Frase de recuperación de la billetera</string>
     <string name="action_recovery_phrase_hint">Escriba las palabras de recuperación</string>
@@ -106,9 +101,6 @@
 
     <!-- special tx/payment descriptions -->
 
-    <string name="tx_ln_label_reflexive">Pago propio</string>
-    <string name="tx_ln_notice_split">%1$d\%% dividir&#160;|&#160;</string>
-
     <string name="tx_description_op_return">Sello de prueba de pago</string>
     <string name="tx_description_funding">Financiamiento de canal</string>
     <string name="tx_description_refunding">Reembolsar saldo de canal</string>
@@ -119,7 +111,6 @@
     <string name="tx_description_cpfp">Aplicando CPFP</string>
 
     <string name="tx_btc">Transacción Bitcoin</string>
-    <string name="tx_ln">Pago Lightning</string>
 
     <string name="tx_state_confs">profundidad %1$s de %2$s</string>
     <string name="tx_state_double_spent">fallido</string>
@@ -129,7 +120,6 @@
     <string name="popup_proof_stamp"><![CDATA[pago&#160;prueba&#160;sello]]></string>
     <string name="popup_to_address"><![CDATA[<b>dirección</b>&#160;%1$s]]></string>
     <string name="popup_ln_payee"><![CDATA[<b>beneficiario</b>&#160;%1$s]]></string>
-    <string name="popup_ln_node"><![CDATA[<b>nodo</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 
     <string name="popup_prior_chain_balance"><![CDATA[<b>anterior&#160;saldo</b>&#160;%1$s]]></string>
@@ -165,32 +155,6 @@
     <string name="settings_view_revocery_phrase">Ver la frase de recuperación BIP39</string>
 
     <!-- /Settings activity -->
-
-    <array name="parts_in_flight">
-        <item>preparando</item>
-        <item>%1$d parte en vuelo</item>
-        <item>%1$d partes en vuelo</item>
-    </array>
-
-    <array name="pct_collected">
-        <item>esperando</item>
-        <item>%1$d\%% recogido</item>
-        <item>%1$d\%% recogido</item>
-        <item>finalizando</item>
-    </array>
-
-    <array name="in_blocks">
-        <item>esperando</item>
-        <item>%1$d block</item>
-        <item>%1$d blocks</item>
-        <item>%1$d+ blocks</item>
-    </array>
-
-    <array name="expires_in_blocks">
-        <item><![CDATA[<b>caducado</b>]]></item>
-        <item><![CDATA[<b>caduca&#160;en</b>&#160;%1$d&#160;block]]></item>
-        <item><![CDATA[<b>caduca&#160;en</b>&#160;%1$d&#160;blocks]]></item>
-    </array>
 
     <!-- lnurl-auth -->
 

@@ -23,12 +23,6 @@
             android:id="@+id/shareItem"
             style="@style/GrayButton"/>
 
-        <com.ornach.nobobutton.NoboButton
-            android:layout_marginStart="15dp"
-            app:nb_drawableResource="@drawable/baseline_close_20_24"
-            android:id="@+id/removeItem"
-            style="@style/RedButton"/>
-
     </LinearLayout>
 
     <LinearLayout
@@ -54,30 +48,12 @@
             android:id="@+id/paymentCardContainer"
             style="@style/Card">
 
-            <!-- Everything besides pay links -->
-
             <LinearLayout
                 android:visibility="gone"
                 style="@style/FillingView"
                 android:id="@+id/nonLinkContainer"
                 android:orientation="horizontal"
                 android:gravity="center">
-
-                <!-- BTC to LN -->
-
-                <RelativeLayout style="@style/Tag" android:id="@+id/btcLn" android:paddingTop="2dp" android:paddingBottom="2dp" android:paddingStart="5dp" android:paddingEnd="5dp">
-                    <ImageView style="@style/BoundedView" android:layout_alignParentTop="true" android:layout_alignParentStart="true" android:background="@drawable/ic_logo_bitcoin_24dp"/>
-                    <ImageView style="@style/BoundedView" android:layout_centerInParent="true" android:background="@drawable/baseline_arrow_upward_18" android:rotation="135"/>
-                    <ImageView style="@style/BoundedView" android:layout_alignParentEnd="true" android:layout_alignParentBottom="true" android:background="@drawable/ic_logo_lightning_24dp"/>
-                </RelativeLayout>
-
-                <!-- LN to BTC -->
-
-                <RelativeLayout style="@style/Tag" android:id="@+id/lnBtc" android:paddingTop="2dp" android:paddingBottom="2dp" android:paddingStart="5dp" android:paddingEnd="5dp">
-                    <ImageView style="@style/BoundedView" android:layout_alignParentTop="true" android:layout_alignParentStart="true" android:background="@drawable/ic_logo_lightning_24dp"/>
-                    <ImageView style="@style/BoundedView" android:layout_centerInParent="true" android:background="@drawable/baseline_arrow_upward_18" android:rotation="135"/>
-                    <ImageView style="@style/BoundedView" android:layout_alignParentEnd="true" android:layout_alignParentBottom="true" android:background="@drawable/ic_logo_bitcoin_24dp"/>
-                </RelativeLayout>
 
                 <!-- BTC incoming -->
 
@@ -93,14 +69,14 @@
                     <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_downward_18"/>
                 </LinearLayout>
 
-                <!-- BTC out boosted -->
+                <!-- BTC outgoing boosted -->
 
                 <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/btcOutBoosted">
                     <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_upward_18"/>
                     <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_upward_18"/>
                 </LinearLayout>
 
-                <!-- BTC out cancelled -->
+                <!-- BTC outgoing cancelled -->
 
                 <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/btcOutCancelled">
                     <ImageView style="@style/BoundedView" android:background="@drawable/outline_shortcut_20" android:rotation="90"/>
@@ -111,27 +87,6 @@
                 <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/btcOutgoing">
                     <ImageView style="@style/BoundedView" android:background="@drawable/ic_logo_bitcoin_24dp"/>
                     <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_upward_18"/>
-                </LinearLayout>
-
-                <!-- LN incoming -->
-
-                <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/lnIncoming">
-                    <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_downward_18"/>
-                    <ImageView style="@style/BoundedView" android:background="@drawable/ic_logo_lightning_24dp"/>
-                </LinearLayout>
-
-                <!-- LN outgoing -->
-
-                <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/lnOutgoing">
-                    <ImageView style="@style/BoundedView" android:background="@drawable/ic_logo_lightning_24dp"/>
-                    <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_upward_18"/>
-                </LinearLayout>
-
-                <!-- LN routed -->
-
-                <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/lnRouted">
-                    <ImageView style="@style/BoundedView" android:background="@drawable/baseline_swap_horiz_18"/>
-                    <ImageView style="@style/BoundedView" android:background="@drawable/ic_logo_lightning_24dp"/>
                 </LinearLayout>
 
                 <!-- Content -->
@@ -209,59 +164,6 @@
 
                 </LinearLayout>
             </LinearLayout>
-
-            <!-- Pay market links -->
-
-            <RelativeLayout
-                android:visibility="gone"
-                style="@style/FillingView"
-                android:id="@+id/linkContainer"
-                android:background="@drawable/border_gray">
-
-                <androidx.cardview.widget.CardView
-                    card_view:cardCornerRadius="@dimen/corner_radius"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:layout_marginBottom="10dp"
-                    android:layout_marginTop="10dp"
-                    android:layout_marginEnd="15dp"
-                    android:id="@+id/linkImageWrap"
-                    android:layout_height="36dp"
-                    android:layout_width="36dp">
-
-                    <ImageView
-                        android:id="@+id/linkImage"
-                        android:layout_height="36dp"
-                        android:layout_width="36dp"/>
-
-                </androidx.cardview.widget.CardView>
-
-                <LinearLayout
-                    style="@style/FillingView"
-                    android:layout_margin="15dp"
-                    android:orientation="vertical"
-                    android:layout_centerVertical="true"
-                    android:layout_toStartOf="@id/linkImageWrap">
-
-                    <TextView
-                        style="@style/FillingView"
-                        android:drawableStart="@drawable/baseline_label_20_24"
-                        android:layout_marginBottom="10dp"
-                        android:drawablePadding="3dp"
-                        android:id="@+id/marketLabel"
-                        android:textStyle="bold"
-                        android:ellipsize="end"
-                        android:maxLines="1"/>
-
-                    <TextView
-                        style="@style/FillingView"
-                        android:drawablePadding="3dp"
-                        android:id="@+id/marketInfo"
-                        android:ellipsize="end"
-                        android:maxLines="1"/>
-
-                </LinearLayout>
-            </RelativeLayout>
         </androidx.cardview.widget.CardView>
     </LinearLayout>
 </com.chauthai.swipereveallayout.SwipeRevealLayout>

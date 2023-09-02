@@ -168,10 +168,6 @@ trait CanBeShutDown {
   def becomeShutDown: Unit
 }
 
-trait CanBeRepliedTo {
-  def process(reply: Any): Unit
-}
-
 abstract class StateMachine[T] { me =>
   def become(freshData: T, freshState: Int): StateMachine[T] = {
     // Update state, data and return itself for easy chaining operations
