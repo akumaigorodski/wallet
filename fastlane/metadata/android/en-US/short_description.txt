@@ -1,1 +1,1 @@
-Bitcoin wallet with Lightning Network support
+Bitcoin wallet
