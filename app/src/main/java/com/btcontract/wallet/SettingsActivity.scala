@@ -57,13 +57,13 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
   private[this] val units = List(SatDenomination, BtcDenomination)
 
   override def onResume: Unit = {
+    useBiometric.updateView
+    enforceTor.updateView
+
     chainWallets.updateView
     electrum.updateView
     setFiat.updateView
     setBtc.updateView
-
-    useBiometric.updateView
-    enforceTor.updateView
     super.onResume
   }
 
@@ -276,7 +276,7 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     settingsPageitle.view.setOnClickListener(me onButtonTap finish)
     settingsPageitle.backArrow.setVisibility(View.VISIBLE)
 
-    val links = new TitleView("&#9996;")
+    val links = new TitleView("// Simple Bitcoin Wallet")
     addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://sbw.app/posts/manual")
     addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/akumaigorodski/wallet")
     addFlowChip(links.flow, "&#9825; RATE US", R.drawable.border_green, _ => me bringRateDialog null)
@@ -288,15 +288,15 @@ class SettingsActivity extends BaseCheckActivity with HasTypicalChainFee with Ch
     }
 
     settingsContainer.addView(settingsPageitle.view)
+    settingsContainer.addView(useBiometric.view)
+    settingsContainer.addView(enforceTor.view)
+    settingsContainer.addView(viewCode.view)
+
     settingsContainer.addView(chainWallets.view)
     settingsContainer.addView(addHardware.view)
     settingsContainer.addView(electrum.view)
     settingsContainer.addView(setFiat.view)
     settingsContainer.addView(setBtc.view)
-
-    settingsContainer.addView(useBiometric.view)
-    settingsContainer.addView(enforceTor.view)
-    settingsContainer.addView(viewCode.view)
     settingsContainer.addView(links.view)
   }
 }

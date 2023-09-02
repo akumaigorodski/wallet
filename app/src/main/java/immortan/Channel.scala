@@ -43,7 +43,7 @@ object Channel {
 
   def isOperational(chan: Channel): Boolean = chan.data match {
     case data: DATA_NORMAL => data.localShutdown.isEmpty && data.remoteShutdown.isEmpty
-    case hostedCommits: HostedCommits => hostedCommits.error.isEmpty
+//    case hostedCommits: HostedCommits => hostedCommits.error.isEmpty
     case _ => false
   }
 

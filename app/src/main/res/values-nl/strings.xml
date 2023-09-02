@@ -13,7 +13,7 @@
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Totaalsaldo</string>
-    <string name="typing_hints">Bitcoinadres, factuur, e-mail&#8230;</string>
+    <string name="typing_hints">Bitcoinadres</string>
     <string name="copied_to_clipboard">Gekopieerd naar klembord</string>
     <string name="add_address">Meer verse adressen</string>
     <string name="delayed_pending">wachtende</string>

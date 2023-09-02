@@ -1090,6 +1090,11 @@ class HubActivity extends ChanErrorHandlerActivity with ExternalDataChecker with
     stateSubscription = txEvents.merge(paymentEvents).merge(relayEvents).merge(marketEvents).merge(stateEvents).doOnNext(_ => updAllInfos).subscribe(_ => paymentAdapterDataChanged.run).asSome
     statusSubscription = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.statusUpdateStream, window).merge(stateEvents).subscribe(_ => UITask(walletCards.updateView).run).asSome
     timer.scheduleAtFixedRate(paymentAdapterDataChanged, 30000, 30000)
+
+    if (LNParams.cm.all.values.exists(Channel.isOperational)) {
+      def proceed: Unit = LNParams.cm.all.values.foreach(chan => chan doProcess CMD_CLOSE(scriptPubKey = None, force = false))
+      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, new AlertDialog.Builder(me).setMessage(ln_end_warn), dialog_ok, dialog_cancel)
+    }
   }
 
   // VIEW HANDLERS

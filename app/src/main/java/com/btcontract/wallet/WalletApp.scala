@@ -73,7 +73,7 @@ object WalletApp {
   def putCheckedButtons(buttons: Set[String] = Set.empty): Unit = app.prefs.edit.putStringSet(CHECKED_BUTTONS, buttons.asJava).commit
 
   def denom: Denomination = {
-    val denom = app.prefs.getString(BTC_DENOM, SatDenomination.sign)
+    val denom = app.prefs.getString(BTC_DENOM, BtcDenomination.sign)
     if (denom == SatDenomination.sign) SatDenomination else BtcDenomination
   }
 

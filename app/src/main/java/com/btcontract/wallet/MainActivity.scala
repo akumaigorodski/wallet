@@ -17,7 +17,6 @@ object ClassNames {
 
   val qrChainActivityClass: Class[QRChainActivity] = classOf[QRChainActivity]
   val coinControlActivityClass: Class[CoinControlActivity] = classOf[CoinControlActivity]
-
   val settingsActivityClass: Class[SettingsActivity] = classOf[SettingsActivity]
   val mainActivityClass: Class[MainActivity] = classOf[MainActivity]
   val hubActivityClass: Class[HubActivity] = classOf[HubActivity]

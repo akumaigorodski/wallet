@@ -13,7 +13,7 @@
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Saldo total</string>
-    <string name="typing_hints">Endereço Bitcoin, invoice, email&#8230;</string>
+    <string name="typing_hints">Endereço Bitcoin</string>
     <string name="copied_to_clipboard">Copiado para clipboard</string>
     <string name="add_address">Mais endereços novos</string>
     <string name="delayed_pending">pendente</string>

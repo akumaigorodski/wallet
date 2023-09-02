@@ -13,7 +13,7 @@
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="lightning_wallet">Lightning</string>
     <string name="total_balance">Total balance</string>
-    <string name="typing_hints">Bitcoin address, invoice, email&#8230;</string>
+    <string name="typing_hints">Bitcoin address</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="add_address">More fresh addresses</string>
     <string name="delayed_pending">pending</string>
@@ -229,4 +229,6 @@
 
     <string name="confirm_remove_item">&#9888; Do you want to remove this item?</string>
     <string name="dialog_requested"><![CDATA[<b>requested</b>&#160;%1$s]]></string>
+
+    <string name="ln_end_warn" translatable="false">LN support in SBW will end completely since the next update!\n\nYou appear to have active LN channels, would you like to close them right now to prevent funds loss?</string>
 </resources>
