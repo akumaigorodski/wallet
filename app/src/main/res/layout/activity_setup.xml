@@ -10,6 +10,7 @@
 
         <TextView
             style="@style/XMarginFillingView"
+            android:layout_marginTop="@dimen/chip_default_padding_edge"
             android:text="@string/setup_title"
             android:textSize="@dimen/header_size"/>
 

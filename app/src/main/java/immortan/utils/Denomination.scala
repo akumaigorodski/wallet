@@ -65,7 +65,7 @@ object BtcDenomination extends Denomination { me =>
   def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = {
     // Alpha channel does not work on Android when set as HTML attribute
     // hence zero color is supplied to match different backgrounds well
-    if (0L == msat.toLong) return "0"
+    if (0L == msat.toLong) return "---"
 
     val basicFormatted = fmt.format(me fromMsat msat)
     val (whole, decimal) = basicFormatted.splitAt(basicFormatted indexOf ".")

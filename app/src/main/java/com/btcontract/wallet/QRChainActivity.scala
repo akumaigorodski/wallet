@@ -14,9 +14,9 @@ import fr.acinq.bitcoin.Btc
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.EclairWallet.MAX_RECEIVE_ADDRESSES
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
-import immortan.LNParams
+import immortan.WalletParams
 import immortan.crypto.Tools._
-import immortan.utils.{BitcoinUri, Denomination, InputParser, PaymentRequestExt}
+import immortan.utils.{BitcoinUri, Denomination, InputParser}
 
 import scala.util.Success
 
@@ -42,7 +42,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
 
     private def updateView(bu: BitcoinUri, holder: QRViewHolder): Unit = bu.uri foreach { uri =>
       val humanAmountOpt = for (requestedAmount <- bu.amount) yield WalletApp.denom.parsedWithSign(requestedAmount, cardIn, totalZero)
-      val contentToShare = if (bu.amount.isDefined || bu.label.isDefined) PaymentRequestExt.withoutSlashes(InputParser.bitcoin, uri) else bu.address
+      val contentToShare = if (bu.amount.isDefined || bu.label.isDefined) InputParser.withoutSlashes(InputParser.bitcoin, uri) else bu.address
 
       val visibleText = (bu.label, humanAmountOpt) match {
         case Some(label) ~ Some(amount) => s"${bu.address.short}<br><br>$label<br><br>$amount"
@@ -68,7 +68,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     val canReceiveFiatHuman = WalletApp.currentMsatInFiatHuman(maxMsat)
     val canReceiveHuman = WalletApp.denom.parsedWithSign(maxMsat, cardIn, cardZero)
     val body = getLayoutInflater.inflate(R.layout.frag_input_fiat_converter, null).asInstanceOf[ViewGroup]
-    lazy val manager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+    lazy val manager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, WalletParams.fiatRates.info.rates, WalletApp.fiatCode)
     mkCheckForm(proceed, none, titleBodyAsViewBuilder(getString(dialog_receive_btc).asColoredView(me chainWalletBackground wallet), manager.content), dialog_ok, dialog_cancel)
     manager.hintFiatDenom.setText(getString(dialog_up_to).format(canReceiveFiatHuman).html)
     manager.hintDenom.setText(getString(dialog_up_to).format(canReceiveHuman).html)
@@ -77,7 +77,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     def proceed(alert: AlertDialog): Unit = {
       val uriBuilder = bu.uri.get.buildUpon.clearQuery
       val resultMsat = manager.resultMsat.truncateToSatoshi.toMilliSatoshi
-      val uriBuilder1 = if (resultMsat > LNParams.chainWallets.params.dustLimit) uriBuilder.appendQueryParameter("amount", Denomination.msat2BtcBigDecimal(resultMsat).toString) else uriBuilder
+      val uriBuilder1 = if (resultMsat > WalletParams.chainWallets.params.dustLimit) uriBuilder.appendQueryParameter("amount", Denomination.msat2BtcBigDecimal(resultMsat).toString) else uriBuilder
       val uriBuilder2 = manager.resultExtraInput match { case Some(resultExtraInput) => uriBuilder1.appendQueryParameter("label", resultExtraInput) case None => uriBuilder1 }
 
       addresses = addresses map {

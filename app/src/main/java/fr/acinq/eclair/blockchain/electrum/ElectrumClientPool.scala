@@ -9,7 +9,6 @@ import fr.acinq.bitcoin.{Block, BlockHeader, ByteVector32}
 import fr.acinq.eclair.blockchain.CurrentBlockCount
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.SSL
 import fr.acinq.eclair.blockchain.electrum.ElectrumClientPool._
-import immortan.LNParams
 import org.json4s.JsonAST.{JObject, JString}
 import org.json4s.native.JsonMethods
 
@@ -87,7 +86,7 @@ class ElectrumClientPool(blockCount: AtomicLong, chainHash: ByteVector32)(implic
 
   whenUnhandled {
     case Event(InitConnect, _) =>
-      val connections = Math.min(LNParams.maxChainConnectionsCount, serverAddresses.size)
+      val connections = Math.min(3, serverAddresses.size)
       (0 until connections).foreach(_ => self ! Connect)
       stay
 

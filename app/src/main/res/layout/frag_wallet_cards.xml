@@ -38,9 +38,9 @@
                 android:background="@drawable/border_yellow"
                 android:layout_toStartOf="@id/torIndicator"
                 card_view:text_color="@android:color/white"
-                android:src="@color/paymentActiveBorder"
                 android:layout_centerVertical="true"
                 android:id="@+id/chainSyncIndicator"
+                android:src="@color/paymentAwait"
                 android:layout_marginEnd="6dp"
                 android:layout_height="24sp"
                 android:layout_width="65sp"
@@ -118,7 +118,6 @@
 
         <TextView
             android:textSize="18sp"
-            android:textStyle="bold"
             android:clickable="true"
             android:focusable="true"
             android:layout_marginTop="15dp"

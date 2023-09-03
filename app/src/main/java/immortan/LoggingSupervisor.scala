@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 
 class LoggingSupervisor(childProps: Props, childName: String) extends Actor {
 
-  import immortan.LNParams.logBag
+  import immortan.WalletParams.logBag
 
   private val child = context.actorOf(childProps, childName)
 

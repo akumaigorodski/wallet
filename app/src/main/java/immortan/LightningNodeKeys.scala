@@ -21,7 +21,6 @@ object LightningNodeKeys {
 }
 
 case class LightningNodeKeys(master: ExtendedPrivateKey, extendedNodeKey: ExtendedPrivateKey, hashingKey: PrivateKey) {
-  lazy val ourNodePrivateKey: PrivateKey = extendedNodeKey.privateKey
 
   def makeLinkingKey(domain: String): PrivateKey = {
     val domainBytes = ByteVector(domain getBytes "UTF-8")
@@ -30,16 +29,6 @@ case class LightningNodeKeys(master: ExtendedPrivateKey, extendedNodeKey: Extend
     val chain = hardened(138) :: makeKeyPath(pathMaterial.bytes)
     // use master here to be compatible with old BLW
     derivePrivateKey(master, chain).privateKey
-  }
-
-  def fakeInvoiceKey(paymentHash: ByteVector32): PrivateKey = {
-    val chain = hardened(184) :: makeKeyPath(paymentHash.bytes)
-    derivePrivateKey(extendedNodeKey, chain).privateKey
-  }
-
-  def ourFakeNodeIdKey(theirNodeId: PublicKey): ExtendedPrivateKey = {
-    val chain = hardened(230) :: makeKeyPath(theirNodeId.value)
-    derivePrivateKey(extendedNodeKey, chain)
   }
 
   private def makeKeyPath(material: ByteVector): List[Long] = {

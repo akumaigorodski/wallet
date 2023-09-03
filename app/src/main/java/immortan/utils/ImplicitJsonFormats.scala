@@ -6,13 +6,9 @@ import fr.acinq.bitcoin.{ByteVector32, Satoshi}
 import fr.acinq.eclair.MilliSatoshi
 import fr.acinq.eclair.blockchain.electrum.db.{ChainWalletInfo, SigningWallet, WatchingWallet}
 import fr.acinq.eclair.blockchain.fee._
-import fr.acinq.eclair.wire.ChannelCodecs.extendedPublicKeyCodec
-import fr.acinq.eclair.wire.ChannelUpdate
 import fr.acinq.eclair.wire.CommonCodecs._
-import fr.acinq.eclair.wire.LightningMessageCodecs._
 import immortan._
 import immortan.crypto.Tools.Fiat2Btc
-import immortan.fsm.SplitInfo
 import immortan.utils.FiatRates.CoinGeckoItemMap
 import scodec.bits.BitVector
 import spray.json._
@@ -42,8 +38,6 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
   implicit val publicKeyFmt: JsonFormat[PublicKey] = sCodecJsonFmt(publicKey)
 
   implicit val byteVector32Fmt: JsonFormat[ByteVector32] = sCodecJsonFmt(bytes32)
-
-  implicit val channelUpdateFmt: JsonFormat[ChannelUpdate] = sCodecJsonFmt(channelUpdateCodec)
 
   implicit val milliSatoshiFmt: JsonFormat[MilliSatoshi] = jsonFormat[Long, MilliSatoshi](MilliSatoshi.apply, "underlying")
 
@@ -78,28 +72,14 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
 
   implicit val semanticOrderFmt: JsonFormat[SemanticOrder] = jsonFormat[String, Long, SemanticOrder](SemanticOrder.apply, "id", "order")
 
-  implicit val lNUrlDescription: JsonFormat[LNUrlDescription] =
-    jsonFormat[Option[String], Option[SemanticOrder], String, ByteVector32, ByteVector32, MilliSatoshi,
-      LNUrlDescription](LNUrlDescription.apply, "label", "semanticOrder", "privKey", "lastHash", "lastSecret", "lastMsat")
-
   implicit object TxDescriptionFmt extends JsonFormat[TxDescription] {
     def read(raw: JsValue): TxDescription = raw.asJsObject.fields(TAG) match {
       case JsString("PlainTxDescription") => raw.convertTo[PlainTxDescription]
-      case JsString("OpReturnTxDescription") => raw.convertTo[OpReturnTxDescription]
-      case JsString("ChanFundingTxDescription") => raw.convertTo[ChanFundingTxDescription]
-      case JsString("ChanRefundingTxDescription") => raw.convertTo[ChanRefundingTxDescription]
-      case JsString("HtlcClaimTxDescription") => raw.convertTo[HtlcClaimTxDescription]
-      case JsString("PenaltyTxDescription") => raw.convertTo[PenaltyTxDescription]
       case _ => throw new Exception
     }
 
     def write(internal: TxDescription): JsValue = internal match {
       case txDescription: PlainTxDescription => txDescription.toJson
-      case txDescription: OpReturnTxDescription => txDescription.toJson
-      case txDescription: ChanFundingTxDescription => txDescription.toJson
-      case txDescription: ChanRefundingTxDescription => txDescription.toJson
-      case txDescription: HtlcClaimTxDescription => txDescription.toJson
-      case txDescription: PenaltyTxDescription => txDescription.toJson
       case _ => throw new Exception
     }
   }
@@ -109,85 +89,6 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
   implicit val plainTxDescriptionFmt: JsonFormat[PlainTxDescription] =
     taggedJsonFmt(jsonFormat[List[String], Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
       PlainTxDescription](PlainTxDescription.apply, "addresses", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "PlainTxDescription")
-
-  implicit val opReturnTxDescriptionFmt: JsonFormat[OpReturnTxDescription] =
-    taggedJsonFmt(jsonFormat[List[ByteVector32], Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
-      OpReturnTxDescription](OpReturnTxDescription.apply, "preimages", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "OpReturnTxDescription")
-
-  implicit val chanFundingTxDescriptionFmt: JsonFormat[ChanFundingTxDescription] =
-    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
-      ChanFundingTxDescription](ChanFundingTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "ChanFundingTxDescription")
-
-  implicit val chanRefundingTxDescriptionFmt: JsonFormat[ChanRefundingTxDescription] =
-    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
-      ChanRefundingTxDescription](ChanRefundingTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "ChanRefundingTxDescription")
-
-  implicit val htlcClaimTxDescriptionFmt: JsonFormat[HtlcClaimTxDescription] =
-    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
-      HtlcClaimTxDescription](HtlcClaimTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "HtlcClaimTxDescription")
-
-  implicit val penaltyTxDescriptionFmt: JsonFormat[PenaltyTxDescription] =
-    taggedJsonFmt(jsonFormat[PublicKey, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
-      PenaltyTxDescription](PenaltyTxDescription.apply, "nodeId", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "PenaltyTxDescription")
-
-  implicit val splitInfoFmt: JsonFormat[SplitInfo] = jsonFormat[MilliSatoshi, MilliSatoshi, SplitInfo](SplitInfo.apply, "totalSum", "myPart")
-
-  implicit val paymentDescriptionFmt: JsonFormat[PaymentDescription] =
-    jsonFormat[Option[SplitInfo], Option[String], Option[SemanticOrder], String, Option[String], Option[String], Option[Long], Option[ByteVector32],
-      PaymentDescription](PaymentDescription.apply, "split", "label", "semanticOrder", "invoiceText", "proofTxid", "meta", "holdPeriodSec", "toSelfPreimage")
-
-  // Payment action
-
-  implicit object PaymentActionFmt extends JsonFormat[PaymentAction] {
-    def read(raw: JsValue): PaymentAction = raw.asJsObject.fields(TAG) match {
-      case JsString("message") => raw.convertTo[MessageAction]
-      case JsString("aes") => raw.convertTo[AESAction]
-      case JsString("url") => raw.convertTo[UrlAction]
-      case _ => throw new Exception
-    }
-
-    def write(internal: PaymentAction): JsValue = internal match {
-      case paymentAction: MessageAction => paymentAction.toJson
-      case paymentAction: UrlAction => paymentAction.toJson
-      case paymentAction: AESAction => paymentAction.toJson
-      case _ => throw new Exception
-    }
-  }
-
-  implicit val aesActionFmt: JsonFormat[AESAction] = taggedJsonFmt(jsonFormat[Option[String], String, String, String, AESAction](AESAction.apply, "domain", "description", "ciphertext", "iv"), tag = "aes")
-
-  implicit val messageActionFmt: JsonFormat[MessageAction] = taggedJsonFmt(jsonFormat[Option[String], String, MessageAction](MessageAction.apply, "domain", "message"), tag = "message")
-
-  implicit val urlActionFmt: JsonFormat[UrlAction] = taggedJsonFmt(jsonFormat[Option[String], String, String, UrlAction](UrlAction.apply, "domain", "description", "url"), tag = "url")
-
-  // LNURL
-
-  implicit object LNUrlDataFmt extends JsonFormat[LNUrlData] {
-    def write(unserialized: LNUrlData): JsValue = throw new RuntimeException
-    def read(serialized: JsValue): LNUrlData = serialized.asJsObject fields TAG match {
-      case JsString("hostedChannelRequest") => serialized.convertTo[HostedChannelRequest]
-      case JsString("channelRequest") => serialized.convertTo[NormalChannelRequest]
-      case JsString("withdrawRequest") => serialized.convertTo[WithdrawRequest]
-      case JsString("payRequest") => serialized.convertTo[PayRequest]
-      case _ => throw new Exception
-    }
-  }
-
-  // Note: tag on these MUST start with lower case because it is defined that way on protocol level
-
-  implicit val normalChannelRequestFmt: JsonFormat[NormalChannelRequest] = taggedJsonFmt(jsonFormat[String, String, String,
-    NormalChannelRequest](NormalChannelRequest.apply, "uri", "callback", "k1"), tag = "channelRequest")
-
-  implicit val hostedChannelRequestFmt: JsonFormat[HostedChannelRequest] = taggedJsonFmt(jsonFormat[String, Option[String], String,
-    HostedChannelRequest](HostedChannelRequest.apply, "uri", "alias", "k1"), tag = "hostedChannelRequest")
-
-  implicit val withdrawRequestFmt: JsonFormat[WithdrawRequest] = taggedJsonFmt(jsonFormat[String, String, Long, String, Option[Long], Option[Long], Option[String], Option[String],
-    WithdrawRequest](WithdrawRequest.apply, "callback", "k1", "maxWithdrawable", "defaultDescription", "minWithdrawable", "balance", "balanceCheck", "payLink"), tag = "withdrawRequest")
-
-  implicit val payRequestFmt: JsonFormat[PayRequest] = taggedJsonFmt(jsonFormat[String, Long, Long, String, Option[Int],
-    PayRequest](PayRequest.apply, "callback", "maxSendable", "minSendable", "metadata", "commentAllowed"), tag = "payRequest")
-
-  implicit val payRequestFinalFmt: JsonFormat[PayRequestFinal] = jsonFormat[Option[PaymentAction], Option[Boolean], String, PayRequestFinal](PayRequestFinal.apply, "successAction", "disposable", "pr")
 
   // Fiat feerates
 

@@ -65,10 +65,9 @@ object BaseActivity {
     }
   }
 
-  def totalBalance: MilliSatoshi = {
-    val chainBalances = LNParams.chainWallets.wallets.map(_.info.lastBalance)
-    Channel.totalBalance(LNParams.cm.all.values) + chainBalances.sum
-  }
+  def totalBalance: MilliSatoshi =
+    WalletParams.chainWallets.wallets
+      .map(_.info.lastBalance).sum.toMilliSatoshi
 }
 
 object Colors {
@@ -143,9 +142,9 @@ trait BaseActivity extends AppCompatActivity { me =>
       val holder: LinearLayout = cardsContainer
     }
 
-    chooser.init(LNParams.chainWallets.usableWallets)
-    chooser.update(LNParams.chainWallets.usableWallets)
-    chooser.unPad(LNParams.chainWallets.usableWallets)
+    chooser.init(WalletParams.chainWallets.usableWallets)
+    chooser.update(WalletParams.chainWallets.usableWallets)
+    chooser.unPad(WalletParams.chainWallets.usableWallets)
   }
 
   def titleViewFromUri(uri: BitcoinUri): TitleView = {
@@ -179,7 +178,7 @@ trait BaseActivity extends AppCompatActivity { me =>
       override def onDismiss(dialog: DialogInterface): Unit = getWindow.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
 
-    for (mnemonicWord ~ mnemonicIndex <- LNParams.secret.mnemonic.zipWithIndex) {
+    for (mnemonicWord ~ mnemonicIndex <- WalletParams.secret.mnemonic.zipWithIndex) {
       val item = s"<font color=$cardZero>${mnemonicIndex + 1}</font> $mnemonicWord"
       addFlowChip(content.flow, item, R.drawable.border_green)
     }
@@ -570,7 +569,7 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   class ChainSendView(val fromWallet: ElectrumEclairWallet, badge: Option[String], visibilityRes: Int) { me =>
     val body: ScrollView = getLayoutInflater.inflate(R.layout.frag_input_on_chain, null).asInstanceOf[ScrollView]
-    val manager: RateManager = new RateManager(body, badge, visibilityRes, LNParams.fiatRates.info.rates, WalletApp.fiatCode)
+    val manager: RateManager = new RateManager(body, badge, visibilityRes, WalletParams.fiatRates.info.rates, WalletApp.fiatCode)
     val chainEditView = new ChainEditView(body.findViewById(R.id.editChain).asInstanceOf[LinearLayout], manager, fromWallet)
     lazy val chainSlideshowView = new ChainSlideshowView(body findViewById R.id.slideshowChain)
     lazy val circularSpinnerView = new CircularSpinnerView(body findViewById R.id.progressBar)
@@ -651,7 +650,7 @@ trait BaseCheckActivity extends BaseActivity { me =>
   }
 
   override def START(state: Bundle): Unit = {
-    if (WalletApp.isAlive && LNParams.isOperational) PROCEED(state) else {
+    if (WalletApp.isAlive && WalletParams.isOperational) PROCEED(state) else {
       // The way Android works is we can get some objects nullified when restoring from background
       // when that happens we make sure to free all remaining resources and start from scratch
       WalletApp.freePossiblyUsedRuntimeResouces

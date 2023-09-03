@@ -3,6 +3,7 @@ package fr.acinq.eclair.blockchain.electrum
 import akka.actor.{ActorRef, FSM, PoisonPill}
 import fr.acinq.bitcoin.DeterministicWallet._
 import fr.acinq.bitcoin._
+import fr.acinq.eclair.MilliSatoshi
 import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.eclair.blockchain.bitcoind.rpc.Error
 import fr.acinq.eclair.blockchain.electrum.Blockchain.RETARGETING_PERIOD
@@ -11,7 +12,6 @@ import fr.acinq.eclair.blockchain.electrum.ElectrumWallet._
 import fr.acinq.eclair.blockchain.electrum.db.sqlite.SqliteWalletDb.persistentDataCodec
 import fr.acinq.eclair.blockchain.electrum.db.{HeaderDb, WalletDb}
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import fr.acinq.eclair.transactions.Transactions
 import immortan.crypto.Tools._
 import immortan.sqlite.SQLiteTx
 import scodec.bits.ByteVector
@@ -461,7 +461,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain,
     def computeFee(candidates: Seq[Utxo], change: TxOutOption) = {
       val tx1 = ewt.setUtxosWithDummySig(usableUtxos = candidates, tx, sequenceFlag)
       val weight = change.map(tx1.addOutput).getOrElse(tx1).weight(Protocol.PROTOCOL_VERSION)
-      Transactions.weight2fee(feeRatePerKw, weight)
+      weight2fee(feeRatePerKw, weight)
     }
 
     val amountToSend = tx.txOut.map(_.amount).sum
@@ -501,7 +501,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain,
     val restTxOut = TxOut(amount = usableInUtxos.map(_.item.value.sat).sum - strictTxOuts.map(_.amount).sum - extraOutUtxos.map(_.amount).sum, restPubKeyScript)
     val tx1 = ewt.setUtxosWithDummySig(usableInUtxos, Transaction(version = 2, Nil, restTxOut :: strictTxOuts.toList ::: extraOutUtxos, lockTime = 0), sequenceFlag)
 
-    val fee = Transactions.weight2fee(weight = tx1.weight(Protocol.PROTOCOL_VERSION), feeratePerKw = feeRatePerKw)
+    val fee = weight2fee(weight = tx1.weight(Protocol.PROTOCOL_VERSION), feeratePerKw = feeRatePerKw)
     require(restTxOut.amount - fee > dustLimit, "Resulting tx amount to send is below dust limit")
 
     val restTxOut1 = TxOut(restTxOut.amount - fee, restPubKeyScript)
@@ -509,6 +509,10 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain,
     val allPubKeyScriptsToAmount = strictPubKeyScriptsToAmount.updated(restPubKeyScript, restTxOut1.amount)
     SendAllResponse(allPubKeyScriptsToAmount, me, ewt.signTransaction(usableInUtxos, tx2), fee)
   }
+
+  def weight2feeMsat(feeratePerKw: FeeratePerKw, weight: Int): MilliSatoshi = MilliSatoshi(feeratePerKw.toLong * weight)
+
+  def weight2fee(feeratePerKw: FeeratePerKw, weight: Int): Satoshi = weight2feeMsat(feeratePerKw, weight).truncateToSatoshi
 
   def withOverridingTxids: ElectrumData = {
     def changeKeyDepth(tx: Transaction) = if (proofs contains tx.txid) Long.MaxValue else tx.txOut.map(_.publicKeyScript).flatMap(publicScriptChangeMap.get).map(_.path.lastChildNumber).headOption.getOrElse(Long.MinValue)

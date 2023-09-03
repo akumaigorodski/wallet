@@ -8,7 +8,7 @@ import fr.acinq.bitcoin._
 import fr.acinq.eclair.blockchain.bitcoind.rpc.{Error, JsonRPCRequest, JsonRPCResponse}
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient._
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
-import immortan.LNParams
+import immortan.WalletParams
 import io.netty.bootstrap.Bootstrap
 import io.netty.buffer.PooledByteBufAllocator
 import io.netty.channel._
@@ -64,7 +64,7 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
       // Error handler
       ch.pipeline.addLast(new ExceptionHandler)
 
-      LNParams.connectionProvider.proxyAddress.foreach { address =>
+      WalletParams.connectionProvider.proxyAddress.foreach { address =>
         // Optional proxy which must be the first handler
         val handler = new Socks5ProxyHandler(address)
         ch.pipeline.addFirst(handler)
@@ -74,7 +74,7 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
 
   val channelOpenFuture: ChannelFuture = b.connect(serverAddress.getHostName, serverAddress.getPort)
 
-  if (LNParams.connectionProvider.proxyAddress.isDefined) b.resolver(NoopAddressResolverGroup.INSTANCE)
+  if (WalletParams.connectionProvider.proxyAddress.isDefined) b.resolver(NoopAddressResolverGroup.INSTANCE)
 
   channelOpenFuture addListeners new ChannelFutureListener {
     override def operationComplete(future: ChannelFuture): Unit = {

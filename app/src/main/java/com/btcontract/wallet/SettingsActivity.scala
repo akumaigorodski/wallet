@@ -19,9 +19,10 @@ import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.eclair.blockchain.electrum.db.{SigningWallet, WatchingWallet}
 import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
 import fr.acinq.eclair.wire.{Domain, NodeAddress}
+import immortan.WalletParams
 import immortan.crypto.Tools._
+import immortan.sqlite.DbStreams
 import immortan.utils.{BtcDenomination, SatDenomination}
-import immortan.{ChannelMaster, LNParams}
 
 import scala.util.Success
 
@@ -51,7 +52,7 @@ abstract class SettingsHolder(host: BaseActivity) {
 
 class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
   lazy private[this] val settingsContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
-  private[this] val fiatSymbols = LNParams.fiatRates.universallySupportedSymbols.toList.sorted
+  private[this] val fiatSymbols = WalletParams.fiatRates.universallySupportedSymbols.toList.sorted
   private[this] val CHOICE_FIAT_DENOMINATION_TAG = "choiceFiatDenominationTag"
   private[this] val CHOICE_BTC_DENOMINATON_TAG = "choiceBtcDenominationTag"
   private[this] val units = List(SatDenomination, BtcDenomination)
@@ -72,13 +73,13 @@ class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
     case CHOICE_FIAT_DENOMINATION_TAG =>
       val fiatCode ~ _ = fiatSymbols(pos)
       WalletApp.app.prefs.edit.putString(WalletApp.FIAT_CODE, fiatCode).commit
-      ChannelMaster.next(ChannelMaster.stateUpdateStream)
+      DbStreams.next(DbStreams.statusUpdateStream)
       setFiat.updateView
 
 
     case CHOICE_BTC_DENOMINATON_TAG =>
       WalletApp.app.prefs.edit.putString(WalletApp.BTC_DENOM, units(pos).sign).commit
-      ChannelMaster.next(ChannelMaster.stateUpdateStream)
+      DbStreams.next(DbStreams.statusUpdateStream)
       setBtc.updateView
 
     case _ =>
@@ -117,11 +118,11 @@ class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
           val core = SigningWallet(possibleKeys(itemPosition), isRemovable = true)
 
           if (list isItemChecked itemPosition) {
-            val wallet = LNParams.chainWallets.makeSigningWalletParts(core, Satoshi(0L), label = core.walletType)
-            HubActivity.instance.walletCards.resetChainCards(LNParams.chainWallets withFreshWallet wallet)
+            val wallet = WalletParams.chainWallets.makeSigningWalletParts(core, Satoshi(0L), label = core.walletType)
+            HubActivity.instance.walletCards.resetChainCards(WalletParams.chainWallets withFreshWallet wallet)
           } else {
-            val affectedWallet = LNParams.chainWallets.wallets.find(wallet => wallet.isSigning && wallet.info.core.walletType == core.walletType)
-            affectedWallet.map(LNParams.chainWallets.withoutWallet).foreach(HubActivity.instance.walletCards.resetChainCards)
+            val affectedWallet = WalletParams.chainWallets.wallets.find(wallet => wallet.isSigning && wallet.info.core.walletType == core.walletType)
+            affectedWallet.map(WalletParams.chainWallets.withoutWallet).foreach(HubActivity.instance.walletCards.resetChainCards)
           }
         }
       }
@@ -129,7 +130,7 @@ class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
       list.setOnItemClickListener(listener)
       list.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE)
       new BaseChoiceBottomSheet(list).show(getSupportFragmentManager, "unused-wallet-type-tag")
-      for (wallet <- LNParams.chainWallets.wallets) list.setItemChecked(possibleKeys.indexOf(wallet.info.core.walletType), true)
+      for (wallet <- WalletParams.chainWallets.wallets) list.setItemChecked(possibleKeys.indexOf(wallet.info.core.walletType), true)
     }
   }
 
@@ -149,11 +150,11 @@ class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
         showKeys(extraInput)
 
         def proceed: Unit = runAnd(finish) {
-          if (LNParams.chainWallets.findByPubKey(data.bip84XPub.publicKey).isEmpty) {
+          if (WalletParams.chainWallets.findByPubKey(data.bip84XPub.publicKey).isEmpty) {
             val core = WatchingWallet(EclairWallet.BIP84, data.masterFingerprint, data.bip84XPub, isRemovable = true)
             val label = extraInput.getText.toString.trim.asSome.filter(_.nonEmpty).getOrElse(EclairWallet.BIP84)
-            val wallet = LNParams.chainWallets.makeWatchingWallet84Parts(core, lastBalance = Satoshi(0L), label)
-            HubActivity.instance.walletCards.resetChainCards(LNParams.chainWallets withFreshWallet wallet)
+            val wallet = WalletParams.chainWallets.makeWatchingWallet84Parts(core, lastBalance = Satoshi(0L), label)
+            HubActivity.instance.walletCards.resetChainCards(WalletParams.chainWallets withFreshWallet wallet)
           }
         }
       }
@@ -180,7 +181,7 @@ class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
 
       def proceed: Unit = {
         val input = extraInput.getText.toString.trim
-        def saveAddress(address: String) = WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM_ADDRESS, address)
+        def saveAddress(address: String) = WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM, address)
         if (input.nonEmpty) runInFutureProcessOnUI(saveUnsafeElectrumAddress, onFail)(_ => warnAndUpdateView)
         else runAnd(saveAddress(new String).commit)(warnAndUpdateView)
 
@@ -276,12 +277,12 @@ class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
     settingsPageitle.view.setOnClickListener(me onButtonTap finish)
     settingsPageitle.backArrow.setVisibility(View.VISIBLE)
 
-    val links = new TitleView("// Simple Bitcoin Wallet")
+    val links = new TitleView(new String)
     addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://sbw.app/posts/manual")
     addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/akumaigorodski/wallet")
 
-    for (count <- LNParams.logBag.count if count > 0) {
-      def exportLog: Unit = me share LNParams.logBag.recent.map(_.asString).mkString("\n\n")
+    for (count <- WalletParams.logBag.count if count > 0) {
+      def exportLog: Unit = me share WalletParams.logBag.recent.map(_.asString).mkString("\n\n")
       val errorCount = s"${me getString error_log} <font color=$cardZero>$count</font>"
       addFlowChip(links.flow, errorCount, R.drawable.border_yellow, _ => exportLog)
     }

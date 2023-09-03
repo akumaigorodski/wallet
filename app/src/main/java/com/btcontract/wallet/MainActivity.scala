@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.core.app.NotificationManagerCompat
 import com.guardanis.applock.activities.{LockCreationActivity, UnlockActivity}
-import immortan.LNParams
+import immortan.WalletParams
 import immortan.crypto.Tools.runAnd
 import immortan.utils.InputParser
 
@@ -37,7 +37,7 @@ class MainActivity extends BaseActivity { me =>
   def proceed(empty: Any): Unit = WalletApp.isAlive match {
     case false => runAnd(WalletApp.makeAlive)(me proceed null)
 
-    case true if LNParams.isOperational =>
+    case true if WalletParams.isOperational =>
       me exitTo ClassNames.hubActivityClass
 
     case true =>

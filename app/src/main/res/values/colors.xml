@@ -9,10 +9,8 @@
     <color name="paymentDone">#99CC00</color>
 
     <color name="btcLogo">#E08f04</color>
-    <color name="chanIndicator">#8FDCFF</color>
 
     <color name="paymentPassiveBorder">#555555</color>
-    <color name="paymentActiveBorder">#6EABFA</color>
 
     <color name="cardBitcoinModern">#876319</color>
     <color name="cardBitcoinLegacy">#5A5A5A</color>

@@ -15,7 +15,7 @@ import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.WalletReady
 import fr.acinq.eclair.blockchain.electrum.{ElectrumEclairWallet, Utxo}
 import immortan.crypto.Tools._
 import immortan.utils.{Haiku, InputParser, WalletEventsCatcher, WalletEventsListener}
-import immortan.{LNParams, TxDescription}
+import immortan.{WalletParams, TxDescription}
 
 
 class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { me =>
@@ -84,7 +84,7 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
 
       utxoCardContainer setOnClickListener onButtonTap {
         val excludedOutPoints1 = if (utxoIncluded.isChecked) excludedOutPoints + item.utxo.item.outPoint else excludedOutPoints - item.utxo.item.outPoint
-        LNParams.chainWallets.findByPubKey(walletPubKey).foreach(_ provideExcludedOutpoints excludedOutPoints1.toList)
+        WalletParams.chainWallets.findByPubKey(walletPubKey).foreach(_ provideExcludedOutpoints excludedOutPoints1.toList)
       }
 
       utxoAmount.setText(humanAmount.html)
@@ -102,7 +102,7 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
 
   override def onDestroy: Unit = {
     val remove = WalletEventsCatcher.Remove(chainListener)
-    try LNParams.chainWallets.catcher ! remove catch none
+    try WalletParams.chainWallets.catcher ! remove catch none
     super.onDestroy
   }
 
@@ -113,8 +113,8 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
 
   def updateWallet: Unit = {
     TransitionManager.beginDelayedTransition(chooser.holder)
-    chooser.update(LNParams.chainWallets.findByPubKey(walletPubKey).toList)
-    chooser.unPad(LNParams.chainWallets.findByPubKey(walletPubKey).toList)
+    chooser.update(WalletParams.chainWallets.findByPubKey(walletPubKey).toList)
+    chooser.unPad(WalletParams.chainWallets.findByPubKey(walletPubKey).toList)
   }
 
   def showWalletInfo(wallet: ElectrumEclairWallet): Unit = {
@@ -131,7 +131,7 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
       val holder: LinearLayout = findViewById(R.id.chainCardContainer).asInstanceOf[LinearLayout]
     }
 
-    LNParams.chainWallets.catcher ! chainListener
+    WalletParams.chainWallets.catcher ! chainListener
     txLabels = WalletApp.txDataBag.listAllDescriptions
     walletPubKey = wallet.ewt.xPub.publicKey
     chooser.init(wallet :: Nil)
@@ -149,7 +149,7 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
   }
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
-    case wallet: ElectrumEclairWallet if LNParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).isEmpty => finish
+    case wallet: ElectrumEclairWallet if WalletParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).isEmpty => finish
     case wallet: ElectrumEclairWallet => showWalletInfo(wallet)
     case _ => finish
   }

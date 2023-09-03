@@ -18,14 +18,12 @@ import com.guardanis.applock.AppLock
 import com.softwaremill.quicklens._
 import fr.acinq.bitcoin.{Block, ByteVector32, Satoshi, SatoshiLong}
 import fr.acinq.eclair._
+import fr.acinq.eclair.blockchain.EclairWallet
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.SSL
 import fr.acinq.eclair.blockchain.electrum.ElectrumClientPool.ElectrumServerAddress
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{TransactionReceived, WalletReady}
 import fr.acinq.eclair.blockchain.electrum._
 import fr.acinq.eclair.blockchain.electrum.db.{CompleteChainWalletInfo, SigningWallet, WatchingWallet}
-import fr.acinq.eclair.blockchain.{CurrentBlockCount, EclairWallet}
-import fr.acinq.eclair.channel.{CMD_CHECK_FEERATE, NormalCommits}
-import fr.acinq.eclair.router.Router.RouterConf
 import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
 import fr.acinq.eclair.wire.NodeAddress
 import immortan._
@@ -40,7 +38,6 @@ import scala.util.Try
 
 object WalletApp {
   var chainWalletBag: SQLiteChainWallet = _
-  var lnUrlPayBag: SQLiteLNUrlPay = _
   var extDataBag: SQLiteData = _
   var txDataBag: SQLiteTx = _
   var app: WalletApp = _
@@ -49,15 +46,11 @@ object WalletApp {
   var currentChainNode: Option[InetSocketAddress] = None
 
   final val dbFileNameMisc = "misc.db"
-  final val dbFileNameGraph = "graph.db"
-  final val dbFileNameEssential = "essential.db"
 
   final val FIAT_CODE = "fiatCode"
   final val BTC_DENOM = "btcDenom"
   final val ENSURE_TOR = "ensureTor"
-  final val LAST_TOTAL_GOSSIP_SYNC = "lastTotalGossipSync"
-  final val LAST_NORMAL_GOSSIP_SYNC = "lastNormalGossipSync"
-  final val CUSTOM_ELECTRUM_ADDRESS = "customElectrumAddress"
+  final val CUSTOM_ELECTRUM = "customElectrum"
 
   def useAuth: Boolean = AppLock.isEnrolled(app)
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
@@ -65,32 +58,29 @@ object WalletApp {
 
   def denom: Denomination = {
     val denom = app.prefs.getString(BTC_DENOM, BtcDenomination.sign)
-    if (denom == SatDenomination.sign) SatDenomination else BtcDenomination
+    if (denom == BtcDenomination.sign) BtcDenomination else SatDenomination
   }
 
   def customElectrumAddress: Try[NodeAddress] = Try {
-    val rawAddress = app.prefs.getString(CUSTOM_ELECTRUM_ADDRESS, new String)
+    val rawAddress = app.prefs.getString(CUSTOM_ELECTRUM, new String)
     nodeaddress.decode(BitVector fromValidHex rawAddress).require.value
   }
 
-  def isAlive: Boolean = null != txDataBag && null != lnUrlPayBag && null != chainWalletBag && null != extDataBag && null != app
+  def isAlive: Boolean = null != txDataBag && null != chainWalletBag && null != extDataBag && null != app
 
   def freePossiblyUsedRuntimeResouces: Unit = {
-    // Drop whatever network connections we still have
-    CommsTower.workers.values.map(_.pair).foreach(CommsTower.forget)
     // Clear listeners, destroy actors, finalize state machines
-    try LNParams.chainWallets.becomeShutDown catch none
-    try LNParams.fiatRates.becomeShutDown catch none
-    try LNParams.feeRates.becomeShutDown catch none
-    try LNParams.cm.becomeShutDown catch none
+    try WalletParams.chainWallets.becomeShutDown catch none
+    try WalletParams.fiatRates.becomeShutDown catch none
+    try WalletParams.feeRates.becomeShutDown catch none
     // Make non-alive and non-operational
-    LNParams.secret = null
+    WalletParams.secret = null
     txDataBag = null
   }
 
   def restart: Unit = {
     freePossiblyUsedRuntimeResouces
-    require(!LNParams.isOperational, "Still operational")
+    require(!WalletParams.isOperational, "Still operational")
     val intent = new Intent(app, ClassNames.mainActivityClass)
     val restart = Intent.makeRestartActivityTask(intent.getComponent)
     app.startActivity(restart)
@@ -102,45 +92,25 @@ object WalletApp {
     val miscInterface = new DBInterfaceSQLiteAndroidMisc(app, dbFileNameMisc)
 
     miscInterface txWrap {
-      txDataBag = new SQLiteTx(miscInterface)
-      lnUrlPayBag = new SQLiteLNUrlPay(miscInterface)
       chainWalletBag = new SQLiteChainWallet(miscInterface)
       extDataBag = new SQLiteData(miscInterface)
+      txDataBag = new SQLiteTx(miscInterface)
     }
 
     // In case these are needed early
-    LNParams.logBag = new SQLiteLog(miscInterface)
-    LNParams.chainHash = Block.LivenetGenesisBlock.hash
-    LNParams.routerConf = RouterConf(initRouteMaxLength = 10, LNParams.maxCltvExpiryDelta)
-    LNParams.connectionProvider = if (ensureTor) new TorConnectionProvider(app) else new ClearnetConnectionProvider
-    LNParams.ourInit = LNParams.createInit
-    LNParams.syncParams = new SyncParams
+    WalletParams.logBag = new SQLiteLog(miscInterface)
+    WalletParams.chainHash = Block.LivenetGenesisBlock.hash
+    WalletParams.connectionProvider = if (ensureTor) new TorConnectionProvider(app) else new ClearnetConnectionProvider
   }
 
   def makeOperational(secret: WalletSecret): Unit = {
     require(isAlive, "Application is not alive, hence can not become operational")
-    val essentialInterface = new DBInterfaceSQLiteAndroidEssential(app, dbFileNameEssential)
-    val graphInterface = new DBInterfaceSQLiteAndroidGraph(app, dbFileNameGraph)
     val currentCustomElectrum: Try[NodeAddress] = customElectrumAddress
-    LNParams.secret = secret
-
-    val normalBag = new SQLiteNetwork(graphInterface, NormalChannelUpdateTable, NormalChannelAnnouncementTable, NormalExcludedChannelTable)
-    val hostedBag = new SQLiteNetwork(graphInterface, HostedChannelUpdateTable, HostedChannelAnnouncementTable, HostedExcludedChannelTable)
-    val chanBag = new SQLiteChannel(essentialInterface, channelTxFeesDb = extDataBag.db)
-    val payBag = new SQLitePayment(extDataBag.db, preimageDb = essentialInterface)
+    WalletParams.secret = secret
 
     extDataBag.db txWrap {
-      LNParams.feeRates = new FeeRates(extDataBag)
-      LNParams.fiatRates = new FiatRates(extDataBag)
-    }
-
-    val pf = new PathFinder(normalBag, hostedBag) {
-      override def getLastTotalResyncStamp: Long = app.prefs.getLong(LAST_TOTAL_GOSSIP_SYNC, 0L)
-      override def getLastNormalResyncStamp: Long = app.prefs.getLong(LAST_NORMAL_GOSSIP_SYNC, 0L)
-      override def updateLastTotalResyncStamp(stamp: Long): Unit = app.prefs.edit.putLong(LAST_TOTAL_GOSSIP_SYNC, stamp).commit
-      override def updateLastNormalResyncStamp(stamp: Long): Unit = app.prefs.edit.putLong(LAST_NORMAL_GOSSIP_SYNC, stamp).commit
-      override def getExtraNodes: Set[RemoteNodeInfo] = LNParams.cm.all.values.flatMap(Channel.chanAndCommitsOpt).map(_.commits.remoteInfo).toSet
-      override def getPHCExtraNodes: Set[RemoteNodeInfo] = LNParams.cm.allHostedCommits.map(_.remoteInfo).toSet
+      WalletParams.feeRates = new FeeRates(extDataBag)
+      WalletParams.fiatRates = new FiatRates(extDataBag)
     }
 
     ElectrumClientPool.loadFromChainHash = {
@@ -156,16 +126,13 @@ object WalletApp {
       case _ => throw new RuntimeException
     }
 
-    LNParams.cm = new ChannelMaster(payBag, chanBag, extDataBag, pf)
-
     val params = WalletParameters(extDataBag, chainWalletBag, txDataBag, dustLimit = 546L.sat)
-    val electrumPool = LNParams.loggedActor(Props(classOf[ElectrumClientPool], LNParams.blockCount, LNParams.chainHash, LNParams.ec), "connection-pool")
-    val sync = LNParams.loggedActor(Props(classOf[ElectrumChainSync], electrumPool, params.headerDb, LNParams.chainHash), "chain-sync")
-    val watcher = LNParams.loggedActor(Props(classOf[ElectrumWatcher], LNParams.blockCount, electrumPool), "channel-watcher")
-    val catcher = LNParams.loggedActor(Props(new WalletEventsCatcher), "events-catcher")
+    val electrumPool = WalletParams.loggedActor(Props(classOf[ElectrumClientPool], WalletParams.blockCount, WalletParams.chainHash, WalletParams.ec), "connection-pool")
+    val sync = WalletParams.loggedActor(Props(classOf[ElectrumChainSync], electrumPool, params.headerDb, WalletParams.chainHash), "chain-sync")
+    val catcher = WalletParams.loggedActor(Props(new WalletEventsCatcher), "events-catcher")
 
     val walletExt: WalletExt =
-      (WalletExt(wallets = Nil, catcher, sync, electrumPool, watcher, params) /: chainWalletBag.listWallets) {
+      (WalletExt(wallets = Nil, catcher, sync, electrumPool, params) /: chainWalletBag.listWallets) {
         case ext ~ CompleteChainWalletInfo(core: SigningWallet, persistentSigningWalletData, lastBalance, label, false) =>
           val signingWallet = ext.makeSigningWalletParts(core, lastBalance, label)
           signingWallet.walletRef ! persistentSigningWalletData
@@ -177,34 +144,29 @@ object WalletApp {
           ext.copy(wallets = watchingWallet :: ext.wallets)
       }
 
-    LNParams.chainWallets = if (walletExt.wallets.isEmpty) {
+    WalletParams.chainWallets = if (walletExt.wallets.isEmpty) {
       val defaultLabel = app.getString(R.string.bitcoin_wallet)
       val core = SigningWallet(walletType = EclairWallet.BIP84, isRemovable = false)
       val wallet = walletExt.makeSigningWalletParts(core, Satoshi(0L), defaultLabel)
       walletExt.withFreshWallet(wallet)
     } else walletExt
 
-    LNParams.feeRates.listeners += new FeeRatesListener {
-      def onFeeRates(newRatesInfo: FeeRatesInfo): Unit = {
-        // We may get fresh feerates after channels become OPEN
-        LNParams.cm.all.values.foreach(_ process CMD_CHECK_FEERATE)
+    WalletParams.feeRates.listeners += new FeeRatesListener {
+      def onFeeRates(newRatesInfo: FeeRatesInfo): Unit =
         extDataBag.putFeeRatesInfo(newRatesInfo)
-      }
     }
 
-    LNParams.fiatRates.listeners += new FiatRatesListener {
+    WalletParams.fiatRates.listeners += new FiatRatesListener {
       def onFiatRates(newRatesInfo: FiatRatesInfo): Unit =
         extDataBag.putFiatRatesInfo(newRatesInfo)
     }
 
     // Guaranteed to fire (and update chainWallets) first
-    LNParams.chainWallets.catcher ! new WalletEventsListener {
-      override def onChainTipKnown(event: CurrentBlockCount): Unit = LNParams.cm.initConnect
-
-      override def onWalletReady(event: WalletReady): Unit = LNParams.synchronized {
+    WalletParams.chainWallets.catcher ! new WalletEventsListener {
+      override def onWalletReady(event: WalletReady): Unit = WalletParams.synchronized {
         // Wallet is already persisted so our only job at this point is to update runtime
         def sameXPub(wallet: ElectrumEclairWallet): Boolean = wallet.ewt.xPub == event.xPub
-        LNParams.chainWallets = LNParams.chainWallets.modify(_.wallets.eachWhere(sameXPub).info) using { info =>
+        WalletParams.chainWallets = WalletParams.chainWallets.modify(_.wallets.eachWhere(sameXPub).info) using { info =>
           // Coin control is always disabled on start, we update it later with animation to make it noticeable
           info.copy(lastBalance = event.balance, isCoinControlOn = event.excludedOutPoints.nonEmpty)
         }
@@ -216,7 +178,7 @@ object WalletApp {
 
       override def onTransactionReceived(event: TransactionReceived): Unit = {
         def addChainTx(received: Satoshi, sent: Satoshi, description: TxDescription, isIncoming: Long, totalBalance: MilliSatoshi): Unit = txDataBag.db txWrap {
-          txDataBag.addTx(event.tx, event.depth, received, sent, event.feeOpt, event.xPub, description, isIncoming, totalBalance, LNParams.fiatRates.info.rates, event.stamp)
+          txDataBag.addTx(event.tx, event.depth, received, sent, event.feeOpt, event.xPub, description, isIncoming, totalBalance, WalletParams.fiatRates.info.rates, event.stamp)
           txDataBag.addSearchableTransaction(description.queryText(event.tx.txid), event.tx.txid)
         }
 
@@ -228,43 +190,32 @@ object WalletApp {
       }
     }
 
-    pf.listeners += LNParams.cm.opm
-    // Get channels and still active FSMs up and running
-    LNParams.cm.all = Channel.load(Set(LNParams.cm), chanBag)
-    // This inital notification will create all in/routed/out FSMs
-    LNParams.cm.notifyResolvers
-
-    LNParams.connectionProvider doWhenReady {
+    WalletParams.connectionProvider doWhenReady {
       electrumPool ! ElectrumClientPool.InitConnect
 
       val feeratePeriodHours = 6
-      val rateRetry = Rx.retry(Rx.ioQueue.map(_ => LNParams.feeRates.reloadData), Rx.incSec, 3 to 18 by 3)
+      val rateRetry = Rx.retry(Rx.ioQueue.map(_ => WalletParams.feeRates.reloadData), Rx.incSec, 3 to 18 by 3)
       val rateRepeat = Rx.repeat(rateRetry, Rx.incHour, feeratePeriodHours to Int.MaxValue by feeratePeriodHours)
-      val feerateObs = Rx.initDelay(rateRepeat, LNParams.feeRates.info.stamp, feeratePeriodHours * 3600 * 1000L)
-      feerateObs.foreach(LNParams.feeRates.updateInfo, none)
+      val feerateObs = Rx.initDelay(rateRepeat, WalletParams.feeRates.info.stamp, feeratePeriodHours * 3600 * 1000L)
+      feerateObs.foreach(WalletParams.feeRates.updateInfo, none)
 
       val fiatPeriodSecs = 60 * 30
-      val fiatRetry = Rx.retry(Rx.ioQueue.map(_ => LNParams.fiatRates.reloadData), Rx.incSec, 3 to 18 by 3)
+      val fiatRetry = Rx.retry(Rx.ioQueue.map(_ => WalletParams.fiatRates.reloadData), Rx.incSec, 3 to 18 by 3)
       val fiatRepeat = Rx.repeat(fiatRetry, Rx.incSec, fiatPeriodSecs to Int.MaxValue by fiatPeriodSecs)
-      val fiatObs = Rx.initDelay(fiatRepeat, LNParams.fiatRates.info.stamp, fiatPeriodSecs * 1000L)
-      fiatObs.foreach(LNParams.fiatRates.updateInfo, none)
+      val fiatObs = Rx.initDelay(fiatRepeat, WalletParams.fiatRates.info.stamp, fiatPeriodSecs * 1000L)
+      fiatObs.foreach(WalletParams.fiatRates.updateInfo, none)
     }
-  }
-
-  def vulnerableChannelsExist: Boolean = LNParams.cm.allNormal.flatMap(Channel.chanAndCommitsOpt).exists {
-    case ChanAndCommits(_, normalCommits: NormalCommits) => normalCommits.remoteNextHtlcId > 0
-    case _ => false
   }
 
   // Fiat conversion
 
   def currentRate(rates: Fiat2Btc, code: String): Try[Double] = Try(rates apply code)
   def msatInFiat(rates: Fiat2Btc, code: String)(msat: MilliSatoshi): Try[Double] = currentRate(rates, code).map(perBtc => msat.toLong * perBtc / BtcDenomination.factor)
-  val currentMsatInFiatHuman: MilliSatoshi => String = msat => msatInFiatHuman(LNParams.fiatRates.info.rates, fiatCode, msat, immortan.utils.Denomination.formatFiat)
+  val currentMsatInFiatHuman: MilliSatoshi => String = msat => msatInFiatHuman(WalletParams.fiatRates.info.rates, fiatCode, msat, immortan.utils.Denomination.formatFiat)
 
   def msatInFiatHuman(rates: Fiat2Btc, code: String, msat: MilliSatoshi, decimalFormat: DecimalFormat): String = {
     val fiatAmount: String = msatInFiat(rates, code)(msat).map(decimalFormat.format).getOrElse(default = "?")
-    val formatted = LNParams.fiatRates.customFiatSymbols.get(code).map(symbol => s"$symbol$fiatAmount")
+    val formatted = WalletParams.fiatRates.customFiatSymbols.get(code).map(symbol => s"$symbol$fiatAmount")
     formatted.getOrElse(s"$fiatAmount $code")
   }
 }
@@ -286,19 +237,6 @@ class WalletApp extends Application { me =>
     case true if tooFewSpace => new SimpleDateFormat("dd/MM/yy")
     case false => new SimpleDateFormat("MMM dd, yyyy")
     case true => new SimpleDateFormat("d MMM yyyy")
-  }
-
-  lazy val plur: (Array[String], Long) => String = getString(R.string.lang) match {
-    case "eng" | "esp" | "port" | "nld" => (opts: Array[String], num: Long) => if (num == 1) opts(1) else opts(2)
-    case "chn" | "jpn" => (phraseOptions: Array[String], _: Long) => phraseOptions(1)
-    case "rus" | "ukr" => (phraseOptions: Array[String], num: Long) =>
-
-      val reminder100 = num % 100
-      val reminder10 = reminder100 % 10
-      if (reminder100 > 10 & reminder100 < 20) phraseOptions(3)
-      else if (reminder10 > 1 & reminder10 < 5) phraseOptions(2)
-      else if (reminder10 == 1) phraseOptions(1)
-      else phraseOptions(3)
   }
 
   override def attachBaseContext(base: Context): Unit = {
@@ -324,9 +262,7 @@ class WalletApp extends Application { me =>
 
   def quickToast(code: Int): Unit = quickToast(me getString code)
   def quickToast(msg: CharSequence): Unit = Toast.makeText(me, msg, Toast.LENGTH_LONG).show
-  def plurOrZero(num: Long, opts: Array[String] = Array.empty): String = if (num > 0) plur(opts, num).format(num) else opts(0)
   def clipboardManager: ClipboardManager = getSystemService(Context.CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
-  def getBufferUnsafe: String = clipboardManager.getPrimaryClip.getItemAt(0).getText.toString
 
   def inputMethodManager: InputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE).asInstanceOf[InputMethodManager]
   def showKeys(field: EditText): Unit = try inputMethodManager.showSoftInput(field, InputMethodManager.SHOW_IMPLICIT) catch none

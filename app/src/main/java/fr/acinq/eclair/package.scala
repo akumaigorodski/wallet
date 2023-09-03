@@ -1,19 +1,3 @@
-/*
- * Copyright 2019 ACINQ SAS
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package fr.acinq
 
 import java.security.SecureRandom
@@ -21,8 +5,7 @@ import java.security.SecureRandom
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.DeterministicWallet.{ExtendedPrivateKey, KeyPath}
 import fr.acinq.bitcoin._
-import scodec.Attempt
-import scodec.bits.{BitVector, ByteVector}
+import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
@@ -45,33 +28,7 @@ package object eclair { me =>
   val invalidPubKey: PublicKey = PublicKey.fromBin(ByteVector.fromValidHex("02" * 33), checkValid = false)
 
   val dummyExtPrivKey: ExtendedPrivateKey = ExtendedPrivateKey(randomBytes32, randomBytes32, depth = 0, KeyPath.Root, parent = 0L)
-
-  def toLongId(fundingTxHash: ByteVector32, fundingOutputIndex: Int): ByteVector32 = {
-    require(fundingOutputIndex < 65536, "fundingOutputIndex must not be greater than FFFF")
-    require(fundingTxHash.size == 32, "fundingTxHash must be of length 32B")
-    val channelId = ByteVector32(fundingTxHash.take(30) :+ (fundingTxHash(30) ^ (fundingOutputIndex >> 8)).toByte :+ (fundingTxHash(31) ^ fundingOutputIndex).toByte)
-    channelId
-  }
-
-  def serializationResult(attempt: Attempt[BitVector]): ByteVector = attempt match {
-    case Attempt.Failure(cause) => throw new RuntimeException(s"serialization error: $cause")
-    case Attempt.Successful(bin) => bin.toByteVector
-  }
-
-  def proportionalFee(paymentAmount: MilliSatoshi, proportionalFee: Long): MilliSatoshi = (paymentAmount * proportionalFee) / 1000000
-
-  def nodeFee(baseFee: MilliSatoshi, proportionalRatio: Long, paymentAmount: MilliSatoshi): MilliSatoshi = baseFee + proportionalFee(paymentAmount, proportionalRatio)
-
-  // proportional^(exponent = 1) + ln(proportional)^(logExponent = 0) is linear
-  // proportional^(exponent = 0.82) + ln(proportional)^(logExponent = 2.2) gives moderate discounts
-  // proportional^(exponent = 0.79) + ln(proportional)^(logExponent = 2.1) gives substantial discounts for large amounts
-  // proportional^(exponent = 0.76) + ln(proportional)^(logExponent = 2.0) gives extremely large discounts for large amounts
-  // proportional^(exponent = 0) + ln(proportional)^(logExponent = 0) gives base + 2 msat, independent of payment amount
-  def trampolineFee(proportional: Long, exponent: Double, logExponent: Double): MilliSatoshi = {
-    val nonLinearFeeMsat = math.pow(proportional, exponent) + math.pow(math.log(proportional), logExponent)
-    MilliSatoshi(nonLinearFeeMsat.ceil.toLong)
-  }
-
+  
   /**
    * @param address   base58 of bech32 address
    * @param chainHash hash of the chain we're on, which will be checked against the input address
@@ -105,9 +62,7 @@ package object eclair { me =>
     def msat = MilliSatoshi(n)
   }
 
-  // We implement Numeric to take advantage of operations such as sum, sort or min/max on iterables.
   implicit object NumericMilliSatoshi extends Numeric[MilliSatoshi] {
-    // @formatter:off
     override def plus(x: MilliSatoshi, y: MilliSatoshi): MilliSatoshi = x + y
     override def minus(x: MilliSatoshi, y: MilliSatoshi): MilliSatoshi = x - y
     override def times(x: MilliSatoshi, y: MilliSatoshi): MilliSatoshi = MilliSatoshi(x.toLong * y.toLong)
@@ -118,7 +73,6 @@ package object eclair { me =>
     override def toFloat(x: MilliSatoshi): Float = x.toLong
     override def toDouble(x: MilliSatoshi): Double = x.toLong
     override def compare(x: MilliSatoshi, y: MilliSatoshi): Int = x.compare(y)
-    // @formatter:on
   }
 
   implicit class ToMilliSatoshiConversion(amount: Satoshi) {

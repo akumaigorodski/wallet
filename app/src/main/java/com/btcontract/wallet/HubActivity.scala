@@ -25,6 +25,7 @@ import fr.acinq.eclair.blockchain.electrum.{ElectrumEclairWallet, ElectrumWallet
 import fr.acinq.eclair.blockchain.fee.FeeratePerByte
 import immortan._
 import immortan.crypto.Tools._
+import immortan.sqlite.DbStreams
 import immortan.utils._
 import org.apmem.tools.layouts.FlowLayout
 import rx.lang.scala.{Observable, Subscription}
@@ -157,23 +158,23 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
 
     // CPFP / RBF
 
-    def boostCPFP(info: TxInfo): Unit = LNParams.chainWallets.findByPubKey(info.pubKey) match {
+    def boostCPFP(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKey) match {
       case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
       case Some(fromWallet) => doBoostCPFP(fromWallet, info)
     }
 
     def doBoostCPFP(fromWallet: ElectrumEclairWallet, info: TxInfo): Unit = {
       val fromOutPoints = for (txOutputIndex <- info.tx.txOut.indices) yield OutPoint(info.tx.hash, txOutputIndex)
-      val chainAddress = Await.result(LNParams.chainWallets.lnWallet.getReceiveAddresses, atMost = 40.seconds).firstAccountAddress
-      val chainPubKeyScript = LNParams.addressToPubKeyScript(chainAddress)
+      val chainAddress = Await.result(WalletParams.chainWallets.defaultWallet.getReceiveAddresses, atMost = 40.seconds).firstAccountAddress
+      val chainPubKeyScript = WalletParams.addressToPubKeyScript(chainAddress)
       val receivedMsat = info.receivedSat.toMilliSatoshi
 
       val body = getLayoutInflater.inflate(R.layout.frag_input_cpfp, null).asInstanceOf[ScrollView]
       val cpfpCurrent = new TwoSidedItem(body.findViewById(R.id.cpfpCurrent), getString(tx_cpfp_current), new String)
       val cpfpAfter = new TwoSidedItem(body.findViewById(R.id.cpfpAfter), getString(tx_cpfp_after), new String)
 
-      val blockTarget = LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
-      val target = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
+      val blockTarget = WalletParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
+      val target = WalletParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
       lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(target), body) {
         rate = target
 
@@ -226,7 +227,7 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
       feeView.customFeerateOption.performClick
     }
 
-    def boostRBF(info: TxInfo): Unit = LNParams.chainWallets.findByPubKey(info.pubKey) match {
+    def boostRBF(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKey) match {
       case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
       case Some(fromWallet) => doBoostRBF(fromWallet, info)
     }
@@ -237,8 +238,8 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
       val rbfCurrent = new TwoSidedItem(body.findViewById(R.id.rbfCurrent), getString(tx_rbf_current), new String)
       val rbfIssue = body.findViewById(R.id.rbfIssue).asInstanceOf[TextView]
 
-      val blockTarget = LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
-      val target = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
+      val blockTarget = WalletParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
+      val target = WalletParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
       lazy val feeView: FeeView[RBFResponse] = new FeeView[RBFResponse](FeeratePerByte(target), body) {
         rate = target
 
@@ -299,7 +300,7 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
       feeView.worker addWork "RBF-INIT-CALL"
     }
 
-    def cancelRBF(info: TxInfo): Unit = LNParams.chainWallets.findByPubKey(info.pubKey) match {
+    def cancelRBF(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKey) match {
       case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
       case Some(fromWallet) => doCancelRBF(fromWallet, info)
     }
@@ -310,11 +311,11 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
       val rbfCurrent = new TwoSidedItem(body.findViewById(R.id.rbfCurrent), getString(tx_rbf_current), new String)
       val rbfIssue = body.findViewById(R.id.rbfIssue).asInstanceOf[TextView]
 
-      val changeKey = Await.result(LNParams.chainWallets.lnWallet.getReceiveAddresses, atMost = 40.seconds)
-      val changePubKeyScript = LNParams.addressToPubKeyScript(changeKey.changeAddress)
+      val changeKey = Await.result(WalletParams.chainWallets.defaultWallet.getReceiveAddresses, atMost = 40.seconds)
+      val changePubKeyScript = WalletParams.addressToPubKeyScript(changeKey.changeAddress)
 
-      val blockTarget = LNParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
-      val target = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
+      val blockTarget = WalletParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
+      val target = WalletParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
       lazy val feeView: FeeView[RBFResponse] = new FeeView[RBFResponse](FeeratePerByte(target), body) {
         rate = target
 
@@ -395,11 +396,11 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
           val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.cpfpOf.isEmpty
           val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.canBeCPFPd
-          val isFromSigningWallet = LNParams.chainWallets.findByPubKey(info.pubKey).exists(_.isSigning)
+          val isFromSigningWallet = WalletParams.chainWallets.findByPubKey(info.pubKey).exists(_.isSigning)
           val isRbfCancel = info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL)
 
           val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
-          val fiatNow = WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiat)
+          val fiatNow = WalletApp.msatInFiatHuman(WalletParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiat)
           val fiatThen = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiat)
           val balanceSnapshot = WalletApp.denom.parsedWithSign(info.balanceSnapshot, cardIn, cardZero)
 
@@ -500,35 +501,35 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
         showKeys(extraInput)
 
         def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-          val withnewLabel: ElectrumEclairWallet => WalletExt = LNParams.chainWallets.withNewLabel(extraInput.getText.toString)
-          LNParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).map(withnewLabel).foreach(resetChainCards)
+          val withnewLabel: ElectrumEclairWallet => WalletExt = WalletParams.chainWallets.withNewLabel(extraInput.getText.toString)
+          WalletParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).map(withnewLabel).foreach(resetChainCards)
         }
       }
 
       override def onRemoveTap(wallet: ElectrumEclairWallet): Unit = {
-        def proceed: Unit = LNParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).map(LNParams.chainWallets.withoutWallet).foreach(resetChainCards)
+        def proceed: Unit = WalletParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).map(WalletParams.chainWallets.withoutWallet).foreach(resetChainCards)
         mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, new AlertDialog.Builder(me).setMessage(confirm_remove_item), dialog_ok, dialog_cancel)
       }
     }
 
     def resetChainCards(ext1: WalletExt): Unit = {
       // Remove all existing cards and place new ones
-      LNParams.synchronized(LNParams.chainWallets = ext1)
+      WalletParams.synchronized(WalletParams.chainWallets = ext1)
       chainCards.holder.removeAllViewsInLayout
       chainCards.init(ext1.wallets)
       updateView
     }
 
     def updateView: Unit = {
-      val change = LNParams.fiatRates.info.pctDifference(WalletApp.fiatCode).map(_ + "<br>").getOrElse(new String)
-      val unitRate = WalletApp.msatInFiatHuman(LNParams.fiatRates.info.rates, WalletApp.fiatCode, 100000000000L.msat, Denomination.formatFiatShort)
+      val change = WalletParams.fiatRates.info.pctDifference(WalletApp.fiatCode).map(_ + "<br>").getOrElse(new String)
+      val unitRate = WalletApp.msatInFiatHuman(WalletParams.fiatRates.info.rates, WalletApp.fiatCode, 100000000000L.msat, Denomination.formatFiatShort)
 
       TransitionManager.beginDelayedTransition(defaultHeader)
       fiatUnitPriceAndChange.setText(s"<small>$change</small>$unitRate".html)
       totalFiatBalance.setText(WalletApp.currentMsatInFiatHuman(BaseActivity.totalBalance).html)
       totalBalance.setText(WalletApp.denom.parsedWithSign(BaseActivity.totalBalance, cardIn, totalZero).html)
       // We have updated chain wallet balances at this point because listener in WalletApp gets called first
-      chainCards.update(LNParams.chainWallets.wallets)
+      chainCards.update(WalletParams.chainWallets.wallets)
     }
   }
 
@@ -555,28 +556,28 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
       setVis(isVisible = false, walletCards.chainSyncIndicator)
     }.run
 
-    override def onWalletReady(event: WalletReady): Unit = {
-      ChannelMaster.next(ChannelMaster.statusUpdateStream)
-      ChannelMaster.next(ChannelMaster.txDbStream)
-    }
+    override def onWalletReady(event: WalletReady): Unit =
+      DbStreams.next(DbStreams.statusUpdateStream)
+      DbStreams.next(DbStreams.txDbStream)
   }
 
   private val fiatRatesListener = new FiatRatesListener {
-    def onFiatRates(rates: FiatRatesInfo): Unit = UITask(walletCards.updateView).run
+    def onFiatRates(rates: FiatRatesInfo): Unit =
+      UITask(walletCards.updateView).run
   }
 
   // Lifecycle methods
 
   override def onResume: Unit = {
     // Tor service could have been stopped in background
-    try LNParams.connectionProvider.notifyAppAvailable catch none
+    try WalletParams.connectionProvider.notifyAppAvailable catch none
     try checkExternalData(noneRunnable) catch none
     super.onResume
   }
 
   override def onDestroy: Unit = {
-    try LNParams.chainWallets.catcher ! WalletEventsCatcher.Remove(chainListener) catch none
-    try LNParams.fiatRates.listeners -= fiatRatesListener catch none
+    try WalletParams.chainWallets.catcher ! WalletEventsCatcher.Remove(chainListener) catch none
+    try WalletParams.fiatRates.listeners -= fiatRatesListener catch none
     statusSubscription.foreach(_.unsubscribe)
     stateSubscription.foreach(_.unsubscribe)
     super.onDestroy
@@ -590,28 +591,28 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
   }
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
-    case bitcoinUri: BitcoinUri if Try(LNParams addressToPubKeyScript bitcoinUri.address).isSuccess =>
+    case bitcoinUri: BitcoinUri if Try(WalletParams addressToPubKeyScript bitcoinUri.address).isSuccess =>
 
-      if (LNParams.chainWallets.usableWallets.size == 1) {
+      if (WalletParams.chainWallets.usableWallets.size == 1) {
         // We have a single built-in wallet, no need to choose
-        bringSendBitcoinPopup(bitcoinUri, LNParams.chainWallets.lnWallet)
+        bringSendBitcoinPopup(bitcoinUri, WalletParams.chainWallets.defaultWallet)
       } else bringChainWalletChooser(me titleViewFromUri bitcoinUri) { wallet =>
         // We have wallet candidates to spend from here
         bringSendBitcoinPopup(bitcoinUri, wallet)
       }
 
     case a2a: MultiAddressParser.AddressToAmount =>
-      val dustAmount = a2a.values.secondItems.find(amount => LNParams.chainWallets.params.dustLimit > amount)
-      val badAddress = a2a.values.firstItems.find(address => Try(LNParams addressToPubKeyScript address).isFailure)
+      val dustAmount = a2a.values.secondItems.find(amount => WalletParams.chainWallets.params.dustLimit > amount)
+      val badAddress = a2a.values.firstItems.find(address => Try(WalletParams addressToPubKeyScript address).isFailure)
 
       if (dustAmount.nonEmpty) {
-        val minimum = LNParams.chainWallets.params.dustLimit.toLong
+        val minimum = WalletParams.chainWallets.params.dustLimit.toLong
         onFail(s"Incorrect amount=${dustAmount.get.toLong}, minimum=$minimum")
       } else if (badAddress.nonEmpty) {
         onFail(s"Incorrect Bitcoin address=${badAddress.get}")
-      } else if (LNParams.chainWallets.usableWallets.size == 1) {
+      } else if (WalletParams.chainWallets.usableWallets.size == 1) {
         // We have a single built-in wallet, no need to choose one
-        bringSendMultiBitcoinPopup(a2a, LNParams.chainWallets.lnWallet)
+        bringSendMultiBitcoinPopup(a2a, WalletParams.chainWallets.defaultWallet)
       } else bringChainWalletChooser(me getString dialog_send_btc_many) { wallet =>
         // We have wallet candidates to spend from here
         bringSendMultiBitcoinPopup(a2a, wallet)
@@ -662,8 +663,8 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
 
   override def PROCEED(state: Bundle): Unit = {
     setContentView(com.btcontract.wallet.R.layout.activity_hub)
-    LNParams.fiatRates.listeners += fiatRatesListener
-    LNParams.chainWallets.catcher ! chainListener
+    WalletParams.fiatRates.listeners += fiatRatesListener
+    WalletParams.chainWallets.catcher ! chainListener
     instance = me
 
     bottomActionBar post UITask {
@@ -679,7 +680,8 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
     itemsList.setDivider(null)
 
     // Fill wallet list with wallet card views here
-    walletCards.chainCards.init(LNParams.chainWallets.wallets)
+    walletCards.recoveryPhraseWarning setOnClickListener onButtonTap(viewRecoveryCode)
+    walletCards.chainCards.init(WalletParams.chainWallets.wallets)
     walletCards.updateView
 
     runInFutureProcessOnUI(loadRecent, none) { _ =>
@@ -691,19 +693,30 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
     // STREAMS
 
     val window = 500.millis
-    val txEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.txDbStream, window).doOnNext { _ =>
+    val txEvents = Rx.uniqueFirstAndLastWithinWindow(DbStreams.txDbStream, window).doOnNext { _ =>
       // After each delayed update we check if pending txs got confirmed or double-spent
       // do this check specifically after updating txInfos with new items
       reloadTxInfos
 
       for {
         txInfo <- txInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
-        relatedChainWallet <- LNParams.chainWallets.findByPubKey(pub = txInfo.pubKey)
+        relatedChainWallet <- WalletParams.chainWallets.findByPubKey(pub = txInfo.pubKey)
         res <- relatedChainWallet.doubleSpent(txInfo.tx) if res.depth != txInfo.depth || res.isDoubleSpent != txInfo.isDoubleSpent
       } WalletApp.txDataBag.updStatus(txInfo.txid, res.depth, updatedStamp = res.stamp, res.isDoubleSpent)
     }
 
-    statusSubscription = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.statusUpdateStream, window).subscribe(_ => UITask(walletCards.updateView).run).asSome
+    /*
+    val relayEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.relayDbStream, window).doOnNext(_ => reloadRelayedPreimageInfos)
+    val marketEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.payMarketDbStream, window).doOnNext(_ => reloadPayMarketInfos)
+    val paymentEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.paymentDbStream, window).doOnNext(_ => reloadPaymentInfos)
+    val stateEvents = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.stateUpdateStream, window).doOnNext(_ => updateLnCaches)
+
+    stateSubscription = txEvents.merge(paymentEvents).merge(relayEvents).merge(marketEvents).merge(stateEvents).doOnNext(_ => updAllInfos).subscribe(_ => paymentAdapterDataChanged.run).asSome
+    statusSubscription = Rx.uniqueFirstAndLastWithinWindow(ChannelMaster.statusUpdateStream, window).merge(stateEvents).subscribe(_ => UITask(walletCards.updateView).run).asSome
+
+     */
+
+    statusSubscription = Rx.uniqueFirstAndLastWithinWindow(DbStreams.statusUpdateStream, window).subscribe(_ => UITask(walletCards.updateView).run).asSome
     stateSubscription = txEvents.doOnNext(_ => updAllInfos).subscribe(_ => paymentAdapterDataChanged.run).asSome
     timer.scheduleAtFixedRate(paymentAdapterDataChanged, 20000, 20000)
   }
@@ -753,7 +766,7 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
 
   def bringBitcoinSpecificScanner(fromWallet: ElectrumEclairWallet): Unit = {
     def resolveLegacyWalletBtcAddressQr: Unit = InputParser.checkAndMaybeErase {
-      case uri: BitcoinUri if Try(LNParams addressToPubKeyScript uri.address).isSuccess =>
+      case uri: BitcoinUri if Try(WalletParams addressToPubKeyScript uri.address).isSuccess =>
         bringSendBitcoinPopup(uri, fromWallet)
       case _ => nothingUsefulTask.run
     }
@@ -764,7 +777,7 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
     callScanner(sheet)
   }
 
-  def gotoReceivePage(view: View): Unit = goToWithValue(ClassNames.qrChainActivityClass, LNParams.chainWallets.lnWallet)
+  def gotoReceivePage(view: View): Unit = goToWithValue(ClassNames.qrChainActivityClass, WalletParams.chainWallets.defaultWallet)
   def goToSettingsPage(view: View): Unit = goTo(ClassNames.settingsActivityClass)
 
   def bringLegacyWalletMenuSpendOptions(wallet: ElectrumEclairWallet): Unit = {
@@ -774,7 +787,7 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
   }
 
   def transferFromLegacyToModern(legacy: ElectrumEclairWallet): Unit = {
-    runFutureProcessOnUI(LNParams.chainWallets.lnWallet.getReceiveAddresses, onFail) { addresses =>
+    runFutureProcessOnUI(WalletParams.chainWallets.defaultWallet.getReceiveAddresses, onFail) { addresses =>
       val labelAndMessage = s"?label=${me getString btc_transfer_label}&message=${me getString btc_transfer_message}"
       val uri = BitcoinUri.fromRaw(InputParser.bitcoin + addresses.firstAccountAddress + labelAndMessage)
       bringSendBitcoinPopup(uri, legacy)
@@ -783,7 +796,7 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
 
   def bringSendBitcoinPopup(uri: BitcoinUri, fromWallet: ElectrumEclairWallet): Unit = {
     val sendView = new ChainSendView(fromWallet, getString(dialog_set_label).asSome, dialog_visibility_private)
-    val chainPubKeyScript = LNParams.addressToPubKeyScript(uri.address)
+    val chainPubKeyScript = WalletParams.addressToPubKeyScript(uri.address)
 
     def attempt(alert: AlertDialog): Unit = {
       runFutureProcessOnUI(fromWallet.makeTx(chainPubKeyScript, sendView.manager.resultMsat.truncateToSatoshi, Map.empty, feeView.rate), onFail) { response =>
@@ -830,11 +843,11 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
     }
 
     lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.chainEditView.host) {
-      rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget)
+      rate = WalletParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(WalletParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget)
 
       worker = new ThrottledWork[String, GenerateTxResponse] {
         // This is a generic sending facility which may send to non-segwit, so always use a safer high dust threshold
-        override def error(exception: Throwable): Unit = update(feeOpt = None, showIssue = sendView.manager.resultMsat >= LNParams.chainWallets.params.dustLimit)
+        override def error(exception: Throwable): Unit = update(feeOpt = None, showIssue = sendView.manager.resultMsat >= WalletParams.chainWallets.params.dustLimit)
         def work(reason: String): Observable[GenerateTxResponse] = Rx fromFutureOnIo fromWallet.makeTx(chainPubKeyScript, sendView.manager.resultMsat.truncateToSatoshi, Map.empty, rate)
         def process(reason: String, response: GenerateTxResponse): Unit = update(feeOpt = response.fee.toMilliSatoshi.asSome, showIssue = false)
       }
@@ -858,7 +871,7 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
   }
 
   def bringSendMultiBitcoinPopup(addressToAmount: MultiAddressParser.AddressToAmount, fromWallet: ElectrumEclairWallet): Unit = {
-    val scriptToAmount = addressToAmount.values.firstItems.map(LNParams.addressToPubKeyScript).zip(addressToAmount.values.secondItems).toMap
+    val scriptToAmount = addressToAmount.values.firstItems.map(WalletParams.addressToPubKeyScript).zip(addressToAmount.values.secondItems).toMap
     val sendView: ChainSendView = new ChainSendView(fromWallet, badge = None, visibilityRes = -1)
 
     def attempt(alert: AlertDialog): Unit = {
@@ -899,7 +912,7 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker with Choice
     }
 
     lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.chainEditView.host) {
-      rate = LNParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(LNParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget)
+      rate = WalletParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(WalletParams.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget)
 
       worker = new ThrottledWork[String, GenerateTxResponse] {
         def process(reason: String, response: GenerateTxResponse): Unit = update(feeOpt = response.fee.toMilliSatoshi.asSome, showIssue = false)

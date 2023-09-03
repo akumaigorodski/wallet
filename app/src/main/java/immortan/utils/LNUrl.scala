@@ -3,7 +3,7 @@ package immortan.utils
 import com.google.common.base.CharMatcher
 import fr.acinq.bitcoin.{Bech32, ByteVector32, ByteVector64, Crypto}
 import fr.acinq.eclair.wire.NodeAddress
-import immortan.LNParams
+import immortan.WalletParams
 import immortan.utils.ImplicitJsonFormats._
 import immortan.utils.uri.Uri
 import rx.lang.scala.Observable
@@ -44,7 +44,7 @@ object LNUrl {
   }
 
   def level2DataResponse(bld: Uri.Builder): Observable[String] = Rx.ioQueue.map { _ =>
-    guardResponse(LNParams.connectionProvider.get(bld.build.toString).string)
+    guardResponse(WalletParams.connectionProvider.get(bld.build.toString).string)
   }
 }
 
@@ -58,23 +58,10 @@ case class LNUrl(request: String) {
   lazy val k1: Try[String] = Try(uri getQueryParameter "k1")
   lazy val isAuth: Boolean = Try(uri.getQueryParameter("tag").toLowerCase == "login").getOrElse(false)
   lazy val authAction: String = Try(uri.getQueryParameter("action").toLowerCase).getOrElse("login")
-
-  def level1DataResponse: Observable[LNUrlData] = Rx.ioQueue.map { _ =>
-    to[LNUrlData](LNParams.connectionProvider.get(uri.toString).string)
-  }
 }
-
-sealed trait LNUrlData
-
-sealed trait CallbackLNUrlData extends LNUrlData {
-  val callbackUri: Uri = LNUrl.checkHost(callback)
-  def callback: String
-}
-
-// LNURL-PAY
 
 case class LNUrlAuthSpec(host: String, k1: ByteVector32) {
-  val linkingPrivKey: Crypto.PrivateKey = LNParams.secret.keys.makeLinkingKey(host)
+  val linkingPrivKey: Crypto.PrivateKey = WalletParams.secret.keys.makeLinkingKey(host)
   val linkingPubKey: String = linkingPrivKey.publicKey.toString
 
   def signature: ByteVector64 = Crypto.sign(k1, linkingPrivKey)

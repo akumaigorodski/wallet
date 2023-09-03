@@ -17,7 +17,7 @@ import scala.util.Try
 
 case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, info: CompleteChainWalletInfo) extends EclairWallet {
 
-  import immortan.LNParams.{ec, timeout}
+  import immortan.WalletParams.{ec, timeout}
 
   type GenerateTxResponseTry = Try[GenerateTxResponse]
 

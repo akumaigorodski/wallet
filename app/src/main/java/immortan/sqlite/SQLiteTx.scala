@@ -7,7 +7,7 @@ import fr.acinq.bitcoin.{ByteVector32, Satoshi, Transaction}
 import fr.acinq.eclair.MilliSatoshi
 import immortan.crypto.Tools.Fiat2Btc
 import immortan.utils.ImplicitJsonFormats._
-import immortan.{ChannelMaster, TxDescription, TxInfo}
+import immortan.{TxDescription, TxInfo}
 import spray.json._
 
 import scala.util.Try
@@ -36,23 +36,24 @@ class SQLiteTx(val db: DBInterface) {
     val updateDescriptionSqlPQ = db.makePreparedQuery(TxTable.updateDescriptionSql)
     db.change(updateDescriptionSqlPQ, description.toJson.compactPrint, txid.toHex)
     for (label <- description.label) addSearchableTransaction(label, txid)
-    ChannelMaster.next(ChannelMaster.txDbStream)
+    DbStreams.next(DbStreams.txDbStream)
     updateDescriptionSqlPQ.close
   }
 
   def updStatus(txid: ByteVector32, depth: Long, updatedStamp: Long, doubleSpent: Boolean): Unit = {
     db.change(TxTable.updStatusSql, depth: JLong, if (doubleSpent) 1L: JLong else 0L: JLong, updatedStamp: JLong, txid.toHex)
-    ChannelMaster.next(ChannelMaster.txDbStream)
+    DbStreams.next(DbStreams.txDbStream)
   }
 
   def removeByPub(xPub: ExtendedPublicKey): Unit = {
     db.change(TxTable.killByPubSql, xPub.publicKey.toString)
-    ChannelMaster.next(ChannelMaster.txDbStream)
+    DbStreams.next(DbStreams.txDbStream)
   }
 
   def txSummary: Try[TxSummary] =
     db.select(TxTable.selectSummarySql).headTry { rc =>
-      TxSummary(fees = Satoshi(rc long 0), received = Satoshi(rc long 1), sent = Satoshi(rc long 2), count = rc long 3)
+      TxSummary(fees = Satoshi(rc long 0), received = Satoshi(rc long 1),
+        sent = Satoshi(rc long 2), count = rc long 3)
     }
 
   def addTx(tx: Transaction, depth: Long, received: Satoshi, sent: Satoshi, feeOpt: Option[Satoshi], xPub: ExtendedPublicKey,
@@ -62,7 +63,7 @@ class SQLiteTx(val db: DBInterface) {
     db.change(newSqlPQ, tx.toString, tx.txid.toHex, xPub.publicKey.toString /* WHICH WALLET IS IT FROM */, depth: JLong,
       received.toLong: JLong, sent.toLong: JLong, feeOpt.map(_.toLong: JLong).getOrElse(0L: JLong), stamp: JLong /* SEEN */, stamp: JLong /* UPDATED */,
       description.toJson.compactPrint, balanceSnap.toLong: JLong, fiatRateSnap.toJson.compactPrint, isIncoming: JLong, 0L: JLong /* NOT DOUBLE SPENT YET */)
-    ChannelMaster.next(ChannelMaster.txDbStream)
+    DbStreams.next(DbStreams.txDbStream)
     newSqlPQ.close
   }
 

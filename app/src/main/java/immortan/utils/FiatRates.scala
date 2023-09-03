@@ -2,7 +2,7 @@ package immortan.utils
 
 import immortan.crypto.{CanBeShutDown, Tools}
 import immortan.utils.ImplicitJsonFormats._
-import immortan.{DataBag, LNParams}
+import immortan.{DataBag, WalletParams}
 
 
 object FiatRates {
@@ -21,8 +21,8 @@ class FiatRates(bag: DataBag) extends CanBeShutDown {
     "dkk" -> "Danish Krone", "sek" -> "Swedish Krona", "chf" -> "Swiss franc", "huf" -> "Hungarian forint")
 
   def reloadData: Tools.Fiat2Btc = fr.acinq.eclair.secureRandom nextInt 2 match {
-    case 0 => to[CoinGecko](LNParams.connectionProvider.get("https://api.coingecko.com/api/v3/exchange_rates").string).rates.map { case (code, item) => code.toLowerCase -> item.value }
-    case 1 => to[FiatRates.BlockchainInfoItemMap](LNParams.connectionProvider.get("https://blockchain.info/ticker").string).map { case (code, item) => code.toLowerCase -> item.last }
+    case 0 => to[CoinGecko](WalletParams.connectionProvider.get("https://api.coingecko.com/api/v3/exchange_rates").string).rates.map { case (code, item) => code.toLowerCase -> item.value }
+    case 1 => to[FiatRates.BlockchainInfoItemMap](WalletParams.connectionProvider.get("https://blockchain.info/ticker").string).map { case (code, item) => code.toLowerCase -> item.last }
   }
 
   def updateInfo(newRates: Tools.Fiat2Btc): Unit = {

@@ -5,7 +5,7 @@ import fr.acinq.eclair.blockchain.fee._
 import immortan.crypto.CanBeShutDown
 import immortan.utils.FeeRates._
 import immortan.utils.ImplicitJsonFormats._
-import immortan.{DataBag, LNParams}
+import immortan.{DataBag, WalletParams}
 
 
 object FeeRates {
@@ -82,7 +82,7 @@ class EsploraFeeProvider(val url: String) extends FeeRatesProvider {
   type EsploraFeeStructure = Map[String, Long]
 
   def provide: FeeratesPerKB = {
-    val structure = to[EsploraFeeStructure](LNParams.connectionProvider.get(url).string)
+    val structure = to[EsploraFeeStructure](WalletParams.connectionProvider.get(url).string)
 
     FeeratesPerKB(
       mempoolMinFee = extractFeerate(structure, 1008),
@@ -113,7 +113,7 @@ object BitgoFeeProvider extends FeeRatesProvider {
   val url = "https://www.bitgo.com/api/v2/btc/tx/fee"
 
   def provide: FeeratesPerKB = {
-    val structure = to[BitGoFeeRateStructure](LNParams.connectionProvider.get(url).string)
+    val structure = to[BitGoFeeRateStructure](WalletParams.connectionProvider.get(url).string)
 
     FeeratesPerKB(
       mempoolMinFee = extractFeerate(structure, 1008),
