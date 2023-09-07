@@ -8,12 +8,6 @@
         style="@style/StandardLinearLayout"
         android:id="@+id/activitySetupMain">
 
-        <TextView
-            style="@style/XMarginFillingView"
-            android:layout_marginTop="@dimen/chip_default_padding_edge"
-            android:text="@string/setup_title"
-            android:textSize="@dimen/header_size"/>
-
         <LinearLayout style="@style/StandardXYMarginLinearLayout">
 
             <com.ornach.nobobutton.NoboButton

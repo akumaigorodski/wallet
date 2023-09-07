@@ -10,7 +10,6 @@
     <string name="coin_control">Coin control</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
-    <string name="total_balance">Saldo total</string>
     <string name="typing_hints">Endereço Bitcoin</string>
     <string name="copied_to_clipboard">Copiado para clipboard</string>
     <string name="add_address">Mais endereços novos</string>
@@ -19,7 +18,6 @@
     <string name="emergency_mode">Alguma coisa deu errado</string>
     <string name="error_log">Share error log</string>
 
-    <string name="setup_title">Configuração inicial</string>
     <string name="setup_create_new">Criar nova carteira</string>
     <string name="setup_restore_existing">Restaurar carteira existente</string>
 
@@ -47,9 +45,6 @@
     <string name="dialog_set_label">Rótulo do item&#8230;</string>
 
     <string name="dialog_receive_btc"><![CDATA[Receber em endereço <b>Bitcoin</b>]]></string>
-
-    <string name="dialog_legacy_transfer_btc">Transferir para carteira moderna</string>
-    <string name="dialog_legacy_send_btc">Enviar de tipo antigo</string>
     <string name="scan_btc_address">Ler endereço Bitcoin</string>
 
     <string name="dialog_up_to"><![CDATA[<b>até</b> %1$s]]></string>
@@ -64,8 +59,6 @@
     <string name="dialog_send_btc_confirm_fiat">Fiat value</string>
     <string name="dialog_send_btc_confirm_fee">Chain fee</string>
 
-    <string name="btc_transfer_label"><![CDATA[Carteira legacy -> moderna]]></string>
-    <string name="btc_transfer_message"><![CDATA[Transferência local de Bitcoin, de carteira on-chain legacy para moderna]]></string>
     <string name="recovery_phrase_warning">Toque para salvar a frase de recuperação da carteira no caso de você perder ou substituir seu telefone.</string>
 
     <!-- errors -->
@@ -86,6 +79,7 @@
 
     <string name="tx_btc">Transação Bitcoin</string>
     <string name="tx_state_double_spent">falhou</string>
+    <string name="tx_state_pending">pendente</string>
 
     <string name="popup_to_address"><![CDATA[<b>endereço</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>

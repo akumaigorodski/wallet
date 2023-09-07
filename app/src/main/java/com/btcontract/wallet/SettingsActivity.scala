@@ -21,7 +21,6 @@ import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
 import fr.acinq.eclair.wire.{Domain, NodeAddress}
 import immortan.WalletParams
 import immortan.crypto.Tools._
-import immortan.sqlite.DbStreams
 import immortan.utils.{BtcDenomination, SatDenomination}
 
 import scala.util.Success
@@ -73,13 +72,13 @@ class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
     case CHOICE_FIAT_DENOMINATION_TAG =>
       val fiatCode ~ _ = fiatSymbols(pos)
       WalletApp.app.prefs.edit.putString(WalletApp.FIAT_CODE, fiatCode).commit
-      DbStreams.next(DbStreams.statusUpdateStream)
+      immortan.sqlite.DbStreams.next(immortan.sqlite.DbStreams.txDbStream)
       setFiat.updateView
 
 
     case CHOICE_BTC_DENOMINATON_TAG =>
       WalletApp.app.prefs.edit.putString(WalletApp.BTC_DENOM, units(pos).sign).commit
-      DbStreams.next(DbStreams.statusUpdateStream)
+      immortan.sqlite.DbStreams.next(immortan.sqlite.DbStreams.txDbStream)
       setBtc.updateView
 
     case _ =>

@@ -38,7 +38,7 @@ import com.sparrowwallet.hummingbird.registry.CryptoPSBT
 import com.sparrowwallet.hummingbird.{UR, UREncoder}
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
-import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
+import fr.acinq.eclair.blockchain.electrum._
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
 import immortan._
 import immortan.crypto.Tools._
@@ -600,12 +600,14 @@ trait BaseActivity extends AppCompatActivity { me =>
       haltProcesses
     }
 
-    def switchToConfirm(alert: AlertDialog, totalAmount: MilliSatoshi, fee: MilliSatoshi): Unit = {
+    def switchToConfirm(alert: AlertDialog, response: ElectrumWallet.GenerateTxResponse): Unit = {
       chainConfirmView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
       chainConfirmView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
-      chainConfirmView.confirmAmount.secondItem setText WalletApp.denom.parsedWithSign(totalAmount, cardIn, cardZero).html
-      chainConfirmView.confirmFee.secondItem setText WalletApp.denom.parsedWithSign(fee, cardIn, cardZero).html
-      chainConfirmView.confirmFiat.secondItem setText WalletApp.currentMsatInFiatHuman(totalAmount).html
+
+      chainConfirmView.confirmFee.secondItem setText WalletApp.denom.parsedWithSign(response.fee.toMilliSatoshi, cardIn, cardZero).html
+      chainConfirmView.confirmAmount.secondItem setText WalletApp.denom.parsedWithSign(response.transferred.toMilliSatoshi, cardIn, cardZero).html
+      chainConfirmView.confirmFiat.secondItem setText WalletApp.currentMsatInFiatHuman(response.transferred.toMilliSatoshi).html
+
       switchButtons(alert, on = false)
       switchTo(chainConfirmView)
       haltProcesses
@@ -740,7 +742,6 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     val chainBalance: TextView = view.findViewById(R.id.chainBalance).asInstanceOf[TextView]
 
     val receiveBitcoinTip: ImageView = view.findViewById(R.id.receiveBitcoinTip).asInstanceOf[ImageView]
-    val showMenuTip: ImageView = view.findViewById(R.id.showMenuTip).asInstanceOf[ImageView]
 
     def unPad: Unit = {
       val padding: Int = chainPaddingWrap.getPaddingTop
@@ -753,10 +754,7 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
 
       val chainBalanceVisible = wallet.info.lastBalance > 0L.sat
-      val plusTipVisible = (wallet.isBuiltIn || !wallet.isSigning) && !chainBalanceVisible
-      val menuTipVisible = !(wallet.isBuiltIn || !wallet.isSigning) && !chainBalanceVisible
-
-      host.setVisMany(chainBalanceVisible -> chainBalanceWrap, plusTipVisible -> receiveBitcoinTip, menuTipVisible -> showMenuTip)
+      host.setVisMany(chainBalanceVisible -> chainBalanceWrap, !chainBalanceVisible -> receiveBitcoinTip)
       host.setVisMany(wallet.info.core.isRemovable -> setItemLabel, wallet.info.core.isRemovable -> removeItem, wallet.info.isCoinControlOn -> coinControlOn)
 
       host.chainWalletNotice(wallet) foreach { textRes =>

@@ -10,7 +10,6 @@
     <string name="coin_control">Coin control</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
-    <string name="total_balance">Total balance</string>
     <string name="typing_hints">Bitcoin address</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="add_address">More fresh addresses</string>
@@ -19,7 +18,6 @@
     <string name="emergency_mode">Something went wrong</string>
     <string name="error_log">Export error logs</string>
 
-    <string name="setup_title">Wallet setup</string>
     <string name="setup_create_new">Create new wallet</string>
     <string name="setup_restore_existing">Restore existing wallet</string>
 
@@ -48,9 +46,6 @@
     <string name="dialog_set_label">Attach label&#8230;</string>
 
     <string name="dialog_receive_btc"><![CDATA[Receive to <b>Bitcoin</b> address]]></string>
-
-    <string name="dialog_legacy_transfer_btc">Transfer funds to modern wallet</string>
-    <string name="dialog_legacy_send_btc">Send transaction to address</string>
     <string name="scan_btc_address">Scan Bitcoin address</string>
 
     <string name="dialog_up_to"><![CDATA[<b>up to</b> %1$s]]></string>
@@ -65,8 +60,6 @@
     <string name="dialog_send_btc_confirm_fiat">Fiat value</string>
     <string name="dialog_send_btc_confirm_fee">Chain fee</string>
 
-    <string name="btc_transfer_label"><![CDATA[legacy -> modern wallet]]></string>
-    <string name="btc_transfer_message"><![CDATA[Local transfer of Bitcoin from legacy to modern chain wallet]]></string>
     <string name="recovery_phrase_warning">Tap to save wallet recovery phrase in case you ever lose or replace your device.</string>
 
     <!-- errors -->
@@ -84,9 +77,11 @@
     <string name="tx_description_rbf_cancel">RBF canceling</string>
     <string name="tx_description_rbf_boost">RBF boosting</string>
     <string name="tx_description_cpfp">CPFP boosting</string>
-    <string name="tx_btc">Bitcoin Transaction</string>
 
+    <string name="tx_btc">Bitcoin Transaction</string>
     <string name="tx_state_double_spent">failed</string>
+    <string name="tx_state_pending">pending</string>
+
     <string name="popup_to_address"><![CDATA[<b>address</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 

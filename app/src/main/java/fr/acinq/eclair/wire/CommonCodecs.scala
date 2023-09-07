@@ -4,7 +4,7 @@ import java.net.{Inet4Address, Inet6Address, InetAddress}
 
 import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
 import fr.acinq.bitcoin.DeterministicWallet.{ExtendedPrivateKey, ExtendedPublicKey, KeyPath}
-import fr.acinq.bitcoin.{ByteVector32, ByteVector64, OutPoint, Transaction}
+import fr.acinq.bitcoin.{ByteVector32, ByteVector64, OutPoint, Transaction, TxOut}
 import fr.acinq.eclair.UInt64
 import org.apache.commons.codec.binary.Base32
 import scodec.bits.{BitVector, ByteVector}
@@ -19,26 +19,32 @@ object CommonCodecs {
   def discriminatorWithDefault[A](discriminator: Codec[A], fallback: Codec[A]): Codec[A] = new Codec[A] {
     def sizeBound: SizeBound = discriminator.sizeBound | fallback.sizeBound
 
-    def encode(e: A): Attempt[BitVector] = discriminator.encode(e).recoverWith {
-      case _ => fallback.encode(e)
-    }
+    def encode(e: A): Attempt[BitVector] = discriminator.encode(e).recoverWith { case _ => fallback.encode(e) }
 
     def decode(b: BitVector): Attempt[DecodeResult[A]] = discriminator.decode(b).recoverWith {
       case _: KnownDiscriminatorType[_]#UnknownDiscriminator => fallback.decode(b)
     }
   }
 
-  def minimalvalue[A: Ordering](codec: Codec[A], min: A): Codec[A] = codec.exmap(f = {
-    case i if i < min => Attempt failure Err("value was not minimally encoded")
-    case i => Attempt.successful(i)
-  }, Attempt.successful)
-
-  val uint64overflow: Codec[Long] = int64.narrow(l => if (l >= 0) Attempt.Successful(l) else Attempt failure Err(s"overflow for value $l"), identity)
-
-  val uint64: Codec[UInt64] = bytes(8).xmap(UInt64.apply, _.toByteVector padLeft 8)
+  val uint64: Codec[UInt64] = bytes(8).xmap(b => UInt64(b), a => a.toByteVector.padLeft(8))
 
   val text: Codec[String] = variableSizeBytes(uint16, utf8)
 
+  /**
+    * We impose a minimal encoding on some values (such as varint and truncated int) to ensure that signed hashes can be
+    * re-computed correctly.
+    * If a value could be encoded with less bytes, it's considered invalid and results in a failed decoding attempt.
+    *
+    * @param codec the value codec (depends on the value).
+    * @param min   the minimal value that should be encoded.
+    */
+  def minimalvalue[A: Ordering](codec: Codec[A], min: A): Codec[A] = codec.exmap({
+    case i if i < min => Attempt.failure(Err("value was not minimally encoded"))
+    case i => Attempt.successful(i)
+  }, Attempt.successful)
+
+  // Bitcoin-style varint codec (CompactSize).
+  // See https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers for reference.
   val varint: Codec[UInt64] = discriminatorWithDefault(
     discriminated[UInt64].by(uint8L)
       .\(0xff) { case i if i >= UInt64(0x100000000L) => i }(minimalvalue(uint64, UInt64(0x100000000L)))
@@ -47,21 +53,13 @@ object CommonCodecs {
     uint8L.xmap(UInt64(_), _.toBigInt.toInt)
   )
 
-  val varintoverflow: Codec[Long] = varint.narrow(l => if (UInt64(Long.MaxValue) > l) Attempt failure Err(s"overflow for value $l") else Attempt.successful(l.toBigInt.toLong), UInt64.apply)
+  // This codec can be safely used for values < 2^63 and will fail otherwise.
+  // It is useful in combination with variableSizeBytesLong to encode/decode TLV lengths because those will always be < 2^63.
+  val varintoverflow: Codec[Long] = varint.narrow(l => if (l <= UInt64(Long.MaxValue)) Attempt.successful(l.toBigInt.toLong) else Attempt.failure(Err(s"overflow for value $l")), l => UInt64(l))
 
-  def lengthDelimited[T](codec: Codec[T]): Codec[T] = variableSizeBytesLong(varintoverflow, codec)
+  val bytes32: Codec[ByteVector32] = limitedSizeBytes(32, bytesStrict(32).xmap(d => ByteVector32(d), d => d.bytes))
 
-  val outPointCodec: Codec[OutPoint] = lengthDelimited {
-    bytes.xmap(d => OutPoint.read(d.toArray), OutPoint.write)
-  }
-
-  val txCodec: Codec[Transaction] = lengthDelimited {
-    bytes.xmap(d => Transaction.read(d.toArray), Transaction.write)
-  }
-
-  val bytes32: Codec[ByteVector32] = limitedSizeBytes(codec = bytesStrict(32).xmap(ByteVector32.apply, _.bytes), limit = 32)
-
-  val bytes64: Codec[ByteVector64] = limitedSizeBytes(codec = bytesStrict(64).xmap(ByteVector64.apply, _.bytes), limit = 64)
+  val bytes64: Codec[ByteVector64] = limitedSizeBytes(64, bytesStrict(64).xmap(d => ByteVector64(d), d => d.bytes))
 
   val varsizebinarydata: Codec[ByteVector] = variableSizeBytes(uint16, bytes)
 
@@ -69,7 +67,7 @@ object CommonCodecs {
 
   val ipv6address: Codec[Inet6Address] = bytes(16).exmap(b => Attempt.fromTry(Try(Inet6Address.getByAddress(null, b.toArray, null))), a => Attempt.fromTry(Try(ByteVector(a.getAddress))))
 
-  def base32(size: Int): Codec[String] = bytes(size).xmap(b => new Base32().encodeAsString(b.toArray).toLowerCase, a => ByteVector(new Base32().decode(a.toUpperCase)))
+  def base32(size: Int): Codec[String] = bytes(size).xmap(b => new Base32().encodeAsString(b.toArray).toLowerCase, a => ByteVector(new Base32().decode(a.toUpperCase())))
 
   val nodeaddress: Codec[NodeAddress] =
     discriminated[NodeAddress].by(uint8)
@@ -79,19 +77,30 @@ object CommonCodecs {
       .typecase(4, (base32(35) :: uint16).as[Tor3])
       .typecase(5, (zeropaddedstring(64) :: uint16).as[Domain])
 
+  // this one is a bit different from most other codecs: the first 'len' element is *not* the number of items
+  // in the list but rather the  number of bytes of the encoded list. The rationale is once we've read this
+  // number of bytes we can just skip to the next field
   val listofnodeaddresses: Codec[List[NodeAddress]] = variableSizeBytes(uint16, list(nodeaddress))
 
   val privateKey: Codec[PrivateKey] = Codec[PrivateKey](
     (priv: PrivateKey) => bytes(32).encode(priv.value),
-    (wire: BitVector) => bytes(32).decode(wire).map(_.map(PrivateKey.apply))
+    (wire: BitVector) => bytes(32).decode(wire).map(_.map(b => PrivateKey(b)))
   )
 
   val publicKey: Codec[PublicKey] = Codec[PublicKey](
     (pub: PublicKey) => bytes(33).encode(pub.value),
-    (wire: BitVector) => bytes(33).decode(wire).map(_.map(PublicKey.apply))
+    (wire: BitVector) => bytes(33).decode(wire).map(_.map(b => PublicKey(b)))
   )
 
-  def zeropaddedstring(size: Int): Codec[String] = fixedSizeBytes(size, utf8).xmap(_.takeWhile(_ != '\u0000'), identity)
+  def zeropaddedstring(size: Int): Codec[String] = fixedSizeBytes(size, utf8).xmap(s => s.takeWhile(_ != '\u0000'), s => s)
+
+  def lengthDelimited[T](codec: Codec[T]): Codec[T] = variableSizeBytesLong(varintoverflow, codec)
+
+  val outPointCodec = lengthDelimited(bytes.xmap(d => OutPoint.read(d.toArray), OutPoint.write))
+
+  val txOutCodec = lengthDelimited(bytes.xmap(d => TxOut.read(d.toArray), TxOut.write))
+
+  val txCodec = lengthDelimited(bytes.xmap(d => Transaction.read(d.toArray), Transaction.write))
 
   val keyPathCodec: Codec[KeyPath] = (listOfN(uint16, uint32) withContext "path").xmap[KeyPath](KeyPath.apply, _.path.toList).as[KeyPath]
 

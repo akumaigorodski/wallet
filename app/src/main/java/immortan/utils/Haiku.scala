@@ -27,7 +27,7 @@ object Haiku {
     "wind", "sea", "morning", "snow", "lake", "sunset", "shadow", "leaf",
     "dawn", "glitter", "forest", "hill", "cloud", "meadow", "glade",
     "bird", "brook", "butterfly", "bush", "dew", "dust", "field",
-    "flower", "firefly", "feather", "grass", "haze", "mountain", "night",
+    "flower", "firefly", "feather", "grass", "haze", "mountain_bottom", "night",
     "darkness", "snowflake", "silence", "sound", "sky", "shape", "surf",
     "thunder", "violet", "wildflower", "wave", "water", "resonance",
     "sun", "wood", "dream", "cherry", "tree", "fog", "frost", "voice", "paper",

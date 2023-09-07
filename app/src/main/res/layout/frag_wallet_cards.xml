@@ -10,18 +10,18 @@
         android:id="@+id/defaultHeader"
         style="@style/StandardLinearLayout">
 
-        <!-- Total balance, settings -->
+        <!-- Indicators, search, settings -->
 
         <RelativeLayout
             android:layout_marginTop="10dp"
             android:layout_marginStart="15dp"
-            android:layout_marginEnd="15dp"
+            android:layout_marginEnd="10dp"
             style="@style/FillingView">
 
             <TextView
-                android:text="@string/total_balance"
+                android:id="@+id/fiatUnitPriceAndChange"
                 android:layout_centerVertical="true"
-                style="@style/FillingView"/>
+                style="@style/BoundedView"/>
 
             <TextView
                 style="@style/ChipTextGray"
@@ -44,6 +44,7 @@
                 android:layout_marginEnd="6dp"
                 android:layout_height="24sp"
                 android:layout_width="65sp"
+                card_view:min_progress="0"
                 android:visibility="gone"
                 card_view:text="SYNC"
                 android:padding="1dp"/>
@@ -61,6 +62,7 @@
             <ImageButton
                 android:padding="6dp"
                 android:onClick="bringSearch"
+                android:layout_marginStart="6dp"
                 android:id="@+id/enterSearchMode"
                 android:layout_centerVertical="true"
                 android:src="@drawable/ic_search_white_24dp"
@@ -73,36 +75,10 @@
                 android:id="@+id/settingsButton"
                 android:onClick="goToSettingsPage"
                 android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
                 android:src="@drawable/baseline_settings_24"
                 android:background="?android:selectableItemBackground"
                 style="@style/BoundedView"/>
-
-        </RelativeLayout>
-
-        <!-- Wallet balance, fiat price -->
-
-        <RelativeLayout
-            android:layout_marginStart="15dp"
-            android:layout_marginEnd="15dp"
-            style="@style/FillingView">
-
-            <TextView
-                android:id="@+id/totalBalance"
-                style="@style/Emphasized"/>
-
-            <TextView
-                android:layout_marginTop="6dp"
-                android:layout_below="@id/totalBalance"
-                android:id="@+id/totalFiatBalance"
-                style="@style/BoundedView"/>
-
-            <TextView
-                android:maxLines="2"
-                android:gravity="end"
-                android:id="@+id/fiatUnitPriceAndChange"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                style="@style/ChipTextGray"/>
 
         </RelativeLayout>
 
@@ -111,6 +87,7 @@
         <LinearLayout
             style="@style/FillingView"
             android:layout_marginTop="15dp"
+            android:layout_marginBottom="5dp"
             android:id="@+id/chainCardsContainer"
             android:orientation="vertical"/>
 

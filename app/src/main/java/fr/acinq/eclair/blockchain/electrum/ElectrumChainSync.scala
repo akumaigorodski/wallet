@@ -11,8 +11,8 @@ import scala.util.{Failure, Success, Try}
 
 
 object ElectrumChainSync {
-  case class ChainSyncStarted(localTip: Long, remoteTip: Long)
-  case class ChainSyncEnded(localTip: Long)
+  case class ChainSyncing(initialLocalTip: Int, localTip: Int, remoteTip: Int)
+  case class ChainSyncEnded(localTip: Int)
 }
 
 class ElectrumChainSync(client: ActorRef, headerDb: HeaderDb, chainHash: ByteVector32) extends FSM[ElectrumWallet.State, Blockchain] {
@@ -28,6 +28,9 @@ class ElectrumChainSync(client: ActorRef, headerDb: HeaderDb, chainHash: ByteVec
 
   startWith(DISCONNECTED, loadChain)
 
+  var initialLocalTip: Int = 0
+  var reportedTip: Int = 0
+
   when(DISCONNECTED) {
     case Event(_: ElectrumClient.ElectrumReady, blockchain) =>
       client ! ElectrumClient.HeaderSubscription(self)
@@ -39,8 +42,9 @@ class ElectrumChainSync(client: ActorRef, headerDb: HeaderDb, chainHash: ByteVec
       goto(DISCONNECTED) replying PoisonPill
 
     case Event(response: ElectrumClient.HeaderSubscriptionResponse, blockchain) if blockchain.bestchain.isEmpty =>
-      context.system.eventStream publish ElectrumChainSync.ChainSyncStarted(blockchain.height, response.height)
       client ! ElectrumClient.GetHeaders(blockchain.checkpoints.size * RETARGETING_PERIOD, RETARGETING_PERIOD)
+      initialLocalTip = blockchain.checkpoints.size * RETARGETING_PERIOD
+      reportedTip = response.height
       goto(SYNCING)
 
     case Event(response: ElectrumClient.HeaderSubscriptionResponse, blockchain) if response.header == blockchain.tip.header =>
@@ -49,8 +53,9 @@ class ElectrumChainSync(client: ActorRef, headerDb: HeaderDb, chainHash: ByteVec
       goto(RUNNING)
 
     case Event(response: ElectrumClient.HeaderSubscriptionResponse, blockchain) =>
-      context.system.eventStream publish ElectrumChainSync.ChainSyncStarted(blockchain.height, response.height)
       client ! ElectrumClient.GetHeaders(blockchain.tip.height + 1, RETARGETING_PERIOD)
+      initialLocalTip = blockchain.height
+      reportedTip = response.height
       goto(SYNCING)
   }
 
@@ -67,7 +72,7 @@ class ElectrumChainSync(client: ActorRef, headerDb: HeaderDb, chainHash: ByteVec
         case Success(blockchain1) =>
           val (blockchain2, chunks) = Blockchain.optimize(blockchain1)
           headerDb.addHeaders(chunks.map(_.header), chunks.head.height)
-          log.info(s"Got new headers chunk at ${blockchain2.tip.height}, requesting next chunk")
+          context.system.eventStream publish ElectrumChainSync.ChainSyncing(initialLocalTip, blockchain.height, reportedTip)
           client ! ElectrumClient.GetHeaders(blockchain2.tip.height + 1, RETARGETING_PERIOD)
           goto(SYNCING) using blockchain2
 

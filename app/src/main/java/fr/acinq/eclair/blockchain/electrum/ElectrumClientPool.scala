@@ -6,7 +6,6 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.{Actor, ActorRef, FSM, OneForOneStrategy, Props, SupervisorStrategy, Terminated}
 import fr.acinq.bitcoin.{Block, BlockHeader, ByteVector32}
-import fr.acinq.eclair.blockchain.CurrentBlockCount
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.SSL
 import fr.acinq.eclair.blockchain.electrum.ElectrumClientPool._
 import org.json4s.JsonAST.{JObject, JString}
@@ -145,14 +144,10 @@ class ElectrumClientPool(blockCount: AtomicLong, chainHash: ByteVector32)(implic
     }
   }
 
-  private def updateBlockCount(blockCount: Long): Unit = {
-    // when synchronizing we don't want to advertise previous blocks
-    if (this.blockCount.get() < blockCount) {
-      log.debug("current blockchain height={}", blockCount)
-      context.system.eventStream.publish(CurrentBlockCount(blockCount))
+  private def updateBlockCount(blockCount: Long): Unit =
+    if (this.blockCount.get < blockCount) {
       this.blockCount.set(blockCount)
     }
-  }
 }
 
 object ElectrumClientPool {

@@ -7,6 +7,7 @@
     <uses-sdk tools:overrideLibrary="com.google.zxing.client.android"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <supports-screens
@@ -21,6 +22,7 @@
         android:fullBackupContent="false"
         android:supportsRtl="false"
         android:allowBackup="false"
+        android:largeHeap="true"
 
         android:theme="@style/AppTheme"
         android:name="com.btcontract.wallet.WalletApp"

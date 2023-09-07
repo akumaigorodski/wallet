@@ -271,8 +271,10 @@ object ElectrumWallet {
   sealed trait Response
 
   sealed trait GenerateTxResponse extends Response {
-    def withReplacedTx(tx: Transaction): GenerateTxResponse
     val pubKeyScriptToAmount: Map[ByteVector, Satoshi]
+    // This is guaranteed to exclude our own change output
+    lazy val transferred: Satoshi = pubKeyScriptToAmount.values.sum
+    def withReplacedTx(tx: Transaction): GenerateTxResponse
     val data: ElectrumData
     val tx: Transaction
     val fee: Satoshi

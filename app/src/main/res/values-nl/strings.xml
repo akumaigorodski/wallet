@@ -10,7 +10,6 @@
     <string name="coin_control">Muntbeheer</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
-    <string name="total_balance">Totaalsaldo</string>
     <string name="typing_hints">Bitcoinadres</string>
     <string name="copied_to_clipboard">Gekopieerd naar klembord</string>
     <string name="add_address">Meer verse adressen</string>
@@ -19,7 +18,6 @@
     <string name="emergency_mode">Iets ging mis</string>
     <string name="error_log">Exporteer foutlog</string>
 
-    <string name="setup_title">Portemonnee-intestellingen</string>
     <string name="setup_create_new">Maak nieuwe portemonnee aan</string>
     <string name="setup_restore_existing">Herstel bestaande portemonnee</string>
 
@@ -47,9 +45,6 @@
     <string name="dialog_set_label">Bevestig label&#8230;</string>
 
     <string name="dialog_receive_btc"><![CDATA[Ontvang op <b>Bitcoin</b>-adres]]></string>
-
-    <string name="dialog_legacy_transfer_btc">Transporteer gelden naar hedendaagse portemonnee</string>
-    <string name="dialog_legacy_send_btc">Verzend transactie naar adres</string>
     <string name="scan_btc_address">Scan Bitcoinadres</string>
 
     <string name="dialog_up_to"><![CDATA[<b>tot</b> %1$s]]></string>
@@ -64,8 +59,6 @@
     <string name="dialog_send_btc_confirm_fiat">Fiatwaarde</string>
     <string name="dialog_send_btc_confirm_fee">Ketentarief</string>
 
-    <string name="btc_transfer_label"><![CDATA[oude -> hedendaagse]]></string>
-    <string name="btc_transfer_message"><![CDATA[Lokaal transport van Bitcoin van oudere naar hedendaagse ketenportemonnee]]></string>
     <string name="recovery_phrase_warning">Tik om de herstelzin van de portemonnee op te slaan voor het geval je je apparaat ooit verliest of vervangt.</string>
 
     <!-- errors -->
@@ -86,6 +79,8 @@
 
     <string name="tx_btc">Bitcointransactie</string>
     <string name="tx_state_double_spent">mislukt</string>
+    <string name="tx_state_pending">wachtende</string>
+
     <string name="popup_to_address"><![CDATA[<b>adres</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 

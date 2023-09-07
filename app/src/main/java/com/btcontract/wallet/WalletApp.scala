@@ -42,7 +42,7 @@ object WalletApp {
   var txDataBag: SQLiteTx = _
   var app: WalletApp = _
 
-  val txDescriptions = mutable.Map.empty[ByteVector32, TxDescription]
+  val txInfos = mutable.Map.empty[ByteVector32, TxInfo]
   var currentChainNode: Option[InetSocketAddress] = None
 
   final val dbFileNameMisc = "misc.db"
@@ -100,7 +100,10 @@ object WalletApp {
     // In case these are needed early
     WalletParams.logBag = new SQLiteLog(miscInterface)
     WalletParams.chainHash = Block.LivenetGenesisBlock.hash
-    WalletParams.connectionProvider = if (ensureTor) new TorConnectionProvider(app) else new ClearnetConnectionProvider
+
+    WalletParams.connectionProvider =
+      if (ensureTor) new TorConnectionProvider(app)
+      else new ClearnetConnectionProvider
   }
 
   def makeOperational(secret: WalletSecret): Unit = {
@@ -145,9 +148,9 @@ object WalletApp {
       }
 
     WalletParams.chainWallets = if (walletExt.wallets.isEmpty) {
-      val defaultLabel = app.getString(R.string.bitcoin_wallet)
+      val defaultWalletLabel = app.getString(R.string.bitcoin_wallet)
       val core = SigningWallet(walletType = EclairWallet.BIP84, isRemovable = false)
-      val wallet = walletExt.makeSigningWalletParts(core, Satoshi(0L), defaultLabel)
+      val wallet = walletExt.makeSigningWalletParts(core, Satoshi(0L), defaultWalletLabel)
       walletExt.withFreshWallet(wallet)
     } else walletExt
 
@@ -180,10 +183,11 @@ object WalletApp {
         def addChainTx(received: Satoshi, sent: Satoshi, description: TxDescription, isIncoming: Long, totalBalance: MilliSatoshi): Unit = txDataBag.db txWrap {
           txDataBag.addTx(event.tx, event.depth, received, sent, event.feeOpt, event.xPub, description, isIncoming, totalBalance, WalletParams.fiatRates.info.rates, event.stamp)
           txDataBag.addSearchableTransaction(description.queryText(event.tx.txid), event.tx.txid)
+          if (event.depth < 1) Vibrator.vibrate
         }
 
         val fee = event.feeOpt.getOrElse(0L.sat)
-        val sentTxDesc = txDescriptions.getOrElse(default = PlainTxDescription(Nil), key = event.tx.txid)
+        val sentTxDesc = txInfos.remove(event.tx.txid).map(_.description) getOrElse PlainTxDescription(Nil)
         if (event.sent == event.received + fee) addChainTx(event.received, event.sent, sentTxDesc, isIncoming = 1L, BaseActivity.totalBalance)
         else if (event.sent > event.received) addChainTx(event.received, event.sent - event.received - fee, sentTxDesc, isIncoming = 0L, BaseActivity.totalBalance)
         else addChainTx(event.received - event.sent, event.sent, PlainTxDescription(event.walletAddreses), isIncoming = 1L, BaseActivity.totalBalance)
@@ -255,10 +259,13 @@ class WalletApp extends Application { me =>
     super.onTrimMemory(level)
   }
 
-  def when(thenDate: Date, simpleFormat: SimpleDateFormat, now: Long = System.currentTimeMillis): String = thenDate.getTime match {
-    case tooLongAgo if now - tooLongAgo > 12960000 || tooFewSpace || WalletApp.denom == BtcDenomination => simpleFormat.format(thenDate)
-    case ago => android.text.format.DateUtils.getRelativeTimeSpanString(ago, now, 0).toString
-  }
+  def when(thenDate: Date, simpleFormat: SimpleDateFormat, now: Long = System.currentTimeMillis): String =
+    now - thenDate.getTime match {
+      case ago if ago > 12960000 => simpleFormat.format(thenDate)
+      case ago if ago < android.text.format.DateUtils.MINUTE_IN_MILLIS => "now"
+      case ago if ago < android.text.format.DateUtils.HOUR_IN_MILLIS => s"${ago / android.text.format.DateUtils.MINUTE_IN_MILLIS} min ago"
+      case ago if ago < android.text.format.DateUtils.DAY_IN_MILLIS => s"${ago / android.text.format.DateUtils.HOUR_IN_MILLIS} hr ago"
+    }
 
   def quickToast(code: Int): Unit = quickToast(me getString code)
   def quickToast(msg: CharSequence): Unit = Toast.makeText(me, msg, Toast.LENGTH_LONG).show
@@ -273,4 +280,9 @@ class WalletApp extends Application { me =>
     clipboardManager.setPrimaryClip(bufferContent)
     quickToast(copied_to_clipboard)
   }
+}
+
+object Vibrator {
+  private val vibrator = WalletApp.app.getSystemService(Context.VIBRATOR_SERVICE).asInstanceOf[android.os.Vibrator]
+  def vibrate: Unit = if (null != vibrator && vibrator.hasVibrator) vibrator.vibrate(Array(0L, 85, 200), -1)
 }

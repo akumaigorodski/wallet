@@ -49,7 +49,7 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
 
   lazy val defaultWallet: ElectrumEclairWallet = wallets.find(_.isBuiltIn).get
 
-  lazy val usableWallets: List[ElectrumEclairWallet] = wallets.filter(wallet => wallet.isBuiltIn || wallet.hasFingerprint)
+  lazy val usableWallets: List[ElectrumEclairWallet] = wallets.filter(wallet => wallet.isSigning || wallet.hasFingerprint)
 
   def findByPubKey(pub: PublicKey): Option[ElectrumEclairWallet] = wallets.find(_.ewt.xPub.publicKey == pub)
 
