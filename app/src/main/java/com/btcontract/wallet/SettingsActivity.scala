@@ -90,6 +90,7 @@ class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
     override def updateView: Unit = none
 
     private val wallets = Map(
+      BIP49 -> ("JoinMarket", "m/49'/0'/0'/0/n"),
       BIP32 -> ("BRD, legacy wallet", "m/0'/0/n"),
       BIP44 -> ("Bitcoin.com, Mycelium, Exodus...", "m/44'/0'/0'/0/n"),
       BIP84 -> (getString(settings_chain_modern), "m/84'/0'/0'/0/n")
