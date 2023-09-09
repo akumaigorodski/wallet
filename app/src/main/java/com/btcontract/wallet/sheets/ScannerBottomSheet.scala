@@ -13,7 +13,8 @@ import com.journeyapps.barcodescanner.{BarcodeCallback, BarcodeResult, BarcodeVi
 import com.sparrowwallet.hummingbird.registry.{CryptoAccount, CryptoHDKey}
 import com.sparrowwallet.hummingbird.{ResultType, UR, URDecoder}
 import fr.acinq.bitcoin.DeterministicWallet._
-import fr.acinq.bitcoin.{ByteVector32, Protocol}
+import fr.acinq.bitcoin.{Block, ByteVector32, Protocol}
+import immortan.WalletParams
 import immortan.crypto.Tools._
 import immortan.utils.ImplicitJsonFormats._
 import immortan.utils.InputParser
@@ -111,8 +112,14 @@ class OnceBottomSheet(host: BaseActivity, instructionOpt: Option[String], onScan
 }
 
 trait PairingData {
-  val bip84FullPathPrefix = KeyPath(hardened(84L) :: hardened(0L) :: hardened(0L) :: Nil)
-  val bip84PathPrefix = KeyPath(hardened(84L) :: hardened(0L) :: Nil)
+  val bip84PathPrefix = WalletParams.chainHash match  {
+    case Block.RegtestGenesisBlock.hash => KeyPath(hardened(84L) :: hardened(1L) :: Nil)
+    case Block.TestnetGenesisBlock.hash => KeyPath(hardened(84L) :: hardened(1L) :: Nil)
+    case Block.LivenetGenesisBlock.hash => KeyPath(hardened(84L) :: hardened(0L) :: Nil)
+    case _ => throw new RuntimeException
+  }
+
+  val bip84FullPathPrefix = bip84PathPrefix :+ hardened(0L)
   val masterFingerprint: Option[Long] = None
   val bip84XPub: ExtendedPublicKey
 }

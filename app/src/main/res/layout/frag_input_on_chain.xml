@@ -13,6 +13,31 @@
             <View style="@style/GrayDivider"/>
         </LinearLayout>
 
+        <LinearLayout android:visibility="gone" style="@style/StandardLinearLayout" android:id="@+id/cpfp">
+            <include layout="@layout/frag_two_sided_item" android:id="@+id/cpfpCurrent"/>
+            <include layout="@layout/frag_two_sided_item" android:id="@+id/cpfpAfter"/>
+            <include layout="@layout/frag_fees"/>
+            <View style="@style/GrayDivider"/>
+        </LinearLayout>
+
+        <LinearLayout android:visibility="gone" style="@style/StandardLinearLayout" android:id="@+id/rbf">
+            <include layout="@layout/frag_two_sided_item" android:id="@+id/rbfCurrent"/>
+
+            <TextView
+                style="@style/FillingView"
+                android:id="@+id/rbfIssue"
+                android:textColor="@color/almostBlack"
+                android:background="@color/paymentAwait"
+                android:paddingBottom="15dp"
+                android:paddingStart="15dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="15dp"
+                android:visibility="gone"/>
+
+            <include layout="@layout/frag_fees"/>
+            <View style="@style/GrayDivider"/>
+        </LinearLayout>
+
         <LinearLayout android:visibility="gone" style="@style/StandardLinearLayout" android:id="@+id/slideshowChain">
             <ImageView android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/qrSlideshow"/>
             <include layout="@layout/frag_chain_buttons"/>
@@ -38,14 +63,5 @@
                 android:src="@drawable/mountain"/>
 
         </LinearLayout>
-
-        <ProgressBar
-            android:padding="50dp"
-            android:visibility="gone"
-            android:id="@+id/progressBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            style="?android:attr/progressBarStyle"/>
-
     </LinearLayout>
 </ScrollView>

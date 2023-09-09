@@ -565,14 +565,28 @@ trait BaseActivity extends AppCompatActivity { me =>
     manager.hintDenom setText getString(dialog_up_to).format(canSend).html
   }
 
+  class CPFPView(val host: LinearLayout) extends HasHostView {
+    val cpfpCurrent = new TwoSidedItem(host.findViewById(R.id.cpfpCurrent), getString(tx_cpfp_current), new String)
+    val cpfpAfter = new TwoSidedItem(host.findViewById(R.id.cpfpAfter), getString(tx_cpfp_rbf_after), new String)
+  }
+
+  class RBFView(val host: LinearLayout) extends HasHostView {
+    val rbfCurrent = new TwoSidedItem(host.findViewById(R.id.rbfCurrent), getString(tx_rbf_current), new String)
+    val rbfIssue: TextView = host.findViewById(R.id.rbfIssue).asInstanceOf[TextView]
+  }
+
   class CircularSpinnerView(val host: View) extends HasHostView
 
   class ChainSendView(val fromWallet: ElectrumEclairWallet, badge: Option[String], visibilityRes: Int) { me =>
     val body: ScrollView = getLayoutInflater.inflate(R.layout.frag_input_on_chain, null).asInstanceOf[ScrollView]
     val manager: RateManager = new RateManager(body, badge, visibilityRes, WalletParams.fiatRates.info.rates, WalletApp.fiatCode)
     val chainEditView = new ChainEditView(body.findViewById(R.id.editChain).asInstanceOf[LinearLayout], manager, fromWallet)
+    var defaultView: HasHostView = chainEditView
+
+    lazy val cpfpView = new CPFPView(body findViewById R.id.cpfp)
+    lazy val rbfView = new RBFView(body findViewById R.id.rbf)
+
     lazy val chainSlideshowView = new ChainSlideshowView(body findViewById R.id.slideshowChain)
-    lazy val circularSpinnerView = new CircularSpinnerView(body findViewById R.id.progressBar)
     lazy val chainConfirmView = new ChainConfirmView(body findViewById R.id.confirmChain)
     lazy val chainReaderView = new ChainReaderView(body findViewById R.id.readerChain)
 
@@ -580,13 +594,11 @@ trait BaseActivity extends AppCompatActivity { me =>
       val layoutParams = new LinearLayout.LayoutParams(body.getWidth, body.getWidth)
       chainSlideshowView.qrSlideshow.setLayoutParams(layoutParams)
       chainReaderView.barcodeReader.setLayoutParams(layoutParams)
-      circularSpinnerView.host.setLayoutParams(layoutParams)
     }
 
-    lazy private val views = List(chainEditView, chainSlideshowView, circularSpinnerView, chainConfirmView, chainReaderView)
-    def switchTo(visibleSection: HasHostView): Unit = for (section <- views) setVis(isVisible = section == visibleSection, section.host)
+    lazy private val views = List(chainEditView, cpfpView, rbfView, chainSlideshowView, chainConfirmView, chainReaderView)
+    def switchTo(visibleSection: HasHostView): Unit = for (candidateSection <- views) setVis(isVisible = candidateSection == visibleSection, candidateSection.host)
     def switchButtons(alert: AlertDialog, on: Boolean): Unit = setVisMany(on -> getPositiveButton(alert), on -> getNegativeButton(alert), on -> getNeutralButton(alert), true -> body)
-    val onDismissListener: DialogInterface.OnDismissListener = new DialogInterface.OnDismissListener { override def onDismiss(dialog: DialogInterface): Unit = haltProcesses }
 
     def haltProcesses: Unit = {
       // Destroy all running processes to not left them hanging
@@ -594,15 +606,15 @@ trait BaseActivity extends AppCompatActivity { me =>
       chainReaderView.stop
     }
 
-    def switchToEdit(alert: AlertDialog): Unit = {
+    def switchToDefault(alert: AlertDialog): Unit = {
       switchButtons(alert, on = true)
-      switchTo(chainEditView)
+      switchTo(defaultView)
       haltProcesses
     }
 
     def switchToConfirm(alert: AlertDialog, response: ElectrumWallet.GenerateTxResponse): Unit = {
       chainConfirmView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
-      chainConfirmView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
+      chainConfirmView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToDefault alert)
 
       chainConfirmView.confirmFee.secondItem setText WalletApp.denom.parsedWithSign(response.fee.toMilliSatoshi, cardIn, cardZero).html
       chainConfirmView.confirmAmount.secondItem setText WalletApp.denom.parsedWithSign(response.transferred.toMilliSatoshi, cardIn, cardZero).html
@@ -615,8 +627,13 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     def switchToHardwareOutgoing(alert: AlertDialog, psbt: Psbt): Unit = {
       chainSlideshowView.chainButtonsView.chainNextButton setOnClickListener onButtonTap(me switchToHardwareIncoming alert)
-      chainSlideshowView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
+      chainSlideshowView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToDefault alert)
       chainSlideshowView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
+
+      alert setOnDismissListener new DialogInterface.OnDismissListener {
+        override def onDismiss(dialog: DialogInterface): Unit = haltProcesses
+      }
+
       chainSlideshowView.activate(psbt)
       switchButtons(alert, on = false)
       switchTo(chainSlideshowView)
@@ -625,18 +642,12 @@ trait BaseActivity extends AppCompatActivity { me =>
 
     def switchToHardwareIncoming(alert: AlertDialog): Unit = {
       chainReaderView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
-      chainReaderView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToEdit alert)
+      chainReaderView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToDefault alert)
       setVis(isVisible = false, chainReaderView.chainButtonsView.chainNextButton)
       for (sub <- chainSlideshowView.subscription) sub.unsubscribe
       switchButtons(alert, on = false)
       switchTo(chainReaderView)
       chainReaderView.start
-    }
-
-    def switchToSpinner(alert: AlertDialog): Unit = {
-      switchButtons(alert, on = false)
-      switchTo(circularSpinnerView)
-      haltProcesses
     }
   }
 }

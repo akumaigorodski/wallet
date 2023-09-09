@@ -48,7 +48,7 @@ object SatDenomination extends Denomination { me =>
   val sign = "sat"
 
   def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
-    if (0L == msat.toLong) "---" else parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
+    if (0L == msat.toLong) "0" else parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
 
   def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
     s"<font color=$mainColor>" + fmt.format(me fromMsat msat) + "</font>"
@@ -61,7 +61,7 @@ object BtcDenomination extends Denomination { me =>
   val sign = "btc"
 
   def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
-    if (0L == msat.toLong) "---" else parsed(msat, mainColor, zeroColor)
+    if (0L == msat.toLong) "0" else parsed(msat, mainColor, zeroColor)
 
   def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = {
     // Alpha channel does not work on Android when set as HTML attribute

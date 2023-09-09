@@ -99,7 +99,7 @@ object WalletApp {
 
     // In case these are needed early
     WalletParams.logBag = new SQLiteLog(miscInterface)
-    WalletParams.chainHash = Block.LivenetGenesisBlock.hash
+    WalletParams.chainHash = Block.TestnetGenesisBlock.hash
 
     WalletParams.connectionProvider =
       if (ensureTor) new TorConnectionProvider(app)

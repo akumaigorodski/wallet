@@ -84,7 +84,6 @@
     <string name="popup_to_address"><![CDATA[<b>adres</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 
-    <string name="popup_prior_chain_balance"><![CDATA[<b>prior&#160;balans</b>&#160;%1$s]]></string>
     <string name="popup_fiat"><![CDATA[<b>fiat&#160;waarde</b>&#160;%1$s&#160;(%2$s)]]></string>
     <string name="popup_chain_fee"><![CDATA[<b>keten&#160;tarief</b>&#160;%1$s]]></string>
 
@@ -136,7 +135,7 @@
 
     <!-- CPFP/RBF -->
 
-    <string name="tx_cpfp_after">Na boost</string>
+    <string name="tx_cpfp_rbf_after">Na boost</string>
     <string name="tx_cpfp_current">Huidig totaal</string>
     <string name="tx_cpfp_explain">Voeg CPFP toe aan deze inkomende transactie om het tarief te verhogen en het sneller bevestigd te krijgen</string>
 

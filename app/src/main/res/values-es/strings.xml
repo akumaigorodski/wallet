@@ -84,7 +84,6 @@
     <string name="popup_to_address"><![CDATA[<b>dirección</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 
-    <string name="popup_prior_chain_balance"><![CDATA[<b>anterior&#160;saldo</b>&#160;%1$s]]></string>
     <string name="popup_fiat"><![CDATA[<b>fiat&#160;valor</b>&#160;%1$s&#160;(%2$s)]]></string>
     <string name="popup_chain_fee"><![CDATA[<b>cadena&#160;tarifa</b>&#160;%1$s]]></string>
 
@@ -136,8 +135,8 @@
 
     <!-- CPFP/RBF -->
 
-    <string name="tx_cpfp_after">Después de impulsar</string>
     <string name="tx_cpfp_current">Cantidad actual</string>
+    <string name="tx_cpfp_rbf_after">Después de impulsar</string>
     <string name="tx_cpfp_explain"><![CDATA[Aplique CPFP a esta transaccion entrante para incrementar su tarifa y <b>que se confirme mas rápido</b>]]></string>
 
     <string name="tx_rbf_current">Tarifa actual</string>

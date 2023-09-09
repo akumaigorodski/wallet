@@ -167,17 +167,14 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
 
     def doBoostCPFP(fromWallet: ElectrumEclairWallet, info: TxInfo): Unit = {
       val fromOutPoints = for (txOutputIndex <- info.tx.txOut.indices) yield OutPoint(info.tx.hash, txOutputIndex)
-      val chainAddress = Await.result(fromWallet.getReceiveAddresses, atMost = 40.seconds).firstAccountAddress
+      val chainAddress = Await.result(fromWallet.getReceiveAddresses, 30.seconds).firstAccountAddress
       val chainPubKeyScript = WalletParams.addressToPubKeyScript(chainAddress)
       val receivedMsat = info.receivedSat.toMilliSatoshi
 
-      val body = getLayoutInflater.inflate(R.layout.frag_input_cpfp, null).asInstanceOf[ScrollView]
-      val cpfpCurrent = new TwoSidedItem(body.findViewById(R.id.cpfpCurrent), getString(tx_cpfp_current), new String)
-      val cpfpAfter = new TwoSidedItem(body.findViewById(R.id.cpfpAfter), getString(tx_cpfp_after), new String)
-
+      val sendView = new ChainSendView(fromWallet, badge = None, visibilityRes = -1)
       val blockTarget = WalletParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
       val target = WalletParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
-      lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(target), body) {
+      lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(target), sendView.cpfpView.host) {
         rate = target
 
         worker = new ThrottledWork[String, GenerateTxResponse] {
@@ -189,9 +186,9 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
         override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
           val currentAmount = WalletApp.denom.directedWithSign(incoming = receivedMsat, outgoing = 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
           val afterAmount = WalletApp.denom.directedWithSign(feeOpt.map(receivedMsat.-).getOrElse(receivedMsat), 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
+          sendView.cpfpView.cpfpCurrent.secondItem.setText(currentAmount.html)
+          sendView.cpfpView.cpfpAfter.secondItem.setText(afterAmount.html)
           updatePopupButton(getPositiveButton(alert), feeOpt.isDefined)
-          cpfpCurrent.secondItem.setText(currentAmount.html)
-          cpfpAfter.secondItem.setText(afterAmount.html)
           super.update(feeOpt, showIssue)
         }.run
       }
@@ -201,30 +198,38 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
         // Only update parent semantic order if it does not already have one, record it BEFORE sending CPFP
         val parentDescWithOrder = info.description.withNewOrderCond(cpfpBumpOrder.copy(order = Long.MinValue).asSome)
         WalletApp.txDataBag.updDescription(parentDescWithOrder, info.txid)
-        alert.dismiss
 
         for {
           check <- fromWallet.doubleSpent(info.tx) if check.depth < 1 && !check.isDoubleSpent
-          cpfpResponse <- fromWallet.makeCPFP(fromOutPoints.toSet, chainPubKeyScript, feeView.rate)
-          bumpDescription = PlainTxDescription(chainAddress :: Nil, None, cpfpBumpOrder.asSome, None, cpfpOf = info.txid.asSome)
-          isSent <- broadcastTx(fromWallet, bumpDescription, cpfpResponse.tx, cpfpResponse.transferred, 0.sat, cpfpResponse.fee)
-        } if (isSent) {
-          // Parent semantic order is already updated, now we also update CPFP parent info
-          WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCPFPBy(cpfpResponse.tx.txid), info.txid)
-        } else {
-          // We revert the whole description back since CPFP has failed
-          WalletApp.txDataBag.updDescription(info.description, info.txid)
-          cleanFailedBroadcast(cpfpResponse.tx.txid)
+        } runFutureProcessOnUI(fromWallet.makeCPFP(fromOutPoints.toSet, chainPubKeyScript, feeView.rate), onFail) { response =>
+          // At this point we have received some response, in this case it can not be a failure but then maybe hardware wallet
+
+          proceedWithoutConfirm(fromWallet, sendView, alert, response) { signedTx =>
+            val desc = PlainTxDescription(chainAddress :: Nil, label = None, cpfpBumpOrder.asSome, cpfpBy = None, cpfpOf = info.txid.asSome)
+            val isSent = Await.result(broadcastTx(fromWallet, desc, signedTx, response.transferred, 0.sat, response.fee), 30.seconds)
+
+            if (isSent) {
+              // Parent semantic order has already been updated, now we also must update CPFP parent info
+              WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCPFPBy(signedTx.txid), info.txid)
+            } else {
+              // We revert the whole description back since CPFP has failed
+              WalletApp.txDataBag.updDescription(info.description, info.txid)
+              cleanFailedBroadcast(signedTx.txid)
+            }
+          }
         }
       }
 
       lazy val alert = {
-        val builder = titleBodyAsViewBuilder(getString(tx_cpfp_explain).asDefView, body)
+        val title = getString(tx_cpfp_explain)
+        val builder = titleBodyAsViewBuilder(title.asDefView, sendView.body)
         mkCheckForm(attempt, none, builder, dialog_ok, dialog_cancel)
       }
 
       feeView.update(feeOpt = None, showIssue = false)
       feeView.customFeerateOption.performClick
+      sendView.defaultView = sendView.cpfpView
+      sendView.switchToDefault(alert)
     }
 
     def boostRBF(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKey) match {
@@ -234,13 +239,11 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
 
     def doBoostRBF(fromWallet: ElectrumEclairWallet, info: TxInfo): Unit = {
       val currentFee = WalletApp.denom.parsedWithSign(info.feeSat.toMilliSatoshi, cardOut, cardIn)
-      val body = getLayoutInflater.inflate(R.layout.frag_input_rbf, null).asInstanceOf[ScrollView]
-      val rbfCurrent = new TwoSidedItem(body.findViewById(R.id.rbfCurrent), getString(tx_rbf_current), new String)
-      val rbfIssue = body.findViewById(R.id.rbfIssue).asInstanceOf[TextView]
 
+      val sendView = new ChainSendView(fromWallet, badge = None, visibilityRes = -1)
       val blockTarget = WalletParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
       val target = WalletParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
-      lazy val feeView: FeeView[RBFResponse] = new FeeView[RBFResponse](FeeratePerByte(target), body) {
+      lazy val feeView: FeeView[RBFResponse] = new FeeView[RBFResponse](FeeratePerByte(target), sendView.rbfView.host) {
         rate = target
 
         worker = new ThrottledWork[String, RBFResponse] {
@@ -258,14 +261,14 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
 
         private def showRbfErrorDesc(descRes: Int): Unit = UITask {
           updatePopupButton(getPositiveButton(alert), isEnabled = false)
-          super.update(feeOpt = None, showIssue = false)
-          setVis(isVisible = true, rbfIssue)
-          rbfIssue.setText(descRes)
+          super.update(feeOpt = Option.empty, showIssue = false)
+          setVis(isVisible = true, sendView.rbfView.rbfIssue)
+          sendView.rbfView.rbfIssue.setText(descRes)
         }.run
 
         override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
           updatePopupButton(getPositiveButton(alert), isEnabled = feeOpt.isDefined)
-          setVis(isVisible = false, rbfIssue)
+          setVis(isVisible = false, sendView.rbfView.rbfIssue)
           super.update(feeOpt, showIssue)
         }.run
       }
@@ -273,29 +276,38 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
       def attempt(alert: AlertDialog): Unit = {
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_BOOST)
         val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
-        alert.dismiss
 
         for {
           check <- fromWallet.doubleSpent(info.tx) if check.depth < 1 && !check.isDoubleSpent
-          rbfBumpResponse <- fromWallet.makeRBFBump(info.tx, feeView.rate).map(_.result.right.get)
-          bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
-          isSent <- broadcastTx(fromWallet, bumpDescription, rbfBumpResponse.tx, 0.sat, info.sentSat, rbfBumpResponse.fee)
-        } if (isSent) {
-          val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
-          val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
-          WalletApp.txDataBag.updDescription(parentDesc, info.txid)
-        } else cleanFailedBroadcast(rbfBumpResponse.tx.txid)
+        } runFutureProcessOnUI(fromWallet.makeRBFBump(info.tx, feeView.rate), onFail) { responseWrap =>
+          // At this point we have received some response, it may be a failre and then maybe hardware wallet
+
+          responseWrap.result.right.toOption.foreach { response =>
+            proceedWithoutConfirm(fromWallet, sendView, alert, response) { signedTx =>
+              val desc = PlainTxDescription(Nil, label = None, rbfBumpOrder.asSome, cpfpBy = None, cpfpOf = None, rbfParams.asSome)
+              val isSent = Await.result(broadcastTx(fromWallet, desc, signedTx, 0.sat, info.sentSat, response.fee), 30.seconds)
+
+              if (isSent) {
+                val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
+                val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
+                WalletApp.txDataBag.updDescription(parentDesc, info.txid)
+              } else cleanFailedBroadcast(signedTx.txid)
+            }
+          }
+        }
       }
 
       lazy val alert = {
-        val builder = titleBodyAsViewBuilder(getString(tx_rbf_boost_explain).asDefView, body)
+        val title = getString(tx_rbf_boost_explain)
+        val builder = titleBodyAsViewBuilder(title.asDefView, sendView.body)
         mkCheckForm(attempt, none, builder, dialog_ok, dialog_cancel)
       }
 
-      rbfCurrent.secondItem.setText(currentFee.html)
-      feeView.update(feeOpt = None, showIssue = false)
+      sendView.rbfView.rbfCurrent.secondItem.setText(currentFee.html)
+      feeView.update(feeOpt = Option.empty, showIssue = false)
       feeView.customFeerateOption.performClick
-      feeView.worker addWork "RBF-INIT-CALL"
+      sendView.defaultView = sendView.rbfView
+      sendView.switchToDefault(alert)
     }
 
     def cancelRBF(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKey) match {
@@ -304,17 +316,14 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
     }
 
     def doCancelRBF(fromWallet: ElectrumEclairWallet, info: TxInfo): Unit = {
+      val changeKey = Await.result(fromWallet.getReceiveAddresses, 30.seconds)
+      val changePks = WalletParams.addressToPubKeyScript(changeKey.changeAddress)
       val currentFee = WalletApp.denom.parsedWithSign(info.feeSat.toMilliSatoshi, cardOut, cardIn)
-      val body = getLayoutInflater.inflate(R.layout.frag_input_rbf, null).asInstanceOf[ScrollView]
-      val rbfCurrent = new TwoSidedItem(body.findViewById(R.id.rbfCurrent), getString(tx_rbf_current), new String)
-      val rbfIssue = body.findViewById(R.id.rbfIssue).asInstanceOf[TextView]
 
-      val changeKey = Await.result(fromWallet.getReceiveAddresses, atMost = 40.seconds)
-      val changePubKeyScript = WalletParams.addressToPubKeyScript(changeKey.changeAddress)
-
+      val sendView = new ChainSendView(fromWallet, badge = None, visibilityRes = -1)
       val blockTarget = WalletParams.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
       val target = WalletParams.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
-      lazy val feeView: FeeView[RBFResponse] = new FeeView[RBFResponse](FeeratePerByte(target), body) {
+      lazy val feeView: FeeView[RBFResponse] = new FeeView[RBFResponse](FeeratePerByte(target), sendView.rbfView.host) {
         rate = target
 
         worker = new ThrottledWork[String, RBFResponse] {
@@ -326,20 +335,20 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
             case _ => error(new RuntimeException)
           }
 
-          def work(reason: String): Observable[RBFResponse] = Rx fromFutureOnIo fromWallet.makeRBFReroute(info.tx, rate, changePubKeyScript)
+          def work(reason: String): Observable[RBFResponse] = Rx fromFutureOnIo fromWallet.makeRBFReroute(info.tx, rate, changePks)
           override def error(exception: Throwable): Unit = update(feeOpt = None, showIssue = true)
         }
 
         private def showRbfErrorDesc(descRes: Int): Unit = UITask {
           updatePopupButton(getPositiveButton(alert), isEnabled = false)
-          super.update(feeOpt = None, showIssue = false)
-          setVis(isVisible = true, rbfIssue)
-          rbfIssue.setText(descRes)
+          super.update(feeOpt = Option.empty, showIssue = false)
+          setVis(isVisible = true, sendView.rbfView.rbfIssue)
+          sendView.rbfView.rbfIssue.setText(descRes)
         }.run
 
         override def update(feeOpt: Option[MilliSatoshi], showIssue: Boolean): Unit = UITask {
           updatePopupButton(getPositiveButton(alert), isEnabled = feeOpt.isDefined)
-          setVis(isVisible = false, rbfIssue)
+          setVis(isVisible = false, sendView.rbfView.rbfIssue)
           super.update(feeOpt, showIssue)
         }.run
       }
@@ -347,29 +356,38 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
       def attempt(alert: AlertDialog): Unit = {
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_CANCEL)
         val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
-        alert.dismiss
 
         for {
           check <- fromWallet.doubleSpent(info.tx) if check.depth < 1 && !check.isDoubleSpent
-          rbfReroute <- fromWallet.makeRBFReroute(info.tx, feeView.rate, changePubKeyScript).map(_.result.right.get)
-          bumpDescription = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
-          isSent <- broadcastTx(fromWallet, bumpDescription, rbfReroute.tx, 0.sat, rbfReroute.fee, rbfReroute.fee)
-        } if (isSent) {
-          val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
-          val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
-          WalletApp.txDataBag.updDescription(parentDesc, info.txid)
-        } else cleanFailedBroadcast(rbfReroute.tx.txid)
+        } runFutureProcessOnUI(fromWallet.makeRBFReroute(info.tx, feeView.rate, changePks), onFail) { responseWrap =>
+          // At this point we have received some response, it may be a failre and then maybe hardware wallet
+
+          responseWrap.result.right.toOption.foreach { response =>
+            proceedWithoutConfirm(fromWallet, sendView, alert, response) { signedTx =>
+              val desc = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
+              val isSent = Await.result(broadcastTx(fromWallet, desc, signedTx, 0.sat, response.fee, response.fee), 30.seconds)
+
+              if (isSent) {
+                val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
+                val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
+                WalletApp.txDataBag.updDescription(parentDesc, info.txid)
+              } else cleanFailedBroadcast(signedTx.txid)
+            }
+          }
+        }
       }
 
       lazy val alert = {
-        val builder = titleBodyAsViewBuilder(getString(tx_rbf_cancel_explain).asDefView, body)
+        val title = getString(tx_rbf_cancel_explain)
+        val builder = titleBodyAsViewBuilder(title.asDefView, sendView.body)
         mkCheckForm(attempt, none, builder, dialog_ok, dialog_cancel)
       }
 
-      rbfCurrent.secondItem.setText(currentFee.html)
-      feeView.update(feeOpt = None, showIssue = false)
+      sendView.rbfView.rbfCurrent.secondItem.setText(currentFee.html)
+      feeView.update(feeOpt = Option.empty, showIssue = false)
       feeView.customFeerateOption.performClick
-      feeView.worker addWork "RBF-INIT-CALL"
+      sendView.defaultView = sendView.rbfView
+      sendView.switchToDefault(alert)
     }
 
     // VIEW RELATED
@@ -392,24 +410,28 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
           val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.cpfpOf.isEmpty
           val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.canBeCPFPd
-          val isFromSigningWallet = WalletParams.chainWallets.findByPubKey(info.pubKey).exists(_.isSigning)
+          val walletCanSpend = WalletParams.chainWallets.findByPubKey(info.pubKey).exists(wallet => wallet.isSigning || wallet.hasFingerprint)
           val isRbfCancel = info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL)
 
           val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
           val fiatNow = WalletApp.msatInFiatHuman(WalletParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiat)
           val fiatThen = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiat)
-          val balanceSnapshot = WalletApp.denom.parsedWithSign(info.balanceSnapshot, cardIn, cardZero)
+
+          WalletParams.chainWallets.findByPubKey(info.pubKey) match {
+            case Some(wallet) if wallet.hasFingerprint => addFlowChip(extraInfo, getString(hardware_wallet), R.drawable.border_gray)
+            case Some(wallet) if !wallet.isSigning => addFlowChip(extraInfo, getString(watching_wallet), R.drawable.border_gray)
+            case _ =>
+          }
 
           addFlowChip(extraInfo, getString(popup_txid) format info.txidString.short, R.drawable.border_green, info.txidString.asSome)
           for (address <- info.description.toAddress) addFlowChip(extraInfo, getString(popup_to_address) format address.short, R.drawable.border_yellow, address.asSome)
 
           addFlowChip(extraInfo, getString(popup_fiat).format(s"<font color=$cardIn>$fiatNow</font>", fiatThen), R.drawable.border_gray)
-          if (info.description.cpfpOf.isEmpty && info.description.rbf.isEmpty) addFlowChip(extraInfo, getString(popup_prior_chain_balance) format balanceSnapshot, R.drawable.border_gray)
           if (!info.isIncoming || isRbfCancel || info.description.cpfpOf.isDefined) addFlowChip(extraInfo, getString(popup_chain_fee) format fee, R.drawable.border_gray)
 
-          if (isFromSigningWallet && canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
-          if (isFromSigningWallet && canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
-          if (isFromSigningWallet && canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
+          if (walletCanSpend && canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
+          if (walletCanSpend && canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
+          if (walletCanSpend && canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
       }
     }
 
@@ -538,13 +560,11 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
     }.run
 
     override def onChainSyncing(start: Int, now: Int, max: Int): Unit = UITask {
-      androidx.transition.TransitionManager.beginDelayedTransition(walletCards.view)
       walletCards.chainSyncIndicator.setMaxProgress(max - start).setProgress(now - start)
       setVis(isVisible = max - now > 2016 * 4, walletCards.chainSyncIndicator)
     }.run
 
     override def onChainSyncEnded(localTip: Int): Unit = UITask {
-      androidx.transition.TransitionManager.beginDelayedTransition(walletCards.view)
       setVis(isVisible = false, walletCards.chainSyncIndicator)
     }.run
 
@@ -759,44 +779,23 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
     val sendView = new ChainSendView(fromWallet, getString(dialog_set_label).asSome, dialog_visibility_private)
     val chainPubKeyScript = WalletParams.addressToPubKeyScript(uri.address)
 
-    def attempt(alert: AlertDialog): Unit = {
+    def attempt(alert: AlertDialog): Unit =
       runFutureProcessOnUI(fromWallet.makeTx(chainPubKeyScript, sendView.manager.resultMsat.truncateToSatoshi, Map.empty, feeView.rate), onFail) { response =>
-        val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
+        // This may be a signing or a hardware wallet, in case if it's a hardware wallet we need additional UI action so we use this method here
 
-        lazy val process: Transaction => Unit = signedTx => {
+        proceedConfirm(fromWallet, sendView, alert, response) { signedTx =>
           val desc = PlainTxDescription(uri.address :: Nil, sendView.manager.resultExtraInput orElse uri.label orElse uri.message)
-          val isSent = Await.result(broadcastTx(fromWallet, desc, signedTx, 0.sat, response.transferred, response.fee), atMost = 30.seconds)
+          val isSent = Await.result(broadcastTx(fromWallet, desc, signedTx, 0.sat, response.transferred, response.fee), 30.seconds)
           if (!isSent) cleanFailedBroadcast(signedTx.txid)
           alert.dismiss
         }
-
-        if (fromWallet.isSigning) {
-          // This is a signing wallet so signed response tx is a final one, we use it
-          finalSendButton setOnClickListener onButtonTap(process apply response.tx)
-          sendView.switchToConfirm(alert, response)
-        } else if (fromWallet.hasFingerprint) {
-          sendView.chainReaderView.onSignedTx = signedTx => UITask {
-            if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
-            finalSendButton setOnClickListener onButtonTap(process apply signedTx)
-            sendView.switchToConfirm(alert, response)
-          }.run
-
-          val masterFingerprint = fromWallet.info.core.masterFingerprint.get
-          val psbt = prepareBip84Psbt(response, masterFingerprint)
-          sendView.switchToHardwareOutgoing(alert, psbt)
-        } else alert.dismiss
       }
-    }
 
     lazy val alert = {
-      def useMax(alert: AlertDialog): Unit = {
-        val max = fromWallet.info.lastBalance.toMilliSatoshi
-        sendView.manager.updateText(value = max)
-      }
-
       val title = titleViewFromUri(uri)
       val neutralRes = if (uri.amount.isDefined) -1 else dialog_max
       val builder = titleBodyAsViewBuilder(title.asColoredView(me chainWalletBackground fromWallet), sendView.body)
+      def useMax(alert: AlertDialog): Unit = sendView.manager.updateText(fromWallet.info.lastBalance.toMilliSatoshi)
       addFlowChip(title.flow, getString(dialog_send_btc_from).format(fromWallet.info.label), R.drawable.border_yellow)
       mkCheckFormNeutral(attempt, none, useMax, builder, dialog_ok, dialog_cancel, neutralRes)
     }
@@ -819,7 +818,6 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
 
     // Automatically update a candidate transaction each time user changes amount value
     sendView.manager.inputAmount addTextChangedListener onTextChange(feeView.worker.addWork)
-    alert.setOnDismissListener(sendView.onDismissListener)
     feeView.update(feeOpt = None, showIssue = false)
 
     uri.amount foreach { asked =>
@@ -833,34 +831,17 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
     val scriptToAmount = addressToAmount.values.firstItems.map(WalletParams.addressToPubKeyScript).zip(addressToAmount.values.secondItems).toMap
     val sendView = new ChainSendView(fromWallet, badge = None, visibilityRes = -1)
 
-    def attempt(alert: AlertDialog): Unit = {
+    def attempt(alert: AlertDialog): Unit =
       runFutureProcessOnUI(fromWallet.makeBatchTx(scriptToAmount, feeView.rate), onFail) { response =>
-        val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
+        // This may be a signing or a hardware wallet just like with a single transaction case
 
-        val process: Transaction => Unit = signedTx => {
+        proceedConfirm(fromWallet, sendView, alert, response) { signedTx =>
           val desc = PlainTxDescription(addresses = addressToAmount.values.firstItems.toList)
           val isSent = Await.result(broadcastTx(fromWallet, desc, signedTx, 0.sat, response.transferred, response.fee), 30.seconds)
           if (!isSent) cleanFailedBroadcast(signedTx.txid)
           alert.dismiss
         }
-
-        if (fromWallet.isSigning) {
-          // This is a signing wallet so signed response tx is a final one, we use it
-          finalSendButton setOnClickListener onButtonTap(process apply response.tx)
-          sendView.switchToConfirm(alert, response)
-        } else if (fromWallet.hasFingerprint) {
-          sendView.chainReaderView.onSignedTx = signedTx => UITask {
-            if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
-            finalSendButton setOnClickListener onButtonTap(process apply signedTx)
-            sendView.switchToConfirm(alert, response)
-          }.run
-
-          val masterFingerprint = fromWallet.info.core.masterFingerprint.get
-          val psbt = prepareBip84Psbt(response, masterFingerprint)
-          sendView.switchToHardwareOutgoing(alert, psbt)
-        } else alert.dismiss
       }
-    }
 
     lazy val alert = {
       val title = new TitleView(me getString dialog_send_btc_many)
@@ -893,7 +874,6 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
 
     // Hide address facility, we display a list of addresses instead
     setVis(isVisible = false, sendView.chainEditView.inputChain)
-    alert.setOnDismissListener(sendView.onDismissListener)
     feeView.update(feeOpt = None, showIssue = false)
     feeView.worker addWork "MULTI-SEND-INIT-CALL"
   }
@@ -901,6 +881,45 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
   def paymentAdapterDataChanged: TimerTask = UITask {
     setVis(allInfos.isEmpty, walletCards.recoveryPhraseWarning)
     paymentsAdapter.notifyDataSetChanged
+  }
+
+  def proceedConfirm(fromWallet: ElectrumEclairWallet, sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
+    // This is used after user decided to send a transaction, if the wallet happens to be a hardware one then generated response is fake and we got stuff to do
+    val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
+
+    if (fromWallet.isSigning) {
+      // This is a signing wallet so signed response tx is a final one, we use it
+      finalSendButton setOnClickListener onButtonTap(process apply response.tx)
+      sendView.switchToConfirm(alert, response)
+    } else if (fromWallet.hasFingerprint) {
+      sendView.chainReaderView.onSignedTx = signedTx => UITask {
+        if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
+        finalSendButton setOnClickListener onButtonTap(process apply signedTx)
+        sendView.switchToConfirm(alert, response)
+      }.run
+
+      val masterFingerprint = fromWallet.info.core.masterFingerprint.get
+      val psbt = prepareBip84Psbt(response, masterFingerprint)
+      sendView.switchToHardwareOutgoing(alert, psbt)
+    } else alert.dismiss
+  }
+
+  def proceedWithoutConfirm(fromWallet: ElectrumEclairWallet, sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
+    // This is used after user decided to send CPFP/RBF a transaction, if the wallet happens to be a hardware one then generated response is fake and we got stuff to do
+
+    if (fromWallet.isSigning) {
+      process(response.tx)
+      alert.dismiss
+    } else if (fromWallet.hasFingerprint) {
+      sendView.chainReaderView.onSignedTx = signedTx => UITask {
+        if (signedTx.txOut.toSet == response.tx.txOut.toSet) process(signedTx)
+        alert.dismiss
+      }.run
+
+      val masterFingerprint = fromWallet.info.core.masterFingerprint.get
+      val psbt = prepareBip84Psbt(response, masterFingerprint)
+      sendView.switchToHardwareOutgoing(alert, psbt)
+    } else alert.dismiss
   }
 
   def broadcastTx(fromWallet: ElectrumEclairWallet, desc: TxDescription, finalTx: Transaction, received: Satoshi, sent: Satoshi, fee: Satoshi): Future[Boolean] = {
