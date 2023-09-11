@@ -2,7 +2,7 @@ package fr.acinq.eclair.blockchain.electrum
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import fr.acinq.bitcoin.{ByteVector32, OP_PUSHDATA, OP_RETURN, OutPoint, Satoshi, Script, Transaction, TxIn, TxOut}
+import fr.acinq.bitcoin.{OutPoint, Satoshi, Transaction}
 import fr.acinq.eclair.blockchain.EclairWallet
 import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.BroadcastTransaction
@@ -21,23 +21,11 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
 
   type GenerateTxResponseTry = Try[GenerateTxResponse]
 
-  private def emptyUtxo(pubKeyScript: ByteVector): TxOut = TxOut(Satoshi(0L), pubKeyScript)
-
   private def isInChain(error: fr.acinq.eclair.blockchain.bitcoind.rpc.Error): Boolean = error.message.toLowerCase.contains("already in block chain")
 
   override def getData: Future[GetDataResponse] = (walletRef ? GetData).mapTo[GetDataResponse]
 
   override def getReceiveAddresses: Future[GetCurrentReceiveAddressesResponse] = (walletRef ? GetCurrentReceiveAddresses).mapTo[GetCurrentReceiveAddressesResponse]
-
-  override def makeFundingTx(pubkeyScript: ByteVector, amount: Satoshi, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
-    val completeTx = CompleteTransaction(pubKeyScriptToAmount = Map(pubkeyScript -> amount), feeRatePerKw, sequenceFlag = TxIn.SEQUENCE_FINAL)
-    val sendAll = SendAll(pubkeyScript, pubKeyScriptToAmount = Map.empty, feeRatePerKw, sequenceFlag = TxIn.SEQUENCE_FINAL, fromOutpoints = Set.empty)
-
-    getData.flatMap { response =>
-      val command = if (response.data.balance == amount) sendAll else completeTx
-      (walletRef ? command).mapTo[GenerateTxResponseTry].map(_.get)
-    }
-  }
 
   override def broadcast(tx: Transaction): Future[Boolean] = {
     walletRef ? BroadcastTransaction(tx) flatMap {
@@ -46,12 +34,6 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
       case res: ElectrumClient.BroadcastTransactionResponse if res.error.isDefined => Future(false)
       case ElectrumClient.ServerError(_: ElectrumClient.BroadcastTransaction, _) => Future(false)
     }
-  }
-
-  override def sendPreimageBroadcast(preimages: Set[ByteVector32], pubKeyScript: ByteVector, feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
-    val preimageTxOuts = preimages.toList.map(_.bytes).map(OP_PUSHDATA.apply).grouped(2).map(OP_RETURN :: _).map(Script.write).map(emptyUtxo).toList
-    val sendAll = SendAll(pubKeyScript, pubKeyScriptToAmount = Map.empty, feeRatePerKw, OPT_IN_FULL_RBF, fromOutpoints = Set.empty, preimageTxOuts)
-    (walletRef ? sendAll).mapTo[GenerateTxResponseTry].map(_.get)
   }
 
   override def makeBatchTx(scriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
