@@ -260,8 +260,8 @@ class WalletApp extends Application { me =>
     super.onTrimMemory(level)
   }
 
-  def when(thenDate: Date, simpleFormat: SimpleDateFormat, now: Long = System.currentTimeMillis): String =
-    now - thenDate.getTime match {
+  def when(thenDate: Date, simpleFormat: SimpleDateFormat): String =
+    System.currentTimeMillis - thenDate.getTime match {
       case ago if ago > 12960000 => simpleFormat.format(thenDate)
       case ago if ago < android.text.format.DateUtils.MINUTE_IN_MILLIS => "now"
       case ago if ago < android.text.format.DateUtils.HOUR_IN_MILLIS => s"${ago / android.text.format.DateUtils.MINUTE_IN_MILLIS} min ago"
