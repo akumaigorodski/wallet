@@ -16,6 +16,8 @@ import com.btcontract.wallet.R.string._
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
 import com.danilomendes.progressbar.InvertedTextProgressbar
 import com.github.mmin18.widget.RealtimeBlurView
+import com.google.android.gms.tasks.{OnCompleteListener, Task}
+import com.google.android.play.core.review.{ReviewInfo, ReviewManagerFactory}
 import com.ornach.nobobutton.NoboButton
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
@@ -689,6 +691,9 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
     walletCards.updateView
 
     runInFutureProcessOnUI(loadRecent, none) { _ =>
+      val appOpensLeft = WalletApp.app.prefs.getInt(WalletApp.APP_OPENS_LEFT, 4)
+      if (txInfos.nonEmpty && appOpensLeft > 0) WalletApp.app.prefs.edit.putInt(WalletApp.APP_OPENS_LEFT, appOpensLeft - 1).commit
+      else if (txInfos.nonEmpty && appOpensLeft == 0) runAnd(WalletApp.app.prefs.edit.putInt(WalletApp.APP_OPENS_LEFT, -1).commit)(launchRateDialog)
       // User may kill an activity but not an app and on getting back there won't be a chain listener event, so check connectivity once again here
       setVisMany(WalletApp.ensureTor -> walletCards.torIndicator, WalletApp.currentChainNode.isEmpty -> walletCards.offlineIndicator)
       walletCards.searchField addTextChangedListener onTextChange(searchWorker.addWork)
@@ -934,5 +939,13 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
     onFail(me getString error_btc_broadcast_fail)
     WalletApp.txInfos.remove(key = failedTxid)
     DbStreams.next(DbStreams.txDbStream)
+  }
+
+  def launchRateDialog: Unit = {
+    type ReviewInfoTask = Task[ReviewInfo]
+    val manager = ReviewManagerFactory.create(me)
+    manager.requestReviewFlow addOnCompleteListener new OnCompleteListener[ReviewInfo] {
+      def onComplete(task: ReviewInfoTask): Unit = try manager.launchReviewFlow(me, task.getResult) catch none
+    }
   }
 }
