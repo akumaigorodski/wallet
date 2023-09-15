@@ -35,7 +35,6 @@
     <string name="dialog_boost">Boost</string>
     <string name="dialog_copy">Kopieer</string>
     <string name="dialog_scan">Scan</string>
-    <string name="dialog_info">Info</string>
     <string name="dialog_edit">Bewerk</string>
     <string name="dialog_max">Max</string>
 
@@ -113,25 +112,6 @@
     <string name="settings_view_revocery_phrase">Bekijk BIP39-herstelzin</string>
 
     <!-- /Settings activity -->
-
-    <!-- lnurl-auth -->
-
-    <string name="lnurl_auth_register">Registreer</string>
-    <string name="lnurl_auth_login">Login</string>
-    <string name="lnurl_auth_auth">Auth</string>
-    <string name="lnurl_auth_link">Link</string>
-
-    <string name="lnurl_auth_register_ok">Succesvol geregistreerd</string>
-    <string name="lnurl_auth_login_ok">Succesvol ingelogd</string>
-    <string name="lnurl_auth_auth_ok">Succesvol geautoriseerd</string>
-    <string name="lnurl_auth_link_ok">Succesvol gelinkt</string>
-
-    <string name="lnurl_auth_info"><![CDATA[
-        Auth-sleutel gegenereerd door je portemonnee voor <i>%1$s</i>:<br><br><strong>%2$s</strong>.
-        <br><br>Het wordt gebruikt voor anonieme authorisatie bij <i>%1$s</i>, geen persoonlijke data zal worden vrijgegeven.
-    ]]></string>
-
-    <!-- /lnurl-auth -->
 
     <!-- CPFP/RBF -->
 

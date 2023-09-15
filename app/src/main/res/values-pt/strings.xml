@@ -35,7 +35,6 @@
     <string name="dialog_boost">Boost</string>
     <string name="dialog_copy">Copiar</string>
     <string name="dialog_scan">Scan</string>
-    <string name="dialog_info">Info</string>
     <string name="dialog_edit">Edit</string>
     <string name="dialog_max">Máx</string>
 
@@ -113,25 +112,6 @@
     <string name="settings_view_revocery_phrase">Ver a frase de recuperação BIP39</string>
 
     <!-- /Settings activity -->
-
-    <!-- lnurl-auth -->
-
-    <string name="lnurl_auth_register">Registrar</string>
-    <string name="lnurl_auth_login">Login</string>
-    <string name="lnurl_auth_auth">Auth</string>
-    <string name="lnurl_auth_link">Link</string>
-
-    <string name="lnurl_auth_register_ok">Registrado com sucesso</string>
-    <string name="lnurl_auth_login_ok">Login bem-sucedido</string>
-    <string name="lnurl_auth_auth_ok">Autorizado com sucesso</string>
-    <string name="lnurl_auth_link_ok">Link bem-sucedido</string>
-
-    <string name="lnurl_auth_info"><![CDATA[
-        Chave Auth gerada pela sua carteira para <i>%1$s</i>:<br><br><strong>%2$s</strong>.
-        <br><br>Ela será usada para autorização anônima em<i>%1$s</i>, nenhuma informação pessoal será revelada.
-    ]]></string>
-
-    <!-- /lnurl-auth -->
 
     <!-- CPFP/RBF -->
 

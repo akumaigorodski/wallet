@@ -628,39 +628,8 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
         bringSendMultiBitcoinPopup(a2a, wallet)
       }
 
-    case lnUrl: LNUrl if lnUrl.isAuth =>
-      showAuthForm(lnUrl)
-
     case _ =>
       whenNone.run
-  }
-
-  def showAuthForm(lnUrl: LNUrl): Unit = lnUrl.k1.foreach { k1 =>
-    val (successResource, actionResource) = lnUrl.authAction match {
-      case "register" => (lnurl_auth_register_ok, lnurl_auth_register)
-      case "auth" => (lnurl_auth_auth_ok, lnurl_auth_auth)
-      case "link" => (lnurl_auth_link_ok, lnurl_auth_link)
-      case _ => (lnurl_auth_login_ok, lnurl_auth_login)
-    }
-
-    val spec = LNUrlAuthSpec(lnUrl.uri.getHost, ByteVector32 fromValidHex k1)
-    val title = titleBodyAsViewBuilder(s"<big>${lnUrl.warnUri}</big>".asDefView, null)
-    mkCheckFormNeutral(doAuth, none, displayInfo, title, actionResource, dialog_cancel, dialog_info)
-
-    def displayInfo(alert: AlertDialog): Unit = {
-      val explanation = getString(lnurl_auth_info).format(lnUrl.warnUri, spec.linkingPubKey.humanFour).html
-      mkCheckFormNeutral(_.dismiss, none, _ => share(spec.linkingPubKey), new AlertDialog.Builder(me).setMessage(explanation), dialog_ok, -1, dialog_share)
-    }
-
-    def doAuth(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-      snack(contentWindow, lnUrl.warnUri.html, dialog_cancel) foreach { snack =>
-        val uri = lnUrl.uri.buildUpon.appendQueryParameter("sig", spec.derSignatureHex).appendQueryParameter("key", spec.linkingPubKey)
-        val level2Obs = LNUrl.level2DataResponse(uri).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
-        val level2Sub = level2Obs.subscribe(_ => UITask(WalletApp.app quickToast successResource).run, onFail)
-        val listener = onButtonTap(level2Sub.unsubscribe)
-        snack.setAction(dialog_cancel, listener).show
-      }
-    }
   }
 
   def isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]

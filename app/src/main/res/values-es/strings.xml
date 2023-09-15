@@ -35,7 +35,6 @@
     <string name="dialog_boost">Impulsar</string>
     <string name="dialog_copy">Copiar</string>
     <string name="dialog_scan">Scan</string>
-    <string name="dialog_info">Info</string>
     <string name="dialog_edit">Edit</string>
     <string name="dialog_max">Max</string>
 
@@ -113,25 +112,6 @@
     <string name="settings_view_revocery_phrase">Ver la frase de recuperación BIP39</string>
 
     <!-- /Settings activity -->
-
-    <!-- lnurl-auth -->
-
-    <string name="lnurl_auth_register">Registrarse</string>
-    <string name="lnurl_auth_login">Acceso</string>
-    <string name="lnurl_auth_auth">Auth</string>
-    <string name="lnurl_auth_link">Enlace</string>
-
-    <string name="lnurl_auth_register_ok">Registrado exitosamente</string>
-    <string name="lnurl_auth_login_ok">Acceso exitoso</string>
-    <string name="lnurl_auth_auth_ok">Autorizado exitosamente</string>
-    <string name="lnurl_auth_link_ok">Enlazado exitosamente</string>
-
-    <string name="lnurl_auth_info"><![CDATA[
-        Clave de autenticación generada por tu billetera para <i>%1$s</i>:<br><br><strong>%2$s</strong>.
-        <br><br>Será usada para autorización anónima en <i>%1$s</i>, ningún dato personal será divulgado.
-    ]]></string>
-
-    <!-- /lnurl-auth -->
 
     <!-- CPFP/RBF -->
 
