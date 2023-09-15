@@ -604,8 +604,7 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
     case bitcoinUri: BitcoinUri if Try(WalletParams addressToPubKeyScript bitcoinUri.address).isSuccess =>
 
       if (WalletParams.chainWallets.usableWallets.size == 1) {
-        // We have a single built-in wallet, no need to choose
-        bringSendBitcoinPopup(bitcoinUri, WalletParams.chainWallets.defaultWallet)
+        bringSendBitcoinPopup(bitcoinUri, WalletParams.chainWallets.usableWallets.head)
       } else bringChainWalletChooser(me titleViewFromUri bitcoinUri) { wallet =>
         // We have wallet candidates to spend from here
         bringSendBitcoinPopup(bitcoinUri, wallet)
@@ -621,8 +620,7 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
       } else if (badAddress.nonEmpty) {
         onFail(s"Incorrect Bitcoin address=${badAddress.get}")
       } else if (WalletParams.chainWallets.usableWallets.size == 1) {
-        // We have a single built-in wallet, no need to choose one
-        bringSendMultiBitcoinPopup(a2a, WalletParams.chainWallets.defaultWallet)
+        bringSendMultiBitcoinPopup(a2a, WalletParams.chainWallets.usableWallets.head)
       } else bringChainWalletChooser(me getString dialog_send_btc_many) { wallet =>
         // We have wallet candidates to spend from here
         bringSendMultiBitcoinPopup(a2a, wallet)
@@ -740,7 +738,9 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
     callScanner(sheet)
   }
 
-  def gotoReceivePage(view: View): Unit = goToWithValue(ClassNames.qrChainActivityClass, WalletParams.chainWallets.defaultWallet)
+  def gotoReceivePage(view: View): Unit = WalletParams.chainWallets.usableWallets.collectFirst {
+    case wallet if !wallet.info.core.isRemovable => goToWithValue(ClassNames.qrChainActivityClass, wallet)
+  }
 
   def goToSettingsPage(view: View): Unit = goTo(ClassNames.settingsActivityClass)
 

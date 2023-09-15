@@ -1,6 +1,6 @@
 package fr.acinq.eclair.blockchain
 
-import fr.acinq.bitcoin.{ByteVector32, OutPoint, Satoshi, Transaction, TxIn}
+import fr.acinq.bitcoin.{OutPoint, Satoshi, Transaction, TxIn}
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet._
 import fr.acinq.eclair.blockchain.fee.FeeratePerKw
 import scodec.bits.ByteVector
@@ -41,8 +41,6 @@ trait EclairWallet {
   def broadcast(tx: Transaction): Future[Boolean]
 
   def hasFingerprint: Boolean
-
-  def isBuiltIn: Boolean
 
   def isSigning: Boolean
 }

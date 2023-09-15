@@ -6,6 +6,7 @@ import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.util.Timeout
 import com.softwaremill.quicklens._
 import fr.acinq.bitcoin.Crypto.PublicKey
+import fr.acinq.bitcoin.DeterministicWallet.ExtendedPrivateKey
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum._
@@ -47,14 +48,12 @@ object WalletParams {
 
 case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, sync: ActorRef, pool: ActorRef, params: WalletParameters) extends CanBeShutDown { me =>
 
-  lazy val defaultWallet: ElectrumEclairWallet = wallets.find(_.isBuiltIn).get
-
   lazy val usableWallets: List[ElectrumEclairWallet] = wallets.filter(wallet => wallet.isSigning || wallet.hasFingerprint)
 
   def findByPubKey(pub: PublicKey): Option[ElectrumEclairWallet] = wallets.find(_.ewt.xPub.publicKey == pub)
 
-  def makeSigningWalletParts(core: SigningWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
-    val ewt = ElectrumWalletType.makeSigningType(tag = core.walletType, master = WalletParams.secret.keys.master, chainHash = WalletParams.chainHash)
+  def makeSigningWalletParts(core: SigningWallet, masterPrivKey: ExtendedPrivateKey, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
+    val ewt: ElectrumWalletType = ElectrumWalletType.makeSigningType(tag = core.walletType, master = masterPrivKey, chainHash = WalletParams.chainHash)
     val walletRef = WalletParams.loggedActor(Props(classOf[ElectrumWallet], pool, sync, params, ewt), core.walletType + "-signing-wallet")
     val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label, isCoinControlOn = false)
     ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
@@ -84,7 +83,6 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
   }
 
   def withNewLabel(label: String)(wallet1: ElectrumEclairWallet): WalletExt = {
-    require(!wallet1.isBuiltIn, "Can not re-label a default built in chain wallet")
     def sameXPub(wallet: ElectrumEclairWallet): Boolean = wallet.ewt.xPub == wallet1.ewt.xPub
     params.walletDb.updateLabel(label, pub = wallet1.ewt.xPub.publicKey)
     me.modify(_.wallets.eachWhere(sameXPub).info.label).setTo(label)

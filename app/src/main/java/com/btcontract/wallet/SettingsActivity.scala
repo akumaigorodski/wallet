@@ -118,7 +118,7 @@ class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
           val core = SigningWallet(possibleKeys(itemPosition), isRemovable = true)
 
           if (list isItemChecked itemPosition) {
-            val wallet = WalletParams.chainWallets.makeSigningWalletParts(core, Satoshi(0L), label = core.walletType)
+            val wallet = WalletParams.chainWallets.makeSigningWalletParts(core, WalletParams.secret.keys.master, Satoshi(0L), core.walletType)
             HubActivity.instance.walletCards.resetChainCards(WalletParams.chainWallets withFreshWallet wallet)
           } else {
             val affectedWallet = WalletParams.chainWallets.wallets.find(wallet => wallet.isSigning && wallet.info.core.walletType == core.walletType)
@@ -151,8 +151,8 @@ class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
 
         def proceed: Unit = runAnd(finish) {
           if (WalletParams.chainWallets.findByPubKey(data.bip84XPub.publicKey).isEmpty) {
-            val core = WatchingWallet(EclairWallet.BIP84, data.masterFingerprint, data.bip84XPub, isRemovable = true)
             val label = extraInput.getText.toString.trim.asSome.filter(_.nonEmpty).getOrElse(EclairWallet.BIP84)
+            val core = WatchingWallet(EclairWallet.BIP84, data.masterFingerprint, data.bip84XPub, isRemovable = true)
             val wallet = WalletParams.chainWallets.makeWatchingWallet84Parts(core, lastBalance = Satoshi(0L), label)
             HubActivity.instance.walletCards.resetChainCards(WalletParams.chainWallets withFreshWallet wallet)
           }

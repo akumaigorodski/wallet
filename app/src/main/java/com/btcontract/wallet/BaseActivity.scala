@@ -162,7 +162,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     title
   }
 
-  def chainWalletBackground(wallet: ElectrumEclairWallet): Int = if (wallet.isBuiltIn) R.color.cardBitcoinModern else R.color.cardBitcoinLegacy
+  def chainWalletBackground(wallet: ElectrumEclairWallet): Int = if (wallet.isSigning) R.color.cardBitcoinModern else R.color.cardBitcoinLegacy
   def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] = if (wallet.hasFingerprint) Some(hardware_wallet) else if (!wallet.isSigning) Some(watching_wallet) else None
   def browse(maybeUri: String): Unit = try me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri) catch { case exception: Throwable => me onFail exception }
 

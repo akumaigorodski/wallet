@@ -71,7 +71,5 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
 
   override def hasFingerprint: Boolean = info.core.masterFingerprint.nonEmpty
 
-  override def isBuiltIn: Boolean = isSigning && info.core.walletType == BIP84
-
   override def isSigning: Boolean = ewt.secrets.nonEmpty
 }

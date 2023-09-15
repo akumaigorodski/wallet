@@ -1,12 +1,7 @@
 package immortan
 
-import java.io.ByteArrayInputStream
-import java.nio.ByteOrder
-
-import fr.acinq.bitcoin.Crypto.{PrivateKey, PublicKey}
+import fr.acinq.bitcoin.Crypto.PrivateKey
 import fr.acinq.bitcoin.DeterministicWallet._
-import fr.acinq.bitcoin.{ByteVector32, Protocol}
-import fr.acinq.eclair.crypto.Mac32
 import immortan.crypto.Tools.Bytes
 import scodec.bits.ByteVector
 
@@ -20,21 +15,4 @@ object LightningNodeKeys {
   }
 }
 
-case class LightningNodeKeys(master: ExtendedPrivateKey, extendedNodeKey: ExtendedPrivateKey, hashingKey: PrivateKey) {
-
-  def makeLinkingKey(domain: String): PrivateKey = {
-    val domainBytes = ByteVector(domain getBytes "UTF-8")
-    val wifHashingKeyBytes = hashingKey.value.bytes :+ 1.toByte
-    val pathMaterial = Mac32.hmac256(wifHashingKeyBytes, domainBytes)
-    val chain = hardened(138) :: makeKeyPath(pathMaterial.bytes)
-    // use master here to be compatible with old BLW
-    derivePrivateKey(master, chain).privateKey
-  }
-
-  private def makeKeyPath(material: ByteVector): List[Long] = {
-    require(material.size > 15, "Material size must be at least 16")
-    val stream = new ByteArrayInputStream(material.slice(0, 16).toArray)
-    def getChunk = Protocol.uint32(stream, ByteOrder.BIG_ENDIAN)
-    List.fill(4)(getChunk)
-  }
-}
+case class LightningNodeKeys(master: ExtendedPrivateKey, extendedNodeKey: ExtendedPrivateKey, hashingKey: PrivateKey)
