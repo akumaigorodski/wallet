@@ -9,7 +9,6 @@ import com.btcontract.wallet.R.string._
 import fr.acinq.bitcoin.MnemonicCode
 import immortan.crypto.Tools.{SEPARATOR, none}
 import immortan.{LightningNodeKeys, WalletSecret}
-import scodec.bits.ByteVector
 
 
 object SetupActivity {
@@ -22,46 +21,8 @@ object SetupActivity {
   }
 }
 
-class SetupActivity extends BaseActivity { me =>
-  private[this] lazy val activitySetupMain = findViewById(R.id.activitySetupMain).asInstanceOf[LinearLayout]
-
-  lazy private[this] val enforceTor = new SettingsHolder(me) {
-    override def updateView: Unit = settingsCheck.setChecked(WalletApp.ensureTor)
-    settingsTitle.setText(settings_ensure_tor)
-    setVis(isVisible = false, settingsInfo)
-    disableIfOldAndroid
-
-    view setOnClickListener onButtonTap {
-      putBoolAndUpdateView(WalletApp.ENSURE_TOR, !WalletApp.ensureTor)
-    }
-  }
-
-  override def START(s: Bundle): Unit = {
-    setContentView(R.layout.activity_setup)
-    activitySetupMain.addView(enforceTor.view, 0)
-    enforceTor.updateView
-  }
-
-  private[this] lazy val englishWordList = {
-    val rawData = getAssets.open("bip39_english_wordlist.txt")
-    scala.io.Source.fromInputStream(rawData, "UTF-8").getLines.toArray
-  }
-
-  var proceedWithMnemonics: List[String] => Unit = mnemonics => {
-    // Make sure this method can be run at most once (to not set runtime data twice) by replacing it with a noop method right away
-    runInFutureProcessOnUI(SetupActivity.fromMnemonics(mnemonics, me), onFail)(_ => me exitTo ClassNames.hubActivityClass)
-    TransitionManager.beginDelayedTransition(activitySetupMain)
-    activitySetupMain.setVisibility(View.GONE)
-    proceedWithMnemonics = none
-  }
-
-  def createNewWallet(view: View): Unit = {
-    val twelveWordsEntropy: ByteVector = fr.acinq.eclair.randomBytes(16)
-    val mnemonic = MnemonicCode.toMnemonics(twelveWordsEntropy, englishWordList)
-    proceedWithMnemonics(mnemonic)
-  }
-
-  def showMnemonicPopup(view: View): Unit = {
+trait MnemonicActivity { me: BaseActivity =>
+  def showMnemonicInput(titleRes: Int)(proceedWithMnemonics: List[String] => Unit): Unit = {
     val mnemonicWrap = getLayoutInflater.inflate(R.layout.frag_mnemonic, null).asInstanceOf[LinearLayout]
     val recoveryPhrase = mnemonicWrap.findViewById(R.id.recoveryPhrase).asInstanceOf[com.hootsuite.nachos.NachoTextView]
     recoveryPhrase.addChipTerminator(' ', com.hootsuite.nachos.terminator.ChipTerminatorHandler.BEHAVIOR_CHIPIFY_TO_TERMINATOR)
@@ -86,12 +47,57 @@ class SetupActivity extends BaseActivity { me =>
         onFail(msg format exception.getMessage)
     }
 
-    val builder = titleBodyAsViewBuilder(getString(R.string.action_recovery_phrase_title).asDefView, mnemonicWrap)
+    val builder = titleBodyAsViewBuilder(getString(titleRes).asDefView, mnemonicWrap)
     val alert = mkCheckForm(proceed, none, builder, R.string.dialog_ok, R.string.dialog_cancel)
     updatePopupButton(getPositiveButton(alert), isEnabled = false)
 
     recoveryPhrase addTextChangedListener onTextChange { _ =>
       updatePopupButton(getPositiveButton(alert), getMnemonicList.size > 11)
     }
+  }
+
+  lazy val englishWordList: Array[String] = {
+    val rawData = getAssets.open("bip39_english_wordlist.txt")
+    scala.io.Source.fromInputStream(rawData, "UTF-8").getLines.toArray
+  }
+}
+
+class SetupActivity extends BaseActivity with MnemonicActivity { me =>
+  private[this] lazy val activitySetupMain = findViewById(R.id.activitySetupMain).asInstanceOf[LinearLayout]
+
+  lazy private[this] val enforceTor = new SettingsHolder(me) {
+    override def updateView: Unit = settingsCheck.setChecked(WalletApp.ensureTor)
+    settingsTitle.setText(settings_ensure_tor)
+    setVis(isVisible = false, settingsInfo)
+    disableIfOldAndroid
+
+    view setOnClickListener onButtonTap {
+      putBoolAndUpdateView(WalletApp.ENSURE_TOR, !WalletApp.ensureTor)
+    }
+  }
+
+  override def START(s: Bundle): Unit = {
+    setContentView(R.layout.activity_setup)
+    activitySetupMain.addView(enforceTor.view, 0)
+    enforceTor.updateView
+  }
+
+  var proceedWithMnemonics: List[String] => Unit = mnemonics => {
+    // Make sure this method can be run at most once (to not set runtime data twice) by replacing it with a noop method right away
+    runInFutureProcessOnUI(SetupActivity.fromMnemonics(mnemonics, me), onFail)(_ => me exitTo ClassNames.hubActivityClass)
+    TransitionManager.beginDelayedTransition(activitySetupMain)
+    activitySetupMain.setVisibility(View.GONE)
+    proceedWithMnemonics = none
+  }
+
+  def createNewWallet(view: View): Unit = {
+    val twelveWordsEntropy = fr.acinq.eclair.randomBytes(length = 16)
+    val mnemonic = MnemonicCode.toMnemonics(twelveWordsEntropy, englishWordList)
+    proceedWithMnemonics(mnemonic)
+  }
+
+  def showMnemonicPopup(view: View): Unit = {
+    val title = R.string.action_recovery_phrase_title
+    showMnemonicInput(title)(proceedWithMnemonics)
   }
 }

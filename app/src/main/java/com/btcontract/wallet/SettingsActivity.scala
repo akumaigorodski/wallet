@@ -2,7 +2,7 @@ package com.btcontract.wallet
 
 import android.content.Intent
 import android.os.{Build, Bundle}
-import android.view.{View, ViewGroup}
+import android.view.View
 import android.widget._
 import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.BuildConfig.{VERSION_CODE, VERSION_NAME}
@@ -49,7 +49,7 @@ abstract class SettingsHolder(host: BaseActivity) {
     }
 }
 
-class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
+class SettingsActivity extends BaseCheckActivity with MnemonicActivity with ChoiceReceiver { me =>
   lazy private[this] val settingsContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
   private[this] val fiatSymbols = WalletParams.fiatRates.universallySupportedSymbols.toList.sorted
   private[this] val CHOICE_FIAT_DENOMINATION_TAG = "choiceFiatDenominationTag"
@@ -90,27 +90,16 @@ class SettingsActivity extends BaseCheckActivity with ChoiceReceiver { me =>
     override def updateView: Unit = none
 
     private val wallets = Map(
-      BIP49 -> ("JoinMarket", "m/49'/0'/0'/0/n"),
-      BIP32 -> ("BRD, legacy wallet", "m/0'/0/n"),
-      BIP44 -> ("Bitcoin.com, Mycelium, Exodus...", "m/44'/0'/0'/0/n"),
-      BIP84 -> (getString(settings_chain_modern), "m/84'/0'/0'/0/n")
+      BIP32 -> ("Legacy SBW, BRD", "m/0'/0/n"),
+      BIP44 -> ("Bitcoin.com, Mycelium, Exodus", "m/44'/0'/0'/0/n"),
+      BIP49 -> ("JoinMarket", "m/49'/0'/0'/0/n")
     )
 
     val possibleKeys: List[String] = wallets.keys.toList
-    val hardcodedPosition: Int = possibleKeys.indexOf(BIP84)
 
     view setOnClickListener onButtonTap {
       val options = for (Tuple2(tag, info ~ path) <- wallets) yield s"<b>$tag</b> <i>$path</i><br>$info".html
-      val adapter = new ArrayAdapter(me, android.R.layout.select_dialog_multichoice, options.toArray) {
-        override def isEnabled(itemPosition: Int): Boolean = itemPosition != hardcodedPosition
-
-        override def getView(itemPosition: Int, itemConvertedView: View, itemParentGroup: ViewGroup): View = {
-          val bgColor = if (itemPosition == hardcodedPosition) R.color.almostBlack else android.R.color.transparent
-          val finalView = super.getView(itemPosition, itemConvertedView, itemParentGroup)
-          finalView.setBackgroundResource(bgColor)
-          finalView
-        }
-      }
+      val adapter = new ArrayAdapter(me, android.R.layout.select_dialog_multichoice, options.toArray)
 
       val list = selectorList(adapter)
       val listener = new OnListItemClickListener {
