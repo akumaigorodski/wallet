@@ -95,9 +95,6 @@
     <string name="settings_hw_zpub_tip">Billetera hardware o zpub</string>
 
     <string name="settings_chain_wallets">Manejar billeteras onchain</string>
-    <string name="settings_chain_modern">Billetera moderna</string>
-
-    <string name="settings_use_auth">Use PIN authentication</string>
     <string name="settings_ensure_tor">Obligar conexion a Tor</string>
 
     <string name="settings_btc_unit">Unidad de Bitcoin</string>

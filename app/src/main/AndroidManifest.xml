@@ -42,9 +42,12 @@
         </provider>
 
         <activity
-            android:name="com.btcontract.wallet.MainActivity"
+            android:exported="true"
+            android:name="HubActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"
-            android:exported="true">
+            android:windowSoftInputMode="adjustNothing">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -79,13 +82,6 @@
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
-
-        <activity
-            android:name="HubActivity"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:theme="@style/AppThemeNoActionBar"
-            android:windowSoftInputMode="adjustNothing"/>
 
         <activity
             android:name="QRChainActivity"

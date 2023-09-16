@@ -22,7 +22,9 @@ object SetupActivity {
 }
 
 trait MnemonicActivity { me: BaseActivity =>
-  def showMnemonicInput(titleRes: Int)(proceedWithMnemonics: List[String] => Unit): Unit = {
+  var proceedWithMnemonics: List[String] => Unit
+
+  def showMnemonicInput(titleRes: Int): Unit = {
     val mnemonicWrap = getLayoutInflater.inflate(R.layout.frag_mnemonic, null).asInstanceOf[LinearLayout]
     val recoveryPhrase = mnemonicWrap.findViewById(R.id.recoveryPhrase).asInstanceOf[com.hootsuite.nachos.NachoTextView]
     recoveryPhrase.addChipTerminator(' ', com.hootsuite.nachos.terminator.ChipTerminatorHandler.BEHAVIOR_CHIPIFY_TO_TERMINATOR)
@@ -63,13 +65,16 @@ trait MnemonicActivity { me: BaseActivity =>
 }
 
 class SetupActivity extends BaseActivity with MnemonicActivity { me =>
-  private[this] lazy val activitySetupMain = findViewById(R.id.activitySetupMain).asInstanceOf[LinearLayout]
+  lazy val activitySetupMain = findViewById(R.id.activitySetupMain).asInstanceOf[LinearLayout]
 
-  lazy private[this] val enforceTor = new SettingsHolder(me) {
-    override def updateView: Unit = settingsCheck.setChecked(WalletApp.ensureTor)
+  lazy val enforceTor = new SettingsHolder(me) {
     settingsTitle.setText(settings_ensure_tor)
     setVis(isVisible = false, settingsInfo)
     disableIfOldAndroid
+
+    override def updateView: Unit = {
+      settingsCheck.setChecked(WalletApp.ensureTor)
+    }
 
     view setOnClickListener onButtonTap {
       putBoolAndUpdateView(WalletApp.ENSURE_TOR, !WalletApp.ensureTor)
@@ -97,7 +102,6 @@ class SetupActivity extends BaseActivity with MnemonicActivity { me =>
   }
 
   def showMnemonicPopup(view: View): Unit = {
-    val title = R.string.action_recovery_phrase_title
-    showMnemonicInput(title)(proceedWithMnemonics)
+    showMnemonicInput(R.string.action_recovery_phrase_title)
   }
 }

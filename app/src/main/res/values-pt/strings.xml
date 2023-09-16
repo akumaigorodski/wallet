@@ -95,9 +95,6 @@
     <string name="settings_hw_zpub_tip">Hardware wallet or zpub</string>
 
     <string name="settings_chain_wallets">Gerenciar carteiras chain</string>
-    <string name="settings_chain_modern">Carteira moderna</string>
-
-    <string name="settings_use_auth">Use PIN authentication</string>
     <string name="settings_ensure_tor">Aplicar conexão Tor</string>
 
     <string name="settings_btc_unit">Unidade de bitcoin</string>

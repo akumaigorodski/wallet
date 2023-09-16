@@ -1,6 +1,5 @@
 package com.btcontract.wallet
 
-import android.content.Intent
 import android.os.{Build, Bundle}
 import android.view.View
 import android.widget._
@@ -11,7 +10,6 @@ import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.sheets.{BaseChoiceBottomSheet, PairingData}
 import com.btcontract.wallet.utils.OnListItemClickListener
 import com.google.android.material.snackbar.Snackbar
-import com.guardanis.applock.AppLock
 import fr.acinq.bitcoin.Satoshi
 import fr.acinq.eclair.MilliSatoshi
 import fr.acinq.eclair.blockchain.EclairWallet
@@ -56,11 +54,13 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
   private[this] val CHOICE_BTC_DENOMINATON_TAG = "choiceBtcDenominationTag"
   private[this] val units = List(SatDenomination, BtcDenomination)
 
-  override def onResume: Unit = {
-    useBiometric.updateView
-    enforceTor.updateView
+  var proceedWithMnemonics: List[String] => Unit = mnemonic => {
 
+  }
+
+  override def onResume: Unit = {
     chainWallets.updateView
+    enforceTor.updateView
     electrum.updateView
     setFiat.updateView
     setBtc.updateView
@@ -226,18 +226,6 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
     }
   }
 
-  lazy private[this] val useBiometric: SettingsHolder = new SettingsHolder(me) {
-    def updateView: Unit = settingsCheck.setChecked(WalletApp.useAuth)
-
-    view setOnClickListener onButtonTap {
-      if (WalletApp.useAuth) runAnd(AppLock.getInstance(me).invalidateEnrollments)(updateView)
-      else startActivityForResult(new Intent(me, ClassNames.lockCreationClass), REQUEST_CODE_CREATE_LOCK)
-    }
-
-    settingsTitle.setText(settings_use_auth)
-    setVis(isVisible = false, settingsInfo)
-  }
-
   lazy private[this] val enforceTor = new SettingsHolder(me) {
     override def updateView: Unit = settingsCheck.setChecked(WalletApp.ensureTor)
 
@@ -277,7 +265,6 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
     }
 
     settingsContainer.addView(settingsPageitle.view)
-    settingsContainer.addView(useBiometric.view)
     settingsContainer.addView(enforceTor.view)
     settingsContainer.addView(viewCode.view)
 

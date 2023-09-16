@@ -14,7 +14,6 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.multidex.MultiDex
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.sqlite._
-import com.guardanis.applock.AppLock
 import com.softwaremill.quicklens._
 import fr.acinq.bitcoin.{Block, ByteVector32, Satoshi, SatoshiLong}
 import fr.acinq.eclair._
@@ -52,7 +51,6 @@ object WalletApp {
   final val ENSURE_TOR = "ensureTor"
   final val CUSTOM_ELECTRUM = "customElectrum"
 
-  def useAuth: Boolean = AppLock.isEnrolled(app)
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
   def ensureTor: Boolean = app.prefs.getBoolean(ENSURE_TOR, false)
 
@@ -81,7 +79,7 @@ object WalletApp {
   def restart: Unit = {
     freePossiblyUsedRuntimeResouces
     require(!WalletParams.isOperational, "Still operational")
-    val intent = new Intent(app, ClassNames.mainActivityClass)
+    val intent = new Intent(app, ClassNames.hubActivityClass)
     val restart = Intent.makeRestartActivityTask(intent.getComponent)
     app.startActivity(restart)
     System.exit(0)
@@ -251,12 +249,6 @@ class WalletApp extends Application { me =>
   override def onCreate: Unit = runAnd(super.onCreate) {
     // Currently night theme is the only option, should be set by default
     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-  }
-
-  override def onTrimMemory(level: Int): Unit = {
-    val shouldResetUnlock = level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN
-    if (shouldResetUnlock) AppLock.getInstance(me).setAuthenticationRequired
-    super.onTrimMemory(level)
   }
 
   def when(thenDate: Date, simpleFormat: SimpleDateFormat): String =

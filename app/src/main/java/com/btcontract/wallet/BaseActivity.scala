@@ -31,7 +31,6 @@ import com.google.android.material.textfield.TextInputLayout
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.{BarcodeFormat, EncodeHintType}
-import com.guardanis.applock.AppLock
 import com.journeyapps.barcodescanner.{BarcodeResult, BarcodeView}
 import com.ornach.nobobutton.NoboButton
 import com.sparrowwallet.hummingbird.registry.CryptoPSBT
@@ -68,6 +67,13 @@ object BaseActivity {
   def totalBalance: MilliSatoshi =
     WalletParams.chainWallets.wallets
       .map(_.info.lastBalance).sum.toMilliSatoshi
+}
+
+object ClassNames {
+  val qrChainActivityClass: Class[QRChainActivity] = classOf[QRChainActivity]
+  val coinControlActivityClass: Class[CoinControlActivity] = classOf[CoinControlActivity]
+  val settingsActivityClass: Class[SettingsActivity] = classOf[SettingsActivity]
+  val hubActivityClass: Class[HubActivity] = classOf[HubActivity]
 }
 
 object Colors {
@@ -655,19 +661,12 @@ trait BaseActivity extends AppCompatActivity { me =>
 trait BaseCheckActivity extends BaseActivity { me =>
   def PROCEED(state: Bundle): Unit
 
-  override def onResume: Unit = runAnd(super.onResume) {
-    if (AppLock.isUnlockRequired(me) && WalletApp.useAuth) {
-      val intent: Intent = new Intent(me, ClassNames.unlockActivityClass)
-      startActivityForResult(intent, AppLock.REQUEST_CODE_UNLOCK)
-    }
-  }
-
   override def START(state: Bundle): Unit = {
     if (WalletApp.isAlive && WalletParams.isOperational) PROCEED(state) else {
       // The way Android works is we can get some objects nullified when restoring from background
       // when that happens we make sure to free all remaining resources and start from scratch
       WalletApp.freePossiblyUsedRuntimeResouces
-      me exitTo ClassNames.mainActivityClass
+      me exitTo ClassNames.hubActivityClass
     }
   }
 }

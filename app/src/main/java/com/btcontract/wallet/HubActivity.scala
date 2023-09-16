@@ -3,6 +3,7 @@ package com.btcontract.wallet
 import java.net.InetSocketAddress
 import java.util.TimerTask
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.{View, ViewGroup}
@@ -34,7 +35,7 @@ import spray.json._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 
 object HubActivity {
@@ -47,7 +48,7 @@ object HubActivity {
       cardOut, cardIn, cardZero, isIncoming = true)
 }
 
-class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
+class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   private[this] lazy val paymentTypeIconIds = List(R.id.btcIncoming, R.id.btcInBoosted, R.id.btcOutBoosted, R.id.btcOutCancelled, R.id.btcOutgoing)
   private[this] lazy val bottomBlurringArea = findViewById(R.id.bottomBlurringArea).asInstanceOf[RealtimeBlurView]
   private[this] lazy val bottomActionBar = findViewById(R.id.bottomActionBar).asInstanceOf[LinearLayout]
@@ -579,11 +580,16 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
 
   // Lifecycle methods
 
-  override def onResume: Unit = {
-    // Tor service could have been stopped in background
+  override def onNewIntent(intent: Intent): Unit = {
+    super.onNewIntent(intent)
+    setIntent(intent)
+  }
+
+  override def onResume: Unit = runAnd(super.onResume) {
     try WalletParams.connectionProvider.notifyAppAvailable catch none
-    try checkExternalData(noneRunnable) catch none
-    super.onResume
+    val dataOpt = Seq(getIntent.getDataString, getIntent getStringExtra Intent.EXTRA_TEXT).find(externalData => null != externalData)
+    runInFutureProcessOnUI(dataOpt.foreach(InputParser.recordValue), none)(_ => try checkExternalData(noneRunnable) catch none)
+    setIntent(new Intent)
   }
 
   override def onDestroy: Unit = {
@@ -632,54 +638,75 @@ class HubActivity extends BaseCheckActivity with ExternalDataChecker { me =>
 
   def isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]
 
-  override def PROCEED(state: Bundle): Unit = {
-    setContentView(com.btcontract.wallet.R.layout.activity_hub)
-    WalletParams.fiatRates.listeners += fiatRatesListener
-    WalletParams.chainWallets.catcher ! chainListener
-    instance = me
+  override def START(state: Bundle): Unit =
+    WalletApp.isAlive match {
+      case true if WalletParams.isOperational =>
+        setContentView(com.btcontract.wallet.R.layout.activity_hub)
+        WalletParams.fiatRates.listeners += fiatRatesListener
+        WalletParams.chainWallets.catcher ! chainListener
+        instance = me
 
-    bottomActionBar post UITask {
-      bottomBlurringArea.setHeightTo(bottomActionBar)
-      itemsList.setPadding(0, 0, 0, bottomActionBar.getHeight)
-    }
+        bottomActionBar post UITask {
+          bottomBlurringArea.setHeightTo(bottomActionBar)
+          itemsList.setPadding(0, 0, 0, bottomActionBar.getHeight)
+        }
 
-    // LIST
+        // LIST
 
-    itemsList.addHeaderView(walletCards.view)
-    itemsList.setAdapter(paymentsAdapter)
-    itemsList.setDividerHeight(0)
-    itemsList.setDivider(null)
+        itemsList.addHeaderView(walletCards.view)
+        itemsList.setAdapter(paymentsAdapter)
+        itemsList.setDividerHeight(0)
+        itemsList.setDivider(null)
 
-    // Fill wallet list with wallet card views here
-    walletCards.recoveryPhraseWarning setOnClickListener onButtonTap(viewRecoveryCode)
-    walletCards.chainCards.init(WalletParams.chainWallets.wallets)
-    walletCards.updateView
+        // Fill wallet list with wallet card views here
+        walletCards.recoveryPhraseWarning setOnClickListener onButtonTap(viewRecoveryCode)
+        walletCards.chainCards.init(WalletParams.chainWallets.wallets)
+        walletCards.updateView
 
-    runInFutureProcessOnUI(loadRecent, none) { _ =>
-      // User may kill an activity but not an app and on getting back there won't be a chain listener event, so check connectivity once again here
-      setVisMany(WalletApp.ensureTor -> walletCards.torIndicator, WalletApp.currentChainNode.isEmpty -> walletCards.offlineIndicator)
-      walletCards.searchField addTextChangedListener onTextChange(searchWorker.addWork)
-      paymentAdapterDataChanged.run
-    }
+        runInFutureProcessOnUI(loadRecent, none) { _ =>
+          // User may kill an activity but not an app and on getting back there won't be a chain listener event, so check connectivity once again here
+          setVisMany(WalletApp.ensureTor -> walletCards.torIndicator, WalletApp.currentChainNode.isEmpty -> walletCards.offlineIndicator)
+          walletCards.searchField addTextChangedListener onTextChange(searchWorker.addWork)
+          paymentAdapterDataChanged.run
+        }
 
-    // STREAMS
+        // STREAMS
 
-    val window = 500.millis
-    timer.scheduleAtFixedRate(paymentAdapterDataChanged, 20000, 20000)
-    stateSubscription = Rx.uniqueFirstAndLastWithinWindow(DbStreams.txDbStream, window).subscribe { _ =>
-      // After each delayed update we check if pending txs got confirmed or double-spent
-      // do this check specifically after updating txInfos with new items
-      loadRecent
+        val window = 500.millis
+        timer.scheduleAtFixedRate(paymentAdapterDataChanged, 20000, 20000)
+        stateSubscription = Rx.uniqueFirstAndLastWithinWindow(DbStreams.txDbStream, window).subscribe { _ =>
+          // After each delayed update we check if pending txs got confirmed or double-spent
+          // do this check specifically after updating txInfos with new items
+          loadRecent
 
-      for {
-        txInfo <- txInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
-        relatedChainWallet <- WalletParams.chainWallets.findByPubKey(txInfo.pubKey)
-        res <- relatedChainWallet.doubleSpent(txInfo.tx) if res.depth != txInfo.depth || res.isDoubleSpent != txInfo.isDoubleSpent
-      } WalletApp.txDataBag.updStatus(txInfo.txid, res.depth, updatedStamp = res.stamp, res.isDoubleSpent)
+          for {
+            txInfo <- txInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
+            relatedChainWallet <- WalletParams.chainWallets.findByPubKey(txInfo.pubKey)
+            res <- relatedChainWallet.doubleSpent(txInfo.tx) if res.depth != txInfo.depth || res.isDoubleSpent != txInfo.isDoubleSpent
+          } WalletApp.txDataBag.updStatus(txInfo.txid, res.depth, updatedStamp = res.stamp, res.isDoubleSpent)
 
-      UITask(walletCards.updateView).run
-      paymentAdapterDataChanged.run
-    }.asSome
+          UITask(walletCards.updateView).run
+          paymentAdapterDataChanged.run
+        }.asSome
+
+      case true =>
+        WalletApp.extDataBag.tryGetSecret match {
+          case Failure(_: android.database.CursorIndexOutOfBoundsException) =>
+            // Record is not present at all, this is probaby a fresh wallet
+            me exitTo classOf[SetupActivity]
+
+          case Failure(reason) =>
+            // Notify user about it
+            throw reason
+
+          case Success(secret) =>
+            WalletApp.makeOperational(secret)
+            START(state)
+        }
+
+      case false =>
+        WalletApp.makeAlive
+        START(state)
   }
 
   // VIEW HANDLERS

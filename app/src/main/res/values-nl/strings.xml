@@ -95,9 +95,6 @@
     <string name="settings_hw_zpub_tip">Hardwareportemonnee of zpub</string>
 
     <string name="settings_chain_wallets">Beheer ketenportemonnees</string>
-    <string name="settings_chain_modern">Hedendaagse portemonnee</string>
-
-    <string name="settings_use_auth">Gebruik PIN authenticatie</string>
     <string name="settings_ensure_tor">Gebruik Torverbinding</string>
 
     <string name="settings_btc_unit">Bitcoineenheden</string>
