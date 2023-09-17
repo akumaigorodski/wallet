@@ -409,18 +409,19 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       item match {
         case info: TxInfo =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
+          val wallet = WalletParams.chainWallets.findByPubKey(info.pubKey).find(wallet => wallet.isSigning || wallet.info.core.masterFingerprint.nonEmpty)
           val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.cpfpOf.isEmpty
           val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.canBeCPFPd
-          val walletCanSpend = WalletParams.chainWallets.findByPubKey(info.pubKey).exists(wallet => wallet.isSigning || wallet.hasFingerprint)
           val isRbfCancel = info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL)
 
           val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
           val fiatNow = WalletApp.msatInFiatHuman(WalletParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiat)
           val fiatThen = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiat)
 
-          WalletParams.chainWallets.findByPubKey(info.pubKey) match {
-            case Some(wallet) if wallet.hasFingerprint => addFlowChip(extraInfo, getString(hardware_wallet), R.drawable.border_gray)
-            case Some(wallet) if !wallet.isSigning => addFlowChip(extraInfo, getString(watching_wallet), R.drawable.border_gray)
+          wallet match {
+            case Some(w) if w.info.core.attachedMaster.isDefined => addFlowChip(extraInfo, getString(attached_wallet), R.drawable.border_gray)
+            case Some(w) if w.info.core.masterFingerprint.nonEmpty => addFlowChip(extraInfo, getString(hardware_wallet), R.drawable.border_gray)
+            case Some(w) if !w.isSigning => addFlowChip(extraInfo, getString(watching_wallet), R.drawable.border_gray)
             case _ =>
           }
 
@@ -430,9 +431,11 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
           addFlowChip(extraInfo, getString(popup_fiat).format(s"<font color=$cardIn>$fiatNow</font>", fiatThen), R.drawable.border_gray)
           if (!info.isIncoming || isRbfCancel || info.description.cpfpOf.isDefined) addFlowChip(extraInfo, getString(popup_chain_fee) format fee, R.drawable.border_gray)
 
-          if (walletCanSpend && canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
-          if (walletCanSpend && canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
-          if (walletCanSpend && canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
+          if (wallet.isDefined) {
+            if (canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
+            if (canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
+            if (canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
+          }
       }
     }
 
@@ -879,40 +882,40 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     paymentsAdapter.notifyDataSetChanged
   }
 
-  def proceedConfirm(fromWallet: ElectrumEclairWallet, sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
+  def proceedConfirm(wallet: ElectrumEclairWallet, sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
     // This is used after user decided to send a transaction, if the wallet happens to be a hardware one then generated response is fake and we got stuff to do
     val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
 
-    if (fromWallet.isSigning) {
+    if (wallet.isSigning) {
       // This is a signing wallet so signed response tx is a final one, we use it
       finalSendButton setOnClickListener onButtonTap(process apply response.tx)
       sendView.switchToConfirm(alert, response)
-    } else if (fromWallet.hasFingerprint) {
+    } else if (wallet.info.core.masterFingerprint.nonEmpty) {
       sendView.chainReaderView.onSignedTx = signedTx => UITask {
         if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
         finalSendButton setOnClickListener onButtonTap(process apply signedTx)
         sendView.switchToConfirm(alert, response)
       }.run
 
-      val masterFingerprint = fromWallet.info.core.masterFingerprint.get
+      val masterFingerprint = wallet.info.core.masterFingerprint.get
       val psbt = prepareBip84Psbt(response, masterFingerprint)
       sendView.switchToHardwareOutgoing(alert, psbt)
     } else alert.dismiss
   }
 
-  def proceedWithoutConfirm(fromWallet: ElectrumEclairWallet, sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
+  def proceedWithoutConfirm(wallet: ElectrumEclairWallet, sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
     // This is used after user decided to send CPFP/RBF a transaction, if the wallet happens to be a hardware one then generated response is fake and we got stuff to do
 
-    if (fromWallet.isSigning) {
+    if (wallet.isSigning) {
       process(response.tx)
       alert.dismiss
-    } else if (fromWallet.hasFingerprint) {
+    } else if (wallet.info.core.masterFingerprint.nonEmpty) {
       sendView.chainReaderView.onSignedTx = signedTx => UITask {
         if (signedTx.txOut.toSet == response.tx.txOut.toSet) process(signedTx)
         alert.dismiss
       }.run
 
-      val masterFingerprint = fromWallet.info.core.masterFingerprint.get
+      val masterFingerprint = wallet.info.core.masterFingerprint.get
       val psbt = prepareBip84Psbt(response, masterFingerprint)
       sendView.switchToHardwareOutgoing(alert, psbt)
     } else alert.dismiss

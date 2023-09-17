@@ -48,7 +48,7 @@ object WalletParams {
 
 case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, sync: ActorRef, pool: ActorRef, params: WalletParameters) extends CanBeShutDown { me =>
 
-  lazy val usableWallets: List[ElectrumEclairWallet] = wallets.filter(wallet => wallet.isSigning || wallet.hasFingerprint)
+  lazy val usableWallets: List[ElectrumEclairWallet] = wallets.filter(wallet => wallet.isSigning || wallet.info.core.masterFingerprint.nonEmpty)
 
   def findByPubKey(pub: PublicKey): Option[ElectrumEclairWallet] = wallets.find(_.ewt.xPub.publicKey == pub)
 

@@ -40,7 +40,5 @@ trait EclairWallet {
 
   def broadcast(tx: Transaction): Future[Boolean]
 
-  def hasFingerprint: Boolean
-
   def isSigning: Boolean
 }

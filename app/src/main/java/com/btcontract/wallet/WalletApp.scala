@@ -135,7 +135,7 @@ object WalletApp {
     val walletExt: WalletExt =
       (WalletExt(wallets = Nil, catcher, sync, electrumPool, params) /: chainWalletBag.listWallets) {
         case ext ~ CompleteChainWalletInfo(core: SigningWallet, persistentSigningWalletData, lastBalance, label, false) =>
-          val signingWallet = ext.makeSigningWalletParts(core, secret.keys.master, lastBalance, label)
+          val signingWallet = ext.makeSigningWalletParts(core, core.attachedMaster.getOrElse(secret.keys.master), lastBalance, label)
           signingWallet.walletRef ! persistentSigningWalletData
           ext.copy(wallets = signingWallet :: ext.wallets)
 
@@ -147,7 +147,7 @@ object WalletApp {
 
     WalletParams.chainWallets = if (walletExt.wallets.isEmpty) {
       val defaultWalletLabel = app.getString(R.string.bitcoin_wallet)
-      val core = SigningWallet(walletType = EclairWallet.BIP84, isRemovable = false)
+      val core = SigningWallet(walletType = EclairWallet.BIP84, attachedMaster = None, isRemovable = false)
       val wallet = walletExt.makeSigningWalletParts(core, secret.keys.master, Satoshi(0L), defaultWalletLabel)
       walletExt.withFreshWallet(wallet)
     } else walletExt

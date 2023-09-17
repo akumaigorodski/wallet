@@ -169,8 +169,13 @@ trait BaseActivity extends AppCompatActivity { me =>
   }
 
   def chainWalletBackground(wallet: ElectrumEclairWallet): Int = if (wallet.isSigning) R.color.cardBitcoinModern else R.color.cardBitcoinLegacy
-  def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] = if (wallet.hasFingerprint) Some(hardware_wallet) else if (!wallet.isSigning) Some(watching_wallet) else None
   def browse(maybeUri: String): Unit = try me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri) catch { case exception: Throwable => me onFail exception }
+
+  def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] =
+    if (wallet.info.core.attachedMaster.isDefined) Some(attached_wallet)
+    else if (wallet.info.core.masterFingerprint.nonEmpty) Some(hardware_wallet)
+    else if (!wallet.isSigning) Some(watching_wallet)
+    else None
 
   def share(text: CharSequence): Unit = startActivity {
     val shareAction = (new Intent).setAction(Intent.ACTION_SEND)
@@ -234,12 +239,6 @@ trait BaseActivity extends AppCompatActivity { me =>
   def UITask(fun: => Any): java.util.TimerTask = {
     val runnableExec = new Runnable { override def run: Unit = fun }
     new java.util.TimerTask { def run: Unit = me runOnUiThread runnableExec }
-  }
-
-  def selectorList(listAdapter: ListAdapter): ListView = {
-    val list = getLayoutInflater.inflate(R.layout.frag_selector_list, null).asInstanceOf[ListView]
-    list.setAdapter(listAdapter)
-    list
   }
 
   // Builders

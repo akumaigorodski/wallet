@@ -1,7 +1,7 @@
 package immortan.utils
 
 import fr.acinq.bitcoin.Crypto.PublicKey
-import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
+import fr.acinq.bitcoin.DeterministicWallet.{ExtendedPrivateKey, ExtendedPublicKey}
 import fr.acinq.bitcoin.{ByteVector32, Satoshi}
 import fr.acinq.eclair.MilliSatoshi
 import fr.acinq.eclair.blockchain.electrum.db.{ChainWalletInfo, SigningWallet, WatchingWallet}
@@ -45,6 +45,8 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
 
   implicit val extendedPublicKeyFmt: JsonFormat[ExtendedPublicKey] = sCodecJsonFmt(extendedPublicKeyCodec)
 
+  implicit val extendedPrivateKeyFmt: JsonFormat[ExtendedPrivateKey] = sCodecJsonFmt(extendedPrivateKeyCodec)
+
   // Chain wallet types
 
   implicit object ChainWalletInfoFmt extends JsonFormat[ChainWalletInfo] {
@@ -61,11 +63,10 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
     }
   }
 
-  implicit val signingWalletFmt: JsonFormat[SigningWallet] =
-    taggedJsonFmt(jsonFormat[String, Boolean, SigningWallet](SigningWallet.apply, "walletType", "isRemovable"), tag = "SigningWallet")
+  implicit val signingWalletFmt: JsonFormat[SigningWallet] = taggedJsonFmt(jsonFormat[String, Option[ExtendedPrivateKey], Boolean,
+      SigningWallet](SigningWallet.apply, "walletType", "attachedMaster", "isRemovable"), tag = "SigningWallet")
 
-  implicit val watchingWalletFmt: JsonFormat[WatchingWallet] =
-    taggedJsonFmt(jsonFormat[String, Option[Long], ExtendedPublicKey, Boolean,
+  implicit val watchingWalletFmt: JsonFormat[WatchingWallet] = taggedJsonFmt(jsonFormat[String, Option[Long], ExtendedPublicKey, Boolean,
       WatchingWallet](WatchingWallet.apply, "walletType", "masterFingerprint", "xPub", "isRemovable"), tag = "WatchingWallet")
 
   // PaymentInfo stuff

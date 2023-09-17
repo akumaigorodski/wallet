@@ -11,20 +11,8 @@ import immortan.crypto.Tools.{SEPARATOR, none}
 import immortan.{LightningNodeKeys, WalletSecret}
 
 
-object SetupActivity {
-  def fromMnemonics(mnemonics: List[String], host: BaseActivity): Unit = {
-    val walletSeed = MnemonicCode.toSeed(mnemonics, passphrase = new String)
-    val keys = LightningNodeKeys.makeFromSeed(seed = walletSeed.toArray)
-    val secret = WalletSecret(keys, mnemonics, walletSeed)
-    WalletApp.extDataBag.putSecret(secret)
-    WalletApp.makeOperational(secret)
-  }
-}
-
 trait MnemonicActivity { me: BaseActivity =>
-  var proceedWithMnemonics: List[String] => Unit
-
-  def showMnemonicInput(titleRes: Int): Unit = {
+  def showMnemonicInput(titleRes: Int)(proceedWithMnemonics: List[String] => Unit): Unit = {
     val mnemonicWrap = getLayoutInflater.inflate(R.layout.frag_mnemonic, null).asInstanceOf[LinearLayout]
     val recoveryPhrase = mnemonicWrap.findViewById(R.id.recoveryPhrase).asInstanceOf[com.hootsuite.nachos.NachoTextView]
     recoveryPhrase.addChipTerminator(' ', com.hootsuite.nachos.terminator.ChipTerminatorHandler.BEHAVIOR_CHIPIFY_TO_TERMINATOR)
@@ -39,9 +27,9 @@ trait MnemonicActivity { me: BaseActivity =>
       pureMnemonic.split(SEPARATOR).toList
     }
 
-    def proceed(alert: AlertDialog): Unit = try {
+    val proceed: AlertDialog => Unit = alert => try {
       MnemonicCode.validate(getMnemonicList, englishWordList)
-      proceedWithMnemonics(getMnemonicList)
+      if (alert.isShowing) proceedWithMnemonics(getMnemonicList)
       alert.dismiss
     } catch {
       case exception: Throwable =>
@@ -81,18 +69,22 @@ class SetupActivity extends BaseActivity with MnemonicActivity { me =>
     }
   }
 
+  val proceedWithMnemonics: List[String] => Unit = mnemonic => {
+    val walletSeed = MnemonicCode.toSeed(mnemonic, passphrase = new String)
+    val keys = LightningNodeKeys.makeFromSeed(walletSeed.toArray)
+    val secret = WalletSecret(keys, mnemonic, walletSeed)
+    WalletApp.extDataBag.putSecret(secret)
+    WalletApp.makeOperational(secret)
+
+    TransitionManager.beginDelayedTransition(activitySetupMain)
+    activitySetupMain.setVisibility(View.GONE)
+    exitTo(ClassNames.hubActivityClass)
+  }
+
   override def START(s: Bundle): Unit = {
     setContentView(R.layout.activity_setup)
     activitySetupMain.addView(enforceTor.view, 0)
     enforceTor.updateView
-  }
-
-  var proceedWithMnemonics: List[String] => Unit = mnemonics => {
-    // Make sure this method can be run at most once (to not set runtime data twice) by replacing it with a noop method right away
-    runInFutureProcessOnUI(SetupActivity.fromMnemonics(mnemonics, me), onFail)(_ => me exitTo ClassNames.hubActivityClass)
-    TransitionManager.beginDelayedTransition(activitySetupMain)
-    activitySetupMain.setVisibility(View.GONE)
-    proceedWithMnemonics = none
   }
 
   def createNewWallet(view: View): Unit = {
@@ -102,6 +94,7 @@ class SetupActivity extends BaseActivity with MnemonicActivity { me =>
   }
 
   def showMnemonicPopup(view: View): Unit = {
-    showMnemonicInput(R.string.action_recovery_phrase_title)
+    val title = R.string.action_recovery_phrase_title
+    showMnemonicInput(title)(proceedWithMnemonics)
   }
 }

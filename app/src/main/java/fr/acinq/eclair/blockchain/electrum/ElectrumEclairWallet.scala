@@ -69,7 +69,5 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
 
   override def doubleSpent(tx: Transaction): Future[IsDoubleSpentResponse] = (walletRef ? tx).mapTo[IsDoubleSpentResponse]
 
-  override def hasFingerprint: Boolean = info.core.masterFingerprint.nonEmpty
-
   override def isSigning: Boolean = ewt.secrets.nonEmpty
 }
