@@ -1,0 +1,2 @@
+* Attach BIP39 wallets by typing in their mnemonic phrase.
+* UI fixes and interface speed improvements.
