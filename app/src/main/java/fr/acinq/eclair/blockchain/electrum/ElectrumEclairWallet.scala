@@ -68,6 +68,4 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
   override def provideExcludedOutpoints(excludedOutPoints: List[OutPoint] = Nil): Unit = walletRef ! ProvideExcludedOutPoints(excludedOutPoints)
 
   override def doubleSpent(tx: Transaction): Future[IsDoubleSpentResponse] = (walletRef ? tx).mapTo[IsDoubleSpentResponse]
-
-  override def isSigning: Boolean = ewt.secrets.nonEmpty
 }

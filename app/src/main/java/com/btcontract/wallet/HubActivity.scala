@@ -409,7 +409,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       item match {
         case info: TxInfo =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
-          val wallet = WalletParams.chainWallets.findByPubKey(info.pubKey).find(wallet => wallet.isSigning || wallet.info.core.masterFingerprint.nonEmpty)
+          val wallet = WalletParams.chainWallets.findByPubKey(info.pubKey).find(wallet => wallet.ewt.secrets.nonEmpty || wallet.info.core.masterFingerprint.nonEmpty)
           val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.cpfpOf.isEmpty
           val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.canBeCPFPd
           val isRbfCancel = info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL)
@@ -421,7 +421,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
           wallet match {
             case Some(w) if w.info.core.attachedMaster.isDefined => addFlowChip(extraInfo, getString(attached_wallet), R.drawable.border_gray)
             case Some(w) if w.info.core.masterFingerprint.nonEmpty => addFlowChip(extraInfo, getString(hardware_wallet), R.drawable.border_gray)
-            case Some(w) if !w.isSigning => addFlowChip(extraInfo, getString(watching_wallet), R.drawable.border_gray)
+            case Some(w) if w.ewt.secrets.isEmpty => addFlowChip(extraInfo, getString(watching_wallet), R.drawable.border_gray)
             case _ =>
           }
 
@@ -611,10 +611,9 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
     case bitcoinUri: BitcoinUri if Try(WalletParams addressToPubKeyScript bitcoinUri.address).isSuccess =>
-
-      if (WalletParams.chainWallets.usableWallets.size == 1) {
-        bringSendBitcoinPopup(bitcoinUri, WalletParams.chainWallets.usableWallets.head)
-      } else bringChainWalletChooser(me titleViewFromUri bitcoinUri) { wallet =>
+      if (WalletParams.chainWallets.spendableWallets.size == 1) bringSendBitcoinPopup(bitcoinUri, WalletParams.chainWallets.spendableWallets.head)
+      else if (WalletParams.chainWallets.usableWallets.size == 1) bringSendBitcoinPopup(bitcoinUri, WalletParams.chainWallets.usableWallets.head)
+      else bringChainWalletChooser(me titleViewFromUri bitcoinUri) { wallet =>
         // We have wallet candidates to spend from here
         bringSendBitcoinPopup(bitcoinUri, wallet)
       }
@@ -623,14 +622,11 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       val dustAmount = a2a.values.secondItems.find(amount => WalletParams.chainWallets.params.dustLimit > amount)
       val badAddress = a2a.values.firstItems.find(address => Try(WalletParams addressToPubKeyScript address).isFailure)
 
-      if (dustAmount.nonEmpty) {
-        val minimum = WalletParams.chainWallets.params.dustLimit.toLong
-        onFail(s"Incorrect amount=${dustAmount.get.toLong}, minimum=$minimum")
-      } else if (badAddress.nonEmpty) {
-        onFail(s"Incorrect Bitcoin address=${badAddress.get}")
-      } else if (WalletParams.chainWallets.usableWallets.size == 1) {
-        bringSendMultiBitcoinPopup(a2a, WalletParams.chainWallets.usableWallets.head)
-      } else bringChainWalletChooser(me getString dialog_send_btc_many) { wallet =>
+      if (badAddress.nonEmpty) onFail(s"Incorrect Bitcoin address=${badAddress.get}")
+      else if (dustAmount.nonEmpty) onFail(s"Incorrect amount=${dustAmount.get.toLong}, minimum=${WalletParams.chainWallets.params.dustLimit.toLong}")
+      else if (WalletParams.chainWallets.spendableWallets.size == 1) bringSendMultiBitcoinPopup(a2a, WalletParams.chainWallets.spendableWallets.head)
+      else if (WalletParams.chainWallets.usableWallets.size == 1) bringSendMultiBitcoinPopup(a2a, WalletParams.chainWallets.usableWallets.head)
+      else bringChainWalletChooser(me getString dialog_send_btc_many) { wallet =>
         // We have wallet candidates to spend from here
         bringSendMultiBitcoinPopup(a2a, wallet)
       }
@@ -886,7 +882,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     // This is used after user decided to send a transaction, if the wallet happens to be a hardware one then generated response is fake and we got stuff to do
     val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
 
-    if (wallet.isSigning) {
+    if (wallet.ewt.secrets.nonEmpty) {
       // This is a signing wallet so signed response tx is a final one, we use it
       finalSendButton setOnClickListener onButtonTap(process apply response.tx)
       sendView.switchToConfirm(alert, response)
@@ -906,7 +902,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   def proceedWithoutConfirm(wallet: ElectrumEclairWallet, sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
     // This is used after user decided to send CPFP/RBF a transaction, if the wallet happens to be a hardware one then generated response is fake and we got stuff to do
 
-    if (wallet.isSigning) {
+    if (wallet.ewt.secrets.nonEmpty) {
       process(response.tx)
       alert.dismiss
     } else if (wallet.info.core.masterFingerprint.nonEmpty) {
@@ -923,7 +919,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
   def broadcastTx(fromWallet: ElectrumEclairWallet, desc: TxDescription, finalTx: Transaction, received: Satoshi, sent: Satoshi, fee: Satoshi): Future[Boolean] = {
     WalletApp.txInfos(finalTx.txid) = TxInfo(finalTx.toString, finalTx.txid.toHex, invalidPubKey.toString, depth = 0, received, sent, fee, seenAt = System.currentTimeMillis,
-      System.currentTimeMillis, desc, BaseActivity.totalBalance, WalletParams.fiatRates.info.rates.toJson.compactPrint, incoming = if (received > sent) 1 else 0, doubleSpent = 0)
+      System.currentTimeMillis, desc, 0L.msat, WalletParams.fiatRates.info.rates.toJson.compactPrint, incoming = if (received > sent) 1 else 0, doubleSpent = 0)
 
     DbStreams.next(DbStreams.txDbStream)
     fromWallet.broadcast(finalTx)

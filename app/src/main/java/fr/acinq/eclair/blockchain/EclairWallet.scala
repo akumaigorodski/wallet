@@ -39,6 +39,4 @@ trait EclairWallet {
   def doubleSpent(tx: Transaction): Future[IsDoubleSpentResponse]
 
   def broadcast(tx: Transaction): Future[Boolean]
-
-  def isSigning: Boolean
 }

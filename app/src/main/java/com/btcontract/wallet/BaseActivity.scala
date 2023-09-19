@@ -63,10 +63,6 @@ object BaseActivity {
       s"${source take 4}&#160;$secondFirst&#160;$doubleSmall&#160;${source takeRight 4}"
     }
   }
-
-  def totalBalance: MilliSatoshi =
-    WalletParams.chainWallets.wallets
-      .map(_.info.lastBalance).sum.toMilliSatoshi
 }
 
 object ClassNames {
@@ -148,9 +144,9 @@ trait BaseActivity extends AppCompatActivity { me =>
       val holder: LinearLayout = cardsContainer
     }
 
-    chooser.init(WalletParams.chainWallets.usableWallets)
-    chooser.update(WalletParams.chainWallets.usableWallets)
-    chooser.unPad(WalletParams.chainWallets.usableWallets)
+    chooser.init(WalletParams.chainWallets.spendableWallets)
+    chooser.update(WalletParams.chainWallets.spendableWallets)
+    chooser.unPad(WalletParams.chainWallets.spendableWallets)
   }
 
   def titleViewFromUri(uri: BitcoinUri): TitleView = {
@@ -168,13 +164,13 @@ trait BaseActivity extends AppCompatActivity { me =>
     title
   }
 
-  def chainWalletBackground(wallet: ElectrumEclairWallet): Int = if (wallet.isSigning) R.color.cardBitcoinModern else R.color.cardBitcoinLegacy
+  def chainWalletBackground(wallet: ElectrumEclairWallet): Int = if (wallet.ewt.secrets.nonEmpty) R.color.cardBitcoinModern else R.color.cardBitcoinLegacy
   def browse(maybeUri: String): Unit = try me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri) catch { case exception: Throwable => me onFail exception }
 
   def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] =
     if (wallet.info.core.attachedMaster.isDefined) Some(attached_wallet)
     else if (wallet.info.core.masterFingerprint.nonEmpty) Some(hardware_wallet)
-    else if (!wallet.isSigning) Some(watching_wallet)
+    else if (wallet.ewt.secrets.isEmpty) Some(watching_wallet)
     else None
 
   def share(text: CharSequence): Unit = startActivity {

@@ -34,7 +34,7 @@ object WalletParams {
 
   def isOperational: Boolean =
     null != chainHash && null != secret && null != chainWallets &&
-      connectionProvider != null && null != fiatRates &&
+      null != connectionProvider && null != fiatRates &&
       null != feeRates && null != logBag
 
   implicit val timeout: Timeout = Timeout(30.seconds)
@@ -47,8 +47,8 @@ object WalletParams {
 }
 
 case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, sync: ActorRef, pool: ActorRef, params: WalletParameters) extends CanBeShutDown { me =>
-
-  lazy val usableWallets: List[ElectrumEclairWallet] = wallets.filter(wallet => wallet.isSigning || wallet.info.core.masterFingerprint.nonEmpty)
+  lazy val usableWallets: List[ElectrumEclairWallet] = wallets.filter(wallet => wallet.ewt.secrets.nonEmpty || wallet.info.core.masterFingerprint.nonEmpty)
+  lazy val spendableWallets: List[ElectrumEclairWallet] = usableWallets.filter(_.info.lastBalance > 0L.sat)
 
   def findByPubKey(pub: PublicKey): Option[ElectrumEclairWallet] = wallets.find(_.ewt.xPub.publicKey == pub)
 

@@ -10,14 +10,11 @@ import scodec.codecs._
 
 
 object SqliteWalletDb {
-  private val anyOpt = Option.empty[Any]
-
   val proofCodec = {
     (bytes32 withContext "txid") ::
       (listOfN(uint16, bytes32) withContext "merkle") ::
       (uint24 withContext "blockHeight") ::
-      (uint24 withContext "pos") ::
-      (provide(anyOpt) withContext "contextOpt")
+      (uint24 withContext "pos")
   }.as[GetMerkleResponse]
 
   type OverriddenPendingTxids = Map[ByteVector32, ByteVector32]

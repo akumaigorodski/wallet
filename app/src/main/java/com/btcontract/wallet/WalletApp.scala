@@ -42,7 +42,7 @@ object WalletApp {
   var app: WalletApp = _
 
   val txInfos = mutable.Map.empty[ByteVector32, TxInfo]
-  var currentChainNode: Option[InetSocketAddress] = None
+  var currentChainNode = Option.empty[InetSocketAddress]
 
   final val dbFileNameMisc = "misc.db"
 
@@ -97,7 +97,7 @@ object WalletApp {
 
     // In case these are needed early
     WalletParams.logBag = new SQLiteLog(miscInterface)
-    WalletParams.chainHash = Block.LivenetGenesisBlock.hash
+    WalletParams.chainHash = Block.TestnetGenesisBlock.hash
 
     WalletParams.connectionProvider =
       if (ensureTor) new TorConnectionProvider(app)
@@ -178,17 +178,17 @@ object WalletApp {
       override def onChainDisconnected: Unit = currentChainNode = None
 
       override def onTransactionReceived(event: TransactionReceived): Unit = {
-        def addChainTx(received: Satoshi, sent: Satoshi, description: TxDescription, isIncoming: Long, totalBalance: MilliSatoshi): Unit = txDataBag.db txWrap {
-          txDataBag.addTx(event.tx, event.depth, received, sent, event.feeOpt, event.xPub, description, isIncoming, totalBalance, WalletParams.fiatRates.info.rates, event.stamp)
+        def addChainTx(received: Satoshi, sent: Satoshi, description: TxDescription, isIncoming: Long): Unit = txDataBag.db txWrap {
+          txDataBag.addTx(event.tx, event.depth, received, sent, event.feeOpt, event.xPub, description, isIncoming, 0L.msat, WalletParams.fiatRates.info.rates, event.stamp)
           txDataBag.addSearchableTransaction(description.queryText(event.tx.txid), event.tx.txid)
           if (event.depth < 1) Vibrator.vibrate
         }
 
         val fee = event.feeOpt.getOrElse(0L.sat)
         val sentTxDesc = txInfos.remove(event.tx.txid).map(_.description) getOrElse PlainTxDescription(Nil)
-        if (event.sent == event.received + fee) addChainTx(event.received, event.sent, sentTxDesc, isIncoming = 1L, BaseActivity.totalBalance)
-        else if (event.sent > event.received) addChainTx(event.received, event.sent - event.received - fee, sentTxDesc, isIncoming = 0L, BaseActivity.totalBalance)
-        else addChainTx(event.received - event.sent, event.sent, PlainTxDescription(event.walletAddreses), isIncoming = 1L, BaseActivity.totalBalance)
+        if (event.sent == event.received + fee) addChainTx(event.received, event.sent, sentTxDesc, isIncoming = 1L)
+        else if (event.sent > event.received) addChainTx(event.received, event.sent - event.received - fee, sentTxDesc, isIncoming = 0L)
+        else addChainTx(event.received - event.sent, event.sent, PlainTxDescription(event.walletAddreses), isIncoming = 1L)
       }
     }
 
