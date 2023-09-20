@@ -13,7 +13,6 @@ import fr.acinq.eclair.blockchain.electrum._
 import fr.acinq.eclair.blockchain.electrum.db._
 import immortan.crypto.CanBeShutDown
 import immortan.crypto.Tools.StringList
-import immortan.sqlite._
 import immortan.utils._
 import scodec.bits.ByteVector
 
@@ -29,21 +28,16 @@ object WalletParams {
   var connectionProvider: ConnectionProvider = _
   var fiatRates: FiatRates = _
   var feeRates: FeeRates = _
-  var logBag: SQLiteLog = _
 
   val blockCount: AtomicLong = new AtomicLong(0L)
 
   def isOperational: Boolean =
     null != chainHash && null != secret && null != chainWallets &&
-      null != connectionProvider && null != fiatRates &&
-      null != feeRates && null != logBag
+      null != connectionProvider && null != fiatRates && null != feeRates
 
   implicit val timeout: Timeout = Timeout(30.seconds)
   implicit val system: ActorSystem = ActorSystem("immortan-actor-system")
   implicit val ec: ExecutionContextExecutor = scala.concurrent.ExecutionContext.Implicits.global
-
-  def loggedActor(childProps: Props, childName: String): ActorRef = system actorOf Props(classOf[LoggingSupervisor], childProps, childName)
-
   def addressToPubKeyScript(address: String): ByteVector = Script write addressToPublicKeyScript(address, chainHash)
 }
 
@@ -55,14 +49,14 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
 
   def makeSigningWalletParts(core: SigningWallet, masterPrivKey: ExtendedPrivateKey, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
     val ewt: ElectrumWalletType = ElectrumWalletType.makeSigningType(tag = core.walletType, master = masterPrivKey, chainHash = WalletParams.chainHash)
-    val walletRef = WalletParams.loggedActor(Props(classOf[ElectrumWallet], pool, sync, params, ewt), core.walletType + "-signing-wallet")
+    val walletRef = WalletParams.system.actorOf(Props(classOf[ElectrumWallet], pool, sync, params, ewt), core.walletType + "-signing-wallet")
     val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label, isCoinControlOn = false)
     ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
   }
 
   def makeWatchingWallet84Parts(core: WatchingWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
     val ewt: ElectrumWallet84 = new ElectrumWallet84(secrets = None, xPub = core.xPub, chainHash = WalletParams.chainHash)
-    val walletRef = WalletParams.loggedActor(Props(classOf[ElectrumWallet], pool, sync, params, ewt), core.walletType + "-watching-wallet")
+    val walletRef = WalletParams.system.actorOf(Props(classOf[ElectrumWallet], pool, sync, params, ewt), core.walletType + "-watching-wallet")
     val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label, isCoinControlOn = false)
     ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
   }
@@ -76,7 +70,7 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
 
   def withoutWallet(wallet: ElectrumEclairWallet): WalletExt = {
     require(wallet.info.core.isRemovable, "Wallet is not removable")
-    params.walletDb.remove(pub = wallet.ewt.xPub.publicKey)
+    params.walletDb.remove(wallet.ewt.xPub.publicKey)
     val wallets1 = wallets diff List(wallet)
     wallet.walletRef ! PoisonPill
     copy(wallets = wallets1)

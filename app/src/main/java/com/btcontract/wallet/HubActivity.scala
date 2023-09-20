@@ -673,13 +673,11 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
           // do this check specifically after updating txInfos with new items
           loadRecent
 
-          txInfos.collect { case info if !info.isDoubleSpent && !info.isConfirmed =>
-            info.pubKeys.flatMap(WalletParams.chainWallets.findByPubKey).headOption.foreach { wallet =>
-              wallet.doubleSpent(info.tx).collect { case res if res.depth != info.depth || res.isDoubleSpent != info.isDoubleSpent =>
-                WalletApp.txDataBag.updStatus(info.txid, res.depth, updatedStamp = res.stamp, doubleSpent = res.isDoubleSpent)
-              }
-            }
-          }
+          for {
+            txInfo <- txInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
+            wallet <- txInfo.pubKeys.flatMap(WalletParams.chainWallets.findByPubKey).headOption
+            result <- wallet.doubleSpent(txInfo.tx) if result.depth != txInfo.depth || result.isDoubleSpent != txInfo.isDoubleSpent
+          } WalletApp.txDataBag.updStatus(txInfo.txid, result.depth, updatedStamp = result.stamp, result.isDoubleSpent)
 
           UITask(walletCards.updateView).run
           paymentAdapterDataChanged.run

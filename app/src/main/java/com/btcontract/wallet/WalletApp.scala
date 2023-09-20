@@ -96,12 +96,8 @@ object WalletApp {
     }
 
     // In case these are needed early
-    WalletParams.logBag = new SQLiteLog(miscInterface)
     WalletParams.chainHash = Block.TestnetGenesisBlock.hash
-
-    WalletParams.connectionProvider =
-      if (ensureTor) new TorConnectionProvider(app)
-      else new ClearnetConnectionProvider
+    WalletParams.connectionProvider = if (ensureTor) new TorConnectionProvider(app) else new ClearnetConnectionProvider
   }
 
   def makeOperational(secret: WalletSecret): Unit = {
@@ -128,9 +124,9 @@ object WalletApp {
     }
 
     val params = WalletParameters(extDataBag, chainWalletBag, txDataBag, dustLimit = 546L.sat)
-    val electrumPool = WalletParams.loggedActor(Props(classOf[ElectrumClientPool], WalletParams.blockCount, WalletParams.chainHash, WalletParams.ec), "connection-pool")
-    val sync = WalletParams.loggedActor(Props(classOf[ElectrumChainSync], electrumPool, params.headerDb, WalletParams.chainHash), "chain-sync")
-    val catcher = WalletParams.loggedActor(Props(new WalletEventsCatcher), "events-catcher")
+    val electrumPool = WalletParams.system.actorOf(Props(classOf[ElectrumClientPool], WalletParams.blockCount, WalletParams.chainHash, WalletParams.ec), "connection-pool")
+    val sync = WalletParams.system.actorOf(Props(classOf[ElectrumChainSync], electrumPool, params.headerDb, WalletParams.chainHash), "chain-sync")
+    val catcher = WalletParams.system.actorOf(Props(new WalletEventsCatcher), "events-catcher")
 
     val walletExt: WalletExt =
       (WalletExt(wallets = Nil, catcher, sync, electrumPool, params) /: chainWalletBag.listWallets) {

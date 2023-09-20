@@ -97,7 +97,7 @@ object LogTable extends Table {
 
   val newSql = s"INSERT INTO $table ($stamp, $tag, $content) VALUES (?, ?, ?)"
 
-  val recentSql = s"SELECT * FROM $table ORDER BY $id DESC LIMIT 50"
+  val recentSql = s"SELECT * FROM $table ORDER BY $id DESC LIMIT 1"
 
   val countSql = s"SELECT COUNT(*) FROM $table"
 

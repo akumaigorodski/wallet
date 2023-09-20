@@ -19,9 +19,9 @@ import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
 import fr.acinq.eclair.blockchain.electrum.db.{SigningWallet, WatchingWallet}
 import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
 import fr.acinq.eclair.wire.{Domain, NodeAddress}
-import immortan.{LightningNodeKeys, WalletParams}
 import immortan.crypto.Tools._
 import immortan.utils.{BtcDenomination, SatDenomination}
+import immortan.{LightningNodeKeys, WalletParams}
 
 import scala.util.Success
 
@@ -222,15 +222,9 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
     settingsPageitle.backArrow.setVisibility(View.VISIBLE)
 
     val links = new TitleView("<strong>S</strong>imple <strong>B</strong>itcoin <strong>W</strong>allet")
-    addFlowChip(links.flow, getString(manual), R.drawable.border_green, _ => me browse "https://sbw.app/posts/manual")
-    addFlowChip(links.flow, getString(sources), R.drawable.border_green, _ => me browse "https://github.com/akumaigorodski/wallet")
-    addFlowChip(links.flow, "Nostr", R.drawable.border_green, _ => me browse "https://njump.me/npub1chxa2um7gl65ymyaagjrqys39mtzlwnm2drcs6qkqmme7k4edq4qghrjdd")
-
-    for (count <- WalletParams.logBag.count if count > 0) {
-      def exportLog: Unit = me share WalletParams.logBag.recent.map(_.asString).mkString("\n\n")
-      val errorCount = s"${me getString error_log} <font color=$cardZero>$count</font>"
-      addFlowChip(links.flow, errorCount, R.drawable.border_yellow, _ => exportLog)
-    }
+    addFlowChip(links.flow, getString(manual), R.drawable.border_gray, _ => me browse "https://sbw.app/posts/manual")
+    addFlowChip(links.flow, getString(sources), R.drawable.border_gray, _ => me browse "https://github.com/akumaigorodski/wallet")
+    addFlowChip(links.flow, "Nostr", R.drawable.border_gray, _ => me browse "https://njump.me/npub1chxa2um7gl65ymyaagjrqys39mtzlwnm2drcs6qkqmme7k4edq4qghrjdd")
 
     settingsContainer.addView(settingsPageitle.view)
     settingsContainer.addView(links.view)
