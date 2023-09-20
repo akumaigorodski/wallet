@@ -12,6 +12,7 @@ import scala.language.implicitConversions
 
 object Tools {
   type Bytes = Array[Byte]
+  type StringList = List[String]
   type Fiat2Btc = Map[String, Double]
   final val SEPARATOR = " "
 

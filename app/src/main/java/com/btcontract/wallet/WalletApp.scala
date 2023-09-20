@@ -165,11 +165,10 @@ object WalletApp {
     // Guaranteed to fire (and update chainWallets) first
     WalletParams.chainWallets.catcher ! new WalletEventsListener {
       override def onWalletReady(event: WalletReady): Unit = WalletParams.synchronized {
-        // Wallet is already persisted so our only job at this point is to update runtime
-        def sameXPub(wallet: ElectrumEclairWallet): Boolean = wallet.ewt.xPub == event.xPub
-        WalletParams.chainWallets = WalletParams.chainWallets.modify(_.wallets.eachWhere(sameXPub).info) using { info =>
+        // Wallet is already persisted in database so our only job at this point is to update runtime
+        WalletParams.chainWallets = WalletParams.chainWallets.modify(_.wallets.eachWhere(event.sameXPub).info) using {
           // Coin control is always disabled on start, we update it later with animation to make it noticeable
-          info.copy(lastBalance = event.balance, isCoinControlOn = event.excludedOutPoints.nonEmpty)
+          _.copy(lastBalance = event.balance, isCoinControlOn = event.excludedOutPoints.nonEmpty)
         }
       }
 
@@ -179,29 +178,28 @@ object WalletApp {
 
       override def onTransactionReceived(event: TransactionReceived): Unit = {
         def addChainTx(received: Satoshi, sent: Satoshi, description: TxDescription, isIncoming: Long): Unit = txDataBag.db txWrap {
-          txDataBag.addTx(event.tx, event.depth, received, sent, event.feeOpt, event.xPub, description, isIncoming, 0L.msat, WalletParams.fiatRates.info.rates, event.stamp)
+          txDataBag.addTx(event.tx, event.depth, received, sent, event.fee, event.xPubs, description, isIncoming, WalletParams.fiatRates.info.rates, event.stamp)
           txDataBag.addSearchableTransaction(description.queryText(event.tx.txid), event.tx.txid)
           if (event.depth < 1) Vibrator.vibrate
         }
 
-        val fee = event.feeOpt.getOrElse(0L.sat)
         val sentTxDesc = txInfos.remove(event.tx.txid).map(_.description) getOrElse PlainTxDescription(Nil)
-        if (event.sent == event.received + fee) addChainTx(event.received, event.sent, sentTxDesc, isIncoming = 1L)
-        else if (event.sent > event.received) addChainTx(event.received, event.sent - event.received - fee, sentTxDesc, isIncoming = 0L)
-        else addChainTx(event.received - event.sent, event.sent, PlainTxDescription(event.walletAddreses), isIncoming = 1L)
+        if (event.sent == event.received + event.fee) addChainTx(event.received, event.sent, sentTxDesc, isIncoming = 1L)
+        else if (event.sent > event.received) addChainTx(event.received, event.sent - event.received - event.fee, sentTxDesc, isIncoming = 0L)
+        else addChainTx(event.received - event.sent, event.sent, PlainTxDescription(event.addresses), isIncoming = 1L)
       }
     }
 
     WalletParams.connectionProvider doWhenReady {
       electrumPool ! ElectrumClientPool.InitConnect
 
-      val feeratePeriodHours = 6
+      val feeratePeriodHours = 3
       val rateRetry = Rx.retry(Rx.ioQueue.map(_ => WalletParams.feeRates.reloadData), Rx.incSec, 3 to 18 by 3)
       val rateRepeat = Rx.repeat(rateRetry, Rx.incHour, feeratePeriodHours to Int.MaxValue by feeratePeriodHours)
       val feerateObs = Rx.initDelay(rateRepeat, WalletParams.feeRates.info.stamp, feeratePeriodHours * 3600 * 1000L)
       feerateObs.foreach(WalletParams.feeRates.updateInfo, none)
 
-      val fiatPeriodSecs = 60 * 30
+      val fiatPeriodSecs = 60 * 10
       val fiatRetry = Rx.retry(Rx.ioQueue.map(_ => WalletParams.fiatRates.reloadData), Rx.incSec, 3 to 18 by 3)
       val fiatRepeat = Rx.repeat(fiatRetry, Rx.incSec, fiatPeriodSecs to Int.MaxValue by fiatPeriodSecs)
       val fiatObs = Rx.initDelay(fiatRepeat, WalletParams.fiatRates.info.stamp, fiatPeriodSecs * 1000L)

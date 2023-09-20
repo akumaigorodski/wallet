@@ -33,7 +33,7 @@ object TxTable extends Table {
     ("tsearch", "txs", "raw", "txid", "pub", "depth", "received", "sent", "fee", "seen", "updated", "desc", "balance", "fiatrates", "incoming", "doublespent")
 
   private val inserts = s"$rawTx, $txid, $pub, $depth, $receivedSat, $sentSat, $feeSat, $seenAt, $updatedAt, $description, $balanceMsat, $fiatRates, $incoming, $doubleSpent"
-  val newSql = s"INSERT OR IGNORE INTO $table ($inserts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  val newSql = s"INSERT OR REPLACE INTO $table ($inserts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
   val newVirtualSql = s"INSERT INTO $fts$table ($search, $txid) VALUES (?, ?)"
 
@@ -48,10 +48,6 @@ object TxTable extends Table {
   val updStatusSql = s"UPDATE $table SET $depth = ?, $doubleSpent = ?, $updatedAt = ? WHERE $txid = ?"
 
   val updateDescriptionSql = s"UPDATE $table SET $description = ? WHERE $txid = ?"
-
-  // Removing
-
-  val killByPubSql = s"DELETE FROM $table WHERE $pub = ?"
 
   def createStatements: Seq[String] = {
     val createTable = s"""CREATE TABLE IF NOT EXISTS $table(

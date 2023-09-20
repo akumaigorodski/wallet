@@ -327,6 +327,6 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
     BIP49 -> ("JoinMarket", "m/49'/0'/0'/0/n")
   )
 
-  private val possibleKeys: List[String] =
+  private val possibleKeys: StringList =
     wallets.keys.toList
 }

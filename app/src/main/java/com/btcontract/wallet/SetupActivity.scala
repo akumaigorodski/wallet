@@ -7,12 +7,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.transition.TransitionManager
 import com.btcontract.wallet.R.string._
 import fr.acinq.bitcoin.MnemonicCode
-import immortan.crypto.Tools.{SEPARATOR, none}
+import immortan.crypto.Tools.{SEPARATOR, none, StringList}
 import immortan.{LightningNodeKeys, WalletSecret}
 
 
 trait MnemonicActivity { me: BaseActivity =>
-  def showMnemonicInput(titleRes: Int)(proceedWithMnemonics: List[String] => Unit): Unit = {
+  def showMnemonicInput(titleRes: Int)(proceedWithMnemonics: StringList => Unit): Unit = {
     val mnemonicWrap = getLayoutInflater.inflate(R.layout.frag_mnemonic, null).asInstanceOf[LinearLayout]
     val recoveryPhrase = mnemonicWrap.findViewById(R.id.recoveryPhrase).asInstanceOf[com.hootsuite.nachos.NachoTextView]
     recoveryPhrase.addChipTerminator(' ', com.hootsuite.nachos.terminator.ChipTerminatorHandler.BEHAVIOR_CHIPIFY_TO_TERMINATOR)
@@ -21,7 +21,7 @@ trait MnemonicActivity { me: BaseActivity =>
     recoveryPhrase setAdapter new ArrayAdapter(me, android.R.layout.simple_list_item_1, englishWordList)
     recoveryPhrase setDropDownBackgroundResource R.color.button_material_dark
 
-    def getMnemonicList: List[String] = {
+    def getMnemonicList: StringList = {
       val mnemonic = recoveryPhrase.getText.toString.toLowerCase.trim
       val pureMnemonic = mnemonic.replaceAll("[^a-zA-Z0-9']+", SEPARATOR)
       pureMnemonic.split(SEPARATOR).toList
@@ -69,7 +69,7 @@ class SetupActivity extends BaseActivity with MnemonicActivity { me =>
     }
   }
 
-  val proceedWithMnemonics: List[String] => Unit = mnemonic => {
+  val proceedWithMnemonics: StringList => Unit = mnemonic => {
     val walletSeed = MnemonicCode.toSeed(mnemonic, passphrase = new String)
     val keys = LightningNodeKeys.makeFromSeed(walletSeed.toArray)
     val secret = WalletSecret(keys, mnemonic, walletSeed)

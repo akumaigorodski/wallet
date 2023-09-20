@@ -5,7 +5,7 @@ import java.util.Date
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.{ByteVector32, Satoshi, Transaction}
 import fr.acinq.eclair._
-import immortan.crypto.Tools.{Any2Some, Fiat2Btc, SEPARATOR}
+import immortan.crypto.Tools.{Any2Some, Fiat2Btc, SEPARATOR, StringList}
 import immortan.utils.ImplicitJsonFormats._
 import scodec.bits.ByteVector
 
@@ -54,7 +54,7 @@ sealed trait TransactionDetails {
 
 // Tx descriptions
 
-case class TxInfo(txString: String, txidString: String, pubKeyString: String, depth: Long, receivedSat: Satoshi, sentSat: Satoshi,
+case class TxInfo(txString: String, txidString: String, pubKeysString: String, depth: Long, receivedSat: Satoshi, sentSat: Satoshi,
                   feeSat: Satoshi, seenAt: Long, updatedAt: Long, description: TxDescription, balanceSnapshot: MilliSatoshi,
                   fiatRatesString: String, incoming: Long, doubleSpent: Long) extends TransactionDetails {
 
@@ -68,7 +68,11 @@ case class TxInfo(txString: String, txidString: String, pubKeyString: String, de
 
   lazy val fiatRateSnapshot: Fiat2Btc = to[Fiat2Btc](fiatRatesString)
 
-  lazy val pubKey: PublicKey = PublicKey(ByteVector fromValidHex pubKeyString)
+  lazy val pubKeys: List[PublicKey] =
+    try to[StringList](pubKeysString).map(ByteVector fromValidHex _).map(PublicKey.apply) catch {
+      // Fallback to an old format which had a single pubKey string, new one is list of pubKeys
+      case _: Throwable => PublicKey(ByteVector fromValidHex pubKeysString) :: Nil
+    }
 
   lazy val txid: ByteVector32 = ByteVector32.fromValidHex(txidString)
 
@@ -81,9 +85,8 @@ sealed trait TxDescription extends TransactionDescription {
   def withNewLabel(label1: Option[String] = None): TxDescription
   def withNewCPFPBy(txid: ByteVector32): TxDescription
 
+  def addresses: StringList
   def queryText(txid: ByteVector32): String
-  def toAddress: Option[String] = None
-
   val cpfpBy: Option[ByteVector32]
   val cpfpOf: Option[ByteVector32]
   val rbf: Option[RBFParams]
@@ -94,12 +97,11 @@ object TxDescription {
   final val RBF_BOOST = 2
 }
 
-case class PlainTxDescription(addresses: List[String],
+case class PlainTxDescription(addresses: StringList,
                               label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
                               cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
                               rbf: Option[RBFParams] = None) extends TxDescription { me =>
 
-  override lazy val toAddress: Option[String] = if (addresses.size > 1) None else addresses.headOption
   override def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + addresses.mkString(SEPARATOR) + SEPARATOR + label.getOrElse(new String)
   override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
   override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)

@@ -155,8 +155,6 @@ class ElectrumClient(serverAddress: InetSocketAddress, ssl: SSL)(implicit val ec
 
       case RemoveStatusListener(actor) => statusListeners -= actor
 
-      case PingResponse => ()
-
       case Close =>
         statusListeners.foreach(_ ! ElectrumDisconnected)
         context.stop(self)
@@ -321,7 +319,7 @@ object ElectrumClient {
           loop(pos / 2, h +: hashes.drop(2))
         }
       }
-      loop(pos, txid.reverse +: merkle.map(b => b.reverse))
+      loop(pos, txid.reverse +: merkle.map(_.reverse))
     }
   }
 
@@ -337,12 +335,7 @@ object ElectrumClient {
     def apply(t: (Int, BlockHeader)) = new HeaderSubscriptionResponse(t._1, t._2)
   }
 
-  case class Header(block_height: Long, version: Long, prev_block_hash: ByteVector32, merkle_root: ByteVector32, timestamp: Long, bits: Long, nonce: Long) {
-    def blockHeader = BlockHeader(version, prev_block_hash.reverse, merkle_root.reverse, timestamp, bits, nonce)
-
-    lazy val block_hash: ByteVector32 = blockHeader.hash
-    lazy val block_id: ByteVector32 = block_hash.reverse
-  }
+  case class Header(block_height: Long, version: Long, prev_block_hash: ByteVector32, merkle_root: ByteVector32, timestamp: Long, bits: Long, nonce: Long)
 
   object Header {
     def makeHeader(height: Long, header: BlockHeader) = ElectrumClient.Header(height, header.version,

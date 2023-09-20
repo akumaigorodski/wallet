@@ -8,7 +8,7 @@ import fr.acinq.eclair.blockchain.electrum.db.{ChainWalletInfo, SigningWallet, W
 import fr.acinq.eclair.blockchain.fee._
 import fr.acinq.eclair.wire.CommonCodecs._
 import immortan._
-import immortan.crypto.Tools.Fiat2Btc
+import immortan.crypto.Tools.{Fiat2Btc, StringList}
 import immortan.utils.FiatRates.CoinGeckoItemMap
 import scodec.bits.BitVector
 import spray.json._
@@ -88,7 +88,7 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
   implicit val rbfParams: JsonFormat[RBFParams] = jsonFormat[ByteVector32, Long, RBFParams](RBFParams.apply, "ofTxid", "mode")
 
   implicit val plainTxDescriptionFmt: JsonFormat[PlainTxDescription] =
-    taggedJsonFmt(jsonFormat[List[String], Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
+    taggedJsonFmt(jsonFormat[StringList, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
       PlainTxDescription](PlainTxDescription.apply, "addresses", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "PlainTxDescription")
 
   // Fiat feerates

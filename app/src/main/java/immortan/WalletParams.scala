@@ -12,6 +12,7 @@ import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum._
 import fr.acinq.eclair.blockchain.electrum.db._
 import immortan.crypto.CanBeShutDown
+import immortan.crypto.Tools.StringList
 import immortan.sqlite._
 import immortan.utils._
 import scodec.bits.ByteVector
@@ -76,7 +77,6 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
   def withoutWallet(wallet: ElectrumEclairWallet): WalletExt = {
     require(wallet.info.core.isRemovable, "Wallet is not removable")
     params.walletDb.remove(pub = wallet.ewt.xPub.publicKey)
-    params.txDb.removeByPub(xPub = wallet.ewt.xPub)
     val wallets1 = wallets diff List(wallet)
     wallet.walletRef ! PoisonPill
     copy(wallets = wallets1)
@@ -95,7 +95,7 @@ case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, syn
   }
 }
 
-case class WalletSecret(keys: LightningNodeKeys, mnemonic: List[String], seed: ByteVector)
+case class WalletSecret(keys: LightningNodeKeys, mnemonic: StringList, seed: ByteVector)
 
 // Interfaces
 

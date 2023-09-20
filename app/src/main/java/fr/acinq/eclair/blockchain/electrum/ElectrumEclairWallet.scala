@@ -21,20 +21,22 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
 
   type GenerateTxResponseTry = Try[GenerateTxResponse]
 
-  private def isInChain(error: fr.acinq.eclair.blockchain.bitcoind.rpc.Error): Boolean = error.message.toLowerCase.contains("already in block chain")
+  private def isInChain(error: fr.acinq.eclair.blockchain.bitcoind.rpc.Error): Boolean =
+    error.message.toLowerCase.contains("already in block chain")
 
-  override def getData: Future[GetDataResponse] = (walletRef ? GetData).mapTo[GetDataResponse]
+  override def getData: Future[GetDataResponse] =
+    (walletRef ? GetData).mapTo[GetDataResponse]
 
-  override def getReceiveAddresses: Future[GetCurrentReceiveAddressesResponse] = (walletRef ? GetCurrentReceiveAddresses).mapTo[GetCurrentReceiveAddressesResponse]
+  override def getReceiveAddresses: Future[GetCurrentReceiveAddressesResponse] =
+    (walletRef ? GetCurrentReceiveAddresses).mapTo[GetCurrentReceiveAddressesResponse]
 
-  override def broadcast(tx: Transaction): Future[Boolean] = {
+  override def broadcast(tx: Transaction): Future[Boolean] =
     walletRef ? BroadcastTransaction(tx) flatMap {
       case ElectrumClient.BroadcastTransactionResponse(_, None) => Future(true)
       case res: ElectrumClient.BroadcastTransactionResponse if res.error.exists(isInChain) => Future(true)
       case res: ElectrumClient.BroadcastTransactionResponse if res.error.isDefined => Future(false)
       case ElectrumClient.ServerError(_: ElectrumClient.BroadcastTransaction, _) => Future(false)
     }
-  }
 
   override def makeBatchTx(scriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw): Future[GenerateTxResponse] = {
     val completeTx = CompleteTransaction(scriptToAmount, feeRatePerKw, OPT_IN_FULL_RBF)
@@ -65,7 +67,9 @@ case class ElectrumEclairWallet(walletRef: ActorRef, ewt: ElectrumWalletType, in
     (walletRef ? rbfReroute).mapTo[RBFResponse]
   }
 
-  override def provideExcludedOutpoints(excludedOutPoints: List[OutPoint] = Nil): Unit = walletRef ! ProvideExcludedOutPoints(excludedOutPoints)
+  override def provideExcludedOutpoints(excludedOutPoints: List[OutPoint] = Nil): Unit =
+    walletRef ! ProvideExcludedOutPoints(excludedOutPoints)
 
-  override def doubleSpent(tx: Transaction): Future[IsDoubleSpentResponse] = (walletRef ? tx).mapTo[IsDoubleSpentResponse]
+  override def doubleSpent(tx: Transaction): Future[IsDoubleSpentResponse] =
+    (walletRef ? tx).mapTo[IsDoubleSpentResponse]
 }

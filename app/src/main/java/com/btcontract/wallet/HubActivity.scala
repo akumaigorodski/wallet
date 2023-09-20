@@ -20,7 +20,7 @@ import com.github.mmin18.widget.RealtimeBlurView
 import com.ornach.nobobutton.NoboButton
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, RBFResponse, WalletReady}
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, IsDoubleSpentResponse, RBFResponse, WalletReady}
 import fr.acinq.eclair.blockchain.electrum.{ElectrumEclairWallet, ElectrumWallet}
 import fr.acinq.eclair.blockchain.fee.FeeratePerByte
 import immortan._
@@ -161,7 +161,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
     // CPFP / RBF
 
-    def boostCPFP(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKey) match {
+    def boostCPFP(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKeys.head) match {
       case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
       case Some(fromWallet) => doBoostCPFP(fromWallet, info)
     }
@@ -233,7 +233,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       sendView.switchToDefault(alert)
     }
 
-    def boostRBF(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKey) match {
+    def boostRBF(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKeys.head) match {
       case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
       case Some(fromWallet) => doBoostRBF(fromWallet, info)
     }
@@ -311,7 +311,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       sendView.switchToDefault(alert)
     }
 
-    def cancelRBF(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKey) match {
+    def cancelRBF(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKeys.head) match {
       case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
       case Some(fromWallet) => doCancelRBF(fromWallet, info)
     }
@@ -409,7 +409,6 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       item match {
         case info: TxInfo =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
-          val wallet = WalletParams.chainWallets.findByPubKey(info.pubKey).find(wallet => wallet.ewt.secrets.nonEmpty || wallet.info.core.masterFingerprint.nonEmpty)
           val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.cpfpOf.isEmpty
           val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.canBeCPFPd
           val isRbfCancel = info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL)
@@ -418,24 +417,19 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
           val fiatNow = WalletApp.msatInFiatHuman(WalletParams.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiat)
           val fiatThen = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiat)
 
-          wallet match {
-            case Some(w) if w.info.core.attachedMaster.isDefined => addFlowChip(extraInfo, getString(attached_wallet), R.drawable.border_gray)
-            case Some(w) if w.info.core.masterFingerprint.nonEmpty => addFlowChip(extraInfo, getString(hardware_wallet), R.drawable.border_gray)
-            case Some(w) if w.ewt.secrets.isEmpty => addFlowChip(extraInfo, getString(watching_wallet), R.drawable.border_gray)
-            case _ =>
-          }
+          if (WalletParams.chainWallets.wallets.size > 1)
+            for (wallet <- info.pubKeys flatMap WalletParams.chainWallets.findByPubKey)
+              addFlowChip(extraInfo, wallet.info.label, R.drawable.border_gray)
 
           addFlowChip(extraInfo, getString(popup_txid) format info.txidString.short, R.drawable.border_green, info.txidString.asSome)
-          for (address <- info.description.toAddress) addFlowChip(extraInfo, getString(popup_to_address) format address.short, R.drawable.border_yellow, address.asSome)
+          for (address <- info.description.addresses) addFlowChip(extraInfo, getString(popup_to_address) format address.short, R.drawable.border_yellow, address.asSome)
 
           addFlowChip(extraInfo, getString(popup_fiat).format(s"<font color=$cardIn>$fiatNow</font>", fiatThen), R.drawable.border_gray)
           if (!info.isIncoming || isRbfCancel || info.description.cpfpOf.isDefined) addFlowChip(extraInfo, getString(popup_chain_fee) format fee, R.drawable.border_gray)
 
-          if (wallet.isDefined) {
-            if (canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
-            if (canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
-            if (canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
-          }
+          if (canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
+          if (canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
+          if (canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
       }
     }
 
@@ -469,7 +463,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       case _ if transactionInfo.description.cpfpOf.isDefined => getString(tx_description_cpfp)
       case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => getString(tx_description_rbf_boost)
       case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => getString(tx_description_rbf_cancel)
-      case plain: PlainTxDescription => plain.toAddress.map(_.short) getOrElse getString(tx_btc)
+      case plain: PlainTxDescription => plain.addresses.headOption.map(_.short) getOrElse getString(tx_btc)
     }
 
     def setTxTypeIcon(info: TxInfo): Unit = info.description match {
@@ -675,14 +669,17 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         timer.scheduleAtFixedRate(paymentAdapterDataChanged, 20000, 20000)
         stateSubscription = Rx.uniqueFirstAndLastWithinWindow(DbStreams.txDbStream, window).subscribe { _ =>
           // After each delayed update we check if pending txs got confirmed or double-spent
+          // we also check if pending tx relates to any existing wallet and delete it if not
           // do this check specifically after updating txInfos with new items
           loadRecent
 
-          for {
-            txInfo <- txInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
-            relatedChainWallet <- WalletParams.chainWallets.findByPubKey(txInfo.pubKey)
-            res <- relatedChainWallet.doubleSpent(txInfo.tx) if res.depth != txInfo.depth || res.isDoubleSpent != txInfo.isDoubleSpent
-          } WalletApp.txDataBag.updStatus(txInfo.txid, res.depth, updatedStamp = res.stamp, res.isDoubleSpent)
+          txInfos.collect { case info if !info.isDoubleSpent && !info.isConfirmed =>
+            info.pubKeys.flatMap(WalletParams.chainWallets.findByPubKey).headOption.foreach { wallet =>
+              wallet.doubleSpent(info.tx).collect { case res if res.depth != info.depth || res.isDoubleSpent != info.isDoubleSpent =>
+                WalletApp.txDataBag.updStatus(info.txid, res.depth, updatedStamp = res.stamp, doubleSpent = res.isDoubleSpent)
+              }
+            }
+          }
 
           UITask(walletCards.updateView).run
           paymentAdapterDataChanged.run
