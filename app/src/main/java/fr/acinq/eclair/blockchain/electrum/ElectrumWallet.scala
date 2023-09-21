@@ -100,13 +100,6 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
           val pendingHeadersRequests1 = collection.mutable.HashSet.empty[GetHeaders]
           pendingHeadersRequests1 ++= data.pendingHeadersRequests
 
-          val shadowItems = for {
-            existingItems <- data.history.get(scriptHash).toList
-            item <- existingItems if !items.exists(_.txHash == item.txHash)
-          } yield item
-
-          val items1 = items ++ shadowItems
-
           def downloadHeadersIfMissing(height: Int): Unit = {
             if (data.blockchain.getHeader(height).orElse(params.headerDb getHeader height).isEmpty) {
               // we don't have this header because it is older than our checkpoints => request the entire chunk
@@ -123,7 +116,7 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
             client ! GetMerkle(txid, height)
           }
 
-          val pendingTransactionRequests1 = items1.foldLeft(data.pendingTransactionRequests) {
+          val pendingTransactionRequests1 = items.foldLeft(data.pendingTransactionRequests) {
             case (hashes, item) if !data.transactions.contains(item.txHash) && !data.pendingTransactionRequests.contains(item.txHash) =>
               client ! GetTransaction(item.txHash)
               process(item.txHash, item.height)
@@ -134,58 +127,23 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
               hashes
           }
 
-          val data1 = data.copy(history = data.history.updated(scriptHash, items1),
+          val shadowItems = for {
+            existingItems <- data.history.get(scriptHash).toList
+            item <- existingItems if !items.exists(_.txHash == item.txHash)
+          } yield item
+
+          val pendingTransactions1 = data.pendingTransactions.filterNot { pendingTx =>
+            // We have a transaction that Electrum does not know about, remove it
+            shadowItems.exists(_.txHash == pendingTx.txid)
+          }
+
+          val data1 = data.copy(history = data.history.updated(scriptHash, items),
             pendingHistoryRequests = data.pendingHistoryRequests - scriptHash,
+            transactions = data.transactions -- shadowItems.map(_.txHash),
             pendingTransactionRequests = pendingTransactionRequests1,
-            pendingHeadersRequests = pendingHeadersRequests1.toSet)
+            pendingHeadersRequests = pendingHeadersRequests1.toSet,
+            pendingTransactions = pendingTransactions1)
           persistAndNotify(data1)
-//          val pendingHeadersRequests1 = collection.mutable.HashSet.empty[GetHeaders]
-//          pendingHeadersRequests1 ++= data.pendingHeadersRequests
-//
-//          def downloadHeadersIfMissing(height: Int): Unit = {
-//            if (data.blockchain.getHeader(height).orElse(params.headerDb getHeader height).isEmpty) {
-//              // we don't have this header because it is older than our checkpoints => request the entire chunk
-//              val request = GetHeaders(height / RETARGETING_PERIOD * RETARGETING_PERIOD, RETARGETING_PERIOD)
-//              if (pendingHeadersRequests1 contains request) return
-//              pendingHeadersRequests1.add(request)
-//              chainSync ! request
-//            }
-//          }
-//
-//          def process(txid: ByteVector32, height: Int): Unit = {
-//            if (data.proofs.contains(txid) || height < 1) return
-//            downloadHeadersIfMissing(height)
-//            client ! GetMerkle(txid, height)
-//          }
-//
-//          val pendingTransactionRequests1 = items.foldLeft(data.pendingTransactionRequests) {
-//            case (hashes, item) if !data.transactions.contains(item.txHash) && !data.pendingTransactionRequests.contains(item.txHash) =>
-//              client ! GetTransaction(item.txHash)
-//              process(item.txHash, item.height)
-//              hashes + item.txHash
-//
-//            case (hashes, item) =>
-//              process(item.txHash, item.height)
-//              hashes
-//          }
-//
-//          val shadowItems = for {
-//            existingItems <- data.history.get(scriptHash).toList
-//            item <- existingItems if !items.exists(_.txHash == item.txHash)
-//          } yield item
-//
-//          val pendingTransactions1 = data.pendingTransactions.filterNot { pendingTx =>
-//            // We have a transaction that Electrum does not know about, remove it
-//            shadowItems.exists(_.txHash == pendingTx.txid)
-//          }
-//
-//          val data1 = data.copy(history = data.history.updated(scriptHash, items ++ shadowItems),
-//            pendingHistoryRequests = data.pendingHistoryRequests - scriptHash,
-//            transactions = data.transactions -- shadowItems.map(_.txHash),
-//            pendingTransactionRequests = pendingTransactionRequests1,
-//            pendingHeadersRequests = pendingHeadersRequests1.toSet,
-//            pendingTransactions = pendingTransactions1)
-//          persistAndNotify(data1)
 
         case (Some(data), GetTransactionResponse(tx), RUNNING) =>
           val clearedExcludedOutPoints: List[OutPoint] = data.excludedOutPoints diff tx.txIn.map(_.outPoint)
