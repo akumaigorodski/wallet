@@ -31,11 +31,11 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
   private def goto(state1: State) = state = state1
   var state: State = DISCONNECTED
 
-  def persistAndNotify(data: ElectrumData): Unit = {
+  def persistAndNotify(d: ElectrumData): Unit = {
     context.system.scheduler.scheduleOnce(100.millis, self, KEY_REFILL)(context.system.dispatcher)
 
-    if (data.lastReadyMessage contains data.currentReadyMessage) update(data) else {
-      val updatedData = data.copy(lastReadyMessage = data.currentReadyMessage.asSome)
+    if (d.lastReadyMessage contains d.currentReadyMessage) update(d) else {
+      val updatedData = d.copy(lastReadyMessage = d.currentReadyMessage.asSome)
       params.walletDb.persist(updatedData.toPersistent, updatedData.balance, ewt.xPub.publicKey)
       context.system.eventStream.publish(updatedData.currentReadyMessage)
       update(updatedData)
@@ -51,8 +51,8 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
       (datas.get(ewt.xPub), anyElectrumWalletMessage, state) match {
         case (None, rawPersistentElectrumData: ByteVector, DISCONNECTED) =>
           val persisted = Try(persistentDataCodec.decode(rawPersistentElectrumData.toBitVector).require.value).getOrElse(params.emptyPersistentData)
-          val firstAccountKeys = for (idx <- math.max(persisted.accountKeysCount - 1500, 0) until persisted.accountKeysCount) yield derivePublicKey(ewt.accountMaster, idx)
-          val firstChangeKeys = for (idx <- math.max(persisted.changeKeysCount - 1500, 0) until persisted.changeKeysCount) yield derivePublicKey(ewt.changeMaster, idx)
+          val firstAccountKeys = for (idx <- math.max(persisted.accountKeysCount - 1000, 0) until persisted.accountKeysCount) yield derivePublicKey(ewt.accountMaster, idx)
+          val firstChangeKeys = for (idx <- math.max(persisted.changeKeysCount - 1000, 0) until persisted.changeKeysCount) yield derivePublicKey(ewt.changeMaster, idx)
 
           me update ElectrumData(ewt, Blockchain(ewt.chainHash, checkpoints = Vector.empty, headersMap = Map.empty, bestchain = Vector.empty), firstAccountKeys.toVector, firstChangeKeys.toVector,
             persisted.excludedOutPoints, persisted.status, persisted.transactions, persisted.overriddenPendingTxids, persisted.history, persisted.proofs, pendingHistoryRequests = Set.empty,
@@ -84,13 +84,12 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
             persistAndNotify(data1)
           }
 
-        case (Some(data), ElectrumClient.ScriptHashSubscriptionResponse(scriptHash, _), RUNNING) if !data.accountKeyMap.contains(scriptHash) && !data.changeKeyMap.contains(scriptHash) =>
-          // Do nothing but guard from this being matched further down the road
-
         case (Some(data), ElectrumClient.ScriptHashSubscriptionResponse(scriptHash, status), RUNNING) if status.isEmpty =>
-          val status1 = data.status.updated(scriptHash, status)
-          val data1 = data.copy(status = status1)
-          persistAndNotify(data1)
+          // Generally we don't need to do anything here because most likely this is a fresh address where scriptHash is already empty
+          // But if we did have something there while now there is nothing then an incoming transaction has likely been cancelled
+          if (data.status.getOrElse(scriptHash, new String).nonEmpty) {
+            client ! ElectrumClient.GetScriptHashHistory(scriptHash)
+          }
 
         case (Some(data), ElectrumClient.ScriptHashSubscriptionResponse(scriptHash, status), RUNNING) =>
           val data1 = data.copy(status = data.status.updated(scriptHash, status), pendingHistoryRequests = data.pendingHistoryRequests + scriptHash)
@@ -140,6 +139,53 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
             pendingTransactionRequests = pendingTransactionRequests1,
             pendingHeadersRequests = pendingHeadersRequests1.toSet)
           persistAndNotify(data1)
+//          val pendingHeadersRequests1 = collection.mutable.HashSet.empty[GetHeaders]
+//          pendingHeadersRequests1 ++= data.pendingHeadersRequests
+//
+//          def downloadHeadersIfMissing(height: Int): Unit = {
+//            if (data.blockchain.getHeader(height).orElse(params.headerDb getHeader height).isEmpty) {
+//              // we don't have this header because it is older than our checkpoints => request the entire chunk
+//              val request = GetHeaders(height / RETARGETING_PERIOD * RETARGETING_PERIOD, RETARGETING_PERIOD)
+//              if (pendingHeadersRequests1 contains request) return
+//              pendingHeadersRequests1.add(request)
+//              chainSync ! request
+//            }
+//          }
+//
+//          def process(txid: ByteVector32, height: Int): Unit = {
+//            if (data.proofs.contains(txid) || height < 1) return
+//            downloadHeadersIfMissing(height)
+//            client ! GetMerkle(txid, height)
+//          }
+//
+//          val pendingTransactionRequests1 = items.foldLeft(data.pendingTransactionRequests) {
+//            case (hashes, item) if !data.transactions.contains(item.txHash) && !data.pendingTransactionRequests.contains(item.txHash) =>
+//              client ! GetTransaction(item.txHash)
+//              process(item.txHash, item.height)
+//              hashes + item.txHash
+//
+//            case (hashes, item) =>
+//              process(item.txHash, item.height)
+//              hashes
+//          }
+//
+//          val shadowItems = for {
+//            existingItems <- data.history.get(scriptHash).toList
+//            item <- existingItems if !items.exists(_.txHash == item.txHash)
+//          } yield item
+//
+//          val pendingTransactions1 = data.pendingTransactions.filterNot { pendingTx =>
+//            // We have a transaction that Electrum does not know about, remove it
+//            shadowItems.exists(_.txHash == pendingTx.txid)
+//          }
+//
+//          val data1 = data.copy(history = data.history.updated(scriptHash, items ++ shadowItems),
+//            pendingHistoryRequests = data.pendingHistoryRequests - scriptHash,
+//            transactions = data.transactions -- shadowItems.map(_.txHash),
+//            pendingTransactionRequests = pendingTransactionRequests1,
+//            pendingHeadersRequests = pendingHeadersRequests1.toSet,
+//            pendingTransactions = pendingTransactions1)
+//          persistAndNotify(data1)
 
         case (Some(data), GetTransactionResponse(tx), RUNNING) =>
           val clearedExcludedOutPoints: List[OutPoint] = data.excludedOutPoints diff tx.txIn.map(_.outPoint)
@@ -194,7 +240,8 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
 
           val depth = data.depth(tx.txid)
           val stamp = data.timestamp(tx.txid, params.headerDb)
-          val isDoubleSpent = doubleSpendTrials.contains(true)
+          // Has been replaced by one of our txs or somehow we know nothing about it
+          val isDoubleSpent = doubleSpendTrials.contains(true) || !data.isTxKnown(tx.txid)
           sender ! IsDoubleSpentResponse(tx, depth, stamp, isDoubleSpent)
 
         case (Some(data), GetCurrentReceiveAddresses, _) =>
@@ -320,21 +367,15 @@ object ElectrumWallet {
   case class IsDoubleSpentResponse(tx: Transaction, depth: Long, stamp: Long, isDoubleSpent: Boolean) extends Response
 
   sealed trait WalletEvent
+  case class WalletReady(balance: Satoshi, height: Long, heightsCode: Int, xPub: ExtendedPublicKey, unExcludedUtxos: Seq[Utxo], excludedOutPoints: List[OutPoint] = Nil) extends WalletEvent
   case class TransactionReceived(tx: Transaction, depth: Long, stamp: Long, received: Satoshi, sent: Satoshi, addresses: StringList, xPubs: List[ExtendedPublicKey], fee: Satoshi) extends WalletEvent {
     def merge(that: TransactionReceived) = TransactionReceived(tx, min(depth, that.depth), min(stamp, that.stamp), received + that.received, sent + that.sent, addresses ++ that.addresses, xPubs ++ that.xPubs, fee + that.fee)
   }
-
-  case class WalletReady(balance: Satoshi, height: Long, heightsCode: Int, xPub: ExtendedPublicKey, unExcludedUtxos: Seq[Utxo], excludedOutPoints: List[OutPoint] = Nil) extends WalletEvent {
-    def sameXPub(wallet: ElectrumEclairWallet): Boolean = wallet.ewt.xPub == xPub
-  }
 }
 
-case class Utxo(key: ExtendedPublicKey, item: ElectrumClient.UnspentItem, ewt: ElectrumWalletType)
-
 case class AccountAndXPrivKey(xPriv: ExtendedPrivateKey, master: ExtendedPrivateKey)
-
+case class Utxo(key: ExtendedPublicKey, item: ElectrumClient.UnspentItem, ewt: ElectrumWalletType)
 case class TransactionDelta(spentUtxos: Seq[Utxo], fee: Satoshi, received: Satoshi, sent: Satoshi)
-
 case class WalletParameters(headerDb: HeaderDb, walletDb: WalletDb, txDb: SQLiteTx, dustLimit: Satoshi) {
   lazy val emptyPersistentData: PersistentData = PersistentData(accountKeysCount = MAX_RECEIVE_ADDRESSES, changeKeysCount = MAX_RECEIVE_ADDRESSES)
   lazy val emptyPersistentDataBytes: ByteVector = persistentDataCodec.encode(emptyPersistentData).require.toByteVector
@@ -415,7 +456,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain,
     val ourInputs = tx.txIn.filter(isMine)
 
     for (txIn <- ourInputs) {
-      // Can only be computed if all our inputs have parents
+      // Can only be computed if all our inputs have confirmed parents
       val hasParent = transactions.contains(txIn.outPoint.txid)
       if (!hasParent) return None
     }

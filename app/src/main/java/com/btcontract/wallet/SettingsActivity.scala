@@ -268,7 +268,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
       showKeys(extraInput)
 
       def proceed: Unit = runAnd(finish) {
-        if (WalletParams.chainWallets.findByPubKey(data.bip84XPub.publicKey).isEmpty) {
+        if (WalletParams.chainWallets.wallets.get(data.bip84XPub.publicKey).isEmpty) {
           val label = extraInput.getText.toString.trim.asSome.filter(_.nonEmpty).getOrElse(EclairWallet.BIP84)
           val core = WatchingWallet(EclairWallet.BIP84, data.masterFingerprint, data.bip84XPub, isRemovable = true)
           val wallet = WalletParams.chainWallets.makeWatchingWallet84Parts(core, lastBalance = Satoshi(0L), label)
@@ -282,7 +282,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
   }
 
   def makeSigningWalletTypes(host: LinearLayout, title: String, master: ExtendedPrivateKey): Unit = {
-    def find(walletType: String): Option[ElectrumEclairWallet] = WalletParams.chainWallets.wallets.find {
+    def find(walletType: String): Option[ElectrumEclairWallet] = WalletParams.chainWallets.wallets.values.find {
       wallet => wallet.ewt.secrets.exists(_.master == master) && wallet.info.core.walletType == walletType
     }
 

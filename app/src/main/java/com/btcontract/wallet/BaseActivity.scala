@@ -144,7 +144,7 @@ trait BaseActivity extends AppCompatActivity { me =>
       val holder: LinearLayout = cardsContainer
     }
 
-    chooser.init(WalletParams.chainWallets.spendableWallets)
+    chooser.init(WalletParams.chainWallets.spendableWallets.size)
     chooser.update(WalletParams.chainWallets.spendableWallets)
     chooser.unPad(WalletParams.chainWallets.spendableWallets)
   }
@@ -715,18 +715,14 @@ object QRActivity {
 }
 
 abstract class ChainWalletCards(host: BaseActivity) { self =>
+  def update(wallets: Iterable[ElectrumEclairWallet] = Nil): Unit = cardViews.zip(wallets).foreach { case (card, wallet) => card updateView wallet }
+  def unPad(wallets: Iterable[ElectrumEclairWallet] = Nil): Unit = cardViews.foreach(_.unPad)
   private var cardViews: List[ChainCard] = Nil
 
-  def init(wallets: List[ElectrumEclairWallet] = Nil): Unit = {
-    cardViews = List.fill(wallets.size)(new ChainCard)
+  def init(size: Int): Unit = {
+    cardViews = List.fill(size)(new ChainCard)
     cardViews.map(_.view).foreach(holder.addView)
   }
-
-  def update(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.zip(wallets).foreach {
-    case (card, wallet) => card updateView wallet
-  }
-
-  def unPad(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.foreach(_.unPad)
 
   class ChainCard {
     val view: SwipeRevealLayout = host.getLayoutInflater.inflate(R.layout.frag_chain_card, null).asInstanceOf[SwipeRevealLayout]

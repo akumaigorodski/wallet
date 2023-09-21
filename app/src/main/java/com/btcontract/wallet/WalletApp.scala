@@ -129,16 +129,18 @@ object WalletApp {
     val catcher = WalletParams.system.actorOf(Props(new WalletEventsCatcher), "events-catcher")
 
     val walletExt: WalletExt =
-      (WalletExt(wallets = Nil, catcher, sync, electrumPool, params) /: chainWalletBag.listWallets) {
+      (WalletExt(wallets = Map.empty, catcher, sync, electrumPool, params) /: chainWalletBag.listWallets) {
         case ext ~ CompleteChainWalletInfo(core: SigningWallet, persistentSigningWalletData, lastBalance, label, false) =>
           val signingWallet = ext.makeSigningWalletParts(core, core.attachedMaster.getOrElse(secret.keys.master), lastBalance, label)
+          val wallets1 = ext.wallets.updated(signingWallet.ewt.xPub.publicKey, signingWallet)
           signingWallet.walletRef ! persistentSigningWalletData
-          ext.copy(wallets = signingWallet :: ext.wallets)
+          ext.copy(wallets = wallets1)
 
-        case ext ~ CompleteChainWalletInfo(core: WatchingWallet, persistentWatchingWalletData, lastBalance, label, false) =>
-          val watchingWallet = ext.makeWatchingWallet84Parts(core, lastBalance, label)
+        case ext ~ CompleteChainWalletInfo(watchCore: WatchingWallet, persistentWatchingWalletData, lastBalance, label, false) =>
+          val watchingWallet = ext.makeWatchingWallet84Parts(core = watchCore, lastBalance, label)
+          val wallets1 = ext.wallets.updated(watchingWallet.ewt.xPub.publicKey, watchingWallet)
           watchingWallet.walletRef ! persistentWatchingWalletData
-          ext.copy(wallets = watchingWallet :: ext.wallets)
+          ext.copy(wallets = wallets1)
       }
 
     WalletParams.chainWallets = if (walletExt.wallets.isEmpty) {
@@ -162,7 +164,7 @@ object WalletApp {
     WalletParams.chainWallets.catcher ! new WalletEventsListener {
       override def onWalletReady(event: WalletReady): Unit = WalletParams.synchronized {
         // Wallet is already persisted in database so our only job at this point is to update runtime
-        WalletParams.chainWallets = WalletParams.chainWallets.modify(_.wallets.eachWhere(event.sameXPub).info) using {
+        WalletParams.chainWallets = WalletParams.chainWallets.modify(_.wallets.index(event.xPub.publicKey).info) using {
           // Coin control is always disabled on start, we update it later with animation to make it noticeable
           _.copy(lastBalance = event.balance, isCoinControlOn = event.excludedOutPoints.nonEmpty)
         }
