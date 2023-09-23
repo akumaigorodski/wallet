@@ -9,6 +9,7 @@ import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.DeterministicWallet.ExtendedPrivateKey
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
+import fr.acinq.eclair.blockchain.EclairWallet
 import fr.acinq.eclair.blockchain.electrum._
 import fr.acinq.eclair.blockchain.electrum.db._
 import immortan.crypto.CanBeShutDown
@@ -44,6 +45,15 @@ object WalletParams {
 case class WalletExt(wallets: Map[PublicKey, ElectrumEclairWallet], catcher: ActorRef, sync: ActorRef, pool: ActorRef, params: WalletParameters) extends CanBeShutDown { me =>
   lazy val usableWallets: List[ElectrumEclairWallet] = wallets.values.filter(wallet => wallet.ewt.secrets.nonEmpty || wallet.info.core.masterFingerprint.nonEmpty).toList
   lazy val spendableWallets: List[ElectrumEclairWallet] = usableWallets.filter(_.info.lastBalance > 0L.sat)
+
+  // When sending from multiple wallets at once we have this priority as to where the change output will go
+  def determineChangeWallet(candidates: Seq[ElectrumEclairWallet] = Nil): ElectrumEclairWallet = candidates.minBy {
+    case hardwareWallet if hardwareWallet.ewt.secrets.isEmpty && hardwareWallet.info.core.masterFingerprint.nonEmpty => 0
+    case localModernWallet if localModernWallet.ewt.secrets.nonEmpty && localModernWallet.info.core.walletType == EclairWallet.BIP84 => 1
+    case localSigningWallet if localSigningWallet.ewt.secrets.nonEmpty => 2
+    case wallet if wallet.info.core.attachedMaster.nonEmpty => 3
+    case _ => 4
+  }
 
   def makeSigningWalletParts(core: SigningWallet, masterPrivKey: ExtendedPrivateKey, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
     val ewt: ElectrumWalletType = ElectrumWalletType.makeSigningType(tag = core.walletType, master = masterPrivKey, chainHash = WalletParams.chainHash)

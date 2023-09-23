@@ -12,10 +12,10 @@ import scala.util.Try
 
 object ElectrumWalletType {
   def makeSigningType(tag: String, master: ExtendedPrivateKey, chainHash: ByteVector32): ElectrumWalletType = tag match {
-    case EclairWallet.BIP32 => makeSigningType(tag, xPriv32(master, chainHash), chainHash)
-    case EclairWallet.BIP44 => makeSigningType(tag, xPriv44(master, chainHash), chainHash)
-    case EclairWallet.BIP49 => makeSigningType(tag, xPriv49(master, chainHash), chainHash)
-    case EclairWallet.BIP84 => makeSigningType(tag, xPriv84(master, chainHash), chainHash)
+    case EclairWallet.BIP32 => makeSigningType(tag, secrets = xPriv32(master, chainHash), chainHash)
+    case EclairWallet.BIP44 => makeSigningType(tag, secrets = xPriv44(master, chainHash), chainHash)
+    case EclairWallet.BIP49 => makeSigningType(tag, secrets = xPriv49(master, chainHash), chainHash)
+    case EclairWallet.BIP84 => makeSigningType(tag, secrets = xPriv84(master, chainHash), chainHash)
     case _ => throw new RuntimeException
   }
 
