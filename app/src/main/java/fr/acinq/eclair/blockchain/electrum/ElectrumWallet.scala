@@ -149,7 +149,7 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
           // Even though we have excluded some utxos in this wallet user may still spend them from other wallet, so clear excluded outpoints here
           val data1 = data.copy(pendingTransactionRequests = data.pendingTransactionRequests - tx.txid, excludedOutPoints = clearedExcludedOutPoints)
 
-          val data2 = data.computeTransactionDelta(tx) map { case TransactionDelta(_, fee, received, sent) =>
+          val data2 = ElectrumWallet.computeTxDelta(List(data), tx) map { case TransactionDelta(_, fee, received, sent) =>
             val addresses = tx.txOut.filter(data.isMine).map(_.publicKeyScript).flatMap(data.publicScriptMap.get).map(ewt.textAddress).toList
             context.system.eventStream publish TransactionReceived(tx, data.depth(tx.txid), data.timestamp(tx.txid, params.headerDb), received, sent, addresses, List(ewt.xPub), fee)
             // Transactions arrive asynchronously, we may have valid txs wihtout parents, if that happens we wait until parents arrive and then retry delta check again
@@ -160,7 +160,6 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, params: WalletParame
 
         case (Some(data), response: GetMerkleResponse, RUNNING) =>
           val request = GetHeaders(response.blockHeight / RETARGETING_PERIOD * RETARGETING_PERIOD, RETARGETING_PERIOD)
-
           data.blockchain.getHeader(response.blockHeight) orElse params.headerDb.getHeader(response.blockHeight) match {
             case Some(existingMerkleHeader) if existingMerkleHeader.hashMerkleRoot == response.root && data.isTxKnown(response.txid) =>
               val data1 = data.copy(proofs = data.proofs.updated(response.txid, response), pendingMerkleResponses = data.pendingMerkleResponses - response)
@@ -379,7 +378,7 @@ object ElectrumWallet {
   def rbfBump(bump: RBFBump, dustLimit: Satoshi, data: ElectrumData): RBFResponse = {
     val tx1 = bump.tx.copy(txOut = bump.tx.txOut.filterNot(data.isMine), txIn = Nil)
 
-    data.computeTransactionDelta(bump.tx) map {
+    computeTxDelta(List(data), bump.tx) map {
       // We sent all our funds to a single address which does not belong to us, can reroute it
       case delta if delta.fee > 0L.sat && bump.tx.txOut.size == 1 && tx1.txOut.nonEmpty && data.utxos.isEmpty =>
         rbfReroute(tx1.txOut.head.publicKeyScript, delta.spentUtxos, bump.feeRatePerKw, dustLimit, bump.sequenceFlag)
@@ -397,7 +396,7 @@ object ElectrumWallet {
   }
 
   // We use this one for cancelling (rerouting onto our own address)
-  def rbfReroute(reroute: RBFReroute, dustLimit: Satoshi, data: ElectrumData): RBFResponse = data.computeTransactionDelta(reroute.tx) map { delta =>
+  def rbfReroute(reroute: RBFReroute, dustLimit: Satoshi, data: ElectrumData): RBFResponse = computeTxDelta(List(data), reroute.tx) map { delta =>
     rbfReroute(reroute.publicKeyScript, delta.spentUtxos, reroute.feeRatePerKw, dustLimit, reroute.sequenceFlag)
   } getOrElse RBFResponse(PARENTS_MISSING.asLeft)
 
@@ -408,14 +407,43 @@ object ElectrumWallet {
       case _ => RBFResponse(GENERATION_FAIL.asLeft)
     }
   }
+
+  def computeTxDelta(datas: Seq[ElectrumData], transaction: Transaction): Option[TransactionDelta] = {
+    // For incoming transactions this will work because they typically have no our inputs at all
+    // For outgoing transactions this wiil work only if all inputs come from our utxos
+    // Computes the effect of this transaction on the wallet
+
+    val ourOutputs = for {
+      txOutput <- transaction.txOut
+      data <- datas if data.isMine(txOutput)
+    } yield txOutput
+
+    val ourInputs = for {
+      txInput <- transaction.txIn
+      data <- datas if data.isMine(txInput)
+    } yield txInput
+
+    val utxos = for {
+      txInput <- ourInputs
+      data <- datas if data.transactions.contains(txInput.outPoint.txid)
+      // This may be needed for RBF and it's a good place to create these UTXOs
+      // we create simulated as-if yet unused UTXOs to be reused in RBF transaction
+      txOutput = data.transactions(txInput.outPoint.txid).txOut(txInput.outPoint.index.toInt)
+      item = UnspentItem(txInput.outPoint.txid, txInput.outPoint.index.toInt, txOutput.amount.toLong, 0)
+    } yield Utxo(data.publicScriptMap(txOutput.publicKeyScript), item, data.ewt)
+
+    if (utxos.size != ourInputs.size) None else {
+      val totalMineSent = utxos.map(_.item.value.sat).sum
+      val totalReceived = transaction.txOut.map(_.amount).sum
+      val fee = if (ourInputs.size == transaction.txIn.size) totalMineSent - totalReceived else Satoshi(0L)
+      TransactionDelta(spentUtxos = utxos, fee, received = ourOutputs.map(_.amount).sum, totalMineSent).asSome
+    }
+  }
 }
 
 case class AccountAndXPrivKey(xPriv: ExtendedPrivateKey, master: ExtendedPrivateKey)
 case class Utxo(key: ExtendedPublicKey, item: ElectrumClient.UnspentItem, ewt: ElectrumWalletType)
-case class TransactionDelta(spentUtxos: Seq[Utxo], fee: Satoshi, received: Satoshi, sent: Satoshi) {
-  def merge(that: TransactionDelta) = TransactionDelta(spentUtxos ++ that.spentUtxos, fee + that.fee, received + that.received, sent + that.sent)
-}
-
+case class TransactionDelta(spentUtxos: Seq[Utxo], fee: Satoshi, received: Satoshi, sent: Satoshi)
 case class WalletParameters(headerDb: HeaderDb, walletDb: WalletDb, txDb: SQLiteTx, dustLimit: Satoshi) {
   lazy val emptyPersistentData: PersistentData = PersistentData(accountKeysCount = MAX_RECEIVE_ADDRESSES, changeKeysCount = MAX_RECEIVE_ADDRESSES)
   lazy val emptyPersistentDataBytes: ByteVector = persistentDataCodec.encode(emptyPersistentData).require.toByteVector
@@ -453,8 +481,7 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain,
           tx <- transactions.get(item.txHash).toList
           if !overriddenPendingTxids.contains(tx.txid)
           (txOut, index) <- tx.txOut.zipWithIndex if computeScriptHash(txOut.publicKeyScript) == scriptHash
-          unspent = ElectrumClient.UnspentItem(item.txHash, index, txOut.amount.toLong, item.height)
-        } yield Utxo(key, unspent, ewt)
+        } yield Utxo(key, UnspentItem(item.txHash, index, txOut.amount.toLong, item.height), ewt)
 
         // Find all out points which spend from this script hash and make sure unspents do not contain them
         val outPoints = historyItems.map(_.txHash).flatMap(transactions.get).flatMap(_.txIn).map(_.outPoint).toSet
@@ -486,30 +513,6 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain,
 
   def depth(txid: ByteVector32): Int = proofs.get(txid).map(_.blockHeight).map(computeDepth).getOrElse(0)
   def computeDepth(txHeight: Int): Int = if (txHeight <= 0L) 0 else blockchain.height - txHeight + 1
-
-  def computeTransactionDelta(tx: Transaction): Option[TransactionDelta] = {
-    // Computes the effect of this transaction on the wallet
-    val ourInputs = tx.txIn.filter(isMine)
-
-    for (txIn <- ourInputs) {
-      // Can only be computed if all our inputs have confirmed parents
-      val hasParent = transactions.contains(txIn.outPoint.txid)
-      if (!hasParent) return None
-    }
-
-    val spentUtxos = ourInputs.map { txIn =>
-      // This may be needed for RBF and it's a good place to create these UTXOs
-      // we create simulated as-if yet unused UTXOs to be reused in RBF transaction
-      val TxOut(amount, publicKeyScript) = transactions(txIn.outPoint.txid).txOut(txIn.outPoint.index.toInt)
-      val item = UnspentItem(txIn.outPoint.txid, txIn.outPoint.index.toInt, amount.toLong, height = 0)
-      Utxo(publicScriptMap(publicKeyScript), item, ewt)
-    }
-
-    val totalReceived = tx.txOut.map(_.amount).sum
-    val mineSent = spentUtxos.map(_.item.value.sat).sum
-    val fee = if (ourInputs.size != tx.txIn.size) 0L.sat else mineSent - totalReceived
-    TransactionDelta(spentUtxos, fee, tx.txOut.filter(isMine).map(_.amount).sum, mineSent).asSome
-  }
 
   def withOverridingTxids: ElectrumData = {
     def changeKeyDepth(tx: Transaction) = if (proofs contains tx.txid) Long.MaxValue else tx.txOut.map(_.publicKeyScript).flatMap(publicScriptChangeMap.get).map(_.path.lastChildNumber).headOption.getOrElse(Long.MinValue)

@@ -87,7 +87,7 @@ object WalletApp {
 
   def makeAlive: Unit = {
     // In case this is needed early
-    WalletParams.chainHash = Block.LivenetGenesisBlock.hash
+    WalletParams.chainHash = Block.TestnetGenesisBlock.hash
     // Make application minimally operational (so we can check for seed in db)
     val miscInterface = new DBInterfaceSQLiteAndroidMisc(app, dbFileNameMisc)
 
