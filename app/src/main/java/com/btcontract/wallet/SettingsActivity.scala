@@ -100,8 +100,8 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
       }
 
       // Allow user to add a hardware wallet or another BIP39-based wallet
-      addFlowChip(options.flow, getString(settings_add_hardware_wallet), R.drawable.border_yellow, startHardware)
-      addFlowChip(options.flow, getString(settings_add_recovery_phrase), R.drawable.border_yellow, startMnemonic)
+      addFlowChip(options.flow, getString(settings_add_hardware_wallet), R.drawable.border_green, startHardware)
+      addFlowChip(options.flow, getString(settings_add_recovery_phrase), R.drawable.border_green, startMnemonic)
       sheet.view.setBackgroundResource(R.color.almostBlack)
       sheet.view.addView(options.view)
 

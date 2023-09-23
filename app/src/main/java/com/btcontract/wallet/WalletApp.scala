@@ -178,7 +178,7 @@ object WalletApp {
         def addChainTx(received: Satoshi, sent: Satoshi, description: TxDescription, isIncoming: Long): Unit = txDataBag.db txWrap {
           txDataBag.addTx(event.tx, event.depth, received, sent, event.fee, event.xPubs, description, isIncoming, WalletParams.fiatRates.info.rates, event.stamp)
           txDataBag.addSearchableTransaction(description.queryText(event.tx.txid), event.tx.txid)
-          if (event.depth < 1) Vibrator.vibrate
+          if (event.depth == 1) Vibrator.vibrate
         }
 
         val sentTxDesc = txInfos.remove(event.tx.txid).map(_.description) getOrElse PlainTxDescription(Nil)
@@ -258,7 +258,6 @@ class WalletApp extends Application { me =>
   def quickToast(code: Int): Unit = quickToast(me getString code)
   def quickToast(msg: CharSequence): Unit = Toast.makeText(me, msg, Toast.LENGTH_LONG).show
   def clipboardManager: ClipboardManager = getSystemService(Context.CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
-
   def inputMethodManager: InputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE).asInstanceOf[InputMethodManager]
   def showKeys(field: EditText): Unit = try inputMethodManager.showSoftInput(field, InputMethodManager.SHOW_IMPLICIT) catch none
   def hideKeys(field: EditText): Unit = try inputMethodManager.hideSoftInputFromWindow(field.getWindowToken, 0) catch none

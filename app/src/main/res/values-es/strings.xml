@@ -79,7 +79,6 @@
 
     <string name="tx_btc">Transacción Bitcoin</string>
     <string name="tx_state_double_spent">fallido</string>
-    <string name="tx_state_pending">pendiente</string>
 
     <string name="popup_to_address"><![CDATA[<b>dirección</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>

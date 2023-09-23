@@ -79,7 +79,6 @@
 
     <string name="tx_btc">Bitcointransactie</string>
     <string name="tx_state_double_spent">mislukt</string>
-    <string name="tx_state_pending">wachtende</string>
 
     <string name="popup_to_address"><![CDATA[<b>adres</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>

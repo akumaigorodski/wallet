@@ -79,7 +79,6 @@
 
     <string name="tx_btc">Transação Bitcoin</string>
     <string name="tx_state_double_spent">falhou</string>
-    <string name="tx_state_pending">pendente</string>
 
     <string name="popup_to_address"><![CDATA[<b>endereço</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>

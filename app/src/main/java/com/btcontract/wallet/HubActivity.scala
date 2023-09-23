@@ -278,7 +278,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
       def attempt(alert: AlertDialog): Unit = {
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_BOOST)
-        val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
+        val ofOriginalTxid = info.description.rbf.map(_.ofTxid).getOrElse(info.txid).toHex
+        val rbfBumpOrder = SemanticOrder(ofOriginalTxid, -System.currentTimeMillis)
 
         for {
           check <- fromWallet.doubleSpent(info.tx) if check.depth < 1 && !check.isDoubleSpent
@@ -359,7 +360,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
       def attempt(alert: AlertDialog): Unit = {
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_CANCEL)
-        val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
+        val ofOriginalTxid = info.description.rbf.map(_.ofTxid).getOrElse(info.txid).toHex
+        val rbfBumpOrder = SemanticOrder(ofOriginalTxid, -System.currentTimeMillis)
 
         for {
           check <- fromWallet.doubleSpent(info.tx) if check.depth < 1 && !check.isDoubleSpent
@@ -412,7 +414,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       item match {
         case info: TxInfo =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
-          val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.cpfpOf.isEmpty
+          val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.cpfpOf.isEmpty
           val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.canBeCPFPd
           val isRbfCancel = info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL)
 
@@ -490,8 +492,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
     def setTxMeta(info: TxInfo): Unit = {
       if (info.isDoubleSpent) meta setText getString(tx_state_double_spent).html
-      else if (info.depth > 0) meta setText WalletApp.app.when(info.date, WalletApp.app.dateFormat).html
-      else meta setText getString(tx_state_pending).html
+      else meta setText WalletApp.app.when(info.date, WalletApp.app.dateFormat).html
     }
   }
 

@@ -42,25 +42,27 @@ object Tools {
   }
 
   def prepareBip84Psbt(response: GenerateTxResponse, masterFingerprint: Long): Psbt = {
-    // We ONLY support BIP84 watching wallets so all inputs have witnesses
-    val psbt1 = Psbt(response.tx)
-
-    // Provide info about inputs
-    val psbt2 = response.tx.txIn.foldLeft(psbt1) { case (psbt, txIn) =>
-      val parentTransaction = response.data.transactions(txIn.outPoint.txid)
-      val utxoPubKey = response.data.publicScriptMap(parentTransaction.txOut(txIn.outPoint.index.toInt).publicKeyScript)
-      val derivationPath = Map(KeyPathWithMaster(masterFingerprint, utxoPubKey.path) -> utxoPubKey.publicKey).map(_.swap)
-      psbt.updateWitnessInputTx(parentTransaction, txIn.outPoint.index.toInt, derivationPaths = derivationPath).get
-    }
-
-    // Provide info about our change output
-    response.tx.txOut.zipWithIndex.foldLeft(psbt2) { case (psbt, txOut ~ index) =>
-      response.data.publicScriptChangeMap.get(txOut.publicKeyScript) map { changeKey =>
-        val changeKeyPathWithMaster = KeyPathWithMaster(masterFingerprint, changeKey.path)
-        val derivationPath = Map(changeKeyPathWithMaster -> changeKey.publicKey).map(_.swap)
-        psbt.updateWitnessOutput(index, derivationPaths = derivationPath).get
-      } getOrElse psbt
-    }
+    // TODO: implement this (probably by another request to wallet which will provide data)
+//    // We ONLY support BIP84 watching wallets so all inputs have witnesses
+//    val psbt1 = Psbt(response.tx)
+//
+//    // Provide info about inputs
+//    val psbt2 = response.tx.txIn.foldLeft(psbt1) { case (psbt, txIn) =>
+//      val parentTransaction = response.data.transactions(txIn.outPoint.txid)
+//      val utxoPubKey = response.data.publicScriptMap(parentTransaction.txOut(txIn.outPoint.index.toInt).publicKeyScript)
+//      val derivationPath = Map(KeyPathWithMaster(masterFingerprint, utxoPubKey.path) -> utxoPubKey.publicKey).map(_.swap)
+//      psbt.updateWitnessInputTx(parentTransaction, txIn.outPoint.index.toInt, derivationPaths = derivationPath).get
+//    }
+//
+//    // Provide info about our change output
+//    response.tx.txOut.zipWithIndex.foldLeft(psbt2) { case (psbt, txOut ~ index) =>
+//      response.data.publicScriptChangeMap.get(txOut.publicKeyScript) map { changeKey =>
+//        val changeKeyPathWithMaster = KeyPathWithMaster(masterFingerprint, changeKey.path)
+//        val derivationPath = Map(changeKeyPathWithMaster -> changeKey.publicKey).map(_.swap)
+//        psbt.updateWitnessOutput(index, derivationPaths = derivationPath).get
+//      } getOrElse psbt
+//    }
+    ???
   }
 
   def extractBip84Tx(psbt: Psbt): scala.util.Try[Transaction] = {

@@ -10,7 +10,7 @@ import scala.concurrent.Future
 
 object EclairWallet {
   final val OPT_IN_FULL_RBF = TxIn.SEQUENCE_FINAL - 2
-  final val MAX_RECEIVE_ADDRESSES = 10
+  final val MAX_RECEIVE_ADDRESSES = 20
 
   // Wallet types
   final val BIP32 = "BIP32"
