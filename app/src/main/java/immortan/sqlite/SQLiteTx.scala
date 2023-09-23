@@ -10,6 +10,8 @@ import immortan.utils.ImplicitJsonFormats._
 import immortan.{TxDescription, TxInfo}
 import spray.json._
 
+import scala.util.Try
+
 
 class SQLiteTx(val db: DBInterface) {
   def listRecentTxs(limit: Int): RichCursor = db.select(TxTable.selectRecentSql, limit.toString)
@@ -51,9 +53,10 @@ class SQLiteTx(val db: DBInterface) {
     newSqlPQ.close
   }
 
-  def toTxInfo(rc: RichCursor): TxInfo =
+  def toTxInfo(rc: RichCursor): Option[TxInfo] = Try {
     TxInfo(txString = rc string TxTable.rawTx, txidString = rc string TxTable.txid, pubKeysString = rc string TxTable.pub, depth = rc long TxTable.depth,
       receivedSat = Satoshi(rc long TxTable.receivedSat), sentSat = Satoshi(rc long TxTable.sentSat), feeSat = Satoshi(rc long TxTable.feeSat), seenAt = rc long TxTable.seenAt,
       updatedAt = rc long TxTable.updatedAt, description = to[TxDescription](rc string TxTable.description), balanceSnapshot = MilliSatoshi(rc long TxTable.balanceMsat),
       fiatRatesString = rc string TxTable.fiatRates, incoming = rc long TxTable.incoming, doubleSpent = rc long TxTable.doubleSpent)
+  }.toOption
 }

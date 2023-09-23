@@ -5,9 +5,7 @@ import android.view.View
 import android.widget._
 import androidx.appcompat.app.AlertDialog
 import androidx.transition.TransitionManager
-import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.R.string._
-import com.google.android.material.snackbar.Snackbar
 import fr.acinq.bitcoin.MnemonicCode
 import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
 import fr.acinq.eclair.wire.{Domain, NodeAddress}
