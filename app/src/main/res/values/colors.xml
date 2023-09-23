@@ -30,8 +30,8 @@
     <color name="almostBlack">#1A1A1A</color>
     <color name="cardOutText">#88FF88</color>
     <color name="cardZeroText">#888888</color>
-    <color name="totalZeroText">#666666</color>
-    <color name="btcCardZeroText">#B38722</color>
+    <color name="watchCardText">#737eaa</color>
+    <color name="signCardZeroText">#B38722</color>
 
     <!-- nachos -->
 

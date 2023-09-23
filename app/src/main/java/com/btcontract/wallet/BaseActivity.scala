@@ -76,8 +76,8 @@ object Colors {
   val cardIn: String = "#" + WalletApp.app.getResources.getString(R.color.colorAccent).substring(3)
   val cardOut: String = "#" + WalletApp.app.getResources.getString(R.color.cardOutText).substring(3)
   val cardZero: String = "#" + WalletApp.app.getResources.getString(R.color.cardZeroText).substring(3)
-  val totalZero: String = "#" + WalletApp.app.getResources.getString(R.color.totalZeroText).substring(3)
-  val btcCardZero: String = "#" + WalletApp.app.getResources.getString(R.color.btcCardZeroText).substring(3)
+  val watchCardZero: String = "#" + WalletApp.app.getResources.getString(R.color.watchCardText).substring(3)
+  val signCardZero: String = "#" + WalletApp.app.getResources.getString(R.color.signCardZeroText).substring(3)
 }
 
 trait ExternalDataChecker {
@@ -751,7 +751,8 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     }
 
     def updateView(wallet: ElectrumEclairWallet): Unit = {
-      chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, btcCardZero).html)
+      val zeroColor = if (wallet.ewt.secrets.nonEmpty) signCardZero else watchCardZero
+      chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, zeroColor).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
 
       val chainBalanceVisible = wallet.info.lastBalance > 0L.sat
