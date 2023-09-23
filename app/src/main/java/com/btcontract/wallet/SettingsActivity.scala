@@ -1,6 +1,6 @@
 package com.btcontract.wallet
 
-import android.os.{Build, Bundle}
+import android.os.Bundle
 import android.view.View
 import android.widget._
 import com.btcontract.wallet.BaseActivity.StringOps
@@ -17,38 +17,19 @@ import fr.acinq.eclair.blockchain.EclairWallet
 import fr.acinq.eclair.blockchain.EclairWallet._
 import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
 import fr.acinq.eclair.blockchain.electrum.db.{SigningWallet, WatchingWallet}
-import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
-import fr.acinq.eclair.wire.{Domain, NodeAddress}
 import immortan.crypto.Tools._
 import immortan.utils.{BtcDenomination, SatDenomination}
 import immortan.{LightningNodeKeys, WalletParams}
 
-import scala.util.Success
-
-
-abstract class SettingsHolder(host: BaseActivity) {
-  val view: RelativeLayout = host.getLayoutInflater.inflate(R.layout.frag_switch, null, false).asInstanceOf[RelativeLayout]
-  val settingsCheck: CheckBox = view.findViewById(R.id.settingsCheck).asInstanceOf[CheckBox]
-  val settingsTitle: TextView = view.findViewById(R.id.settingsTitle).asInstanceOf[TextView]
-  val settingsInfo: TextView = view.findViewById(R.id.settingsInfo).asInstanceOf[TextView]
-  def updateView: Unit
-
-  def putBoolAndUpdateView(key: String, value: Boolean): Unit = {
-    WalletApp.app.prefs.edit.putBoolean(key, value).commit
-    updateView
-  }
-
-  def disableIfOldAndroid: Unit = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-    val message = host.getString(error_old_api_level).format(Build.VERSION.SDK_INT)
-    host.setVis(isVisible = true, settingsInfo)
-    settingsInfo.setText(message)
-    settingsTitle.setAlpha(0.5F)
-    view.setEnabled(false)
-  }
-}
 
 class SettingsActivity extends BaseCheckActivity with MnemonicActivity with ChoiceReceiver { me =>
-  lazy private[this] val settingsContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
+  lazy val activityContainer = findViewById(R.id.settingsContainer).asInstanceOf[LinearLayout]
+
+  val notifyRestart: Int => Unit = message => {
+    def onOk(snack: Snackbar): Unit = runAnd(snack.dismiss)(WalletApp.restart)
+    snack(activityContainer, getString(message).html, R.string.dialog_ok, onOk)
+  }
+
   private[this] val fiatSymbols = WalletParams.fiatRates.universallySupportedSymbols.toList.sorted
   private[this] val CHOICE_FIAT_DENOM_TAG = "choiceFiatDenominationTag"
   private[this] val CHOICE_DENOM_TAG = "choiceBtcDenominationTag"
@@ -117,48 +98,6 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
     }
   }
 
-  lazy private[this] val electrum: SettingsHolder = new SettingsHolder(me) {
-    setVis(isVisible = false, settingsCheck)
-
-    override def updateView: Unit = WalletApp.customElectrumAddress match {
-      case Success(nodeAddress) => setTexts(settings_custom_electrum_enabled, nodeAddress.toString)
-      case _ => setTexts(settings_custom_electrum_disabled, me getString settings_custom_electrum_disabled_tip)
-    }
-
-    view setOnClickListener onButtonTap {
-      val (container, extraInputLayout, extraInput) = singleInputPopup
-      val builder = titleBodyAsViewBuilder(getString(settings_custom_electrum_disabled).asDefView, container)
-      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
-      extraInputLayout.setHint(settings_custom_electrum_host_port)
-      showKeys(extraInput)
-
-      def proceed: Unit = {
-        val input = extraInput.getText.toString.trim
-        def saveAddress(address: String) = WalletApp.app.prefs.edit.putString(WalletApp.CUSTOM_ELECTRUM, address)
-        if (input.nonEmpty) runInFutureProcessOnUI(saveUnsafeElectrumAddress, onFail)(_ => warnAndUpdateView)
-        else runAnd(saveAddress(new String).commit)(warnAndUpdateView)
-
-        def saveUnsafeElectrumAddress: Unit = {
-          val hostOrIP ~ port = input.splitAt(input lastIndexOf ':')
-          val nodeAddress = NodeAddress.fromParts(hostOrIP, port.tail.toInt, Domain)
-          saveAddress(nodeaddress.encode(nodeAddress).require.toHex).commit
-        }
-
-        def warnAndUpdateView: Unit = {
-          def onOk(snack: Snackbar): Unit = runAnd(snack.dismiss)(WalletApp.restart)
-          val message = getString(settings_custom_electrum_restart_notice).html
-          snack(settingsContainer, message, R.string.dialog_ok, onOk)
-          updateView
-        }
-      }
-    }
-
-    def setTexts(titleRes: Int, info: String): Unit = {
-      settingsTitle.setText(titleRes)
-      settingsInfo.setText(info)
-    }
-  }
-
   lazy private[this] val setFiat = new SettingsHolder(me) {
     settingsTitle.setText(settings_fiat_currency)
     setVis(isVisible = false, settingsCheck)
@@ -192,21 +131,6 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
     }
   }
 
-  lazy private[this] val enforceTor = new SettingsHolder(me) {
-    override def updateView: Unit = settingsCheck.setChecked(WalletApp.ensureTor)
-
-    settingsTitle.setText(settings_ensure_tor)
-    setVis(isVisible = false, settingsInfo)
-    disableIfOldAndroid
-
-    view setOnClickListener onButtonTap {
-      putBoolAndUpdateView(WalletApp.ENSURE_TOR, !WalletApp.ensureTor)
-      def onOk(snack: Snackbar): Unit = runAnd(snack.dismiss)(WalletApp.restart)
-      val message = getString(settings_custom_electrum_restart_notice).html
-      snack(settingsContainer, message, R.string.dialog_ok, onOk)
-    }
-  }
-
   lazy private[this] val viewCode = new SettingsHolder(me) {
     setVisMany(false -> settingsCheck, false -> settingsInfo)
     view setOnClickListener onButtonTap(viewRecoveryCode)
@@ -226,16 +150,16 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
     addFlowChip(links.flow, getString(sources), R.drawable.border_gray, _ => me browse "https://github.com/akumaigorodski/wallet")
     addFlowChip(links.flow, "Nostr", R.drawable.border_gray, _ => me browse "https://njump.me/npub1chxa2um7gl65ymyaagjrqys39mtzlwnm2drcs6qkqmme7k4edq4qghrjdd")
 
-    settingsContainer.addView(settingsPageitle.view)
-    settingsContainer.addView(links.view)
+    activityContainer.addView(settingsPageitle.view)
+    activityContainer.addView(links.view)
 
-    settingsContainer.addView(enforceTor.view)
-    settingsContainer.addView(viewCode.view)
+    activityContainer.addView(enforceTor.view)
+    activityContainer.addView(viewCode.view)
 
-    settingsContainer.addView(chainWallets.view)
-    settingsContainer.addView(electrum.view)
-    settingsContainer.addView(setFiat.view)
-    settingsContainer.addView(setBtc.view)
+    activityContainer.addView(chainWallets.view)
+    activityContainer.addView(electrum.view)
+    activityContainer.addView(setFiat.view)
+    activityContainer.addView(setBtc.view)
   }
 
   // Signing wallet options

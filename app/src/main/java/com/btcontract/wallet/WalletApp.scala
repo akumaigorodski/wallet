@@ -86,6 +86,8 @@ object WalletApp {
   }
 
   def makeAlive: Unit = {
+    // In case this is needed early
+    WalletParams.chainHash = Block.TestnetGenesisBlock.hash
     // Make application minimally operational (so we can check for seed in db)
     val miscInterface = new DBInterfaceSQLiteAndroidMisc(app, dbFileNameMisc)
 
@@ -94,15 +96,12 @@ object WalletApp {
       extDataBag = new SQLiteData(miscInterface)
       txDataBag = new SQLiteTx(miscInterface)
     }
-
-    // In case these are needed early
-    WalletParams.chainHash = Block.TestnetGenesisBlock.hash
-    WalletParams.connectionProvider = if (ensureTor) new TorConnectionProvider(app) else new ClearnetConnectionProvider
   }
 
   def makeOperational(secret: WalletSecret): Unit = {
-    require(isAlive, "Application is not alive, hence can not become operational")
+    require(isAlive, "Halted, application is not alive yet")
     val currentCustomElectrum: Try[NodeAddress] = customElectrumAddress
+    WalletParams.connectionProvider = if (ensureTor) new TorConnectionProvider(app) else new ClearnetConnectionProvider
     WalletParams.secret = secret
 
     extDataBag.db txWrap {
