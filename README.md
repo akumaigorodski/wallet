@@ -68,4 +68,5 @@ PR are welcome, if you wish to comfortably make changes, test results in emulato
 - Install Android Studio `3.5.3` and do not update it when prompted.
 - Import wallet project and set `compileSdkVersion 30` and `targetSdkVersion 30` in `app/build.gradle` (down from 33 currently).
 
-Once these actions are performed you can use Android Studio which is the best way to develop an app as far as I know.
+Once these actions are performed you can use Android Studio which is the best way to develop an app as far as I know but if you
+prefer something else then just use the code as is, it all should just work.
