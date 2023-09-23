@@ -61,8 +61,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
   // PAYMENT LIST
 
-  def loadRecentTxInfos: Unit = txInfos = WalletApp.txDataBag.listRecentTxs(50).map(WalletApp.txDataBag.toTxInfo)
-  def loadSearchedTxInfos(query: String): Unit = txInfos = WalletApp.txDataBag.searchTransactions(query).map(WalletApp.txDataBag.toTxInfo)
+  def loadRecentTxInfos: Unit = txInfos = WalletApp.txDataBag.listRecentTxs(20).flatMap(WalletApp.txDataBag.toTxInfo)
+  def loadSearchedTxInfos(query: String): Unit = txInfos = WalletApp.txDataBag.searchTransactions(query).flatMap(WalletApp.txDataBag.toTxInfo)
   def fillAllInfos: Unit = allInfos = SemanticOrder.makeSemanticOrder(WalletApp.txInfos.values.toSeq ++ txInfos)
 
   def loadRecent: Unit = {
