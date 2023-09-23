@@ -76,8 +76,8 @@ object Colors {
   val cardIn: String = "#" + WalletApp.app.getResources.getString(R.color.colorAccent).substring(3)
   val cardOut: String = "#" + WalletApp.app.getResources.getString(R.color.cardOutText).substring(3)
   val cardZero: String = "#" + WalletApp.app.getResources.getString(R.color.cardZeroText).substring(3)
-  val totalZero: String = "#" + WalletApp.app.getResources.getString(R.color.totalZeroText).substring(3)
-  val btcCardZero: String = "#" + WalletApp.app.getResources.getString(R.color.btcCardZeroText).substring(3)
+  val watchCardZero: String = "#" + WalletApp.app.getResources.getString(R.color.watchCardText).substring(3)
+  val signCardZero: String = "#" + WalletApp.app.getResources.getString(R.color.signCardZeroText).substring(3)
 }
 
 trait ExternalDataChecker {
@@ -144,7 +144,7 @@ trait BaseActivity extends AppCompatActivity { me =>
       val holder: LinearLayout = cardsContainer
     }
 
-    chooser.init(WalletParams.chainWallets.spendableWallets)
+    chooser.init(WalletParams.chainWallets.spendableWallets.size)
     chooser.update(WalletParams.chainWallets.spendableWallets)
     chooser.unPad(WalletParams.chainWallets.spendableWallets)
   }
@@ -715,18 +715,14 @@ object QRActivity {
 }
 
 abstract class ChainWalletCards(host: BaseActivity) { self =>
+  def update(wallets: Iterable[ElectrumEclairWallet] = Nil): Unit = cardViews.zip(wallets).foreach { case (card, wallet) => card updateView wallet }
+  def unPad(wallets: Iterable[ElectrumEclairWallet] = Nil): Unit = cardViews.foreach(_.unPad)
   private var cardViews: List[ChainCard] = Nil
 
-  def init(wallets: List[ElectrumEclairWallet] = Nil): Unit = {
-    cardViews = List.fill(wallets.size)(new ChainCard)
+  def init(size: Int): Unit = {
+    cardViews = List.fill(size)(new ChainCard)
     cardViews.map(_.view).foreach(holder.addView)
   }
-
-  def update(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.zip(wallets).foreach {
-    case (card, wallet) => card updateView wallet
-  }
-
-  def unPad(wallets: List[ElectrumEclairWallet] = Nil): Unit = cardViews.foreach(_.unPad)
 
   class ChainCard {
     val view: SwipeRevealLayout = host.getLayoutInflater.inflate(R.layout.frag_chain_card, null).asInstanceOf[SwipeRevealLayout]
@@ -755,7 +751,8 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     }
 
     def updateView(wallet: ElectrumEclairWallet): Unit = {
-      chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, btcCardZero).html)
+      val zeroColor = if (wallet.ewt.secrets.nonEmpty) signCardZero else watchCardZero
+      chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, zeroColor).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
 
       val chainBalanceVisible = wallet.info.lastBalance > 0L.sat

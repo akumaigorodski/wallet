@@ -41,7 +41,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     }
 
     private def updateView(bu: BitcoinUri, holder: QRViewHolder): Unit = bu.uri foreach { uri =>
-      val humanAmountOpt = for (requestedAmount <- bu.amount) yield WalletApp.denom.parsedWithSign(requestedAmount, cardIn, totalZero)
+      val humanAmountOpt = for (requestedAmount <- bu.amount) yield WalletApp.denom.parsedWithSign(requestedAmount, cardIn, cardZero)
       val contentToShare = if (bu.amount.isDefined || bu.label.isDefined) InputParser.withoutSlashes(InputParser.bitcoin, uri) else bu.address
 
       val visibleText = (bu.label, humanAmountOpt) match {
@@ -101,8 +101,8 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
       layoutManager.setPostLayoutListener(new CarouselZoomPostLayoutListener)
       layoutManager.setMaxVisibleItems(MAX_RECEIVE_ADDRESSES)
 
-      // Allow MAX_RECEIVE_ADDRESSES - 6 (first 4 addresses) to be seen to not make it crowded
-      allAddresses = response.keys.dropRight(6).map(response.ewt.textAddress).map(BitcoinUri.fromRaw)
+      // Allow MAX_RECEIVE_ADDRESSES - 16 (first 4 addresses) to be seen to not make it crowded
+      allAddresses = response.keys.dropRight(16).map(response.ewt.textAddress).map(BitcoinUri.fromRaw)
       addresses = allAddresses.take(1)
 
       chainQrMore setOnClickListener onButtonTap {

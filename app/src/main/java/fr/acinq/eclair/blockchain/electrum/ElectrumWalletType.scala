@@ -55,9 +55,19 @@ object ElectrumWalletType {
     case _ => throw new RuntimeException
   }
 
-  def setUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction = {
-    val viabletxIns = for (utxo <- usableUtxos) yield utxo.ewt.setInputWithDummySig(utxo, sequenceFlag)
-    tx.copy(txIn = viabletxIns)
+  def signTransaction(usableUtxos: Seq[Utxo], tx: Transaction): Transaction = {
+    val signedTxInputs = tx.txIn.zipWithIndex.map { case (unsignedTxInput, index) =>
+      val utxo = usableUtxos.find(_.item.outPoint == unsignedTxInput.outPoint).get
+      utxo.ewt.signInput(utxo, tx, unsignedTxInput, index)
+    }
+
+    // All utxos must match inputs here
+    tx.copy(txIn = signedTxInputs)
+  }
+
+  def dummySignTransaction(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction = {
+    val viabletxInputs = for (utxo <- usableUtxos) yield utxo.ewt.dummySignInput(utxo, sequenceFlag)
+    tx.copy(txIn = viabletxInputs)
   }
 }
 
@@ -78,9 +88,9 @@ abstract class ElectrumWalletType {
 
   def extractPubKeySpentFrom(txIn: TxIn): Option[PublicKey]
 
-  def signTransaction(usableUtxos: Seq[Utxo], tx: Transaction): Transaction
+  def signInput(utxo: Utxo, tx: Transaction, input: TxIn, index: Int): TxIn
 
-  def setInputWithDummySig(utxo: Utxo, sequenceFlag: Long): TxIn
+  def dummySignInput(utxo: Utxo, sequenceFlag: Long): TxIn
 
   def writePublicKeyScriptHash(key: PublicKey): ByteVector = {
     val scriptProgram = computePublicKeyScript(key)
@@ -99,23 +109,16 @@ class ElectrumWallet44(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
     PublicKey(data)
   }.toOption
 
-  override def setInputWithDummySig(utxo: Utxo, sequenceFlag: Long): TxIn = {
+  override def dummySignInput(utxo: Utxo, sequenceFlag: Long): TxIn = {
     val sigScript = OP_PUSHDATA(ByteVector.fill(71)(1).compact) :: OP_PUSHDATA(utxo.key.publicKey) :: Nil
     TxIn(utxo.item.outPoint, Script.write(sigScript), sequenceFlag)
   }
 
-  override def signTransaction(usableUtxos: Seq[Utxo], tx: Transaction): Transaction = {
-    val signedTxInputs: Seq[TxIn] = tx.txIn.zipWithIndex.map { case (unsignedTxInput, index) =>
-      usableUtxos.collectFirst { case Utxo(key, item, ewt) if ewt.xPub == xPub && item.outPoint == unsignedTxInput.outPoint =>
-        val privateKey = derivePrivateKey(parent = secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), key.path).privateKey
-        val sig = Transaction.signInput(tx, index, Script.pay2pkh(key.publicKey), SIGHASH_ALL, item.value.sat, SigVersion.SIGVERSION_BASE, privateKey)
-        val sigScript = Script.write(OP_PUSHDATA(sig) :: OP_PUSHDATA(key.publicKey) :: Nil)
-        unsignedTxInput.copy(signatureScript = sigScript)
-      } getOrElse unsignedTxInput
-    }
-
-    // Leave unknown inputs intact
-    tx.copy(txIn = signedTxInputs)
+  override def signInput(utxo: Utxo, tx: Transaction, input: TxIn, index: Int): TxIn = {
+    val privateKey = derivePrivateKey(parent = secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), utxo.key.path).privateKey
+    val sig = Transaction.signInput(tx, index, Script.pay2pkh(utxo.key.publicKey), SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_BASE, privateKey)
+    val sigScript = Script.write(OP_PUSHDATA(sig) :: OP_PUSHDATA(utxo.key.publicKey) :: Nil)
+    input.copy(signatureScript = sigScript)
   }
 }
 
@@ -146,24 +149,17 @@ class ElectrumWallet49(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
     }.toOption
   }
 
-  override def setInputWithDummySig(utxo: Utxo, sequenceFlag: Long): TxIn = {
+  override def dummySignInput(utxo: Utxo, sequenceFlag: Long): TxIn = {
     val pubKeyScript = OP_PUSHDATA(Script.write(script = Script pay2wpkh utxo.key.publicKey).compact) :: Nil
     val witness = ScriptWitness(ByteVector.fill(71)(1) :: utxo.key.publicKey.value :: Nil)
     TxIn(utxo.item.outPoint, Script.write(pubKeyScript), sequenceFlag, witness)
   }
 
-  override def signTransaction(usableUtxos: Seq[Utxo], tx: Transaction): Transaction = {
-    val signedTxInputs: Seq[TxIn] = tx.txIn.zipWithIndex.map { case (unsignedTxInput, index) =>
-      usableUtxos.collectFirst { case Utxo(key, item, ewt) if ewt.xPub == xPub && item.outPoint == unsignedTxInput.outPoint =>
-        val privateKey = derivePrivateKey(parent = secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), key.path).privateKey
-        val sig = Transaction.signInput(tx, index, Script.pay2pkh(key.publicKey), SIGHASH_ALL, item.value.sat, SigVersion.SIGVERSION_WITNESS_V0, privateKey)
-        val sigScript = Script.write(script = OP_PUSHDATA(Script.write(script = Script pay2wpkh key.publicKey).compact) :: Nil)
-        unsignedTxInput.copy(witness = ScriptWitness(sig :: key.publicKey.value :: Nil), signatureScript = sigScript)
-      } getOrElse unsignedTxInput
-    }
-
-    // Leave unknown inputs intact
-    tx.copy(txIn = signedTxInputs)
+  override def signInput(utxo: Utxo, tx: Transaction, input: TxIn, index: Int): TxIn = {
+    val privateKey = derivePrivateKey(parent = secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), utxo.key.path).privateKey
+    val sig = Transaction.signInput(tx, index, Script.pay2pkh(utxo.key.publicKey), SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_WITNESS_V0, privateKey)
+    val sigScript = Script.write(script = OP_PUSHDATA(Script.write(script = Script pay2wpkh utxo.key.publicKey).compact) :: Nil)
+    input.copy(witness = ScriptWitness(sig :: utxo.key.publicKey.value :: Nil), signatureScript = sigScript)
   }
 }
 
@@ -175,21 +171,14 @@ class ElectrumWallet84(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
 
   override def computePublicKeyScript(key: PublicKey): Seq[ScriptElt] = Script.pay2wpkh(key)
 
-  override def setInputWithDummySig(utxo: Utxo, sequenceFlag: Long): TxIn = {
+  override def dummySignInput(utxo: Utxo, sequenceFlag: Long): TxIn = {
     val witness = ScriptWitness(ByteVector.fill(71)(1) :: utxo.key.publicKey.value :: Nil)
     TxIn(utxo.item.outPoint, signatureScript = ByteVector.empty, sequenceFlag, witness)
   }
 
-  override def signTransaction(usableUtxos: Seq[Utxo], tx: Transaction): Transaction = {
-    val signedTxInputs: Seq[TxIn] = tx.txIn.zipWithIndex.map { case (unsignedTxInput, index) =>
-      usableUtxos.collectFirst { case Utxo(key, item, ewt) if ewt.xPub == xPub && item.outPoint == unsignedTxInput.outPoint =>
-        val privateKey = derivePrivateKey(parent = secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), key.path).privateKey
-        val sig = Transaction.signInput(tx, index, Script.pay2pkh(key.publicKey), SIGHASH_ALL, item.value.sat, SigVersion.SIGVERSION_WITNESS_V0, privateKey)
-        unsignedTxInput.copy(witness = ScriptWitness(sig :: key.publicKey.value :: Nil), signatureScript = ByteVector.empty)
-      } getOrElse unsignedTxInput
-    }
-
-    // Leave unknown inputs intact
-    tx.copy(txIn = signedTxInputs)
+  override def signInput(utxo: Utxo, tx: Transaction, input: TxIn, index: Int): TxIn = {
+    val privateKey = derivePrivateKey(parent = secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), utxo.key.path).privateKey
+    val sig = Transaction.signInput(tx, index, Script.pay2pkh(utxo.key.publicKey), SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_WITNESS_V0, privateKey)
+    input.copy(witness = ScriptWitness(sig :: utxo.key.publicKey.value :: Nil), signatureScript = ByteVector.empty)
   }
 }

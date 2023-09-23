@@ -41,51 +41,49 @@ object WalletParams {
   def addressToPubKeyScript(address: String): ByteVector = Script write addressToPublicKeyScript(address, chainHash)
 }
 
-case class WalletExt(wallets: List[ElectrumEclairWallet], catcher: ActorRef, sync: ActorRef, pool: ActorRef, params: WalletParameters) extends CanBeShutDown { me =>
-  lazy val usableWallets: List[ElectrumEclairWallet] = wallets.filter(wallet => wallet.ewt.secrets.nonEmpty || wallet.info.core.masterFingerprint.nonEmpty)
+case class WalletExt(wallets: Map[PublicKey, ElectrumEclairWallet], catcher: ActorRef, sync: ActorRef, pool: ActorRef, params: WalletParameters) extends CanBeShutDown { me =>
+  lazy val usableWallets: List[ElectrumEclairWallet] = wallets.values.filter(wallet => wallet.ewt.secrets.nonEmpty || wallet.info.core.masterFingerprint.nonEmpty).toList
   lazy val spendableWallets: List[ElectrumEclairWallet] = usableWallets.filter(_.info.lastBalance > 0L.sat)
-
-  def findByPubKey(pub: PublicKey): Option[ElectrumEclairWallet] = wallets.find(_.ewt.xPub.publicKey == pub)
 
   def makeSigningWalletParts(core: SigningWallet, masterPrivKey: ExtendedPrivateKey, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
     val ewt: ElectrumWalletType = ElectrumWalletType.makeSigningType(tag = core.walletType, master = masterPrivKey, chainHash = WalletParams.chainHash)
-    val walletRef = WalletParams.system.actorOf(Props(classOf[ElectrumWallet], pool, sync, params, ewt), core.walletType + "-signing-wallet")
+    val walletRef = WalletParams.system.actorOf(Props(classOf[ElectrumWallet], pool, sync, params, ewt), ewt.xPub.publicKey.toString)
     val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label, isCoinControlOn = false)
     ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
   }
 
   def makeWatchingWallet84Parts(core: WatchingWallet, lastBalance: Satoshi, label: String): ElectrumEclairWallet = {
     val ewt: ElectrumWallet84 = new ElectrumWallet84(secrets = None, xPub = core.xPub, chainHash = WalletParams.chainHash)
-    val walletRef = WalletParams.system.actorOf(Props(classOf[ElectrumWallet], pool, sync, params, ewt), core.walletType + "-watching-wallet")
+    val walletRef = WalletParams.system.actorOf(Props(classOf[ElectrumWallet], pool, sync, params, ewt), ewt.xPub.publicKey.toString)
     val infoNoPersistent = CompleteChainWalletInfo(core, data = ByteVector.empty, lastBalance, label, isCoinControlOn = false)
     ElectrumEclairWallet(walletRef, ewt, infoNoPersistent)
   }
 
   def withFreshWallet(eclairWallet: ElectrumEclairWallet): WalletExt = {
     params.walletDb.addChainWallet(eclairWallet.info, params.emptyPersistentDataBytes, eclairWallet.ewt.xPub.publicKey)
+    val wallets1 = wallets.updated(eclairWallet.ewt.xPub.publicKey, eclairWallet)
     eclairWallet.walletRef ! params.emptyPersistentDataBytes
     sync ! ElectrumWallet.ChainFor(eclairWallet.walletRef)
-    copy(wallets = eclairWallet :: wallets)
+    copy(wallets = wallets1)
   }
 
   def withoutWallet(wallet: ElectrumEclairWallet): WalletExt = {
     require(wallet.info.core.isRemovable, "Wallet is not removable")
+    val wallets1 = wallets - wallet.ewt.xPub.publicKey
     params.walletDb.remove(wallet.ewt.xPub.publicKey)
-    val wallets1 = wallets diff List(wallet)
     wallet.walletRef ! PoisonPill
     copy(wallets = wallets1)
   }
 
-  def withNewLabel(label: String)(wallet1: ElectrumEclairWallet): WalletExt = {
-    def sameXPub(wallet: ElectrumEclairWallet): Boolean = wallet.ewt.xPub == wallet1.ewt.xPub
-    params.walletDb.updateLabel(label, pub = wallet1.ewt.xPub.publicKey)
-    me.modify(_.wallets.eachWhere(sameXPub).info.label).setTo(label)
+  def withNewLabel(newLabel: String)(wallet1: ElectrumEclairWallet): WalletExt = {
+    params.walletDb.updateLabel(label = newLabel, pub = wallet1.ewt.xPub.publicKey)
+    me.modify(_.wallets.index(wallet1.ewt.xPub.publicKey).info.label).setTo(newLabel)
   }
 
   override def becomeShutDown: Unit = {
     val actors = List(catcher, sync, pool)
-    val allActors = wallets.map(_.walletRef) ++ actors
-    allActors.foreach(_ ! PoisonPill)
+    val walletRefs = wallets.values.map(_.walletRef)
+    (walletRefs ++ actors).foreach(_ ! PoisonPill)
   }
 }
 

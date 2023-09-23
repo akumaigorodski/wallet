@@ -20,7 +20,7 @@ import com.github.mmin18.widget.RealtimeBlurView
 import com.ornach.nobobutton.NoboButton
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, IsDoubleSpentResponse, RBFResponse, WalletReady}
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, RBFResponse, WalletReady}
 import fr.acinq.eclair.blockchain.electrum.{ElectrumEclairWallet, ElectrumWallet}
 import fr.acinq.eclair.blockchain.fee.FeeratePerByte
 import immortan._
@@ -155,13 +155,14 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
 
     def ractOnTap: Unit = {
-        val isVisible = extraInfo.getVisibility == View.VISIBLE
-        if (isVisible) collapse(currentDetails) else expand(currentDetails)
+      val isVisible = extraInfo.getVisibility == View.VISIBLE
+      if (isVisible) collapse(currentDetails) else expand(currentDetails)
     }
 
     // CPFP / RBF
 
-    def boostCPFP(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKeys.head) match {
+    // TODO: process multiple wallets correctly here
+    def boostCPFP(info: TxInfo): Unit = WalletParams.chainWallets.wallets.get(info.pubKeys.head) match {
       case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
       case Some(fromWallet) => doBoostCPFP(fromWallet, info)
     }
@@ -207,9 +208,9 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
           proceedWithoutConfirm(fromWallet, sendView, alert, response) { signedTx =>
             val desc = PlainTxDescription(chainAddress :: Nil, label = None, cpfpBumpOrder.asSome, cpfpBy = None, cpfpOf = info.txid.asSome)
-            val isSent = Await.result(broadcastTx(fromWallet, desc, signedTx, response.transferred, 0.sat, response.fee), 30.seconds)
+            runFutureProcessOnUI(broadcastTx(fromWallet, desc, signedTx, response.transferred, 0.sat, response.fee), onFail)(cleanUp)
 
-            if (isSent) {
+            def cleanUp(isTxSent: Boolean): Unit = if (isTxSent) {
               // Parent semantic order has already been updated, now we also must update CPFP parent info
               WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCPFPBy(signedTx.txid), info.txid)
             } else {
@@ -233,7 +234,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       sendView.switchToDefault(alert)
     }
 
-    def boostRBF(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKeys.head) match {
+    // TODO: process multiple wallets correctly here
+    def boostRBF(info: TxInfo): Unit = WalletParams.chainWallets.wallets.get(info.pubKeys.head) match {
       case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
       case Some(fromWallet) => doBoostRBF(fromWallet, info)
     }
@@ -276,7 +278,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
       def attempt(alert: AlertDialog): Unit = {
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_BOOST)
-        val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
+        val ofOriginalTxid = info.description.rbf.map(_.ofTxid).getOrElse(info.txid).toHex
+        val rbfBumpOrder = SemanticOrder(ofOriginalTxid, -System.currentTimeMillis)
 
         for {
           check <- fromWallet.doubleSpent(info.tx) if check.depth < 1 && !check.isDoubleSpent
@@ -285,10 +288,10 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
           responseWrap.result.right.toOption.foreach { response =>
             proceedWithoutConfirm(fromWallet, sendView, alert, response) { signedTx =>
-              val desc = PlainTxDescription(Nil, label = None, rbfBumpOrder.asSome, cpfpBy = None, cpfpOf = None, rbfParams.asSome)
-              val isSent = Await.result(broadcastTx(fromWallet, desc, signedTx, 0.sat, info.sentSat, response.fee), 30.seconds)
+              val desc = PlainTxDescription(addresses = Nil, label = None, rbfBumpOrder.asSome, cpfpBy = None, cpfpOf = None, rbfParams.asSome)
+              runFutureProcessOnUI(broadcastTx(fromWallet, desc, signedTx, 0.sat, info.sentSat, response.fee), onFail)(cleanUp)
 
-              if (isSent) {
+              def cleanUp(isTxSent: Boolean): Unit = if (isTxSent) {
                 val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
                 val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
                 WalletApp.txDataBag.updDescription(parentDesc, info.txid)
@@ -311,7 +314,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       sendView.switchToDefault(alert)
     }
 
-    def cancelRBF(info: TxInfo): Unit = WalletParams.chainWallets.findByPubKey(info.pubKeys.head) match {
+    // TODO: process multiple wallets correctly here
+    def cancelRBF(info: TxInfo): Unit = WalletParams.chainWallets.wallets.get(info.pubKeys.head) match {
       case None => snack(contentWindow, getString(error_btc_no_wallet).html, dialog_ok, _.dismiss)
       case Some(fromWallet) => doCancelRBF(fromWallet, info)
     }
@@ -356,7 +360,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
       def attempt(alert: AlertDialog): Unit = {
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_CANCEL)
-        val rbfBumpOrder = SemanticOrder(info.txid.toHex, -System.currentTimeMillis)
+        val ofOriginalTxid = info.description.rbf.map(_.ofTxid).getOrElse(info.txid).toHex
+        val rbfBumpOrder = SemanticOrder(ofOriginalTxid, -System.currentTimeMillis)
 
         for {
           check <- fromWallet.doubleSpent(info.tx) if check.depth < 1 && !check.isDoubleSpent
@@ -365,10 +370,10 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
           responseWrap.result.right.toOption.foreach { response =>
             proceedWithoutConfirm(fromWallet, sendView, alert, response) { signedTx =>
-              val desc = PlainTxDescription(addresses = Nil, None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
-              val isSent = Await.result(broadcastTx(fromWallet, desc, signedTx, 0.sat, response.fee, response.fee), 30.seconds)
+              val desc = PlainTxDescription(addresses = Nil, label = None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
+              runFutureProcessOnUI(broadcastTx(fromWallet, desc, signedTx, 0.sat, response.fee, response.fee), onFail)(cleanUp)
 
-              if (isSent) {
+              def cleanUp(isTxSent: Boolean): Unit = if (isTxSent) {
                 val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
                 val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
                 WalletApp.txDataBag.updDescription(parentDesc, info.txid)
@@ -409,7 +414,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       item match {
         case info: TxInfo =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
-          val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.cpfpOf.isEmpty
+          val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.cpfpOf.isEmpty
           val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.canBeCPFPd
           val isRbfCancel = info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL)
 
@@ -418,7 +423,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
           val fiatThen = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiat)
 
           if (WalletParams.chainWallets.wallets.size > 1)
-            for (wallet <- info.pubKeys flatMap WalletParams.chainWallets.findByPubKey)
+            for (wallet <- info.pubKeys flatMap WalletParams.chainWallets.wallets.get)
               addFlowChip(extraInfo, wallet.info.label, R.drawable.border_gray)
 
           addFlowChip(extraInfo, getString(popup_txid) format info.txidString.short, R.drawable.border_green, info.txidString.asSome)
@@ -475,15 +480,19 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
 
     def txStatusIcon(info: TxInfo): Int = {
+      // Ephemeral tx has no connected wallet while it's being broadcasted
+      // User may remove a wallet while its transactions are getting confirmed
+      val hasNoWallets = info.pubKeys.flatMap(WalletParams.chainWallets.wallets.get).isEmpty
+
       if (info.isConfirmed) R.drawable.baseline_done_24
       else if (info.isDoubleSpent) R.drawable.baseline_block_24
+      else if (hasNoWallets) R.drawable.baseline_question_24
       else R.drawable.baseline_hourglass_empty_24
     }
 
     def setTxMeta(info: TxInfo): Unit = {
       if (info.isDoubleSpent) meta setText getString(tx_state_double_spent).html
-      else if (info.depth > 0) meta setText WalletApp.app.when(info.date, WalletApp.app.dateFormat).html
-      else meta setText getString(tx_state_pending).html
+      else meta setText WalletApp.app.when(info.date, WalletApp.app.dateFormat).html
     }
   }
 
@@ -516,12 +525,12 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
         def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
           val withnewLabel: ElectrumEclairWallet => WalletExt = WalletParams.chainWallets.withNewLabel(extraInput.getText.toString)
-          WalletParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).map(withnewLabel).foreach(resetChainCards)
+          WalletParams.chainWallets.wallets.get(wallet.ewt.xPub.publicKey).map(withnewLabel).foreach(resetChainCards)
         }
       }
 
       override def onRemoveTap(wallet: ElectrumEclairWallet): Unit = {
-        def proceed: Unit = WalletParams.chainWallets.findByPubKey(wallet.ewt.xPub.publicKey).map(WalletParams.chainWallets.withoutWallet).foreach(resetChainCards)
+        def proceed: Unit = WalletParams.chainWallets.wallets.get(wallet.ewt.xPub.publicKey).map(WalletParams.chainWallets.withoutWallet).foreach(resetChainCards)
         mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, new AlertDialog.Builder(me).setMessage(confirm_remove_item), dialog_ok, dialog_cancel)
       }
     }
@@ -530,7 +539,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       // Remove all existing cards and place new ones
       WalletParams.synchronized(WalletParams.chainWallets = ext1)
       chainCards.holder.removeAllViewsInLayout
-      chainCards.init(ext1.wallets)
+      chainCards.init(ext1.wallets.size)
       updateView
     }
 
@@ -538,8 +547,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       androidx.transition.TransitionManager.beginDelayedTransition(defaultHeader)
       val change = WalletParams.fiatRates.info.pctDifference(WalletApp.fiatCode).getOrElse(new String)
       val unitRate = WalletApp.msatInFiatHuman(WalletParams.fiatRates.info.rates, WalletApp.fiatCode, 100000000000L.msat, Denomination.formatFiatShort)
+      chainCards.update(WalletParams.chainWallets.wallets.values)
       fiatUnitPriceAndChange.setText(s"$unitRate $change".html)
-      chainCards.update(WalletParams.chainWallets.wallets)
     }
   }
 
@@ -653,7 +662,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
         // Fill wallet list with wallet card views here
         walletCards.recoveryPhraseWarning setOnClickListener onButtonTap(viewRecoveryCode)
-        walletCards.chainCards.init(WalletParams.chainWallets.wallets)
+        walletCards.chainCards.init(WalletParams.chainWallets.wallets.size)
         walletCards.updateView
 
         runInFutureProcessOnUI(loadRecent, none) { _ =>
@@ -675,7 +684,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
           for {
             txInfo <- txInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
-            wallet <- txInfo.pubKeys.flatMap(WalletParams.chainWallets.findByPubKey).headOption
+            wallet <- txInfo.pubKeys.flatMap(WalletParams.chainWallets.wallets.get).headOption
             result <- wallet.doubleSpent(txInfo.tx) if result.depth != txInfo.depth || result.isDoubleSpent != txInfo.isDoubleSpent
           } WalletApp.txDataBag.updStatus(txInfo.txid, result.depth, updatedStamp = result.stamp, result.isDoubleSpent)
 
@@ -775,8 +784,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
         proceedConfirm(fromWallet, sendView, alert, response) { signedTx =>
           val desc = PlainTxDescription(uri.address :: Nil, sendView.manager.resultExtraInput orElse uri.label orElse uri.message)
-          val isSent = Await.result(broadcastTx(fromWallet, desc, signedTx, 0.sat, response.transferred, response.fee), 30.seconds)
-          if (!isSent) cleanFailedBroadcast(signedTx.txid)
+          val work = broadcastTx(fromWallet, desc, finalTx = signedTx, Satoshi(0L), response.transferred, response.fee)
+          runFutureProcessOnUI(work, onFail) { case false => cleanFailedBroadcast(signedTx.txid) case _ => }
           alert.dismiss
         }
       }
@@ -827,8 +836,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
         proceedConfirm(fromWallet, sendView, alert, response) { signedTx =>
           val desc = PlainTxDescription(addresses = addressToAmount.values.firstItems.toList)
-          val isSent = Await.result(broadcastTx(fromWallet, desc, signedTx, 0.sat, response.transferred, response.fee), 30.seconds)
-          if (!isSent) cleanFailedBroadcast(signedTx.txid)
+          val work = broadcastTx(fromWallet, desc, signedTx, 0.sat, response.transferred, response.fee)
+          runFutureProcessOnUI(work, onFail) { case false => cleanFailedBroadcast(signedTx.txid) case _ => }
           alert.dismiss
         }
       }
@@ -888,8 +897,9 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         sendView.switchToConfirm(alert, response)
       }.run
 
+      val walletData = Await.result(wallet.getData, 10.seconds)
       val masterFingerprint = wallet.info.core.masterFingerprint.get
-      val psbt = prepareBip84Psbt(response, masterFingerprint)
+      val psbt = prepareBip84Psbt(response, walletData, masterFingerprint)
       sendView.switchToHardwareOutgoing(alert, psbt)
     } else alert.dismiss
   }
@@ -906,8 +916,9 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         alert.dismiss
       }.run
 
+      val walletData = Await.result(wallet.getData, 10.seconds)
       val masterFingerprint = wallet.info.core.masterFingerprint.get
-      val psbt = prepareBip84Psbt(response, masterFingerprint)
+      val psbt = prepareBip84Psbt(response, walletData, masterFingerprint)
       sendView.switchToHardwareOutgoing(alert, psbt)
     } else alert.dismiss
   }

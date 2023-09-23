@@ -6,21 +6,20 @@
 
     <LinearLayout style="@style/StandardLinearLayout">
 
-        <LinearLayout
-            style="@style/StandardLinearLayout" android:id="@+id/editChain">
+        <LinearLayout android:paddingTop="10dp" style="@style/StandardLinearLayout" android:id="@+id/editChain">
             <include layout="@layout/frag_input_fiat_converter" android:id="@+id/inputChain"/>
             <include layout="@layout/frag_fees"/>
             <View style="@style/GrayDivider"/>
         </LinearLayout>
 
-        <LinearLayout android:visibility="gone" style="@style/StandardLinearLayout" android:id="@+id/cpfp">
+        <LinearLayout android:visibility="gone" android:paddingTop="10dp" style="@style/StandardLinearLayout" android:id="@+id/cpfp">
             <include layout="@layout/frag_two_sided_item" android:id="@+id/cpfpCurrent"/>
             <include layout="@layout/frag_two_sided_item" android:id="@+id/cpfpAfter"/>
             <include layout="@layout/frag_fees"/>
             <View style="@style/GrayDivider"/>
         </LinearLayout>
 
-        <LinearLayout android:visibility="gone" style="@style/StandardLinearLayout" android:id="@+id/rbf">
+        <LinearLayout android:visibility="gone" android:paddingTop="10dp" style="@style/StandardLinearLayout" android:id="@+id/rbf">
             <include layout="@layout/frag_two_sided_item" android:id="@+id/rbfCurrent"/>
 
             <TextView
@@ -48,7 +47,7 @@
             <include layout="@layout/frag_chain_buttons"/>
         </LinearLayout>
 
-        <LinearLayout android:visibility="gone" style="@style/StandardLinearLayout" android:id="@+id/confirmChain">
+        <LinearLayout android:visibility="gone" android:paddingTop="10dp" style="@style/StandardLinearLayout" android:id="@+id/confirmChain">
             <include layout="@layout/frag_two_sided_item" android:id="@+id/confirmFiat"/>
             <include layout="@layout/frag_two_sided_item" android:id="@+id/confirmAmount"/>
             <include layout="@layout/frag_two_sided_item" android:id="@+id/confirmFee"/>

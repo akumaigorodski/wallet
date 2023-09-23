@@ -9,9 +9,11 @@
         android:id="@+id/activitySetupMain">
 
         <LinearLayout style="@style/StandardXYMarginLinearLayout">
+            <View style="@style/GrayDivider"/>
 
             <com.ornach.nobobutton.NoboButton
                 app:nb_text="@string/setup_create_new"
+                android:layout_marginTop="@dimen/large_button_margin"
                 android:onClick="createNewWallet"
                 style="@style/GreenButton"/>
 
@@ -25,7 +27,7 @@
                 android:layout_marginTop="@dimen/large_button_margin"
                 android:id="@+id/restoreOptionsButton"
                 android:onClick="showMnemonicPopup"
-                style="@style/GrayButton"/>
+                style="@style/GreenButton"/>
 
         </LinearLayout>
     </LinearLayout>

@@ -86,6 +86,8 @@ object WalletApp {
   }
 
   def makeAlive: Unit = {
+    // In case this is needed early
+    WalletParams.chainHash = Block.TestnetGenesisBlock.hash
     // Make application minimally operational (so we can check for seed in db)
     val miscInterface = new DBInterfaceSQLiteAndroidMisc(app, dbFileNameMisc)
 
@@ -94,15 +96,12 @@ object WalletApp {
       extDataBag = new SQLiteData(miscInterface)
       txDataBag = new SQLiteTx(miscInterface)
     }
-
-    // In case these are needed early
-    WalletParams.chainHash = Block.TestnetGenesisBlock.hash
-    WalletParams.connectionProvider = if (ensureTor) new TorConnectionProvider(app) else new ClearnetConnectionProvider
   }
 
   def makeOperational(secret: WalletSecret): Unit = {
-    require(isAlive, "Application is not alive, hence can not become operational")
+    require(isAlive, "Halted, application is not alive yet")
     val currentCustomElectrum: Try[NodeAddress] = customElectrumAddress
+    WalletParams.connectionProvider = if (ensureTor) new TorConnectionProvider(app) else new ClearnetConnectionProvider
     WalletParams.secret = secret
 
     extDataBag.db txWrap {
@@ -129,16 +128,18 @@ object WalletApp {
     val catcher = WalletParams.system.actorOf(Props(new WalletEventsCatcher), "events-catcher")
 
     val walletExt: WalletExt =
-      (WalletExt(wallets = Nil, catcher, sync, electrumPool, params) /: chainWalletBag.listWallets) {
+      (WalletExt(wallets = Map.empty, catcher, sync, electrumPool, params) /: chainWalletBag.listWallets) {
         case ext ~ CompleteChainWalletInfo(core: SigningWallet, persistentSigningWalletData, lastBalance, label, false) =>
           val signingWallet = ext.makeSigningWalletParts(core, core.attachedMaster.getOrElse(secret.keys.master), lastBalance, label)
+          val wallets1 = ext.wallets.updated(signingWallet.ewt.xPub.publicKey, signingWallet)
           signingWallet.walletRef ! persistentSigningWalletData
-          ext.copy(wallets = signingWallet :: ext.wallets)
+          ext.copy(wallets = wallets1)
 
-        case ext ~ CompleteChainWalletInfo(core: WatchingWallet, persistentWatchingWalletData, lastBalance, label, false) =>
-          val watchingWallet = ext.makeWatchingWallet84Parts(core, lastBalance, label)
+        case ext ~ CompleteChainWalletInfo(watchCore: WatchingWallet, persistentWatchingWalletData, lastBalance, label, false) =>
+          val watchingWallet = ext.makeWatchingWallet84Parts(core = watchCore, lastBalance, label)
+          val wallets1 = ext.wallets.updated(watchingWallet.ewt.xPub.publicKey, watchingWallet)
           watchingWallet.walletRef ! persistentWatchingWalletData
-          ext.copy(wallets = watchingWallet :: ext.wallets)
+          ext.copy(wallets = wallets1)
       }
 
     WalletParams.chainWallets = if (walletExt.wallets.isEmpty) {
@@ -162,7 +163,7 @@ object WalletApp {
     WalletParams.chainWallets.catcher ! new WalletEventsListener {
       override def onWalletReady(event: WalletReady): Unit = WalletParams.synchronized {
         // Wallet is already persisted in database so our only job at this point is to update runtime
-        WalletParams.chainWallets = WalletParams.chainWallets.modify(_.wallets.eachWhere(event.sameXPub).info) using {
+        WalletParams.chainWallets = WalletParams.chainWallets.modify(_.wallets.index(event.xPub.publicKey).info) using {
           // Coin control is always disabled on start, we update it later with animation to make it noticeable
           _.copy(lastBalance = event.balance, isCoinControlOn = event.excludedOutPoints.nonEmpty)
         }
@@ -176,7 +177,7 @@ object WalletApp {
         def addChainTx(received: Satoshi, sent: Satoshi, description: TxDescription, isIncoming: Long): Unit = txDataBag.db txWrap {
           txDataBag.addTx(event.tx, event.depth, received, sent, event.fee, event.xPubs, description, isIncoming, WalletParams.fiatRates.info.rates, event.stamp)
           txDataBag.addSearchableTransaction(description.queryText(event.tx.txid), event.tx.txid)
-          if (event.depth < 1) Vibrator.vibrate
+          if (event.depth == 1) Vibrator.vibrate
         }
 
         val sentTxDesc = txInfos.remove(event.tx.txid).map(_.description) getOrElse PlainTxDescription(Nil)
@@ -256,7 +257,6 @@ class WalletApp extends Application { me =>
   def quickToast(code: Int): Unit = quickToast(me getString code)
   def quickToast(msg: CharSequence): Unit = Toast.makeText(me, msg, Toast.LENGTH_LONG).show
   def clipboardManager: ClipboardManager = getSystemService(Context.CLIPBOARD_SERVICE).asInstanceOf[ClipboardManager]
-
   def inputMethodManager: InputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE).asInstanceOf[InputMethodManager]
   def showKeys(field: EditText): Unit = try inputMethodManager.showSoftInput(field, InputMethodManager.SHOW_IMPLICIT) catch none
   def hideKeys(field: EditText): Unit = try inputMethodManager.hideSoftInputFromWindow(field.getWindowToken, 0) catch none

@@ -84,10 +84,9 @@ object DeterministicWallet {
   }
 
   case class ExtendedPublicKey(publickeybytes: ByteVector, chaincode: ByteVector32, depth: Int, path: KeyPath, parent: Long) {
+    lazy val publicKey: PublicKey = PublicKey(publickeybytes)
     require(publickeybytes.length == 33)
     require(chaincode.length == 32)
-
-    def publicKey: PublicKey = PublicKey(publickeybytes)
   }
 
   object ExtendedPublicKey {

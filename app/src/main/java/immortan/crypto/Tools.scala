@@ -4,7 +4,7 @@ import com.sparrowwallet.hummingbird.UR
 import com.sparrowwallet.hummingbird.registry.CryptoPSBT
 import fr.acinq.bitcoin.Psbt.KeyPathWithMaster
 import fr.acinq.bitcoin._
-import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{GenerateTxResponse, GetDataResponse}
 import scodec.bits.ByteVector
 
 import scala.language.implicitConversions
@@ -41,23 +41,23 @@ object Tools {
     }
   }
 
-  def prepareBip84Psbt(response: GenerateTxResponse, masterFingerprint: Long): Psbt = {
+  def prepareBip84Psbt(response: GenerateTxResponse, wallet: GetDataResponse, masterFingerprint: Long): Psbt = {
     // We ONLY support BIP84 watching wallets so all inputs have witnesses
     val psbt1 = Psbt(response.tx)
 
     // Provide info about inputs
     val psbt2 = response.tx.txIn.foldLeft(psbt1) { case (psbt, txIn) =>
-      val parentTransaction = response.data.transactions(txIn.outPoint.txid)
-      val utxoPubKey = response.data.publicScriptMap(parentTransaction.txOut(txIn.outPoint.index.toInt).publicKeyScript)
+      val parentTransaction = wallet.data.transactions(txIn.outPoint.txid)
+      val utxoPubKey = wallet.data.publicScriptMap(parentTransaction.txOut(txIn.outPoint.index.toInt).publicKeyScript)
       val derivationPath = Map(KeyPathWithMaster(masterFingerprint, utxoPubKey.path) -> utxoPubKey.publicKey).map(_.swap)
       psbt.updateWitnessInputTx(parentTransaction, txIn.outPoint.index.toInt, derivationPaths = derivationPath).get
     }
 
     // Provide info about our change output
     response.tx.txOut.zipWithIndex.foldLeft(psbt2) { case (psbt, txOut ~ index) =>
-      response.data.publicScriptChangeMap.get(txOut.publicKeyScript) map { changeKey =>
+      wallet.data.publicScriptChangeMap.get(txOut.publicKeyScript) map { changeKey =>
         val changeKeyPathWithMaster = KeyPathWithMaster(masterFingerprint, changeKey.path)
-        val derivationPath = Map(changeKeyPathWithMaster -> changeKey.publicKey).map(_.swap)
+        val derivationPath = Map(changeKey.publicKey -> changeKeyPathWithMaster)
         psbt.updateWitnessOutput(index, derivationPaths = derivationPath).get
       } getOrElse psbt
     }

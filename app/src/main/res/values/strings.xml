@@ -80,7 +80,6 @@
 
     <string name="tx_btc">Bitcoin Transaction</string>
     <string name="tx_state_double_spent">failed</string>
-    <string name="tx_state_pending">pending</string>
 
     <string name="popup_to_address"><![CDATA[<b>address</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
