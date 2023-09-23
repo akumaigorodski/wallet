@@ -327,7 +327,7 @@ object ElectrumWallet {
                           usableInUtxos: Seq[Utxo], mustUseUtxos: Seq[Utxo] = Nil): Try[CompleteTransactionResponse] = Try {
 
     def computeFee(candidates: Seq[Utxo], change: TxOutOption) = {
-      val tx1 = ElectrumWalletType.setUtxosWithDummySig(candidates, tx, sequenceFlag)
+      val tx1 = ElectrumWalletType.dummySignTransaction(candidates, tx, sequenceFlag)
       val weight = change.map(tx1.addOutput).getOrElse(tx1).weight(Protocol.PROTOCOL_VERSION)
       weight2fee(feeRatePerKw, weight)
     }
@@ -351,7 +351,7 @@ object ElectrumWallet {
 
     val usable = usableInUtxos.sortBy(_.item.value)
     val (selected, changeOpt) = loop(current = mustUseUtxos, usable)
-    val txWithInputs = ElectrumWalletType.setUtxosWithDummySig(selected, tx, sequenceFlag)
+    val txWithInputs = ElectrumWalletType.dummySignTransaction(selected, tx, sequenceFlag)
     val txWithChange = changeOpt.map(txWithInputs.addOutput).getOrElse(txWithInputs)
 
     val tx3 = ElectrumWalletType.signTransaction(usableInUtxos ++ mustUseUtxos, txWithChange)
@@ -365,7 +365,7 @@ object ElectrumWallet {
 
     val strictTxOuts = for (Tuple2(pubKeyScript, amount) <- strictPubKeyScriptsToAmount) yield TxOut(amount, pubKeyScript)
     val restTxOut = TxOut(amount = usableInUtxos.map(_.item.value.sat).sum - strictTxOuts.map(_.amount).sum - extraOutUtxos.map(_.amount).sum, restPubKeyScript)
-    val tx1 = ElectrumWalletType.setUtxosWithDummySig(usableInUtxos, Transaction(version = 2, Nil, restTxOut :: strictTxOuts.toList ::: extraOutUtxos, lockTime = 0), sequenceFlag)
+    val tx1 = ElectrumWalletType.dummySignTransaction(usableInUtxos, Transaction(version = 2, Nil, restTxOut :: strictTxOuts.toList ::: extraOutUtxos, lockTime = 0), sequenceFlag)
 
     val fee = weight2fee(weight = tx1.weight(Protocol.PROTOCOL_VERSION), feeratePerKw = feeRatePerKw)
     require(restTxOut.amount - fee > dustLimit, "Resulting tx amount to send is below dust limit")

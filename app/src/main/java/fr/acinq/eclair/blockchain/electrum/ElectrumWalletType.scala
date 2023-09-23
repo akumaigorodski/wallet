@@ -65,8 +65,8 @@ object ElectrumWalletType {
     tx.copy(txIn = signedTxInputs)
   }
 
-  def setUtxosWithDummySig(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction = {
-    val viabletxInputs = for (utxo <- usableUtxos) yield utxo.ewt.setInputWithDummySig(utxo, sequenceFlag)
+  def dummySignTransaction(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction = {
+    val viabletxInputs = for (utxo <- usableUtxos) yield utxo.ewt.dummySignInput(utxo, sequenceFlag)
     tx.copy(txIn = viabletxInputs)
   }
 }
@@ -90,7 +90,7 @@ abstract class ElectrumWalletType {
 
   def signInput(utxo: Utxo, tx: Transaction, input: TxIn, index: Int): TxIn
 
-  def setInputWithDummySig(utxo: Utxo, sequenceFlag: Long): TxIn
+  def dummySignInput(utxo: Utxo, sequenceFlag: Long): TxIn
 
   def writePublicKeyScriptHash(key: PublicKey): ByteVector = {
     val scriptProgram = computePublicKeyScript(key)
@@ -109,7 +109,7 @@ class ElectrumWallet44(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
     PublicKey(data)
   }.toOption
 
-  override def setInputWithDummySig(utxo: Utxo, sequenceFlag: Long): TxIn = {
+  override def dummySignInput(utxo: Utxo, sequenceFlag: Long): TxIn = {
     val sigScript = OP_PUSHDATA(ByteVector.fill(71)(1).compact) :: OP_PUSHDATA(utxo.key.publicKey) :: Nil
     TxIn(utxo.item.outPoint, Script.write(sigScript), sequenceFlag)
   }
@@ -149,7 +149,7 @@ class ElectrumWallet49(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
     }.toOption
   }
 
-  override def setInputWithDummySig(utxo: Utxo, sequenceFlag: Long): TxIn = {
+  override def dummySignInput(utxo: Utxo, sequenceFlag: Long): TxIn = {
     val pubKeyScript = OP_PUSHDATA(Script.write(script = Script pay2wpkh utxo.key.publicKey).compact) :: Nil
     val witness = ScriptWitness(ByteVector.fill(71)(1) :: utxo.key.publicKey.value :: Nil)
     TxIn(utxo.item.outPoint, Script.write(pubKeyScript), sequenceFlag, witness)
@@ -171,7 +171,7 @@ class ElectrumWallet84(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
 
   override def computePublicKeyScript(key: PublicKey): Seq[ScriptElt] = Script.pay2wpkh(key)
 
-  override def setInputWithDummySig(utxo: Utxo, sequenceFlag: Long): TxIn = {
+  override def dummySignInput(utxo: Utxo, sequenceFlag: Long): TxIn = {
     val witness = ScriptWitness(ByteVector.fill(71)(1) :: utxo.key.publicKey.value :: Nil)
     TxIn(utxo.item.outPoint, signatureScript = ByteVector.empty, sequenceFlag, witness)
   }

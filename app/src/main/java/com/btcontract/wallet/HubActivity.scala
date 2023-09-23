@@ -897,8 +897,9 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         sendView.switchToConfirm(alert, response)
       }.run
 
+      val walletData = Await.result(wallet.getData, 10.seconds)
       val masterFingerprint = wallet.info.core.masterFingerprint.get
-      val psbt = prepareBip84Psbt(response, masterFingerprint)
+      val psbt = prepareBip84Psbt(response, walletData, masterFingerprint)
       sendView.switchToHardwareOutgoing(alert, psbt)
     } else alert.dismiss
   }
@@ -915,8 +916,9 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         alert.dismiss
       }.run
 
+      val walletData = Await.result(wallet.getData, 10.seconds)
       val masterFingerprint = wallet.info.core.masterFingerprint.get
-      val psbt = prepareBip84Psbt(response, masterFingerprint)
+      val psbt = prepareBip84Psbt(response, walletData, masterFingerprint)
       sendView.switchToHardwareOutgoing(alert, psbt)
     } else alert.dismiss
   }
