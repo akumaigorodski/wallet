@@ -17,7 +17,7 @@ android {
         minSdkVersion 21
 
         versionName '2.5.3'
-        versionCode 100
+        versionCode 101
     }
 
     buildTypes {
