@@ -16,7 +16,6 @@ import com.btcontract.wallet.HubActivity._
 import com.btcontract.wallet.R.string._
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
 import com.danilomendes.progressbar.InvertedTextProgressbar
-import com.github.mmin18.widget.RealtimeBlurView
 import com.ornach.nobobutton.NoboButton
 import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
 import fr.acinq.bitcoin._
@@ -50,7 +49,6 @@ object HubActivity {
 
 class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   private[this] lazy val paymentTypeIconIds = List(R.id.btcIncoming, R.id.btcInBoosted, R.id.btcOutBoosted, R.id.btcOutCancelled, R.id.btcOutgoing)
-  private[this] lazy val bottomBlurringArea = findViewById(R.id.bottomBlurringArea).asInstanceOf[RealtimeBlurView]
   private[this] lazy val bottomActionBar = findViewById(R.id.bottomActionBar).asInstanceOf[LinearLayout]
   private[this] lazy val contentWindow = findViewById(R.id.contentWindow).asInstanceOf[RelativeLayout]
   private[this] lazy val itemsList = findViewById(R.id.itemsList).asInstanceOf[ListView]
@@ -672,7 +670,6 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         instance = me
 
         bottomActionBar post UITask {
-          bottomBlurringArea.setHeightTo(bottomActionBar)
           itemsList.setPadding(0, 0, 0, bottomActionBar.getHeight)
         }
 

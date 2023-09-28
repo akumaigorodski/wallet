@@ -17,14 +17,6 @@
 
     <!-- Bottom menu -->
 
-    <com.github.mmin18.widget.RealtimeBlurView
-        app:realtimeOverlayColor="@color/bgalpha"
-        android:layout_alignParentBottom="true"
-        android:id="@+id/bottomBlurringArea"
-        android:layout_width="match_parent"
-        app:realtimeBlurRadius="15dp"
-        android:layout_height="0dp"/>
-
     <LinearLayout
         android:clickable="true"
         android:focusable="true"
