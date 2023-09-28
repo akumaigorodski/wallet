@@ -4,12 +4,12 @@ import java.lang.{Integer => JInt}
 
 import fr.acinq.bitcoin.{BlockHeader, ByteVector32}
 import fr.acinq.eclair.blockchain.electrum.db.HeaderDb
+import immortan.WalletSecret
 import immortan.crypto.Tools.Bytes
 import immortan.sqlite.SQLiteData._
 import immortan.utils.ImplicitJsonFormats._
 import immortan.utils.{FeeRatesInfo, FiatRatesInfo}
 import immortan.wire.ExtCodecs.walletSecretCodec
-import immortan.{DataBag, WalletSecret}
 import scodec.bits.ByteVector
 import spray.json._
 
@@ -23,7 +23,7 @@ object SQLiteData {
   def byteVecToString(bv: ByteVector): String = new String(bv.toArray, "UTF-8")
 }
 
-class SQLiteData(val db: DBInterface) extends HeaderDb with DataBag {
+class SQLiteData(val db: DBInterface) extends HeaderDb {
   def delete(label: String): Unit = db.change(DataTable.killSql, label)
 
   def tryGet(keyValueLabel: String): Try[ByteVector] =

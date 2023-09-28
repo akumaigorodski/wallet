@@ -28,8 +28,8 @@
     <LinearLayout
         android:clickable="true"
         android:focusable="true"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"
+        android:paddingTop="15dp"
+        android:paddingBottom="12dp"
         android:layout_alignParentBottom="true"
         android:id="@+id/bottomActionBar"
         android:orientation="horizontal"
@@ -37,23 +37,10 @@
         android:gravity="center">
 
         <com.ornach.nobobutton.NoboButton
-            app:nb_text="@string/dialog_send"
-            android:onClick="bringSendOptions"
-            android:layout_width="110dp"
-            android:layout_margin="10dp"
-            style="@style/GrayButton"/>
-
-        <com.ornach.nobobutton.NoboButton
             app:nb_drawableResource="@drawable/outline_qr_code_scanner_32_24"
+            app:nb_backgroundColor="@color/bg"
             android:onClick="bringScanner"
-            style="@style/GrayButton"/>
-
-        <com.ornach.nobobutton.NoboButton
-            app:nb_text="@string/dialog_receive"
-            android:onClick="gotoReceivePage"
-            android:layout_width="110dp"
-            android:layout_margin="10dp"
-            style="@style/GrayButton"/>
+            style="@style/GreenButton"/>
 
     </LinearLayout>
 </RelativeLayout>

@@ -2,12 +2,10 @@ package immortan
 
 import java.util.Date
 
-import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.{ByteVector32, Satoshi, Transaction}
 import fr.acinq.eclair._
-import immortan.crypto.Tools.{Any2Some, Fiat2Btc, SEPARATOR, StringList}
+import immortan.crypto.Tools.{Any2Some, ExtPubKeys, Fiat2Btc, SEPARATOR, StringList}
 import immortan.utils.ImplicitJsonFormats._
-import scodec.bits.ByteVector
 
 
 case class SemanticOrder(id: String, order: Long)
@@ -54,7 +52,7 @@ sealed trait TransactionDetails {
 
 // Tx descriptions
 
-case class TxInfo(txString: String, txidString: String, pubKeysString: String, depth: Long, receivedSat: Satoshi, sentSat: Satoshi,
+case class TxInfo(txString: String, txidString: String, extPubsString: String, depth: Long, receivedSat: Satoshi, sentSat: Satoshi,
                   feeSat: Satoshi, seenAt: Long, updatedAt: Long, description: TxDescription, balanceSnapshot: MilliSatoshi,
                   fiatRatesString: String, incoming: Long, doubleSpent: Long) extends TransactionDetails {
 
@@ -68,11 +66,7 @@ case class TxInfo(txString: String, txidString: String, pubKeysString: String, d
 
   lazy val fiatRateSnapshot: Fiat2Btc = to[Fiat2Btc](fiatRatesString)
 
-  lazy val pubKeys: List[PublicKey] =
-    try to[StringList](pubKeysString).map(ByteVector fromValidHex _).map(PublicKey.apply) catch {
-      // Fallback to an old format which had a single pubKey string, new one is list of pubKeys
-      case _: Throwable => PublicKey(ByteVector fromValidHex pubKeysString) :: Nil
-    }
+  lazy val extPubs: ExtPubKeys = tryTo[ExtPubKeys](extPubsString).getOrElse(Nil)
 
   lazy val txid: ByteVector32 = ByteVector32.fromValidHex(txidString)
 

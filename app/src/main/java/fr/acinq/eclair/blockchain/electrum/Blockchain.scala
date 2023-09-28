@@ -23,11 +23,8 @@ import fr.acinq.eclair.blockchain.electrum.db.HeaderDb
 
 import scala.annotation.tailrec
 
-case class Blockchain(chainHash: ByteVector32,
-                      checkpoints: Vector[CheckPoint],
-                      headersMap: Map[ByteVector32, Blockchain.BlockIndex],
-                      bestchain: Vector[Blockchain.BlockIndex],
-                      orphans: Map[ByteVector32, BlockHeader] = Map()) {
+case class Blockchain(chainHash: ByteVector32, checkpoints: Vector[CheckPoint], headersMap: Map[ByteVector32, Blockchain.BlockIndex],
+                      bestchain: Vector[Blockchain.BlockIndex], orphans: Map[ByteVector32, BlockHeader] = Map.empty) {
 
   import Blockchain._
 

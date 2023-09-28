@@ -20,19 +20,18 @@ trait HeaderDb {
 sealed trait ChainWalletInfo {
   val attachedMaster: Option[ExtendedPrivateKey]
   val masterFingerprint: Option[Long]
-  val isRemovable: Boolean
   val walletType: String
 }
 
-case class SigningWallet(walletType: String, attachedMaster: Option[ExtendedPrivateKey], isRemovable: Boolean) extends ChainWalletInfo {
+case class SigningWallet(walletType: String, attachedMaster: Option[ExtendedPrivateKey] = None) extends ChainWalletInfo {
   val masterFingerprint: Option[Long] = None
 }
 
-case class WatchingWallet(walletType: String, masterFingerprint: Option[Long], xPub: ExtendedPublicKey, isRemovable: Boolean) extends ChainWalletInfo {
+case class WatchingWallet(walletType: String, masterFingerprint: Option[Long], xPub: ExtendedPublicKey) extends ChainWalletInfo {
   val attachedMaster: Option[ExtendedPrivateKey] = None
 }
 
-case class CompleteChainWalletInfo(core: ChainWalletInfo, data: ByteVector, lastBalance: Satoshi, label: String, isCoinControlOn: Boolean)
+case class CompleteChainWalletInfo(core: ChainWalletInfo, initData: ByteVector, lastBalance: Satoshi, label: String, isCoinControlOn: Boolean)
 
 trait WalletDb {
   def remove(pub: PublicKey): Unit

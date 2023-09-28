@@ -4,7 +4,7 @@
     <string name="sources">Ver código fuente</string>
     <string name="manual">Leer manual</string>
 
-    <string name="choose_wallet">Escoja una billetera</string>
+    <string name="select_wallets">Select wallets</string>
     <string name="hardware_wallet">Billetera Hardware</string>
     <string name="watching_wallet">Cartera Solo Lectura</string>
     <string name="attached_wallet">Attached wallet</string>
@@ -27,15 +27,12 @@
     <string name="action_recovery_phrase_title">Frase de recuperación de la billetera</string>
     <string name="action_recovery_phrase_hint">Escriba las palabras de recuperación</string>
 
-    <string name="dialog_send">Enviar</string>
-    <string name="dialog_receive">Recibir</string>
-
     <string name="dialog_ok">OK</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="dialog_share">Share</string>
     <string name="dialog_boost">Impulsar</string>
+    <string name="dialog_paste">Paste</string>
     <string name="dialog_copy">Copiar</string>
-    <string name="dialog_scan">Scan</string>
     <string name="dialog_edit">Edit</string>
     <string name="dialog_max">Max</string>
 
@@ -45,14 +42,12 @@
     <string name="dialog_set_label">Agregar etiqueta&#8230;</string>
 
     <string name="dialog_receive_btc"><![CDATA[Recibir a la dirección de <b>Bitcoin</b>]]></string>
-    <string name="scan_btc_address">Escanear dirección de Bitcoin</string>
 
     <string name="dialog_up_to"><![CDATA[<b>hasta</b> %1$s]]></string>
     <string name="dialog_fee_sat_vbyte"><![CDATA[<b>tarifa</b> %1$s sat/vB]]></string>
     <string name="dialog_change_feerate">Cambiar tarifa&#8230;</string>
     <string name="dialog_insufficient_funds">fondos faltantes</string>
 
-    <string name="dialog_send_btc_from"><![CDATA[desde&#160;<b>%1$s</b>&#160;billetera]]></string>
     <string name="dialog_send_btc"><![CDATA[Enviar transacción <b>Bitcoin</b><br><b>a la dirección</b> %1$s%2$s]]></string>
     <string name="dialog_send_btc_many"><![CDATA[Enviar transaccion <b>Bitcoin</b> <br><b>a multiples direcciones</b>]]></string>
     <string name="dialog_send_btc_confirm_amount">Enviar monto</string>
@@ -64,7 +59,6 @@
     <!-- errors -->
 
     <string name="error_btc_no_wallet">No se puede continuar porque no se encuentra la billetera asociada, por favor añadala desde la configuracion de la app.</string>
-    <string name="error_btc_broadcast_fail">No se pudo transmitir la transacción, por favor asegúrese de que la billetera tenga conexión de red e intente de nuevo.</string>
     <string name="error_wrong_phrase"><![CDATA[<b>La frase introducida es incorrecta</b>.<br><br>Detalles del error<br><b>%1$s</b>]]></string>
     <string name="error_old_api_level">Requiere API 24+, el tuyo es %1$s</string>
     <string name="error_nothing_useful">No se encontró nada útil</string>
@@ -122,8 +116,6 @@
     <string name="tx_rbf_current">Tarifa actual</string>
     <string name="tx_rbf_boost_explain"><![CDATA[Aplique RBF a esta transaccion saliente para incrementar su tarifa y <b>que se confirme mas rápido</b>]]></string>
     <string name="tx_rbf_cancel_explain"><![CDATA[Aplique RBF a esta transaccion saliente para incrementar su tarifa y <b>que se devuelva a su billetera</b>]]></string>
-
-    <string name="tx_rbf_err_rbf_disabled">No se puede impulsar esta transaccion porque RBF esta desactivado</string>
     <string name="tx_rbf_err_foreign_inputs">No se puede impulsar esta transaccion porque contiene entradas que no pertenecen a esta billetera</string>
     <string name="tx_rbf_err_parents_missing">No se puede impulsar esta transaccion porque sus padres éstan ausentes en esta billetera</string>
 

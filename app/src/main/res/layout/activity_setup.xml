@@ -9,7 +9,6 @@
         android:id="@+id/activitySetupMain">
 
         <LinearLayout style="@style/StandardXYMarginLinearLayout">
-            <View style="@style/GrayDivider"/>
 
             <com.ornach.nobobutton.NoboButton
                 app:nb_text="@string/setup_create_new"

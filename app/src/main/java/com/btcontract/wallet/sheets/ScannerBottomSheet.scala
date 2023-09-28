@@ -14,7 +14,7 @@ import com.sparrowwallet.hummingbird.registry.{CryptoAccount, CryptoHDKey}
 import com.sparrowwallet.hummingbird.{ResultType, UR, URDecoder}
 import fr.acinq.bitcoin.DeterministicWallet._
 import fr.acinq.bitcoin.{Block, ByteVector32, Protocol}
-import immortan.WalletParams
+import fr.acinq.eclair.blockchain.electrum.ElectrumWallet
 import immortan.crypto.Tools._
 import immortan.utils.ImplicitJsonFormats._
 import immortan.utils.InputParser
@@ -30,6 +30,7 @@ trait HasBarcodeReader extends BarcodeCallback {
   var lastAttempt: Long = System.currentTimeMillis
   var barcodeReader: BarcodeView = _
   var instruction: TextView = _
+  var altAction: TextView = _
 }
 
 trait HasUrDecoder extends HasBarcodeReader {
@@ -71,6 +72,7 @@ abstract class ScannerBottomSheet(host: BaseActivity) extends BottomSheetDialogF
   }
 
   override def onViewCreated(view: View, savedState: Bundle): Unit = {
+    altAction = view.findViewById(R.id.altAction).asInstanceOf[TextView]
     instruction = view.findViewById(R.id.instruction).asInstanceOf[TextView]
     barcodeReader = view.findViewById(R.id.reader).asInstanceOf[BarcodeView]
     flashlight = view.findViewById(R.id.flashlight).asInstanceOf[ImageButton]
@@ -92,17 +94,13 @@ abstract class ScannerBottomSheet(host: BaseActivity) extends BottomSheetDialogF
   }
 }
 
-class OnceBottomSheet(host: BaseActivity, instructionOpt: Option[String], onScan: Runnable) extends ScannerBottomSheet(host) {
+class OnceBottomSheet(host: BaseActivity, onCreated: OnceBottomSheet => Unit, onScan: Runnable) extends ScannerBottomSheet(host) {
   def failedScan(error: Throwable): Unit = WalletApp.app.quickToast(error.getMessage)
   def successfulScan(result: Any): Unit = runAnd(dismiss)(onScan.run)
 
   override def onViewCreated(view: View, savedState: Bundle): Unit = {
     super.onViewCreated(view, savedState)
-
-    instructionOpt foreach { instructionText =>
-      host.setVis(isVisible = true, instruction)
-      instruction.setText(instructionText)
-    }
+    onCreated(this)
   }
 
   override def barcodeResult(scanningResult: BarcodeResult): Unit = for {
@@ -112,14 +110,17 @@ class OnceBottomSheet(host: BaseActivity, instructionOpt: Option[String], onScan
 }
 
 trait PairingData {
-  val bip84PathPrefix = WalletParams.chainHash match  {
+  val bip84PathPrefix: KeyPath = ElectrumWallet.chainHash match  {
     case Block.RegtestGenesisBlock.hash => KeyPath(hardened(84L) :: hardened(1L) :: Nil)
     case Block.TestnetGenesisBlock.hash => KeyPath(hardened(84L) :: hardened(1L) :: Nil)
     case Block.LivenetGenesisBlock.hash => KeyPath(hardened(84L) :: hardened(0L) :: Nil)
     case _ => throw new RuntimeException
   }
 
-  val bip84FullPathPrefix = bip84PathPrefix :+ hardened(0L)
+  val bip84FullPathPrefix: KeyPath = KeyPath {
+    bip84PathPrefix.path :+ hardened(0L)
+  }
+
   val masterFingerprint: Option[Long] = None
   val bip84XPub: ExtendedPublicKey
 }

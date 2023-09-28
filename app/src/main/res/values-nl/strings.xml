@@ -4,7 +4,7 @@
     <string name="sources">Bekijk broncode</string>
     <string name="manual">Lees de handleiding</string>
 
-    <string name="choose_wallet">Kies een portemonnee</string>
+    <string name="select_wallets">Select wallets</string>
     <string name="hardware_wallet">Hardwareportemonnee</string>
     <string name="watching_wallet">Alleen-kijkenportemonnee</string>
     <string name="attached_wallet">Attached wallet</string>
@@ -27,15 +27,12 @@
     <string name="action_recovery_phrase_title">Portemonneeherstelzin</string>
     <string name="action_recovery_phrase_hint">Voer de herstelwoorden in</string>
 
-    <string name="dialog_send">Verzend</string>
-    <string name="dialog_receive">Ontvang</string>
-
     <string name="dialog_ok">Oké</string>
     <string name="dialog_cancel">Annuleer</string>
     <string name="dialog_share">Deel</string>
     <string name="dialog_boost">Boost</string>
+    <string name="dialog_paste">Paste</string>
     <string name="dialog_copy">Kopieer</string>
-    <string name="dialog_scan">Scan</string>
     <string name="dialog_edit">Bewerk</string>
     <string name="dialog_max">Max</string>
 
@@ -45,14 +42,12 @@
     <string name="dialog_set_label">Bevestig label&#8230;</string>
 
     <string name="dialog_receive_btc"><![CDATA[Ontvang op <b>Bitcoin</b>-adres]]></string>
-    <string name="scan_btc_address">Scan Bitcoinadres</string>
 
     <string name="dialog_up_to"><![CDATA[<b>tot</b> %1$s]]></string>
     <string name="dialog_fee_sat_vbyte"><![CDATA[<b>tarief</b> %1$s sat/vB]]></string>
     <string name="dialog_change_feerate">Wijzig tarief&#8230;</string>
     <string name="dialog_insufficient_funds">ontbrekende gelden</string>
 
-    <string name="dialog_send_btc_from"><![CDATA[from&#160;<b>%1$s</b>&#160;portemonnee]]></string>
     <string name="dialog_send_btc"><![CDATA[Verzend <b>Bitcoin</b>transactie<br><b>naar adres</b> %1$s%2$s]]></string>
     <string name="dialog_send_btc_many"><![CDATA[Verzend <b>Bitcoin</b>transactie<br><b>naar meerdere adressen</b>]]></string>
     <string name="dialog_send_btc_confirm_amount">Verzendbedrag</string>
@@ -64,7 +59,6 @@
     <!-- errors -->
 
     <string name="error_btc_no_wallet">Kan niet verder gaan omdat gerelateerde ketenportemonnee niet is gevonden, voeg die a.u.b. toe vanuit de appinstellingen.</string>
-    <string name="error_btc_broadcast_fail">Kon transactie niet uitzenden, ga a.u.b. na dat de portemonnee een netwerkverbinding heeft en probeer het dan opnieuw.</string>
     <string name="error_wrong_phrase"><![CDATA[<b>Ingevoerde wachtwoordzin is incorrect</b>.<br><br>Foutdetails<br><b>%1$s</b>]]></string>
     <string name="error_old_api_level">Vereist API 24+, die van jou is %1$s</string>
     <string name="error_nothing_useful">Niets bruikbaars is gevonden</string>
@@ -122,8 +116,6 @@
     <string name="tx_rbf_current">Huidige tarief</string>
     <string name="tx_rbf_boost_explain"><![CDATA[Voeg RBF toe aan deze uitgaande transactie om het tarief te verhogen en <b>het sneller bevestigd te krijgen</b>]]></string>
     <string name="tx_rbf_cancel_explain"><![CDATA[Voeg RBF toe aan deze uitgaande transactie om het tarief te verhogen en <b>het terug in je portemonnee te krijgen</b>]]></string>
-
-    <string name="tx_rbf_err_rbf_disabled">Kan deze transactie geen boost geven omdat de RBF-vlag is ervan uitgezet</string>
     <string name="tx_rbf_err_foreign_inputs">Kan deze transactie geen boost geven omdat het inputs bevat die niet tot deze portemonnee behoren</string>
     <string name="tx_rbf_err_parents_missing">Kan deze transactie geen boost geven omdat de ouders ervan in deze portemonnee ontbreken</string>
 

@@ -4,7 +4,7 @@
     <string name="sources">View source code</string>
     <string name="manual">Read manual</string>
 
-    <string name="choose_wallet">Choose a wallet</string>
+    <string name="select_wallets">Select wallets</string>
     <string name="hardware_wallet">Hardware wallet</string>
     <string name="watching_wallet">Watching wallet</string>
     <string name="attached_wallet">Attached wallet</string>
@@ -28,15 +28,12 @@
     <string name="action_recovery_phrase_title">Wallet recovery phrase</string>
     <string name="action_recovery_phrase_hint">Type recovery words</string>
 
-    <string name="dialog_send">Send</string>
-    <string name="dialog_receive">Receive</string>
-
     <string name="dialog_ok">OK</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="dialog_share">Share</string>
     <string name="dialog_boost">Boost</string>
+    <string name="dialog_paste">Paste</string>
     <string name="dialog_copy">Copy</string>
-    <string name="dialog_scan">Scan</string>
     <string name="dialog_edit">Edit</string>
     <string name="dialog_max">Max</string>
 
@@ -46,14 +43,12 @@
     <string name="dialog_set_label">Attach label&#8230;</string>
 
     <string name="dialog_receive_btc"><![CDATA[Receive to <b>Bitcoin</b> address]]></string>
-    <string name="scan_btc_address">Scan Bitcoin address</string>
 
     <string name="dialog_up_to"><![CDATA[<b>up to</b> %1$s]]></string>
     <string name="dialog_fee_sat_vbyte"><![CDATA[<b>fee</b> %1$s sat/vB]]></string>
     <string name="dialog_change_feerate">Change feerate&#8230;</string>
     <string name="dialog_insufficient_funds">missing funds</string>
 
-    <string name="dialog_send_btc_from"><![CDATA[from&#160;<b>%1$s</b>&#160;wallet]]></string>
     <string name="dialog_send_btc"><![CDATA[Send <b>Bitcoin</b> transaction<br><b>to address</b> %1$s%2$s]]></string>
     <string name="dialog_send_btc_many"><![CDATA[Send <b>Bitcoin</b> transaction<br><b>to many addresses</b>]]></string>
     <string name="dialog_send_btc_confirm_amount">Send amount</string>
@@ -65,7 +60,6 @@
     <!-- errors -->
 
     <string name="error_btc_no_wallet">Can not proceed because related chain wallet is not found, please add it from app settings.</string>
-    <string name="error_btc_broadcast_fail">Could not broadcast a transaction, please make sure that wallet has network connection and then try again.</string>
     <string name="error_wrong_phrase"><![CDATA[<b>Provided phrase is incorrect</b>.<br><br>Error details<br><b>%1$s</b>]]></string>
     <string name="error_old_api_level">Requires API 24+, yours is %1$s</string>
     <string name="error_nothing_useful">Nothing useful is found</string>
@@ -123,8 +117,6 @@
     <string name="tx_rbf_current">Current fee</string>
     <string name="tx_rbf_boost_explain"><![CDATA[Apply RBF to this outgoing transaction to increase its fee and <b>get it confirmed faster</b>]]></string>
     <string name="tx_rbf_cancel_explain"><![CDATA[Apply RBF to this outgoing transaction to increase its fee and <b>get it back to wallet</b>]]></string>
-
-    <string name="tx_rbf_err_rbf_disabled">Can not boost this transaction because its RBF flag is disabled</string>
     <string name="tx_rbf_err_foreign_inputs">Can not boost this transaction because it contains inputs not belonging to this wallet</string>
     <string name="tx_rbf_err_parents_missing">Can not boost this transaction because its parents are missing in this wallet</string>
 

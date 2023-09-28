@@ -35,11 +35,11 @@ import com.journeyapps.barcodescanner.{BarcodeResult, BarcodeView}
 import com.ornach.nobobutton.NoboButton
 import com.sparrowwallet.hummingbird.registry.CryptoPSBT
 import com.sparrowwallet.hummingbird.{UR, UREncoder}
+import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum._
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
-import immortan._
 import immortan.crypto.Tools._
 import immortan.utils._
 import org.apmem.tools.layouts.FlowLayout
@@ -58,9 +58,13 @@ object BaseActivity {
     def humanFour: String = source.grouped(4).mkString(s"\u0020")
 
     def short: String = {
+      val len = source.length
       val secondFirst = source.slice(4, 8)
+      val firstLast = source.slice(len - 8, len - 4)
+      val secondLast = source.slice(len - 4, len)
+
       val doubleSmall = "<sup><small><small>&#8230;</small></small></sup>"
-      s"${source take 4}&#160;$secondFirst&#160;$doubleSmall&#160;${source takeRight 4}"
+      s"${source take 4}&#160;$secondFirst&#160;$doubleSmall&#160;$firstLast&#160;$secondLast"
     }
   }
 }
@@ -127,28 +131,6 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   // Helpers
 
-  def bringChainWalletChooser(title: TitleView)(onWalletSelected: ElectrumEclairWallet => Unit): Unit = {
-    val cardsContainer = getLayoutInflater.inflate(R.layout.frag_linear_layout, null).asInstanceOf[LinearLayout]
-    val alert = mkCheckForm(_.dismiss, none, titleBodyAsViewBuilder(title.view, cardsContainer), dialog_cancel, -1)
-    addFlowChip(title.flow, getString(choose_wallet), R.drawable.border_yellow)
-
-    val chooser: ChainWalletCards = new ChainWalletCards(me) {
-      override def onWalletTap(wallet: ElectrumEclairWallet): Unit = {
-        onWalletSelected(wallet)
-        alert.dismiss
-      }
-
-      override def onLabelTap(wallet: ElectrumEclairWallet): Unit = alert.dismiss
-      override def onRemoveTap(wallet: ElectrumEclairWallet): Unit = alert.dismiss
-      override def onCoinControlTap(wallet: ElectrumEclairWallet): Unit = alert.dismiss
-      val holder: LinearLayout = cardsContainer
-    }
-
-    chooser.init(WalletParams.chainWallets.spendableWallets.size)
-    chooser.update(WalletParams.chainWallets.spendableWallets)
-    chooser.unPad(WalletParams.chainWallets.spendableWallets)
-  }
-
   def titleViewFromUri(uri: BitcoinUri): TitleView = {
     val label = uri.label.map(label => s"<br><br><b>$label</b>").getOrElse(new String)
     val message = uri.message.map(message => s"<br><i>$message<i>").getOrElse(new String)
@@ -158,20 +140,22 @@ trait BaseActivity extends AppCompatActivity { me =>
     for (amount <- uri.amount) {
       val amountHuman = WalletApp.denom.parsedWithSign(amount, cardIn, cardZero)
       val requested = getString(dialog_requested).format(amountHuman)
-      addFlowChip(title.flow, requested, R.drawable.border_yellow)
+      addFlowChip(title.flow, requested, R.drawable.border_gray)
     }
 
     title
   }
 
-  def chainWalletBackground(wallet: ElectrumEclairWallet): Int = if (wallet.ewt.secrets.nonEmpty) R.color.cardBitcoinModern else R.color.cardBitcoinLegacy
-  def browse(maybeUri: String): Unit = try me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri) catch { case exception: Throwable => me onFail exception }
+  def browse(maybeUri: String): Unit = try {
+    me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri)
+  } catch { case exception: Throwable => me onFail exception }
 
-  def chainWalletNotice(wallet: ElectrumEclairWallet): Option[Int] =
+  def chainWalletNotice(wallet: WalletSpec): Option[Int] = {
     if (wallet.info.core.attachedMaster.isDefined) Some(attached_wallet)
     else if (wallet.info.core.masterFingerprint.nonEmpty) Some(hardware_wallet)
-    else if (wallet.ewt.secrets.isEmpty) Some(watching_wallet)
+    else if (wallet.data.ewt.secrets.isEmpty) Some(watching_wallet)
     else None
+  }
 
   def share(text: CharSequence): Unit = startActivity {
     val shareAction = (new Intent).setAction(Intent.ACTION_SEND)
@@ -185,9 +169,9 @@ trait BaseActivity extends AppCompatActivity { me =>
       override def onDismiss(dialog: DialogInterface): Unit = getWindow.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
 
-    for (mnemonicWord ~ mnemonicIndex <- WalletParams.secret.mnemonic.zipWithIndex) {
-      val item = s"<font color=$cardZero>${mnemonicIndex + 1}</font> $mnemonicWord"
-      addFlowChip(content.flow, item, R.drawable.border_green)
+    for (mnemonicWord ~ mnemonicIndex <- WalletApp.secret.mnemonic.zipWithIndex) {
+      val oneWord = s"<font color=$cardZero>${mnemonicIndex + 1}</font> $mnemonicWord"
+      addFlowChip(content.flow, oneWord, R.drawable.border_green)
     }
   }
 
@@ -447,8 +431,14 @@ trait BaseActivity extends AppCompatActivity { me =>
         extraInputVisibility.setVisibility(View.GONE)
     }
 
-    fiatInputAmount addTextChangedListener onTextChange { _ => if (fiatInputAmount.hasFocus) updateBtcInput }
-    inputAmount addTextChangedListener onTextChange { _ => if (inputAmount.hasFocus) updateFiatInput }
+    fiatInputAmount addTextChangedListener onTextChange { _ =>
+      if (fiatInputAmount.hasFocus) updateBtcInput
+    }
+
+    inputAmount addTextChangedListener onTextChange { _ =>
+      if (inputAmount.hasFocus) updateFiatInput
+    }
+
     inputAmountHint setText WalletApp.denom.sign.toUpperCase
     fiatInputAmountHint setText fiatCode.toUpperCase
     fiatInputAmount setLocale Denomination.locale
@@ -558,10 +548,13 @@ trait BaseActivity extends AppCompatActivity { me =>
     val confirmFee = new TwoSidedItem(host.findViewById(R.id.confirmFee), getString(dialog_send_btc_confirm_fee), new String)
   }
 
-  class ChainEditView(val host: LinearLayout, manager: RateManager, fromWallet: ElectrumEclairWallet) extends HasHostView {
-    val canSend: String = WalletApp.denom.parsedWithSign(fromWallet.info.lastBalance.toMilliSatoshi, cardIn, cardZero)
-    val canSendFiat: String = WalletApp.currentMsatInFiatHuman(fromWallet.info.lastBalance.toMilliSatoshi)
+  class ChainEditView(val host: LinearLayout, specs: Seq[WalletSpec], manager: RateManager) extends HasHostView {
     val inputChain: LinearLayout = host.findViewById(R.id.inputChain).asInstanceOf[LinearLayout]
+
+    val totalCanSend = specs.map(_.info.lastBalance).sum.toMilliSatoshi
+    val canSend = WalletApp.denom.parsedWithSign(totalCanSend, cardIn, cardZero)
+    val canSendFiat = WalletApp.currentMsatInFiatHuman(totalCanSend)
+
     manager.hintFiatDenom setText getString(dialog_up_to).format(canSendFiat).html
     manager.hintDenom setText getString(dialog_up_to).format(canSend).html
   }
@@ -573,15 +566,13 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   class RBFView(val host: LinearLayout) extends HasHostView {
     val rbfCurrent = new TwoSidedItem(host.findViewById(R.id.rbfCurrent), getString(tx_rbf_current), new String)
-    val rbfIssue: TextView = host.findViewById(R.id.rbfIssue).asInstanceOf[TextView]
+    val rbfIssue = host.findViewById(R.id.rbfIssue).asInstanceOf[TextView]
   }
 
-  class CircularSpinnerView(val host: View) extends HasHostView
-
-  class ChainSendView(val fromWallet: ElectrumEclairWallet, badge: Option[String], visibilityRes: Int) { me =>
+  class ChainSendView(val specs: Seq[WalletSpec], badge: Option[String], visibilityRes: Int) { me =>
     val body: ScrollView = getLayoutInflater.inflate(R.layout.frag_input_on_chain, null).asInstanceOf[ScrollView]
-    val manager: RateManager = new RateManager(body, badge, visibilityRes, WalletParams.fiatRates.info.rates, WalletApp.fiatCode)
-    val chainEditView = new ChainEditView(body.findViewById(R.id.editChain).asInstanceOf[LinearLayout], manager, fromWallet)
+    val manager: RateManager = new RateManager(body, badge, visibilityRes, WalletApp.fiatRates.info.rates, WalletApp.fiatCode)
+    val chainEditView = new ChainEditView(body.findViewById(R.id.editChain).asInstanceOf[LinearLayout], specs, manager)
     var defaultView: HasHostView = chainEditView
 
     lazy val cpfpView = new CPFPView(body findViewById R.id.cpfp)
@@ -651,13 +642,43 @@ trait BaseActivity extends AppCompatActivity { me =>
       chainReaderView.start
     }
   }
+
+  abstract class WalletSelector(title: TitleView) {
+    val cardsContainer = getLayoutInflater.inflate(R.layout.frag_linear_layout, null).asInstanceOf[LinearLayout]
+    val alert = mkCheckForm(alert => runAnd(alert.dismiss)(onOk), none, titleBodyAsViewBuilder(title.view, cardsContainer), dialog_ok, dialog_cancel)
+    val spendable = ElectrumWallet.specs.values.filter(_.spendable)
+
+    val chooser = new ChainWalletCards(me) {
+      val holder: LinearLayout = cardsContainer
+      override def onWalletTap(key: ExtendedPublicKey): Unit = {
+        if (selected contains key) selected -= key else selected += Tuple2(key, ElectrumWallet specs key)
+        updatePopupButton(button = getPositiveButton(alert), isEnabled = selected.nonEmpty)
+        update(spendable)
+      }
+    }
+
+    addFlowChip(title.flow, getString(select_wallets), R.drawable.border_yellow)
+    updatePopupButton(getPositiveButton(alert), isEnabled = false)
+    chooser.init(spendable.size)
+    chooser.update(spendable)
+    chooser.unPadCards
+    def onOk: Unit
+  }
+
+  def walletBackground(specs: Seq[WalletSpec] = Nil): Int = {
+    val containsSigning = specs.exists(_.data.ewt.secrets.nonEmpty)
+    val containsHardware = specs.exists(_.info.core.masterFingerprint.nonEmpty)
+    if (containsSigning && containsHardware) R.color.cardBitcoinMixed
+    else if (containsHardware) R.color.cardBitcoinHardware
+    else R.color.cardBitcoinSigning
+  }
 }
 
 trait BaseCheckActivity extends BaseActivity { me =>
   def PROCEED(state: Bundle): Unit
 
   override def START(state: Bundle): Unit = {
-    if (WalletApp.isAlive && WalletParams.isOperational) PROCEED(state) else {
+    if (WalletApp.isAlive && WalletApp.isOperational) PROCEED(state) else {
       // The way Android works is we can get some objects nullified when restoring from background
       // when that happens we make sure to free all remaining resources and start from scratch
       WalletApp.freePossiblyUsedRuntimeResouces
@@ -714,19 +735,24 @@ object QRActivity {
   }
 }
 
-abstract class ChainWalletCards(host: BaseActivity) { self =>
-  def update(wallets: Iterable[ElectrumEclairWallet] = Nil): Unit = cardViews.zip(wallets).foreach { case (card, wallet) => card updateView wallet }
-  def unPad(wallets: Iterable[ElectrumEclairWallet] = Nil): Unit = cardViews.foreach(_.unPad)
-  private var cardViews: List[ChainCard] = Nil
+abstract class ChainWalletCards(host: BaseActivity) { me =>
+  var selected = Map.empty[ExtendedPublicKey, WalletSpec]
+  var cardViews = List.empty[ChainCard]
+
+  def unPadCards: Unit = cardViews.foreach(_.unPad)
+  def update(specs: Iterable[WalletSpec] = Nil): Unit = cardViews.zip(specs).foreach {
+    case (chainCard, walletSpec) => chainCard updateView walletSpec
+  }
 
   def init(size: Int): Unit = {
     cardViews = List.fill(size)(new ChainCard)
-    cardViews.map(_.view).foreach(holder.addView)
+    cardViews.foreach(card => holder addView card.view)
   }
 
   class ChainCard {
     val view: SwipeRevealLayout = host.getLayoutInflater.inflate(R.layout.frag_chain_card, null).asInstanceOf[SwipeRevealLayout]
     val chainPaddingWrap: LinearLayout = view.findViewById(R.id.chainPaddingWrap).asInstanceOf[LinearLayout]
+    val receiveBitcoinTip: ImageView = view.findViewById(R.id.receiveBitcoinTip).asInstanceOf[ImageView]
     val chainWrap: CardView = view.findViewById(R.id.chainWrap).asInstanceOf[CardView]
 
     val chainContainer: View = view.findViewById(R.id.chainContainer).asInstanceOf[View]
@@ -742,40 +768,45 @@ abstract class ChainWalletCards(host: BaseActivity) { self =>
     val chainBalanceFiat: TextView = view.findViewById(R.id.chainBalanceFiat).asInstanceOf[TextView]
     val chainBalance: TextView = view.findViewById(R.id.chainBalance).asInstanceOf[TextView]
 
-    val receiveBitcoinTip: ImageView = view.findViewById(R.id.receiveBitcoinTip).asInstanceOf[ImageView]
-
     def unPad: Unit = {
-      val padding: Int = chainPaddingWrap.getPaddingTop
+      val padding = chainPaddingWrap.getPaddingTop
       chainPaddingWrap.setPadding(padding, padding, padding, 0)
       view.setLockDrag(true)
     }
 
-    def updateView(wallet: ElectrumEclairWallet): Unit = {
-      val zeroColor = if (wallet.ewt.secrets.nonEmpty) signCardZero else watchCardZero
-      chainBalance.setText(WalletApp.denom.parsedWithSign(wallet.info.lastBalance.toMilliSatoshi, cardIn, zeroColor).html)
-      chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman wallet.info.lastBalance.toMilliSatoshi)
+    def selectedBackground(spec: WalletSpec): Int = {
+      val containsSigning = spec.data.ewt.secrets.nonEmpty
+      val containsHardware = spec.info.core.masterFingerprint.nonEmpty
+      if (containsSigning && containsHardware) R.drawable.border_card_mixed_on
+      else if (containsHardware) R.drawable.border_card_hardware_on
+      else R.drawable.border_card_signing_on
+    }
 
-      val chainBalanceVisible = wallet.info.lastBalance > 0L.sat
-      host.setVisMany(chainBalanceVisible -> chainBalanceWrap, !chainBalanceVisible -> receiveBitcoinTip)
-      host.setVisMany(wallet.info.core.isRemovable -> setItemLabel, wallet.info.core.isRemovable -> removeItem, wallet.info.isCoinControlOn -> coinControlOn)
+    def updateView(spec: WalletSpec): Unit = {
+      val hasMoney = spec.info.lastBalance > 0L.sat
+      val zeroColor = if (spec.data.ewt.secrets.nonEmpty) signCardZero else watchCardZero
+      val bgResource = if (selected contains spec.data.ewt.xPub) selectedBackground(spec) else host.walletBackground(spec :: Nil)
+      host.setVisMany(hasMoney -> chainBalanceWrap, !hasMoney -> receiveBitcoinTip, spec.info.isCoinControlOn -> coinControlOn)
+      chainBalance.setText(WalletApp.denom.parsedWithSign(spec.info.lastBalance.toMilliSatoshi, cardIn, zeroColor).html)
+      chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman spec.info.lastBalance.toMilliSatoshi)
 
-      host.chainWalletNotice(wallet) foreach { textRes =>
+      host.chainWalletNotice(spec) foreach { textRes =>
         host.setVis(isVisible = true, chainWalletNotice)
         chainWalletNotice.setText(textRes)
       }
 
-      chainContainer.setBackgroundResource(host chainWalletBackground wallet)
-      setItemLabel setOnClickListener host.onButtonTap(self onLabelTap wallet)
-      coinControl setOnClickListener host.onButtonTap(self onCoinControlTap wallet)
-      removeItem setOnClickListener host.onButtonTap(self onRemoveTap wallet)
-      chainWrap setOnClickListener host.onButtonTap(self onWalletTap wallet)
-      chainLabel setText wallet.info.label
+      chainLabel setText spec.info.label.asSome.filter(_.trim.nonEmpty).getOrElse(spec.info.core.walletType)
+      coinControl setOnClickListener host.onButtonTap(me onCoinControlTap spec.data.ewt.xPub)
+      setItemLabel setOnClickListener host.onButtonTap(me onLabelTap spec.data.ewt.xPub)
+      removeItem setOnClickListener host.onButtonTap(me onRemoveTap spec.data.ewt.xPub)
+      chainWrap setOnClickListener host.onButtonTap(me onWalletTap spec.data.ewt.xPub)
+      chainContainer setBackgroundResource bgResource
     }
   }
 
-  def onLabelTap(wallet: ElectrumEclairWallet): Unit
-  def onRemoveTap(wallet: ElectrumEclairWallet): Unit
-  def onCoinControlTap(wallet: ElectrumEclairWallet): Unit
-  def onWalletTap(wallet: ElectrumEclairWallet): Unit
+  def onLabelTap(key: ExtendedPublicKey): Unit = none
+  def onRemoveTap(key: ExtendedPublicKey): Unit = none
+  def onCoinControlTap(key: ExtendedPublicKey): Unit = none
+  def onWalletTap(key: ExtendedPublicKey): Unit = none
   def holder: LinearLayout
 }
