@@ -44,9 +44,9 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
       val contentToShare = if (bu.amount.isDefined || bu.label.isDefined) InputParser.withoutSlashes(InputParser.bitcoin, uri) else bu.address
 
       val visibleText = (bu.label, humanAmountOpt) match {
-        case Some(label) ~ Some(amount) => s"${bu.address.short}<br><br>$label<br><br>$amount"
-        case None ~ Some(amount) => s"${bu.address.short}<br><br>$amount"
-        case Some(label) ~ None => s"${bu.address.short}<br><br>$label"
+        case Some(label) \ Some(amount) => s"${bu.address.short}<br><br>$label<br><br>$amount"
+        case None \ Some(amount) => s"${bu.address.short}<br><br>$amount"
+        case Some(label) \ None => s"${bu.address.short}<br><br>$label"
         case _ => bu.address.short
       }
 

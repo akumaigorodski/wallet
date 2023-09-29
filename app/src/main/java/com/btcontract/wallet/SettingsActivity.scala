@@ -45,7 +45,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
   override def onChoiceMade(tag: AnyRef, pos: Int): Unit = tag match {
 
     case CHOICE_FIAT_DENOM_TAG =>
-      val fiatCode ~ _ = fiatSymbols(pos)
+      val fiatCode \ _ = fiatSymbols(pos)
       WalletApp.app.prefs.edit.putString(WalletApp.FIAT_CODE, fiatCode).commit
       immortan.sqlite.DbStreams.next(immortan.sqlite.DbStreams.txDbStream)
       setFiat.updateView
@@ -101,7 +101,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
     setVis(isVisible = false, settingsCheck)
 
     view setOnClickListener onButtonTap {
-      val options = fiatSymbols.map { case code ~ name => code.toUpperCase + SEPARATOR + name }
+      val options = fiatSymbols.map { case code \ name => code.toUpperCase + SEPARATOR + name }
       val list = getLayoutInflater.inflate(R.layout.frag_selector_list, null).asInstanceOf[ListView]
       list setAdapter new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, options.toArray)
       new sheets.ChoiceBottomSheet(list, CHOICE_FIAT_DENOM_TAG, me).show(getSupportFragmentManager, "unused-tag")
@@ -201,7 +201,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
       spec.data.ewt.secrets.exists(_.master == master) && spec.info.core.walletType == walletType
     }
 
-    val ws = for (Tuple2(tag, info ~ path) <- wallets) yield s"<b>$tag</b> <i>$path</i><br>$info".html
+    val ws = for (Tuple2(tag, info \ path) <- wallets) yield s"<b>$tag</b> <i>$path</i><br>$info".html
     val list = getLayoutInflater.inflate(R.layout.frag_selector_list, null).asInstanceOf[ListView]
     list setAdapter new ArrayAdapter(me, android.R.layout.select_dialog_multichoice, ws.toArray)
 
@@ -231,8 +231,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
   private val wallets = Map(
     ElectrumWallet.BIP84 -> ("Modern SBW", "m/84'/0'/0'/0/n"),
     ElectrumWallet.BIP32 -> ("Legacy SBW, BRD, Mycelium", "m/0'/0/n"),
-    ElectrumWallet.BIP44 -> ("Bitcoin.com, Trust wallet, Exodus", "m/44'/0'/0'/0/n"),
-    ElectrumWallet.BIP49 -> ("JoinMarket", "m/49'/0'/0'/0/n")
+    ElectrumWallet.BIP44 -> ("Bitcoin.com, Trust wallet, Exodus", "m/44'/0'/0'/0/n")
   )
 
   private val possibleKeys: StringList =

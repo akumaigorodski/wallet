@@ -139,7 +139,7 @@ object ElectrumWallet extends CanBeShutDown {
   def spendAll(restPubKeyScript: ByteVector, strictPubKeyScriptsToAmount: Map[ByteVector, Satoshi],
                usableInUtxos: Seq[Utxo], feeRatePerKw: FeeratePerKw, sequenceFlag: Long): SendAllResponse = {
 
-    val strictTxOuts = for (pubKeyScript ~ amount <- strictPubKeyScriptsToAmount) yield TxOut(amount, pubKeyScript)
+    val strictTxOuts = for (pubKeyScript \ amount <- strictPubKeyScriptsToAmount) yield TxOut(amount, pubKeyScript)
     val restTxOut = TxOut(amount = usableInUtxos.map(_.item.value.sat).sum - strictTxOuts.map(_.amount).sum, restPubKeyScript)
     val tx = Transaction(version = 2, txIn = Nil, restTxOut :: strictTxOuts.toList, lockTime = 0)
     val tx1 = ElectrumWalletType.dummySignTransaction(usableInUtxos, tx, sequenceFlag)
@@ -195,7 +195,7 @@ object ElectrumWallet extends CanBeShutDown {
   // scriptToAmount is empty if we send all, empty then updated to a single item if we send to an address, already non-empty if we batch
   def makeBatchTx(specs: Seq[WalletSpec], changeTo: WalletSpec, scriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw): GenerateTxResponse = {
     val changeScript = changeTo.data.ewt.computePublicKeyScript(changeTo.data.firstUnusedChangeKeys.headOption.getOrElse(changeTo.data.changeKeys.head).publicKey)
-    val tx = Transaction(version = 2, txIn = Nil, txOut = for (script ~ amount <- scriptToAmount.toList) yield TxOut(amount, script), lockTime = 0L)
+    val tx = Transaction(version = 2, txIn = Nil, txOut = for (script \ amount <- scriptToAmount.toList) yield TxOut(amount, script), lockTime = 0L)
     val result = completeTransaction(tx, feeRatePerKw, OPT_IN_FULL_RBF, changeScript, specs.flatMap(_.data.utxos), Nil)
     result.copy(pubKeyScriptToAmount = scriptToAmount)
   }
@@ -536,8 +536,8 @@ case class ElectrumData(ewt: ElectrumWalletType, blockchain: Blockchain,
   lazy val publicScriptChangeMap: Map[ByteVector, ExtendedPublicKey] = changeKeys.map(key => ewt.writePublicKeyScriptHash(key.publicKey) -> key).toMap
   lazy val publicScriptMap: Map[ByteVector, ExtendedPublicKey] = publicScriptAccountMap ++ publicScriptChangeMap
 
-  lazy val accountKeyMap: Map[ByteVector32, ExtendedPublicKey] = for (serialized ~ key <- publicScriptAccountMap) yield (computeScriptHash(serialized), key)
-  lazy val changeKeyMap: Map[ByteVector32, ExtendedPublicKey] = for (serialized ~ key <- publicScriptChangeMap) yield (computeScriptHash(serialized), key)
+  lazy val accountKeyMap: Map[ByteVector32, ExtendedPublicKey] = for (serialized \ key <- publicScriptAccountMap) yield (computeScriptHash(serialized), key)
+  lazy val changeKeyMap: Map[ByteVector32, ExtendedPublicKey] = for (serialized \ key <- publicScriptChangeMap) yield (computeScriptHash(serialized), key)
 
   lazy val currentReadyMessage: ElectrumWallet.WalletReady = ElectrumWallet.WalletReady(balance, blockchain.tip.height, proofs.hashCode + transactions.hashCode, ewt.xPub, unExcludedUtxos, excludedOutPoints)
   lazy val firstUnusedAccountKeys: immutable.Iterable[ExtendedPublicKey] = accountKeyMap.collect { case (scriptHash, privKey) if status(scriptHash) == new String => privKey }

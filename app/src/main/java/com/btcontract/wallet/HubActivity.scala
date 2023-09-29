@@ -59,9 +59,20 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
   // PAYMENT LIST
 
-  def loadRecentTxInfos: Unit = txInfos = WalletApp.txDataBag.listRecentTxs(20).flatMap(WalletApp.txDataBag.toTxInfo)
-  def loadSearchedTxInfos(query: String): Unit = txInfos = WalletApp.txDataBag.searchTransactions(query).flatMap(WalletApp.txDataBag.toTxInfo)
-  def fillAllInfos: Unit = allInfos = SemanticOrder.makeSemanticOrder(WalletApp.pendingTxInfos.values.toSeq ++ txInfos)
+  def loadRecentTxInfos: Unit = {
+    val recent = WalletApp.txDataBag.listRecentTxs(10).flatMap(WalletApp.txDataBag.toTxInfo)
+    txInfos = recent.take(5) ++ recent.drop(5).filter(info => !info.isConfirmed && !info.isDoubleSpent)
+  }
+
+  def loadSearchedTxInfos(query: String): Unit = {
+    val found = WalletApp.txDataBag.searchTransactions(query)
+    txInfos = found.flatMap(WalletApp.txDataBag.toTxInfo)
+  }
+
+  def fillAllInfos: Unit = {
+    val all = WalletApp.pendingTxInfos.values.toSeq ++ txInfos
+    allInfos = SemanticOrder.makeSemanticOrder(all)
+  }
 
   def loadRecent: Unit = {
     loadRecentTxInfos
@@ -424,8 +435,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       item match {
         case info: TxInfo =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
-          val canRBF = !info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.cpfpOf.isEmpty
-          val canCPFP = info.isIncoming && !info.isDoubleSpent && info.depth < 1 && info.description.rbf.isEmpty && info.description.canBeCPFPd
+          val canRBF = !info.isIncoming && !info.isDoubleSpent && !info.isConfirmed && info.description.cpfpOf.isEmpty
+          val canCPFP = info.isIncoming && !info.isDoubleSpent && !info.isConfirmed && info.description.rbf.isEmpty && info.description.canBeCPFPd
           val isRbfCancel = info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL)
 
           val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
@@ -879,7 +890,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       }.run
     }
 
-    for (address ~ amount <- addressToAmount.values.reverse) {
+    for (address \ amount <- addressToAmount.values.reverse) {
       val humanAmount = WalletApp.denom.parsedWithSign(amount.toMilliSatoshi, cardIn, cardZero)
       val parent = getLayoutInflater.inflate(R.layout.frag_two_sided_item, null)
       new TwoSidedItem(parent, address.short.html, humanAmount.html)
@@ -901,15 +912,24 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     sendView.specs.find(spec => spec.info.core.masterFingerprint.nonEmpty && spec.info.core.walletType == ElectrumWallet.BIP84) match {
 
       case Some(hwSpec) =>
-        sendView.chainReaderView.onSignedTx = signedTx => UITask {
-          if (signedTx.txOut.toSet != response.tx.txOut.toSet) alert.dismiss
-          val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
-          finalSendButton setOnClickListener onButtonTap(process apply signedTx)
-          sendView.switchToConfirm(alert, response)
-        }.run
-
         val psbt = prepareBip84Psbt(response, hwSpec)
         sendView.switchToHardwareOutgoing(alert, psbt)
+        sendView.chainReaderView.onPsbt = postSignedPsbt => UITask {
+          postSignedPsbt.extract orElse extractTx(response, hwSpec, postSignedPsbt) match {
+            case Success(postSignedTx) if postSignedTx.txOut.toSet == response.tx.txOut.toSet =>
+              val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
+              finalSendButton setOnClickListener onButtonTap(process apply postSignedTx)
+              sendView.switchToConfirm(alert, response)
+
+            case Failure(failureReason) =>
+              onFail(failureReason)
+              alert.dismiss
+
+            case _ =>
+              onFail("Outputs mismatch")
+              alert.dismiss
+          }
+        }
 
       case None =>
         // This is a signing wallet so signed response tx is a final one, we use it
@@ -922,13 +942,17 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     sendView.specs.find(spec => spec.info.core.masterFingerprint.nonEmpty && spec.info.core.walletType == ElectrumWallet.BIP84) match {
 
       case Some(hwSpec) =>
-        sendView.chainReaderView.onSignedTx = signedTx => UITask {
-          if (signedTx.txOut.toSet == response.tx.txOut.toSet) process(signedTx)
-          alert.dismiss
-        }.run
-
         val psbt = prepareBip84Psbt(response, hwSpec)
         sendView.switchToHardwareOutgoing(alert, psbt)
+        sendView.chainReaderView.onPsbt = postSignedPsbt => UITask {
+          postSignedPsbt.extract orElse extractTx(response, hwSpec, postSignedPsbt) match {
+            case Success(signedTx) if signedTx.txOut.toSet == response.tx.txOut.toSet => process(signedTx)
+            case Failure(failureReason) => onFail(failureReason)
+            case _ => onFail("Outputs mismatch")
+          }
+
+          alert.dismiss
+        }
 
       case None =>
         process(response.tx)

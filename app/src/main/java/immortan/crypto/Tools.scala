@@ -3,7 +3,7 @@ package immortan.crypto
 import com.sparrowwallet.hummingbird.UR
 import com.sparrowwallet.hummingbird.registry.CryptoPSBT
 import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
-import fr.acinq.bitcoin.Psbt.{FinalizedInput, KeyPathWithMaster}
+import fr.acinq.bitcoin.Psbt.KeyPathWithMaster
 import fr.acinq.bitcoin._
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.GenerateTxResponse
 import fr.acinq.eclair.blockchain.electrum.{ElectrumWallet, WalletSpec}
@@ -45,57 +45,56 @@ object Tools {
   }
 
   def prepareBip84Psbt(response: GenerateTxResponse, hwSpec: WalletSpec): Psbt = {
-    require(response.usedWallets.contains(hwSpec.data.ewt), "Used wallets must contain HW")
-    val specs = response.usedWallets.map(_.xPub).map(ElectrumWallet.specs)
-    val psbt1 = Psbt(response.tx)
+    require(response.usedWallets.contains(hwSpec.data.ewt), "Used wallets must contain a hardware wallet")
+    val psbt1 = response.tx.txIn.zip(response.usedWallets).foldLeft(Psbt apply response.tx) { case (psbt, txIn \ ewt) =>
+      // For now this will accept a tx with mixed inputs where at most one origin can be BIP84 hardware wallet
 
-    val psbt2 = response.tx.txIn.zipWithIndex.zip(specs).foldLeft(psbt1) { case (psbt, txIn ~ index ~ spec) =>
-      // For now this will accept a tx with mixed inputs where at most one wallet is BIP84 hardware one
-      val parentTransaction = spec.data.transactions(txIn.outPoint.txid)
+      val idx = txIn.outPoint.index.toInt
+      val spec = ElectrumWallet.specs(ewt.xPub)
+      val parentTx = spec.data.transactions(txIn.outPoint.txid)
 
-      if (spec == hwSpec) {
-        val utxoPubKey = spec.data.publicScriptMap(parentTransaction.txOut(txIn.outPoint.index.toInt).publicKeyScript)
-        val derivationPath = utxoPubKey.publicKey -> KeyPathWithMaster(hwSpec.info.core.masterFingerprint.get, utxoPubKey.path)
-        psbt.updateWitnessInputTx(parentTransaction, derivationPaths = Map(derivationPath), outputIndex = txIn.outPoint.index.toInt).get
-      } else if (spec.info.core.walletType == ElectrumWallet.BIP84) {
-        // This comes from local signing BIP84 wallet so we can finalize this input right away
-        val updated = psbt.updateWitnessInputTx(parentTransaction, txIn.outPoint.index.toInt).get
-        updated.finalizeWitnessInput(index, txIn.witness).get
-      } else {
-        // This comes from local signing non-witness wallet so we can finalize this input right away
-        val updated = psbt.updateNonWitnessInput(parentTransaction, txIn.outPoint.index.toInt).get
-        updated.finalizeNonWitnessInput(index, Script parse txIn.signatureScript).get
-      }
+      if (spec.info.core.walletType == ElectrumWallet.BIP84 && spec == hwSpec) {
+        val utxoPubKey = spec.data.publicScriptMap(parentTx.txOut(idx).publicKeyScript)
+        val keyPathWithMaster = KeyPathWithMaster(hwSpec.info.core.masterFingerprint.get, utxoPubKey.path)
+        psbt.updateWitnessInputTx(parentTx, derivationPaths = Map(utxoPubKey.publicKey -> keyPathWithMaster), outputIndex = idx).get
+      } else if (spec.info.core.walletType == ElectrumWallet.BIP84) psbt.updateWitnessInputTx(parentTx, outputIndex = idx).get
+      else psbt.updateNonWitnessInput(parentTx, outputIndex = idx).get
     }
 
     // Provide info about our change output
-    response.tx.txOut.zipWithIndex.foldLeft(psbt2) { case (psbt, txOut ~ index) =>
+    response.tx.txOut.zipWithIndex.foldLeft(psbt1) { case (psbt, txOut \ index) =>
       hwSpec.data.publicScriptChangeMap.get(key = txOut.publicKeyScript) map { changeKey =>
-        val changeKeyPathWithMaster = KeyPathWithMaster(hwSpec.info.core.masterFingerprint.get, changeKey.path)
-        val derivationPath = Map(changeKey.publicKey -> changeKeyPathWithMaster)
-        psbt.updateWitnessOutput(index, derivationPaths = derivationPath).get
+        val keyPathWithMaster = KeyPathWithMaster(hwSpec.info.core.masterFingerprint.get, changeKey.path)
+        psbt.updateWitnessOutput(derivationPaths = Map(changeKey.publicKey -> keyPathWithMaster), outputIndex = index).get
       } getOrElse psbt
     }
   }
 
-  def extractBip84Tx(psbt: Psbt): scala.util.Try[Transaction] =
-    psbt.extract orElse psbt.inputs.zipWithIndex.foldLeft(psbt) {
-      case psbt1 ~ Tuple2(_: FinalizedInput, _) =>
-        // Came from local signing wallet
-        psbt1
+  def extractTx(response: GenerateTxResponse, hwSpec: WalletSpec, psbt: Psbt): scala.util.Try[Transaction] = {
+    val specs = for (ewt <- response.usedWallets) yield ElectrumWallet.specs(ewt.xPub)
 
-      case psbt1 ~ Tuple2(input, index) =>
-        val (pubKey, sig) = input.partialSigs.head
-        val witness = Script.witnessPay2wpkh(pubKey, sig)
+    response.tx.txIn.zipWithIndex.zip(psbt.inputs).zip(specs).foldLeft(psbt) {
+      case (psbt1, _ \ index \ input \ spec) if spec.info.core.walletType == ElectrumWallet.BIP84 && spec == hwSpec =>
+        // This input has been signed by hardware wallet, related PSBT input must contain a signature as first map entry
+        val witness = (Script.witnessPay2wpkh _).tupled(input.partialSigs.head)
         psbt1.finalizeWitnessInput(index, witness).get
+
+      case (psbt1, txIn \ index \ _ \ spec) if spec.info.core.walletType == ElectrumWallet.BIP84 =>
+        // This input has been signed by BIP84 local signing wallet, take witness from tx input
+        psbt1.finalizeWitnessInput(index, txIn.witness).get
+
+      case (psbt1, txIn \ index \ _ \ _) =>
+        // This input has been signed by legacy local signing wallet, take scriptSig from tx input
+        psbt1.finalizeNonWitnessInput(index, scriptSig = Script parse txIn.signatureScript).get
     }.extract
+  }
 
   def obtainPsbt(ur: UR): scala.util.Try[Psbt] = scala.util.Try {
     val rawPsbt = ur.decodeFromRegistry.asInstanceOf[CryptoPSBT]
     ByteVector.view(rawPsbt.getPsbt)
   } flatMap Psbt.read
 
-  object ~ {
+  object \ {
     // Useful for matching nested Tuple2 with less noise
     def unapply[A, B](t2: (A, B) /* Got a tuple */) = Some(t2)
   }

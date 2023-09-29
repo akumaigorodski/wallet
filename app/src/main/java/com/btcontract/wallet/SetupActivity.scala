@@ -9,7 +9,7 @@ import com.btcontract.wallet.R.string._
 import fr.acinq.bitcoin.MnemonicCode
 import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
 import fr.acinq.eclair.wire.{Domain, NodeAddress}
-import immortan.crypto.Tools.{SEPARATOR, StringList, none, runAnd, ~}
+import immortan.crypto.Tools.{SEPARATOR, StringList, none, runAnd, \}
 import immortan.{LightningNodeKeys, WalletSecret}
 
 import scala.util.Success
@@ -114,7 +114,7 @@ trait MnemonicActivity { me: BaseActivity =>
         else runAnd(saveAddress(new String).commit)(warnAndUpdateView)
 
         def saveUnsafeElectrumAddress: Unit = {
-          val hostOrIP ~ port = input.splitAt(input lastIndexOf ':')
+          val hostOrIP \ port = input.splitAt(input lastIndexOf ':')
           val nodeAddress = NodeAddress.fromParts(hostOrIP, port.tail.toInt, Domain)
           saveAddress(nodeaddress.encode(nodeAddress).require.toHex).commit
         }

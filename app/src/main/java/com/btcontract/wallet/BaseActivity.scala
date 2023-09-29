@@ -169,7 +169,7 @@ trait BaseActivity extends AppCompatActivity { me =>
       override def onDismiss(dialog: DialogInterface): Unit = getWindow.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
 
-    for (mnemonicWord ~ mnemonicIndex <- WalletApp.secret.mnemonic.zipWithIndex) {
+    for (mnemonicWord \ mnemonicIndex <- WalletApp.secret.mnemonic.zipWithIndex) {
       val oneWord = s"<font color=$cardZero>${mnemonicIndex + 1}</font> $mnemonicWord"
       addFlowChip(content.flow, oneWord, R.drawable.border_green)
     }
@@ -213,7 +213,7 @@ trait BaseActivity extends AppCompatActivity { me =>
   }
 
   def setVisMany(items: (Boolean, View)*): Unit = {
-    for (isVisible ~ view <- items) setVis(isVisible, view)
+    for (isVisible \ view <- items) setVis(isVisible, view)
   }
 
   def UITask(fun: => Any): java.util.TimerTask = {
@@ -524,7 +524,7 @@ trait BaseActivity extends AppCompatActivity { me =>
 
   class ChainReaderView(val host: View) extends HasUrDecoder with HasHostView {
     val chainButtonsView: ChainButtonsView = new ChainButtonsView(host)
-    var onSignedTx: Transaction => Unit = none
+    var onPsbt: Psbt => Runnable = _
 
     def stop: Unit = runAnd(barcodeReader.pause)(barcodeReader.stopDecoding)
     def start: Unit = runAnd(barcodeReader decodeContinuous this)(barcodeReader.resume)
@@ -533,11 +533,9 @@ trait BaseActivity extends AppCompatActivity { me =>
     barcodeReader = host.findViewById(R.id.qrReader).asInstanceOf[BarcodeView]
     instruction = chainButtonsView.chainText
 
-    override def onUR(ur: UR): Unit = {
-      obtainPsbt(ur).flatMap(extractBip84Tx) match {
-        case Success(signedTx) => onSignedTx(signedTx)
-        case Failure(why) => onError(why.stackTraceAsString)
-      }
+    override def onUR(ur: UR): Unit = obtainPsbt(ur) match {
+      case Failure(reason) => onError(reason.stackTraceAsString)
+      case Success(psbt) => onPsbt(psbt).run
     }
   }
 

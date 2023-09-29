@@ -52,15 +52,6 @@
             <include layout="@layout/frag_two_sided_item" android:id="@+id/confirmAmount"/>
             <include layout="@layout/frag_two_sided_item" android:id="@+id/confirmFee"/>
             <include layout="@layout/frag_chain_buttons"/>
-
-            <ImageView
-                android:scaleType="fitXY"
-                android:layout_width="200dp"
-                android:layout_height="100dp"
-                android:layout_marginTop="40dp"
-                android:layout_gravity="center"
-                android:src="@drawable/mountain"/>
-
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
