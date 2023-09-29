@@ -13,9 +13,12 @@ import immortan.utils.FiatRates.CoinGeckoItemMap
 import scodec.bits.BitVector
 import spray.json._
 
+import scala.util.Try
+
 
 object ImplicitJsonFormats extends DefaultJsonProtocol {
-  val json2String: JsValue => String = (_: JsValue).convertTo[String]
+  val json2String: JsValue => String = value => value.convertTo[String]
+  def json2BitVec(json: JsValue): Option[BitVector] = BitVector fromHex json2String(json)
 
   final val TAG = "tag"
 
@@ -23,12 +26,14 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
 
   def to[T : JsonFormat](raw: String): T = raw.parseJson.convertTo[T]
 
+  def tryTo[T: JsonFormat](raw: String): Try[T] = Try {
+    to[T](raw)
+  }
+
   def taggedJsonFmt[T](base: JsonFormat[T], tag: String): JsonFormat[T] = new JsonFormat[T] {
     def write(unserialized: T): JsValue = writeExt(TAG -> JsString(tag), base write unserialized)
     def read(serialized: JsValue): T = base read serialized
   }
-
-  def json2BitVec(json: JsValue): Option[BitVector] = BitVector fromHex json2String(json)
 
   def sCodecJsonFmt[T](codec: scodec.Codec[T] = null): JsonFormat[T] = new JsonFormat[T] {
     def read(serialized: JsValue): T = codec.decode(json2BitVec(serialized).get).require.value
@@ -63,11 +68,11 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
     }
   }
 
-  implicit val signingWalletFmt: JsonFormat[SigningWallet] = taggedJsonFmt(jsonFormat[String, Option[ExtendedPrivateKey], Boolean,
-      SigningWallet](SigningWallet.apply, "walletType", "attachedMaster", "isRemovable"), tag = "SigningWallet")
+  implicit val signingWalletFmt: JsonFormat[SigningWallet] = taggedJsonFmt(jsonFormat[String, Option[ExtendedPrivateKey],
+      SigningWallet](SigningWallet.apply, "walletType", "attachedMaster"), tag = "SigningWallet")
 
-  implicit val watchingWalletFmt: JsonFormat[WatchingWallet] = taggedJsonFmt(jsonFormat[String, Option[Long], ExtendedPublicKey, Boolean,
-      WatchingWallet](WatchingWallet.apply, "walletType", "masterFingerprint", "xPub", "isRemovable"), tag = "WatchingWallet")
+  implicit val watchingWalletFmt: JsonFormat[WatchingWallet] = taggedJsonFmt(jsonFormat[String, Option[Long], ExtendedPublicKey,
+      WatchingWallet](WatchingWallet.apply, "walletType", "masterFingerprint", "xPub"), tag = "WatchingWallet")
 
   // PaymentInfo stuff
 

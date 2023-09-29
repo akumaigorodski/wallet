@@ -2,8 +2,6 @@ package fr.acinq.eclair.blockchain.electrum
 
 import java.io.InputStream
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.AtomicLong
-
 import akka.actor.{Actor, ActorRef, FSM, OneForOneStrategy, Props, SupervisorStrategy, Terminated}
 import fr.acinq.bitcoin.{Block, BlockHeader, ByteVector32}
 import fr.acinq.eclair.blockchain.electrum.ElectrumClient.SSL
@@ -16,7 +14,7 @@ import scala.concurrent.duration._
 import scala.util.Random
 
 
-class ElectrumClientPool(blockCount: AtomicLong, chainHash: ByteVector32)(implicit val ec: ExecutionContext) extends Actor with FSM[State, Data] {
+class ElectrumClientPool(chainHash: ByteVector32)(implicit val ec: ExecutionContext) extends Actor with FSM[State, Data] {
   val serverAddresses: Set[ElectrumServerAddress] = loadFromChainHash(chainHash)
   val addresses = collection.mutable.Map.empty[ActorRef, InetSocketAddress]
   val statusListeners = collection.mutable.HashSet.empty[ActorRef]
@@ -115,8 +113,7 @@ class ElectrumClientPool(blockCount: AtomicLong, chainHash: ByteVector32)(implic
 
   private def handleHeader(connection: ActorRef, height: Int, tip: BlockHeader, data: Option[ConnectedData] = None) = {
     val remoteAddress = addresses(connection)
-    // we update our block count even if it doesn't come from our current master
-    updateBlockCount(height)
+
     data match {
       case None =>
         // as soon as we have a connection to an electrum server, we select it as master
@@ -143,11 +140,6 @@ class ElectrumClientPool(blockCount: AtomicLong, chainHash: ByteVector32)(implic
         stay using d.copy(tips = d.tips + (connection -> (height, tip)))
     }
   }
-
-  private def updateBlockCount(blockCount: Long): Unit =
-    if (this.blockCount.get < blockCount) {
-      this.blockCount.set(blockCount)
-    }
 }
 
 object ElectrumClientPool {

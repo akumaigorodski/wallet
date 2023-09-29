@@ -3,7 +3,6 @@ package fr.acinq.eclair.blockchain.electrum
 import fr.acinq.bitcoin.Crypto.PublicKey
 import fr.acinq.bitcoin.DeterministicWallet._
 import fr.acinq.bitcoin._
-import fr.acinq.eclair.blockchain.EclairWallet
 import immortan.crypto.Tools._
 import scodec.bits.ByteVector
 
@@ -11,58 +10,58 @@ import scala.util.Try
 
 
 object ElectrumWalletType {
-  def makeSigningType(tag: String, master: ExtendedPrivateKey, chainHash: ByteVector32): ElectrumWalletType = tag match {
-    case EclairWallet.BIP32 => makeSigningType(tag, xPriv32(master, chainHash), chainHash)
-    case EclairWallet.BIP44 => makeSigningType(tag, xPriv44(master, chainHash), chainHash)
-    case EclairWallet.BIP49 => makeSigningType(tag, xPriv49(master, chainHash), chainHash)
-    case EclairWallet.BIP84 => makeSigningType(tag, xPriv84(master, chainHash), chainHash)
+  def makeSigningType(tag: String, master: ExtendedPrivateKey, hash: ByteVector32): ElectrumWalletType = tag match {
+    case ElectrumWallet.BIP32 => makeSigningType(tag, secrets = xPriv32(master, hash), hash)
+    case ElectrumWallet.BIP44 => makeSigningType(tag, secrets = xPriv44(master, hash), hash)
+    case ElectrumWallet.BIP49 => makeSigningType(tag, secrets = xPriv49(master, hash), hash)
+    case ElectrumWallet.BIP84 => makeSigningType(tag, secrets = xPriv84(master, hash), hash)
     case _ => throw new RuntimeException
   }
 
-  def makeSigningType(tag: String, secrets: AccountAndXPrivKey, chainHash: ByteVector32): ElectrumWalletType = tag match {
-    case EclairWallet.BIP32 => new ElectrumWallet32(secrets.asSome, publicKey(secrets.xPriv), chainHash)
-    case EclairWallet.BIP44 => new ElectrumWallet44(secrets.asSome, publicKey(secrets.xPriv), chainHash)
-    case EclairWallet.BIP49 => new ElectrumWallet49(secrets.asSome, publicKey(secrets.xPriv), chainHash)
-    case EclairWallet.BIP84 => new ElectrumWallet84(secrets.asSome, publicKey(secrets.xPriv), chainHash)
+  def makeSigningType(tag: String, secrets: AccountAndXPrivKey, hash: ByteVector32): ElectrumWalletType = tag match {
+    case ElectrumWallet.BIP32 => new ElectrumWallet32(secrets.asSome, publicKey(secrets.xPriv), hash)
+    case ElectrumWallet.BIP44 => new ElectrumWallet44(secrets.asSome, publicKey(secrets.xPriv), hash)
+    case ElectrumWallet.BIP49 => new ElectrumWallet49(secrets.asSome, publicKey(secrets.xPriv), hash)
+    case ElectrumWallet.BIP84 => new ElectrumWallet84(secrets.asSome, publicKey(secrets.xPriv), hash)
     case _ => throw new RuntimeException
   }
 
-  def xPriv32(master: ExtendedPrivateKey, chainHash: ByteVector32): AccountAndXPrivKey = chainHash match {
+  def xPriv32(master: ExtendedPrivateKey, hash: ByteVector32): AccountAndXPrivKey = hash match {
     case Block.RegtestGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(1L) :: 0L :: Nil), master)
     case Block.TestnetGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(1L) :: 0L :: Nil), master)
     case Block.LivenetGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(0L) :: 0L :: Nil), master)
     case _ => throw new RuntimeException
   }
 
-  def xPriv44(master: ExtendedPrivateKey, chainHash: ByteVector32): AccountAndXPrivKey = chainHash match {
+  def xPriv44(master: ExtendedPrivateKey, hash: ByteVector32): AccountAndXPrivKey = hash match {
     case Block.RegtestGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(44L) :: hardened(1L) :: hardened(0L) :: Nil), master)
     case Block.TestnetGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(44L) :: hardened(1L) :: hardened(0L) :: Nil), master)
     case Block.LivenetGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(44L) :: hardened(0L) :: hardened(0L) :: Nil), master)
     case _ => throw new RuntimeException
   }
 
-  def xPriv49(master: ExtendedPrivateKey, chainHash: ByteVector32): AccountAndXPrivKey = chainHash match {
+  def xPriv49(master: ExtendedPrivateKey, hash: ByteVector32): AccountAndXPrivKey = hash match {
     case Block.RegtestGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(49L) :: hardened(1L) :: hardened(0L) :: Nil), master)
     case Block.TestnetGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(49L) :: hardened(1L) :: hardened(0L) :: Nil), master)
     case Block.LivenetGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(49L) :: hardened(0L) :: hardened(0L) :: Nil), master)
     case _ => throw new RuntimeException
   }
 
-  def xPriv84(master: ExtendedPrivateKey, chainHash: ByteVector32): AccountAndXPrivKey = chainHash match {
+  def xPriv84(master: ExtendedPrivateKey, hash: ByteVector32): AccountAndXPrivKey = hash match {
     case Block.RegtestGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(84L) :: hardened(1L) :: hardened(0L) :: Nil), master)
     case Block.TestnetGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(84L) :: hardened(1L) :: hardened(0L) :: Nil), master)
     case Block.LivenetGenesisBlock.hash => AccountAndXPrivKey(derivePrivateKey(master, hardened(84L) :: hardened(0L) :: hardened(0L) :: Nil), master)
     case _ => throw new RuntimeException
   }
 
-  def signTransaction(usableUtxos: Seq[Utxo], tx: Transaction): Transaction = {
-    val signedTxInputs = tx.txIn.zipWithIndex.map { case (unsignedTxInput, index) =>
+  def signTransaction(usableUtxos: Seq[Utxo], tx: Transaction): (Seq[ElectrumWalletType], Transaction) = {
+    val (wallets, inputs) = tx.txIn.zipWithIndex.map { case (unsignedTxInput, index) =>
       val utxo = usableUtxos.find(_.item.outPoint == unsignedTxInput.outPoint).get
-      utxo.ewt.signInput(utxo, tx, unsignedTxInput, index)
-    }
+      utxo.ewt -> utxo.ewt.signInput(utxo, tx, unsignedTxInput, index)
+    }.unzip
 
-    // All utxos must match inputs here
-    tx.copy(txIn = signedTxInputs)
+    // All inputs must be matched with utxos
+    wallets -> tx.copy(txIn = inputs)
   }
 
   def dummySignTransaction(usableUtxos: Seq[Utxo], tx: Transaction, sequenceFlag: Long): Transaction = {

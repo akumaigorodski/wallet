@@ -2,7 +2,7 @@ package immortan
 
 import fr.acinq.bitcoin.Crypto.PrivateKey
 import fr.acinq.bitcoin.DeterministicWallet._
-import immortan.crypto.Tools.Bytes
+import immortan.crypto.Tools.{Bytes, StringList}
 import scodec.bits.ByteVector
 
 
@@ -16,3 +16,4 @@ object LightningNodeKeys {
 }
 
 case class LightningNodeKeys(master: ExtendedPrivateKey, extendedNodeKey: ExtendedPrivateKey, hashingKey: PrivateKey)
+case class WalletSecret(keys: LightningNodeKeys, mnemonic: StringList, seed: ByteVector)

@@ -44,7 +44,7 @@ import androidx.customview.widget.ViewDragHelper;
 import com.btcontract.wallet.R;
 
 @SuppressLint("RtlHardcoded")
-public class SwipeRevealLayout extends ViewGroup implements View.OnLongClickListener {
+public class SwipeRevealLayout extends ViewGroup {
     public static final int STATE_CLOSE     = 0;
     public static final int STATE_CLOSING   = 1;
     public static final int STATE_OPEN      = 2;
@@ -175,12 +175,6 @@ public class SwipeRevealLayout extends ViewGroup implements View.OnLongClickList
         return !couldBecomeClick && (settling || idleAfterScrolled);
     }
 
-    public boolean onLongClick(View arg0) {
-        boolean isClosed = mMainView.getX() < 5F;
-        if (!mLockDrag && isClosed) open(true);
-        return isClosed;
-    }
-
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
@@ -189,7 +183,6 @@ public class SwipeRevealLayout extends ViewGroup implements View.OnLongClickList
         mSecondaryView = getChildAt(0);
         mMainView = (LinearLayout) getChildAt(1);
         mContentView = mMainView.getChildAt(mMainView.getChildCount() - 1);
-        mContentView.setOnLongClickListener(this);
     }
 
     @Override

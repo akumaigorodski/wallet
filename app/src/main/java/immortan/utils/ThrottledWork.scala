@@ -9,8 +9,8 @@ abstract class ThrottledWork[T, V] {
   private var subscription: Option[Subscription] = None
 
   def error(error: Throwable): Unit = none
-  def work(input: T): rx.lang.scala.Observable[V]
   def process(data: T, res: V): Unit
+  def work(input: T): V
 
   private def runOnError(err: Throwable): Unit = {
     // First nullify sunscription, then process error
@@ -26,10 +26,11 @@ abstract class ThrottledWork[T, V] {
 
   def addWork(data: T): Unit =
     if (subscription.isEmpty) {
+      val lifted = for (_ <- Rx.ioQueue) yield work(data)
       // Previous work has already been finished by now or has never started at all
       // schedule a new one and then look if more work is added once this one is done
 
-      subscription = work(data)
+      subscription = lifted
         .doOnSubscribe { lastWork = None }
         .doAfterTerminate(lastWork foreach addWork)
         .subscribe(res => runOnNext(data, res), runOnError)
@@ -43,8 +44,9 @@ abstract class ThrottledWork[T, V] {
 
   def replaceWork(data: T): Unit =
     if (subscription.isEmpty) {
+      val lifted = for (_ <- Rx.ioQueue) yield work(data)
       // Previous work has already finished or was interrupted or has never been started
-      subscription = work(data).subscribe(res => process(data, res), error).asSome
+      subscription = lifted.subscribe(res => process(data, res), error).asSome
     } else {
       // Current work has not finished yet
       // disconnect subscription and replace

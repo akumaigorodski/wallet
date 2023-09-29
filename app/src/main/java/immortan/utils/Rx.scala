@@ -8,9 +8,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 
 object Rx {
-  def fromFutureOnIo[T](future: Future[T] = null)(implicit ec: ExecutionContext): Observable[T] =
-    Observable.from(future).observeOn(IOScheduler.apply)
-
   def uniqueFirstAndLastWithinWindow[T](obs: Observable[T], window: Duration): Observable[T] =
     obs.throttleFirst(window).merge(obs debounce window).distinctUntilChanged.observeOn(IOScheduler.apply)
 

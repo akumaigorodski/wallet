@@ -11,10 +11,9 @@ import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
 import com.ornach.nobobutton.NoboButton
 import fr.acinq.bitcoin.Btc
+import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
 import fr.acinq.eclair._
-import fr.acinq.eclair.blockchain.EclairWallet.MAX_RECEIVE_ADDRESSES
-import fr.acinq.eclair.blockchain.electrum.ElectrumEclairWallet
-import immortan.WalletParams
+import fr.acinq.eclair.blockchain.electrum.{ElectrumWallet, WalletSpec}
 import immortan.crypto.Tools._
 import immortan.utils.{BitcoinUri, Denomination, InputParser}
 
@@ -26,7 +25,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
   lazy private[this] val chainQrCodes = findViewById(R.id.chainQrCodes).asInstanceOf[RecyclerView]
   lazy private[this] val chainQrMore = findViewById(R.id.chainQrMore).asInstanceOf[NoboButton]
 
-  private[this] var wallet: ElectrumEclairWallet = _
+  private[this] var spec: WalletSpec = _
   private[this] var allAddresses: List[BitcoinUri] = Nil
   private[this] var addresses: List[BitcoinUri] = Nil
 
@@ -45,9 +44,9 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
       val contentToShare = if (bu.amount.isDefined || bu.label.isDefined) InputParser.withoutSlashes(InputParser.bitcoin, uri) else bu.address
 
       val visibleText = (bu.label, humanAmountOpt) match {
-        case Some(label) ~ Some(amount) => s"${bu.address.short}<br><br>$label<br><br>$amount"
-        case None ~ Some(amount) => s"${bu.address.short}<br><br>$amount"
-        case Some(label) ~ None => s"${bu.address.short}<br><br>$label"
+        case Some(label) \ Some(amount) => s"${bu.address.short}<br><br>$label<br><br>$amount"
+        case None \ Some(amount) => s"${bu.address.short}<br><br>$amount"
+        case Some(label) \ None => s"${bu.address.short}<br><br>$label"
         case _ => bu.address.short
       }
 
@@ -64,12 +63,13 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
   }
 
   def editAddress(bu: BitcoinUri): Unit = {
+    val background = walletBackground(spec :: Nil)
     val maxMsat = Btc(21000000L).toSatoshi.toMilliSatoshi
     val canReceiveFiatHuman = WalletApp.currentMsatInFiatHuman(maxMsat)
     val canReceiveHuman = WalletApp.denom.parsedWithSign(maxMsat, cardIn, cardZero)
     val body = getLayoutInflater.inflate(R.layout.frag_input_fiat_converter, null).asInstanceOf[ViewGroup]
-    lazy val manager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, WalletParams.fiatRates.info.rates, WalletApp.fiatCode)
-    mkCheckForm(proceed, none, titleBodyAsViewBuilder(getString(dialog_receive_btc).asColoredView(me chainWalletBackground wallet), manager.content), dialog_ok, dialog_cancel)
+    lazy val manager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, WalletApp.fiatRates.info.rates, WalletApp.fiatCode)
+    mkCheckForm(proceed, none, titleBodyAsViewBuilder(getString(dialog_receive_btc).asColoredView(background), manager.content), dialog_ok, dialog_cancel)
     manager.hintFiatDenom.setText(getString(dialog_up_to).format(canReceiveFiatHuman).html)
     manager.hintDenom.setText(getString(dialog_up_to).format(canReceiveHuman).html)
     bu.amount.foreach(manager.updateText)
@@ -77,7 +77,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     def proceed(alert: AlertDialog): Unit = {
       val uriBuilder = bu.uri.get.buildUpon.clearQuery
       val resultMsat = manager.resultMsat.truncateToSatoshi.toMilliSatoshi
-      val uriBuilder1 = if (resultMsat > WalletParams.chainWallets.params.dustLimit) uriBuilder.appendQueryParameter("amount", Denomination.msat2BtcBigDecimal(resultMsat).toString) else uriBuilder
+      val uriBuilder1 = if (resultMsat > ElectrumWallet.params.dustLimit) uriBuilder.appendQueryParameter("amount", Denomination.msat2BtcBigDecimal(resultMsat).toString) else uriBuilder
       val uriBuilder2 = manager.resultExtraInput match { case Some(resultExtraInput) => uriBuilder1.appendQueryParameter("label", resultExtraInput) case None => uriBuilder1 }
 
       addresses = addresses map {
@@ -95,39 +95,38 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     checkExternalData(noneRunnable)
   }
 
-  def showCode: Unit = {
-    runFutureProcessOnUI(wallet.getReceiveAddresses, onFail) { response =>
-      val layoutManager = new CarouselLayoutManager(CarouselLayoutManager.HORIZONTAL, false)
-      layoutManager.setPostLayoutListener(new CarouselZoomPostLayoutListener)
-      layoutManager.setMaxVisibleItems(MAX_RECEIVE_ADDRESSES)
+  def showQRCode: Unit = {
+    val response = ElectrumWallet.getReceiveAddresses(spec)
+    val layoutManager = new CarouselLayoutManager(CarouselLayoutManager.HORIZONTAL, false)
+    layoutManager.setPostLayoutListener(new CarouselZoomPostLayoutListener)
+    layoutManager.setMaxVisibleItems(ElectrumWallet.MAX_RECEIVE_ADDRESSES)
 
-      // Allow MAX_RECEIVE_ADDRESSES - 16 (first 4 addresses) to be seen to not make it crowded
-      allAddresses = response.keys.dropRight(16).map(response.ewt.textAddress).map(BitcoinUri.fromRaw)
-      addresses = allAddresses.take(1)
+    // Allow MAX_RECEIVE_ADDRESSES - 16 (first 4 addresses) to be seen to not make it crowded
+    allAddresses = response.keys.dropRight(16).map(spec.data.ewt.textAddress).map(BitcoinUri.fromRaw)
+    addresses = allAddresses.take(1)
 
-      chainQrMore setOnClickListener onButtonTap {
-        // Show all remaining QR images right away
-        addresses = allAddresses
+    chainQrMore setOnClickListener onButtonTap {
+      // Show all remaining QR images right away
+      addresses = allAddresses
 
-        // Animate list changes and remove a button since it gets useless
-        adapter.notifyItemRangeInserted(1, allAddresses.size - 1)
-        chainQrMore.setVisibility(View.GONE)
-      }
-
-      chainQrCodes.addOnScrollListener(new CenterScrollListener)
-      chainQrCodes.setLayoutManager(layoutManager)
-      chainQrCodes.setHasFixedSize(true)
-      chainQrCodes.setAdapter(adapter)
+      // Animate list changes and remove a button since it gets useless
+      adapter.notifyItemRangeInserted(1, allAddresses.size - 1)
+      chainQrMore.setVisibility(View.GONE)
     }
 
-    val text = chainWalletNotice(wallet) map { textRes =>
+    chainQrCodes.addOnScrollListener(new CenterScrollListener)
+    chainQrCodes.setLayoutManager(layoutManager)
+    chainQrCodes.setHasFixedSize(true)
+    chainQrCodes.setAdapter(adapter)
+
+    val text = chainWalletNotice(spec) map { textRes =>
       getString(dialog_receive_btc) + "<br>" + getString(textRes)
     } getOrElse getString(dialog_receive_btc)
     chainQrCaption.setText(text.html)
   }
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
-    case chainWallet: ElectrumEclairWallet => runAnd(wallet = chainWallet)(showCode)
+    case key: ExtendedPublicKey => runAnd(spec = ElectrumWallet specs key)(showQRCode)
     case _ => finish
   }
 }

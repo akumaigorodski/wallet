@@ -42,19 +42,20 @@ class SQLiteTx(val db: DBInterface) {
     DbStreams.next(DbStreams.txDbStream)
   }
 
-  def addTx(tx: Transaction, depth: Long, received: Satoshi, sent: Satoshi, fee: Satoshi, xPub: Seq[ExtendedPublicKey],
+  def addTx(tx: Transaction, depth: Long, received: Satoshi, sent: Satoshi, fee: Satoshi, xPubs: Seq[ExtendedPublicKey],
             description: TxDescription, isIncoming: Long, fiatRateSnap: Fiat2Btc, stamp: Long): Unit = {
 
     val newSqlPQ = db.makePreparedQuery(TxTable.newSql)
-    db.change(newSqlPQ, tx.toString, tx.txid.toHex, xPub.map(_.publicKey.toString).toJson.compactPrint /* WHICH WALLETS IS IT FROM */, depth: JLong,
-      received.toLong: JLong, sent.toLong: JLong, fee.toLong: JLong, stamp: JLong /* SEEN */, stamp: JLong /* UPDATED */, description.toJson.compactPrint,
-      0L: JLong /* USED TO BE BALANCE SNAPSHOT */, fiatRateSnap.toJson.compactPrint, isIncoming: JLong, 0L: JLong /* NOT DOUBLE SPENT YET */)
+    db.change(newSqlPQ, tx.toString, tx.txid.toHex, xPubs.toJson.compactPrint /* WHICH WALLETS IS IT FROM */, depth: JLong,
+      received.toLong: JLong, sent.toLong: JLong, fee.toLong: JLong, stamp: JLong /* SEEN */, stamp: JLong /* UPDATED */,
+      description.toJson.compactPrint, 0L: JLong /* USED TO BE BALANCE SNAPSHOT */, fiatRateSnap.toJson.compactPrint,
+      isIncoming: JLong, 0L: JLong /* NOT DOUBLE SPENT YET */)
     DbStreams.next(DbStreams.txDbStream)
     newSqlPQ.close
   }
 
   def toTxInfo(rc: RichCursor): Option[TxInfo] = Try {
-    TxInfo(txString = rc string TxTable.rawTx, txidString = rc string TxTable.txid, pubKeysString = rc string TxTable.pub, depth = rc long TxTable.depth,
+    TxInfo(txString = rc string TxTable.rawTx, txidString = rc string TxTable.txid, extPubsString = rc string TxTable.pub, depth = rc long TxTable.depth,
       receivedSat = Satoshi(rc long TxTable.receivedSat), sentSat = Satoshi(rc long TxTable.sentSat), feeSat = Satoshi(rc long TxTable.feeSat), seenAt = rc long TxTable.seenAt,
       updatedAt = rc long TxTable.updatedAt, description = to[TxDescription](rc string TxTable.description), balanceSnapshot = MilliSatoshi(rc long TxTable.balanceMsat),
       fiatRatesString = rc string TxTable.fiatRates, incoming = rc long TxTable.incoming, doubleSpent = rc long TxTable.doubleSpent)
