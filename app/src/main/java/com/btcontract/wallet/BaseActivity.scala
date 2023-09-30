@@ -55,7 +55,6 @@ import scala.util.{Failure, Success, Try}
 object BaseActivity {
   implicit class StringOps(source: String) {
     def html: Spanned = android.text.Html.fromHtml(source)
-    def humanFour: String = source.grouped(4).mkString(s"\u0020")
 
     def short: String = {
       val len = source.length
@@ -153,7 +152,7 @@ trait BaseActivity extends AppCompatActivity { me =>
   def chainWalletNotice(wallet: WalletSpec): Option[Int] = {
     if (wallet.info.core.attachedMaster.isDefined) Some(attached_wallet)
     else if (wallet.info.core.masterFingerprint.nonEmpty) Some(hardware_wallet)
-    else if (wallet.data.ewt.secrets.isEmpty) Some(watching_wallet)
+    else if (wallet.data.keys.ewt.secrets.isEmpty) Some(watching_wallet)
     else None
   }
 
@@ -664,7 +663,7 @@ trait BaseActivity extends AppCompatActivity { me =>
   }
 
   def walletBackground(specs: Seq[WalletSpec] = Nil): Int = {
-    val containsSigning = specs.exists(_.data.ewt.secrets.nonEmpty)
+    val containsSigning = specs.exists(_.data.keys.ewt.secrets.nonEmpty)
     val containsHardware = specs.exists(_.info.core.masterFingerprint.nonEmpty)
     if (containsSigning && containsHardware) R.color.cardBitcoinMixed
     else if (containsHardware) R.color.cardBitcoinHardware
@@ -773,7 +772,7 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
     }
 
     def selectedBackground(spec: WalletSpec): Int = {
-      val containsSigning = spec.data.ewt.secrets.nonEmpty
+      val containsSigning = spec.data.keys.ewt.secrets.nonEmpty
       val containsHardware = spec.info.core.masterFingerprint.nonEmpty
       if (containsSigning && containsHardware) R.drawable.border_card_mixed_on
       else if (containsHardware) R.drawable.border_card_hardware_on
@@ -782,8 +781,8 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
 
     def updateView(spec: WalletSpec): Unit = {
       val hasMoney = spec.info.lastBalance > 0L.sat
-      val zeroColor = if (spec.data.ewt.secrets.nonEmpty) signCardZero else watchCardZero
-      val bgResource = if (selected contains spec.data.ewt.xPub) selectedBackground(spec) else host.walletBackground(spec :: Nil)
+      val zeroColor = if (spec.data.keys.ewt.secrets.nonEmpty) signCardZero else watchCardZero
+      val bgResource = if (selected contains spec.data.keys.ewt.xPub) selectedBackground(spec) else host.walletBackground(spec :: Nil)
       host.setVisMany(hasMoney -> chainBalanceWrap, !hasMoney -> receiveBitcoinTip, spec.info.isCoinControlOn -> coinControlOn)
       chainBalance.setText(WalletApp.denom.parsedWithSign(spec.info.lastBalance.toMilliSatoshi, cardIn, zeroColor).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman spec.info.lastBalance.toMilliSatoshi)
@@ -794,10 +793,10 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
       }
 
       chainLabel setText spec.info.label.asSome.filter(_.trim.nonEmpty).getOrElse(spec.info.core.walletType)
-      coinControl setOnClickListener host.onButtonTap(me onCoinControlTap spec.data.ewt.xPub)
-      setItemLabel setOnClickListener host.onButtonTap(me onLabelTap spec.data.ewt.xPub)
-      removeItem setOnClickListener host.onButtonTap(me onRemoveTap spec.data.ewt.xPub)
-      chainWrap setOnClickListener host.onButtonTap(me onWalletTap spec.data.ewt.xPub)
+      coinControl setOnClickListener host.onButtonTap(me onCoinControlTap spec.data.keys.ewt.xPub)
+      setItemLabel setOnClickListener host.onButtonTap(me onLabelTap spec.data.keys.ewt.xPub)
+      removeItem setOnClickListener host.onButtonTap(me onRemoveTap spec.data.keys.ewt.xPub)
+      chainWrap setOnClickListener host.onButtonTap(me onWalletTap spec.data.keys.ewt.xPub)
       chainContainer setBackgroundResource bgResource
     }
   }

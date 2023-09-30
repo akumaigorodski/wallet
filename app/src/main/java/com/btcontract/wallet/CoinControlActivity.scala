@@ -84,7 +84,7 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
 
       utxoCardContainer setOnClickListener onButtonTap {
         val excludedOutPoints1 = if (utxoIncluded.isChecked) excludedOutPoints + item.utxo.item.outPoint else excludedOutPoints - item.utxo.item.outPoint
-        ElectrumWallet.specs(spec.data.ewt.xPub).walletRef ! ElectrumWallet.SetExcludedOutPoints(excludedOutPoints1.toList)
+        ElectrumWallet.specs(spec.data.keys.ewt.xPub).walletRef ! ElectrumWallet.SetExcludedOutPoints(excludedOutPoints1.toList)
       }
 
       utxoAmount.setText(humanAmount.html)
@@ -114,7 +114,7 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
   def updateWallet: Unit = {
     TransitionManager.beginDelayedTransition(chooser.holder)
     // We can't use a spec directly here because we have an old copy
-    chooser.update(ElectrumWallet.specs.get(spec.data.ewt.xPub).toList)
+    chooser.update(ElectrumWallet.specs.get(spec.data.keys.ewt.xPub).toList)
     chooser.unPadCards
   }
 

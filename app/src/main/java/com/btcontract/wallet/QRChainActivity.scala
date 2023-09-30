@@ -102,7 +102,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     layoutManager.setMaxVisibleItems(ElectrumWallet.MAX_RECEIVE_ADDRESSES)
 
     // Allow MAX_RECEIVE_ADDRESSES - 16 (first 4 addresses) to be seen to not make it crowded
-    allAddresses = response.keys.dropRight(16).map(spec.data.ewt.textAddress).map(BitcoinUri.fromRaw)
+    allAddresses = response.keys.dropRight(16).map(spec.data.keys.ewt.textAddress).map(BitcoinUri.fromRaw)
     addresses = allAddresses.take(1)
 
     chainQrMore setOnClickListener onButtonTap {

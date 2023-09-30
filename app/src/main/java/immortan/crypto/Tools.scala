@@ -45,7 +45,7 @@ object Tools {
   }
 
   def prepareBip84Psbt(response: GenerateTxResponse, hwSpec: WalletSpec): Psbt = {
-    require(response.usedWallets.contains(hwSpec.data.ewt), "Used wallets must contain a hardware wallet")
+    require(response.usedWallets.contains(hwSpec.data.keys.ewt), "Used wallets must contain a hardware wallet")
     val psbt1 = response.tx.txIn.zip(response.usedWallets).foldLeft(Psbt apply response.tx) { case (psbt, txIn \ ewt) =>
       // For now this will accept a tx with mixed inputs where at most one origin can be BIP84 hardware wallet
 
@@ -54,7 +54,7 @@ object Tools {
       val parentTx = spec.data.transactions(txIn.outPoint.txid)
 
       if (spec.info.core.walletType == ElectrumWallet.BIP84 && spec == hwSpec) {
-        val utxoPubKey = spec.data.publicScriptMap(parentTx.txOut(idx).publicKeyScript)
+        val utxoPubKey = spec.data.keys.publicScriptMap(parentTx.txOut(idx).publicKeyScript)
         val keyPathWithMaster = KeyPathWithMaster(hwSpec.info.core.masterFingerprint.get, utxoPubKey.path)
         psbt.updateWitnessInputTx(parentTx, derivationPaths = Map(utxoPubKey.publicKey -> keyPathWithMaster), outputIndex = idx).get
       } else if (spec.info.core.walletType == ElectrumWallet.BIP84) psbt.updateWitnessInputTx(parentTx, outputIndex = idx).get
@@ -63,7 +63,7 @@ object Tools {
 
     // Provide info about our change output
     response.tx.txOut.zipWithIndex.foldLeft(psbt1) { case (psbt, txOut \ index) =>
-      hwSpec.data.publicScriptChangeMap.get(key = txOut.publicKeyScript) map { changeKey =>
+      hwSpec.data.keys.publicScriptChangeMap.get(key = txOut.publicKeyScript) map { changeKey =>
         val keyPathWithMaster = KeyPathWithMaster(hwSpec.info.core.masterFingerprint.get, changeKey.path)
         psbt.updateWitnessOutput(derivationPaths = Map(changeKey.publicKey -> keyPathWithMaster), outputIndex = index).get
       } getOrElse psbt

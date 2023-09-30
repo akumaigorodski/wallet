@@ -198,7 +198,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
 
   def makeSigningWalletTypes(host: LinearLayout, title: String, master: ExtendedPrivateKey): Unit = {
     def find(walletType: String): Option[WalletSpec] = ElectrumWallet.specs.values.find { spec =>
-      spec.data.ewt.secrets.exists(_.master == master) && spec.info.core.walletType == walletType
+      spec.data.keys.ewt.secrets.exists(_.master == master) && spec.info.core.walletType == walletType
     }
 
     val ws = for (Tuple2(tag, info \ path) <- wallets) yield s"<b>$tag</b> <i>$path</i><br>$info".html
@@ -213,7 +213,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
         if (list isItemChecked itemPosition) {
           val ewt = ElectrumWalletType.makeSigningType(core.walletType, master, chainHash)
           ElectrumWallet addWallet ElectrumWallet.makeSigningWalletParts(core, ewt, Satoshi(0L), core.walletType)
-        } else find(core.walletType).foreach(spec => ElectrumWallet removeWallet spec.data.ewt.xPub)
+        } else find(core.walletType).foreach(spec => ElectrumWallet removeWallet spec.data.keys.ewt.xPub)
         HubActivity.instance.walletCards.resetChainCards
       }
     }

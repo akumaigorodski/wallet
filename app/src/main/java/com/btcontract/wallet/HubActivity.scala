@@ -205,7 +205,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
       def attempt(alert: AlertDialog): Unit = {
         // Transaction could have gotten a confirmation while user was filling a form
-        val sanityCheck = ElectrumWallet.doubleSpent(specs.head.data.ewt.xPub, info.tx)
+        val sanityCheck = ElectrumWallet.doubleSpent(specs.head.data.keys.ewt.xPub, info.tx)
         if (sanityCheck.depth > 0 || sanityCheck.isDoubleSpent) return
 
         val cpfpBumpOrder = SemanticOrder(info.txid.toHex, System.currentTimeMillis)
@@ -289,7 +289,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
       def attempt(alert: AlertDialog): Unit = {
         // Transaction could have gotten a confirmation while user was filling a form
-        val sanityCheck = ElectrumWallet.doubleSpent(specs.head.data.ewt.xPub, info.tx)
+        val sanityCheck = ElectrumWallet.doubleSpent(specs.head.data.keys.ewt.xPub, info.tx)
         if (sanityCheck.depth > 0 || sanityCheck.isDoubleSpent) return
 
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_BOOST)
@@ -375,7 +375,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
       def attempt(alert: AlertDialog): Unit = {
         // Transaction could have gotten a confirmation while user was filling a form
-        val sanityCheck = ElectrumWallet.doubleSpent(specs.head.data.ewt.xPub, info.tx)
+        val sanityCheck = ElectrumWallet.doubleSpent(specs.head.data.keys.ewt.xPub, info.tx)
         if (sanityCheck.depth > 0 || sanityCheck.isDoubleSpent) return
 
         val rbfParams = RBFParams(info.txid, TxDescription.RBF_CANCEL)
@@ -715,7 +715,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
           for {
             txInfo <- txInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
             relatedSpec <- txInfo.extPubs.flatMap(ElectrumWallet.specs.get).headOption
-            doubleSpentResult = ElectrumWallet.doubleSpent(relatedSpec.data.ewt.xPub, txInfo.tx)
+            doubleSpentResult = ElectrumWallet.doubleSpent(relatedSpec.data.keys.ewt.xPub, txInfo.tx)
             if doubleSpentResult.depth != txInfo.depth || doubleSpentResult.isDoubleSpent != txInfo.isDoubleSpent
           } WalletApp.txDataBag.updStatus(txInfo.txid, doubleSpentResult.depth, doubleSpentResult.stamp, doubleSpentResult.isDoubleSpent)
 
