@@ -29,8 +29,8 @@
     <string name="action_recovery_phrase_hint">Введіть ключові слова</string>
 
     <string name="dialog_ok">ОК</string>
+    <string name="dialog_share">Share</string>
     <string name="dialog_cancel">Скасувати</string>
-    <string name="dialog_share">Поділитися</string>
     <string name="dialog_boost">Підсилити</string>
     <string name="dialog_paste">Вставити</string>
     <string name="dialog_copy">Копія</string>
@@ -45,7 +45,7 @@
     <string name="dialog_receive_btc"><![CDATA[Отримати на <b>Біткоїн</b>-адресу]]></string>
 
     <string name="dialog_up_to"><![CDATA[<b>до</b> %1$s]]></string>
-    <string name="dialog_fee_sat_vbyte"><![CDATA[<b>комісія</b> %1$s sat/vB]]></string>
+    <string name="dialog_fee_sat_vbyte"><![CDATA[<b>ціна</b> %1$s sat/vB]]></string>
     <string name="dialog_change_feerate">Змінити комісію&#8230;</string>
     <string name="dialog_insufficient_funds">недостатньо коштів</string>
 
