@@ -11,7 +11,7 @@
     <string name="coin_control">Контроль монет</string>
 
     <string name="bitcoin_wallet">Біткоїн</string>
-    <string name="typing_hints">Адреса Біткоїна</string>
+    <string name="typing_hints">Біткоїн-адреса</string>
     <string name="copied_to_clipboard">Скопійовано у буфер</string>
     <string name="add_address">Більше нових адрес</string>
 
@@ -22,10 +22,10 @@
     <string name="setup_create_new">Новий гаманець</string>
     <string name="setup_restore_existing">Відновити гаманець</string>
 
-    <string name="setup_create_new_hint">Новий гаманець Біткоїна з новою ключовою фразою буде створено з нуля.</string>
+    <string name="setup_create_new_hint">Новий Біткоїн-гаманець з новою фразою відновлення буде створено з нуля.</string>
     <string name="share_chain_tx" translatable="false">Біткоїн транзакція hex\n\n%1$s</string>
 
-    <string name="action_recovery_phrase_title">Ключова фраза для відновлення</string>
+    <string name="action_recovery_phrase_title">Фраза для відновлення</string>
     <string name="action_recovery_phrase_hint">Введіть ключові слова</string>
 
     <string name="dialog_ok">ОК</string>
@@ -42,17 +42,17 @@
     <string name="dialog_add_description">Додати опис&#8230;</string>
     <string name="dialog_set_label">Додати мітку&#8230;</string>
 
-    <string name="dialog_receive_btc"><![CDATA[Отримати на <b>Біткоїн</b> адресу]]></string>
+    <string name="dialog_receive_btc"><![CDATA[Отримати на <b>Біткоїн</b>-адресу]]></string>
 
     <string name="dialog_up_to"><![CDATA[<b>до</b> %1$s]]></string>
     <string name="dialog_fee_sat_vbyte"><![CDATA[<b>комісія</b> %1$s sat/vB]]></string>
     <string name="dialog_change_feerate">Змінити комісію&#8230;</string>
     <string name="dialog_insufficient_funds">недостатньо коштів</string>
 
-    <string name="dialog_send_btc"><![CDATA[Надіслати <b>Біткоїн</b> транзакцію<br><b>на адресу</b> %1$s%2$s]]></string>
-    <string name="dialog_send_btc_many"><![CDATA[Надіслати <b>Біткоїн</b> транзакцію<br><b>на багато адрес</b>]]></string>
+    <string name="dialog_send_btc"><![CDATA[Надіслати <b>Біткоїн</b>-транзакцію<br><b>на адресу</b> %1$s%2$s]]></string>
+    <string name="dialog_send_btc_many"><![CDATA[Надіслати <b>Біткоїн</b>-транзакцію<br><b>на багато адрес</b>]]></string>
     <string name="dialog_send_btc_confirm_amount">Надіслати суму</string>
-    <string name="dialog_send_btc_confirm_fiat">Вартість у фіаті</string>
+    <string name="dialog_send_btc_confirm_fiat">Фіатна вартість</string>
     <string name="dialog_send_btc_confirm_fee">Комісія</string>
 
     <string name="recovery_phrase_warning">Торкніться щоб зберегти <b>фразу відновлення гаманця</b> на випадок якщо ви коли-небудь втратите або заміните цей телефон.</string>
@@ -68,9 +68,9 @@
 
     <!-- special tx/payment descriptions -->
 
-    <string name="tx_description_rbf_cancel">Відміна RBF</string>
-    <string name="tx_description_rbf_boost">Підсилення RBF</string>
-    <string name="tx_description_cpfp">Підсилення CPFP</string>
+    <string name="tx_description_rbf_cancel">RBF-відміна</string>
+    <string name="tx_description_rbf_boost">RBF-підсилення</string>
+    <string name="tx_description_cpfp">CPFP-підсилення</string>
 
     <string name="tx_btc">Біткоїн-транзакція</string>
     <string name="tx_state_double_spent">відміна</string>
@@ -78,7 +78,7 @@
     <string name="popup_to_address"><![CDATA[<b>адреса</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 
-    <string name="popup_fiat"><![CDATA[<b>вартість у фіаті</b>&#160;%1$s&#160;(%2$s)]]></string>
+    <string name="popup_fiat"><![CDATA[<b>фіатна вартість</b>&#160;%1$s&#160;(%2$s)]]></string>
     <string name="popup_chain_fee"><![CDATA[<b>комісія</b>&#160;%1$s]]></string>
 
     <!-- /special tx/payment descriptions -->
@@ -112,7 +112,7 @@
 
     <string name="tx_cpfp_current">Поточна сума</string>
     <string name="tx_cpfp_rbf_after">Після підсилення</string>
-    <string name="tx_cpfp_explain">Застосуйте CPFP до цієї вхідної транзакції щоб <b>збільшити її комісію та пришвидшити підтвердження</b></string>
+    <string name="tx_cpfp_explain">Застосуйте CPFP до цієї вхідної транзакції щоб збільшити її комісію та пришвидшити підтвердження</string>
 
     <string name="tx_rbf_current">Поточна комісія</string>
     <string name="tx_rbf_boost_explain"><![CDATA[Застосуйте RBF до цієї вихідної транзакції щоб <b>збільшити її комісію та пришвидшити підтвердження</b>]]></string>
@@ -122,6 +122,6 @@
 
     <!-- /CPFP/RBF -->
 
-    <string name="confirm_remove_item">&#9888; Ви хочете видалити цей елемент?</string>
+    <string name="confirm_remove_item">&#9888; Хочете видалити цей елемент?</string>
     <string name="dialog_requested"><![CDATA[<b>запит</b>&#160;%1$s]]></string>
 </resources>
