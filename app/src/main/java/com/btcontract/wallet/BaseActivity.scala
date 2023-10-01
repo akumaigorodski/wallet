@@ -340,7 +340,6 @@ trait BaseActivity extends AppCompatActivity { me =>
   implicit class TitleView(titleText: String) {
     val view: LinearLayout = getLayoutInflater.inflate(R.layout.frag_top_tip, null).asInstanceOf[LinearLayout]
     val flow: FlowLayout = view.findViewById(R.id.tipExtraTags).asInstanceOf[FlowLayout]
-    val backArrow: ImageView = view.findViewById(R.id.backArrow).asInstanceOf[ImageView]
     val tipTitle: TextView = clickableTextField(view findViewById R.id.tipTitle)
     tipTitle.setText(titleText.html)
 

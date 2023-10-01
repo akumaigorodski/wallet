@@ -119,17 +119,10 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
   }
 
   def showWalletInfo: Unit = {
-    val title = new TitleView(me getString coin_control)
-    title.view.setOnClickListener(me onButtonTap finish)
-    title.backArrow.setVisibility(View.VISIBLE)
-    coinControlContainer.addView(title.view, 0)
-
-    chooser = new ChainWalletCards(me) {
-      val holder: LinearLayout = findViewById(R.id.chainCardContainer).asInstanceOf[LinearLayout]
-    }
-
-    ElectrumWallet.catcher ! chainListener
+    val container = findViewById(R.id.chainCardContainer).asInstanceOf[LinearLayout]
+    chooser = new ChainWalletCards(me) { val holder: LinearLayout = container }
     txLabels = WalletApp.txDataBag.listAllDescriptions
+    ElectrumWallet.catcher ! chainListener
     chooser.init(1)
     updateWallet
 
@@ -137,8 +130,8 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
     utxoList.setDividerHeight(0)
     utxoList.setDivider(null)
 
-    for (message <- spec.data.lastReadyMessage)
-      chainListener.onWalletReady(message)
+    coinControlContainer.addView(new TitleView(me getString coin_control).view, 0)
+    spec.data.lastReadyMessage.foreach(chainListener.onWalletReady)
   }
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {
