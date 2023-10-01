@@ -60,13 +60,13 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   // PAYMENT LIST
 
   def loadRecentTxInfos: Unit = {
-    val recent = WalletApp.txDataBag.listRecentTxs(10).flatMap(WalletApp.txDataBag.toTxInfo)
+    val recent = WalletApp.txDataBag.listRecentTxs(10).map(WalletApp.txDataBag.toTxInfo)
     txInfos = recent.take(5) ++ recent.drop(5).filter(info => !info.isConfirmed && !info.isDoubleSpent)
   }
 
   def loadSearchedTxInfos(query: String): Unit = {
     val found = WalletApp.txDataBag.searchTransactions(query)
-    txInfos = found.flatMap(WalletApp.txDataBag.toTxInfo)
+    txInfos = found.map(WalletApp.txDataBag.toTxInfo)
   }
 
   def fillAllInfos: Unit = {
@@ -489,14 +489,14 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       case _ if transactionInfo.description.cpfpOf.isDefined => getString(tx_description_cpfp)
       case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => getString(tx_description_rbf_boost)
       case _ if transactionInfo.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => getString(tx_description_rbf_cancel)
-      case plain: PlainTxDescription => plain.addresses.headOption.map(_.short) getOrElse getString(tx_btc)
+      case _ => transactionInfo.description.addresses.headOption.map(_.short) getOrElse getString(tx_btc)
     }
 
     def setTxTypeIcon(info: TxInfo): Unit = info.description match {
       case _ if info.description.cpfpOf.isDefined => setVisibleIcon(id = R.id.btcInBoosted)
       case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_BOOST) => setVisibleIcon(id = R.id.btcOutBoosted)
       case _ if info.description.rbf.exists(_.mode == TxDescription.RBF_CANCEL) => setVisibleIcon(id = R.id.btcOutCancelled)
-      case _: PlainTxDescription if info.isIncoming => setVisibleIcon(id = R.id.btcIncoming)
+      case _ if info.isIncoming => setVisibleIcon(id = R.id.btcIncoming)
       case _ => setVisibleIcon(id = R.id.btcOutgoing)
     }
 

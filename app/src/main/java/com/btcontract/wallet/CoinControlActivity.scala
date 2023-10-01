@@ -15,7 +15,7 @@ import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.WalletReady
 import fr.acinq.eclair.blockchain.electrum.{ElectrumWallet, Utxo, WalletSpec}
 import immortan.TxDescription
 import immortan.crypto.Tools._
-import immortan.utils.{Haiku, InputParser, WalletEventsCatcher, WalletEventsListener}
+import immortan.utils._
 
 
 class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { me =>

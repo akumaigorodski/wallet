@@ -81,11 +81,12 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
   implicit object TxDescriptionFmt extends JsonFormat[TxDescription] {
     def read(raw: JsValue): TxDescription = raw.asJsObject.fields(TAG) match {
       case JsString("PlainTxDescription") => raw.convertTo[PlainTxDescription]
-      case _ => throw new Exception
+      case _ => raw.convertTo[FallbackTxDescription]
     }
 
     def write(internal: TxDescription): JsValue = internal match {
       case txDescription: PlainTxDescription => txDescription.toJson
+      case txDescription: FallbackTxDescription => txDescription.toJson
       case _ => throw new Exception
     }
   }
@@ -95,6 +96,10 @@ object ImplicitJsonFormats extends DefaultJsonProtocol {
   implicit val plainTxDescriptionFmt: JsonFormat[PlainTxDescription] =
     taggedJsonFmt(jsonFormat[StringList, Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
       PlainTxDescription](PlainTxDescription.apply, "addresses", "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "PlainTxDescription")
+
+  implicit val fallbackTxDescriptionFmt: JsonFormat[FallbackTxDescription] =
+    taggedJsonFmt(jsonFormat[Option[String], Option[SemanticOrder], Option[ByteVector32], Option[ByteVector32], Option[RBFParams],
+      FallbackTxDescription](FallbackTxDescription.apply, "label", "semanticOrder", "cpfpBy", "cpfpOf", "rbf"), tag = "FallbackTxDescription")
 
   // Fiat feerates
 

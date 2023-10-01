@@ -33,11 +33,6 @@ sealed trait TransactionDescription {
   val label: Option[String]
 }
 
-object EmptyTransactionDescription extends TransactionDescription {
-  val semanticOrder: Option[SemanticOrder] = None
-  val label: Option[String] = None
-}
-
 sealed trait TransactionDetails {
   var isExpandedItem: Boolean = true
   // We order items on UI by when they were first seen
@@ -100,4 +95,15 @@ case class PlainTxDescription(addresses: StringList,
   override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = if (semanticOrder.isDefined) me else copy(semanticOrder = order)
   override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
   override def withNewCPFPBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
+}
+
+case class FallbackTxDescription(label: Option[String] = None, semanticOrder: Option[SemanticOrder] = None,
+                                 cpfpBy: Option[ByteVector32] = None, cpfpOf: Option[ByteVector32] = None,
+                                 rbf: Option[RBFParams] = None) extends TxDescription { me =>
+
+  override def queryText(txid: ByteVector32): String = txid.toHex + SEPARATOR + label.getOrElse(new String)
+  override def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription = copy(semanticOrder = order)
+  override def withNewLabel(label1: Option[String] = None): TxDescription = copy(label = label1)
+  override def withNewCPFPBy(txid: ByteVector32): TxDescription = copy(cpfpBy = txid.asSome)
+  def addresses: StringList = Nil
 }
