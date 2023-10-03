@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.{LayoutInflater, View, ViewGroup}
 import android.widget.{ImageButton, TextView}
 import androidx.appcompat.view.ContextThemeWrapper
+import com.btcontract.wallet.utils.InputParser
 import com.btcontract.wallet.{BaseActivity, R, WalletApp}
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.journeyapps.barcodescanner.{BarcodeCallback, BarcodeResult, BarcodeView}
@@ -17,7 +18,6 @@ import fr.acinq.bitcoin.{Block, ByteVector32, Protocol}
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet
 import immortan.crypto.Tools._
 import immortan.utils.ImplicitJsonFormats._
-import immortan.utils.InputParser
 import scodec.bits.ByteVector
 import spray.json._
 

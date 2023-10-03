@@ -139,7 +139,7 @@ class SetupActivity extends BaseActivity with MnemonicActivity { me =>
 
   val proceedWithMnemonics: StringList => Unit = mnemonic => {
     val walletSeed = MnemonicCode.toSeed(mnemonic, passphrase = new String)
-    val keys = LightningNodeKeys.makeFromSeed(walletSeed.toArray)
+    val keys = LightningNodeKeys.fromSeed(walletSeed.toArray)
     val secret = WalletSecret(keys, mnemonic, walletSeed)
     WalletApp.extDataBag.putSecret(secret)
     WalletApp.makeOperational(secret)

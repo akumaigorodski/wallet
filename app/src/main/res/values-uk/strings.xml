@@ -11,7 +11,7 @@
     <string name="coin_control">Контроль монет</string>
 
     <string name="bitcoin_wallet">Біткоїн</string>
-    <string name="typing_hints">Біткоїн-адреса</string>
+    <string name="typing_hints">Біткоїн-адреса чи Login-код</string>
     <string name="copied_to_clipboard">Скопійовано у буфер</string>
     <string name="add_address">Більше нових адрес</string>
 
@@ -122,6 +122,25 @@
 
     <!-- /CPFP/RBF -->
 
-    <string name="confirm_remove_item">&#9888; Хочете видалити цей елемент?</string>
+    <!-- lnurl-auth -->
+
+    <string name="lnurl_auth_register">Реєстрація</string>
+    <string name="lnurl_auth_auth">Авторизація</string>
+    <string name="lnurl_auth_link">Приєднати</string>
+    <string name="lnurl_auth_login">Вхід</string>
+
+    <string name="lnurl_auth_register_ok">Реєстрація успішна</string>
+    <string name="lnurl_auth_login_ok">Вхід здійснено</string>
+    <string name="lnurl_auth_auth_ok">Авторизовано</string>
+    <string name="lnurl_auth_link_ok">Приєднано</string>
+
+    <string name="lnurl_auth_info"><![CDATA[
+        Ось ключ авторизації, згенерований вашим гаманцем для <i>%1$s</i>:<br><br><strong>%2$s</strong>.
+        <br><br>Він буде використаний для анонімної авторизації на <i>%1$s</i>, жодні особисті дані не будуть розкриті.
+    ]]></string>
+
+    <!-- /lnurl-auth -->
+
+    <string name="confirm_remove_item">&#9888; Бажаєте видалити цей елемент?</string>
     <string name="dialog_requested"><![CDATA[<b>запит</b>&#160;%1$s]]></string>
 </resources>

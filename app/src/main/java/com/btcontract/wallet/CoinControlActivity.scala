@@ -7,7 +7,9 @@ import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.TransitionManager
 import com.btcontract.wallet.BaseActivity.StringOps
+import com.btcontract.wallet.Colors.{cardIn, cardOut, cardZero}
 import com.btcontract.wallet.R.string._
+import com.btcontract.wallet.utils.InputParser
 import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
@@ -78,7 +80,8 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
 
     def setUtxoView(item: UnspentOutputLine): Unit = {
       setVisMany(false -> txLabelOrId, true -> utxoWrap)
-      val humanAmount = HubActivity.incoming(item.utxo.item.value.sat.toMilliSatoshi)
+      val amount = item.utxo.item.value.sat.toMilliSatoshi
+      val humanAmount = WalletApp.denom.directedWithSign(amount, 0L.msat, cardOut, cardIn, cardZero, isIncoming = true)
       val isExcluded = excludedOutPoints.contains(item.utxo.item.outPoint)
       val utxoName = Haiku.name(item.utxo.key.publickeybytes)
 

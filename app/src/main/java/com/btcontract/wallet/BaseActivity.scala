@@ -23,6 +23,7 @@ import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.sheets.HasUrDecoder
+import com.btcontract.wallet.utils.{BitcoinUri, InputParser}
 import com.chauthai.swipereveallayout.SwipeRevealLayout
 import com.cottacush.android.currencyedittext.CurrencyEditText
 import com.google.android.material.slider.Slider

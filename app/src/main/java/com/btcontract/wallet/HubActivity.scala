@@ -14,6 +14,7 @@ import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.HubActivity._
 import com.btcontract.wallet.R.string._
+import com.btcontract.wallet.utils._
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
 import com.danilomendes.progressbar.InvertedTextProgressbar
 import com.ornach.nobobutton.NoboButton
@@ -41,10 +42,6 @@ object HubActivity {
   var txInfos: Iterable[TxInfo] = Nil
   var allInfos: Seq[TransactionDetails] = Nil
   var instance: HubActivity = _
-
-  def incoming(amount: MilliSatoshi): String =
-    WalletApp.denom.directedWithSign(amount, 0L.msat,
-      cardOut, cardIn, cardZero, isIncoming = true)
 }
 
 class HubActivity extends BaseActivity with ExternalDataChecker { me =>
@@ -665,6 +662,9 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         else if (usable.size == 1) bringSendMultiBitcoinPopup(usable, a2a)
         else bringMultiAddressSelector(a2a)
 
+      case lnUrl: LNUrl if lnUrl.isAuth =>
+        showAuthForm(lnUrl)
+
       case _ =>
         whenNone.run
     }
@@ -975,5 +975,35 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     WalletApp.seenTxInfos.remove(failedTxid)
     DbStreams.next(DbStreams.txDbStream)
     onFail(message)
+  }
+
+  // LNAuth
+
+  def showAuthForm(lnUrl: LNUrl): Unit = lnUrl.k1.foreach { k1 =>
+    val (successResource, actionResource) = lnUrl.authAction match {
+      case "register" => (lnurl_auth_register_ok, lnurl_auth_register)
+      case "auth" => (lnurl_auth_auth_ok, lnurl_auth_auth)
+      case "link" => (lnurl_auth_link_ok, lnurl_auth_link)
+      case _ => (lnurl_auth_login_ok, lnurl_auth_login)
+    }
+
+    val spec = LNUrlAuthSpec(lnUrl.uri.getHost, ByteVector32 fromValidHex k1)
+    val title = titleBodyAsViewBuilder(s"<big>${lnUrl.warnUri}</big>".asDefView, null)
+    mkCheckFormNeutral(doAuth, none, displayInfo, title, actionResource, dialog_cancel, question)
+
+    def displayInfo(alert: AlertDialog): Unit = {
+      val explanation = getString(lnurl_auth_info).format(lnUrl.warnUri, spec.linkingPubKey.short).html
+      mkCheckFormNeutral(_.dismiss, none, _ => share(spec.linkingPubKey), new AlertDialog.Builder(me).setMessage(explanation), dialog_ok, -1, dialog_share)
+    }
+
+    def doAuth(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
+      snack(contentWindow, lnUrl.warnUri.html, dialog_cancel) foreach { snack =>
+        val uri = lnUrl.uri.buildUpon.appendQueryParameter("sig", spec.derSignatureHex).appendQueryParameter("key", spec.linkingPubKey)
+        val level2Obs = LNUrl.level2DataResponse(uri).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
+        val level2Sub = level2Obs.subscribe(_ => UITask(WalletApp.app quickToast successResource).run, onFail)
+        val listener = onButtonTap(level2Sub.unsubscribe)
+        snack.setAction(dialog_cancel, listener).show
+      }
+    }
   }
 }

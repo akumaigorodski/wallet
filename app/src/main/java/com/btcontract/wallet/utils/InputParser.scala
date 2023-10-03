@@ -1,9 +1,10 @@
-package immortan.utils
+package com.btcontract.wallet.utils
 
+import com.btcontract.wallet.utils.InputParser._
 import fr.acinq.bitcoin.{BtcAmount, Satoshi, SatoshiLong}
 import fr.acinq.eclair._
 import immortan.crypto.Tools.trimmed
-import immortan.utils.InputParser._
+import immortan.utils.Denomination
 import immortan.utils.uri.Uri
 
 import scala.util.parsing.combinator.RegexParsers
@@ -28,11 +29,16 @@ object InputParser {
 
   def withoutSlashes(prefix: String, uri: Uri): String = prefix + removePrefix(uri.toString)
 
-  val bitcoin: String = "bitcoin:"
-
   def recordValue(raw: String): Unit = value = parse(raw)
 
-  def parse(rawInput: String): Any = {
+  private[this] val lnUrl = "(?im).*?(lnurl)([0-9]+[a-z0-9]+)".r.unanchored
+
+  val bitcoin: String = "bitcoin:"
+
+  def parse(rawInput: String): Any = rawInput take 2880 match {
+    case lnUrl(prefix, data) => LNUrl.fromBech32(s"$prefix$data")
+
+    case _ =>
       val withoutSlashes = removePrefix(rawInput).trim
       val addressToAmount = MultiAddressParser.parseAll(MultiAddressParser.parse, rawInput)
       addressToAmount getOrElse BitcoinUri.fromRaw(s"$bitcoin$withoutSlashes")

@@ -9,13 +9,14 @@ import com.azoft.carousellayoutmanager._
 import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
+import com.btcontract.wallet.utils.{BitcoinUri, InputParser}
 import com.ornach.nobobutton.NoboButton
 import fr.acinq.bitcoin.Btc
 import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.{ElectrumWallet, WalletSpec}
 import immortan.crypto.Tools._
-import immortan.utils.{BitcoinUri, Denomination, InputParser}
+import immortan.utils.Denomination
 
 import scala.util.Success
 

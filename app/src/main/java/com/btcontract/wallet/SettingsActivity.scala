@@ -160,7 +160,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
     showMnemonicInput(settings_add_recovery_phrase) { mnemonic =>
       val (container, extraInputLayout, extraInput) = singleInputPopup
       val bld = titleBodyAsViewBuilder(getString(settings_attached_label).asDefView, container)
-      val keys = LightningNodeKeys.makeFromSeed(MnemonicCode.toSeed(mnemonic, new String).toArray)
+      val keys = LightningNodeKeys.fromSeed(MnemonicCode.toSeed(mnemonic, new String).toArray)
       mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, bld, dialog_ok, dialog_cancel)
       extraInputLayout.setHint(dialog_set_label)
       showKeys(extraInput)

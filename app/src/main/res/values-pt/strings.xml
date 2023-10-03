@@ -11,7 +11,7 @@
     <string name="coin_control">Coin control</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
-    <string name="typing_hints">Endereço Bitcoin</string>
+    <string name="typing_hints">Endereço Bitcoin / Login code</string>
     <string name="copied_to_clipboard">Copiado para clipboard</string>
     <string name="add_address">Mais endereços novos</string>
 
@@ -120,6 +120,25 @@
     <string name="tx_rbf_err_parents_missing">Can not boost this transaction because its parents are missing in this wallet</string>
 
     <!-- /CPFP/RBF -->
+
+    <!-- lnurl-auth -->
+
+    <string name="lnurl_auth_register">Registrar</string>
+    <string name="lnurl_auth_login">Login</string>
+    <string name="lnurl_auth_auth">Auth</string>
+    <string name="lnurl_auth_link">Link</string>
+
+    <string name="lnurl_auth_register_ok">Registrado com sucesso</string>
+    <string name="lnurl_auth_login_ok">Login bem-sucedido</string>
+    <string name="lnurl_auth_auth_ok">Autorizado com sucesso</string>
+    <string name="lnurl_auth_link_ok">Link bem-sucedido</string>
+
+    <string name="lnurl_auth_info"><![CDATA[
+        Chave Auth gerada pela sua carteira para <i>%1$s</i>:<br><br><strong>%2$s</strong>.
+        <br><br>Ela será usada para autorização anônima em<i>%1$s</i>, nenhuma informação pessoal será revelada.
+    ]]></string>
+
+    <!-- /lnurl-auth -->
 
     <string name="confirm_remove_item">&#9888; Você quer remover este item?</string>
     <string name="dialog_requested"><![CDATA[<b>solicitado</b>&#160;%1$s]]></string>
