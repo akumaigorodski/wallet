@@ -4,6 +4,7 @@ import java.util.Date
 
 import fr.acinq.bitcoin.{ByteVector32, Satoshi, Transaction}
 import fr.acinq.eclair._
+import fr.acinq.eclair.blockchain.electrum.ElectrumWalletType
 import immortan.crypto.Tools.{Any2Some, ExtPubKeys, Fiat2Btc, SEPARATOR, StringList}
 import immortan.utils.ImplicitJsonFormats._
 
@@ -12,9 +13,9 @@ case class SemanticOrder(id: String, order: Long)
 case class RBFParams(ofTxid: ByteVector32, mode: Long)
 
 object SemanticOrder {
-  type SemanticGroup = Seq[TransactionDetails]
-  private def orderIdOrBaseId(details: TransactionDetails) = details.description.semanticOrder.map(_.id).getOrElse(details.identity)
-  private def orderOrMaxValue(details: TransactionDetails) = details.description.semanticOrder.map(_.order).getOrElse(Long.MaxValue)
+  type SemanticGroup = Seq[ItemDetails]
+  private def orderIdOrBaseId(details: ItemDetails) = details.description.semanticOrder.map(_.id).getOrElse(details.identity)
+  private def orderOrMaxValue(details: ItemDetails) = details.description.semanticOrder.map(_.order).getOrElse(Long.MaxValue)
 
   private def collapseChildren(items: SemanticGroup) = {
     items.tail.foreach(_.isExpandedItem = false)
@@ -28,12 +29,12 @@ object SemanticOrder {
       .flatten
 }
 
-sealed trait TransactionDescription {
+sealed trait ItemDescription {
   val semanticOrder: Option[SemanticOrder]
   val label: Option[String]
 }
 
-sealed trait TransactionDetails {
+sealed trait ItemDetails {
   var isExpandedItem: Boolean = true
   // We order items on UI by when they were first seen
   // We hide items depending on when they were updated
@@ -41,20 +42,31 @@ sealed trait TransactionDetails {
   def seenAt: Long
 
   val date: Date = new Date(updatedAt)
-  val description: TransactionDescription
+  val description: ItemDescription
   val identity: String
+}
+
+// Address descriptions
+
+case class AddressDescription(label: Option[String] = None) extends ItemDescription {
+  val semanticOrder: Option[SemanticOrder] = None
+}
+
+case class AddressInfo(identity: String, description: AddressDescription) extends ItemDetails {
+  def updatedAt: Long = 0L
+  def seenAt: Long = 0L
 }
 
 // Tx descriptions
 
 case class TxInfo(txString: String, txidString: String, extPubsString: String, depth: Long, receivedSat: Satoshi, sentSat: Satoshi,
                   feeSat: Satoshi, seenAt: Long, updatedAt: Long, description: TxDescription, balanceSnapshot: MilliSatoshi,
-                  fiatRatesString: String, incoming: Long, doubleSpent: Long) extends TransactionDetails {
+                  fiatRatesString: String, incoming: Long, doubleSpent: Long) extends ItemDetails {
 
   override val identity: String = txidString
 
   lazy val isIncoming: Boolean = 1L == incoming
-  
+
   lazy val isDoubleSpent: Boolean = 1L == doubleSpent
 
   lazy val isConfirmed: Boolean = depth > 0
@@ -68,7 +80,7 @@ case class TxInfo(txString: String, txidString: String, extPubsString: String, d
   lazy val tx: Transaction = Transaction.read(txString)
 }
 
-sealed trait TxDescription extends TransactionDescription {
+sealed trait TxDescription extends ItemDescription {
   def canBeCPFPd: Boolean = cpfpBy.isEmpty && cpfpOf.isEmpty
   def withNewOrderCond(order: Option[SemanticOrder] = None): TxDescription
   def withNewLabel(label1: Option[String] = None): TxDescription

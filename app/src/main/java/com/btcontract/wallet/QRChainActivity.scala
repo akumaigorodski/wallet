@@ -97,13 +97,13 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
   }
 
   def showQRCode: Unit = {
-    val response = ElectrumWallet.getReceiveAddresses(spec)
+    val keys = spec.data.firstUnusedAccountKeys.toList.sortBy(_.path.lastChildNumber)
     val layoutManager = new CarouselLayoutManager(CarouselLayoutManager.HORIZONTAL, false)
     layoutManager.setPostLayoutListener(new CarouselZoomPostLayoutListener)
     layoutManager.setMaxVisibleItems(ElectrumWallet.MAX_RECEIVE_ADDRESSES)
 
     // Allow MAX_RECEIVE_ADDRESSES - 16 (first 4 addresses) to be seen to not make it crowded
-    allAddresses = response.keys.dropRight(16).map(spec.data.keys.ewt.textAddress).map(BitcoinUri.fromRaw)
+    allAddresses = keys.dropRight(16).map(spec.data.keys.ewt.textAddress).map(BitcoinUri.fromRaw)
     addresses = allAddresses.take(1)
 
     chainQrMore setOnClickListener onButtonTap {

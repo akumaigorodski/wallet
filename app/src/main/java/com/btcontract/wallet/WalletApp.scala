@@ -171,7 +171,7 @@ object WalletApp {
         seenTxInfos.get(event.tx.txid) match {
           case Some(seen) => addChainTx(seen.receivedSat, seen.sentSat, seen.feeSat, seen.description, isIncoming = seen.incoming)
           case None if event.received > event.sent => addChainTx(event.received - event.sent, event.sent, Satoshi(0L), PlainTxDescription(event.addresses), isIncoming = 1L)
-          case None => // Do nothing here, we skip unseen sends because it's too hard to determine their details, especially if we have used multiple wallets
+          case None => addChainTx(event.received, event.sent - event.received, Satoshi(0L), PlainTxDescription(event.addresses), isIncoming = 0L)
         }
       }
     }

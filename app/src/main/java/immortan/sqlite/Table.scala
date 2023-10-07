@@ -41,7 +41,7 @@ object TxTable extends Table {
 
   val selectRecentSql = s"SELECT * FROM $table ORDER BY $id DESC LIMIT ?"
 
-  val searchSql = s"SELECT * FROM $table WHERE $txid IN (SELECT DISTINCT $txid FROM $fts$table WHERE $search MATCH ? LIMIT 100)"
+  val searchSql = s"SELECT * FROM $table WHERE $txid IN (SELECT DISTINCT $txid FROM $fts$table WHERE $search MATCH ? LIMIT 10)"
 
   // Updating
 

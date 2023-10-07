@@ -81,11 +81,6 @@ object ElectrumWallet extends CanBeShutDown {
     val fee: Satoshi
   }
 
-  case class GetCurrentReceiveAddressesResponse(keys: List[ExtendedPublicKey], changeKey: ExtendedPublicKey, ewt: ElectrumWalletType) extends Response {
-    def firstAccountAddress: String = ewt.textAddress(keys.head)
-    def changeAddress: String = ewt.textAddress(changeKey)
-  }
-
   case class CompleteTransactionResponse(pubKeyScriptToAmount: Map[ByteVector, Satoshi], usedWallets: Seq[ElectrumWalletType], tx: Transaction, fee: Satoshi) extends GenerateTxResponse
   case class SendAllResponse(pubKeyScriptToAmount: Map[ByteVector, Satoshi], usedWallets: Seq[ElectrumWalletType], tx: Transaction, fee: Satoshi) extends GenerateTxResponse
   case class RBFResponse(result: Either[Int, GenerateTxResponse] = PARENTS_MISSING.asLeft) extends Response
@@ -95,6 +90,12 @@ object ElectrumWallet extends CanBeShutDown {
   case class WalletReady(balance: Satoshi, height: Long, heightsCode: Int, xPub: ExtendedPublicKey, unExcludedUtxos: Seq[Utxo], excludedOutPoints: List[OutPoint] = Nil) extends WalletEvent
   case class TransactionReceived(tx: Transaction, depth: Long, stamp: Long, received: Satoshi, sent: Satoshi, addresses: StringList, xPubs: List[ExtendedPublicKey] = Nil) extends WalletEvent {
     def merge(that: TransactionReceived) = TransactionReceived(tx, min(depth, that.depth), min(stamp, that.stamp), received + that.received, sent + that.sent, addresses ++ that.addresses, xPubs ++ that.xPubs)
+  }
+
+  override def becomeShutDown: Unit = {
+    val actors = List(catcher, sync, pool)
+    val walletRefs = specs.values.map(_.walletRef)
+    for (actor <- walletRefs ++ actors) actor ! PoisonPill
   }
 
   def weight2feeMsat(feeratePerKw: FeeratePerKw, weight: Int): MilliSatoshi = MilliSatoshi(feeratePerKw.toLong * weight)
@@ -185,12 +186,6 @@ object ElectrumWallet extends CanBeShutDown {
 
   // API
 
-  def getReceiveAddresses(spec: WalletSpec): GetCurrentReceiveAddressesResponse = {
-    val changeKey = spec.data.firstUnusedChangeKeys.headOption.getOrElse(spec.data.keys.changeKeys.head)
-    val sortredAccountKeys = spec.data.firstUnusedAccountKeys.toList.sortBy(_.path.lastChildNumber)
-    GetCurrentReceiveAddressesResponse(sortredAccountKeys, changeKey, spec.data.keys.ewt)
-  }
-
   // scriptToAmount is empty if we send all, empty then updated to a single item if we send to an address, already non-empty if we batch
   def makeBatchTx(specs: Seq[WalletSpec], changeTo: WalletSpec, scriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw): GenerateTxResponse = {
     val changeScript = changeTo.data.keys.ewt.computePublicKeyScript(changeTo.data.firstUnusedChangeKeys.headOption.getOrElse(changeTo.data.keys.changeKeys.head).publicKey)
@@ -276,12 +271,6 @@ object ElectrumWallet extends CanBeShutDown {
     case ElectrumClient.ServerError(_: ElectrumClient.BroadcastTransaction, error) => Future(error.asSome)
     case res: ElectrumClient.BroadcastTransactionResponse if res.error.isDefined => Future(res.error)
     case _ => Future(None)
-  }
-
-  override def becomeShutDown: Unit = {
-    val actors = List(catcher, sync, pool)
-    val walletRefs = specs.values.map(_.walletRef)
-    for (actor <- walletRefs ++ actors) actor ! PoisonPill
   }
 
   // Wallet management API
@@ -548,7 +537,9 @@ case class ElectrumData(blockchain: Blockchain, keys: MemoizedKeys, excludedOutP
 
   lazy val currentReadyMessage: ElectrumWallet.WalletReady = ElectrumWallet.WalletReady(balance, blockchain.tip.height, proofs.hashCode + transactions.hashCode, keys.ewt.xPub, unExcludedUtxos, excludedOutPoints)
 
-  lazy val firstUnusedAccountKeys: immutable.Iterable[ExtendedPublicKey] = keys.accountKeyMap.collect { case (scriptHash, privKey) if status(scriptHash) == new String => privKey }
+  lazy val firstUnusedAccountKeys: immutable.Iterable[ExtendedPublicKey] = keys.accountKeyMap.collect {
+    case (scriptHash, pubAccountKey) if status(scriptHash) == new String => pubAccountKey
+  }
 
   lazy val firstUnusedChangeKeys: immutable.Iterable[ExtendedPublicKey] = {
     val usedChangeNumbers = transactions.values.flatMap(_.txOut).map(_.publicKeyScript).flatMap(keys.publicScriptChangeMap.get).map(_.path.lastChildNumber).toSet
@@ -588,6 +579,8 @@ case class ElectrumData(blockchain: Blockchain, keys: MemoizedKeys, excludedOutP
   def isMine(txIn: TxIn): Boolean = keys.ewt.extractPubKeySpentFrom(txIn).map(keys.ewt.writePublicKeyScriptHash).exists(keys.publicScriptMap.contains)
 
   def isMine(txOut: TxOut): Boolean = keys.publicScriptMap.contains(txOut.publicKeyScript)
+
+  def changePubKey: ExtendedPublicKey = firstUnusedChangeKeys.headOption.getOrElse(keys.changeKeys.head)
 
   def timestamp(txid: ByteVector32, headerDb: HeaderDb): Long = {
     val blockHeight = proofs.get(txid).map(_.blockHeight).getOrElse(default = 0)

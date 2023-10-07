@@ -20,8 +20,8 @@
     <LinearLayout
         android:clickable="true"
         android:focusable="true"
-        android:paddingTop="15dp"
-        android:paddingBottom="12dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
         android:layout_alignParentBottom="true"
         android:id="@+id/bottomActionBar"
         android:orientation="horizontal"

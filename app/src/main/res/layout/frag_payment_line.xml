@@ -55,6 +55,12 @@
                 android:orientation="horizontal"
                 android:gravity="center">
 
+                <!-- BTC address -->
+
+                <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/btcAddress">
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp" android:background="@drawable/ic_logo_bitcoin_24dp"/>
+                </LinearLayout>
+
                 <!-- BTC incoming -->
 
                 <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/btcIncoming">
@@ -85,8 +91,8 @@
                 <!-- BTC outgoing -->
 
                 <LinearLayout style="@style/Tag" android:gravity="center" android:orientation="horizontal" android:id="@+id/btcOutgoing">
-                    <ImageView style="@style/BoundedView" android:background="@drawable/ic_logo_bitcoin_24dp"/>
                     <ImageView style="@style/BoundedView" android:background="@drawable/baseline_arrow_upward_18"/>
+                    <ImageView style="@style/BoundedView" android:background="@drawable/ic_logo_bitcoin_24dp"/>
                 </LinearLayout>
 
                 <!-- Content -->
@@ -94,17 +100,14 @@
                 <LinearLayout
                     style="@style/FillingView"
                     android:orientation="vertical"
-                    android:paddingBottom="10dp"
+                    android:paddingBottom="11dp"
                     android:paddingStart="0dp"
                     android:paddingTop="10dp"
                     android:paddingEnd="15dp">
 
                     <!-- Top line -->
 
-                    <RelativeLayout
-                        android:id="@+id/detailsAndStatus"
-                        android:layout_marginBottom="10dp"
-                        style="@style/FillingView">
+                    <RelativeLayout style="@style/FillingView">
 
                         <ImageView
                             style="@style/BoundedView"
@@ -130,11 +133,20 @@
                             android:layout_centerVertical="true"
                             android:layout_alignParentEnd="true"/>
 
+                        <TextView
+                            style="@style/ChipTextGray"
+                            android:id="@+id/statusText"
+                            android:layout_centerVertical="true"
+                            android:layout_alignParentEnd="true"/>
+
                     </RelativeLayout>
 
                     <!-- Bottom line -->
 
-                    <RelativeLayout style="@style/FillingView">
+                    <RelativeLayout
+                        android:layout_marginTop="11dp"
+                        android:id="@+id/amountAndMeta"
+                        style="@style/FillingView">
 
                         <TextView
                             android:maxLines="1"

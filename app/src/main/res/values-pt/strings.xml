@@ -15,7 +15,7 @@
     <string name="copied_to_clipboard">Copiado para clipboard</string>
     <string name="add_address">Mais endereços novos</string>
 
-    <string name="search_recent">Procurar em eventos recentes</string>
+    <string name="search_recent">My transactions and addresses</string>
     <string name="emergency_mode">Alguma coisa deu errado</string>
     <string name="error_log">Export error logs</string>
 

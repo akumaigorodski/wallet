@@ -3,9 +3,9 @@
     style="@style/StandardLinearLayout"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:background="?attr/selectableItemBackground"
-    android:paddingBottom="20dp"
+    android:paddingBottom="25dp"
     android:paddingStart="15dp"
-    android:paddingTop="20dp"
+    android:paddingTop="25dp"
     android:paddingEnd="15dp"
     android:focusable="true"
     android:clickable="true">
