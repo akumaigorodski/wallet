@@ -649,8 +649,6 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     super.onDestroy
   }
 
-  override def onBackPressed: Unit = if (isSearchOn) rmSearch(null) else super.onBackPressed
-
   type GrantResults = Array[Int]
   override def onRequestPermissionsResult(reqCode: Int, permissions: Array[String], results: GrantResults): Unit = {
     if (reqCode == scannerRequestCode && results.nonEmpty && results.head == PackageManager.PERMISSION_GRANTED) bringScanner(null)
@@ -692,6 +690,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
   }
 
+  override def onBackPressed: Unit = if (isSearchOn) rmSearch(null) else super.onBackPressed
   def isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]
 
   override def START(state: Bundle): Unit =
@@ -774,7 +773,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       spec <- ElectrumWallet.specs.values
       description = AddressDescription(spec.info.label.asSome)
       (scriptHash, pubKey) <- spec.data.keys.accountKeyMap ++ spec.data.keys.changeKeyMap
-    } yield AddressInfo(spec.data.keys.ewt.textAddress(pubKey), spec.data.status(scriptHash) == new String, description)
+    } yield AddressInfo(spec.data.keys.ewt, spec.info, pubKey, spec.data.status(scriptHash) == new String, description)
 
     androidx.transition.TransitionManager.beginDelayedTransition(contentWindow)
     setVisMany(false -> walletCards.defaultHeader, true -> walletCards.searchField)

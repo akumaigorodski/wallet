@@ -95,6 +95,11 @@ abstract class ElectrumWalletType {
     val scriptProgram = computePublicKeyScript(key)
     Script.write(scriptProgram)
   }
+
+  def extPrivKeyFromPub(extPubKey: ExtendedPublicKey): ExtendedPrivateKey = {
+    val key = for (secret <- secrets) yield derivePrivateKey(secret.master, extPubKey.path)
+    key getOrElse fr.acinq.eclair.dummyExtPrivKey
+  }
 }
 
 class ElectrumWallet44(val secrets: Option[AccountAndXPrivKey], val xPub: ExtendedPublicKey, val chainHash: ByteVector32) extends ElectrumWalletType {
@@ -114,8 +119,7 @@ class ElectrumWallet44(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
   }
 
   override def signInput(utxo: Utxo, tx: Transaction, input: TxIn, index: Int): TxIn = {
-    val privateKey = derivePrivateKey(parent = secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), utxo.key.path).privateKey
-    val sig = Transaction.signInput(tx, index, Script.pay2pkh(utxo.key.publicKey), SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_BASE, privateKey)
+    val sig = Transaction.signInput(tx, index, Script.pay2pkh(utxo.key.publicKey), SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_BASE, extPrivKeyFromPub(utxo.key).privateKey)
     val sigScript = Script.write(OP_PUSHDATA(sig) :: OP_PUSHDATA(utxo.key.publicKey) :: Nil)
     input.copy(signatureScript = sigScript)
   }
@@ -155,8 +159,7 @@ class ElectrumWallet49(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
   }
 
   override def signInput(utxo: Utxo, tx: Transaction, input: TxIn, index: Int): TxIn = {
-    val privateKey = derivePrivateKey(parent = secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), utxo.key.path).privateKey
-    val sig = Transaction.signInput(tx, index, Script.pay2pkh(utxo.key.publicKey), SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_WITNESS_V0, privateKey)
+    val sig = Transaction.signInput(tx, index, Script.pay2pkh(utxo.key.publicKey), SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_WITNESS_V0, extPrivKeyFromPub(utxo.key).privateKey)
     val sigScript = Script.write(script = OP_PUSHDATA(Script.write(script = Script pay2wpkh utxo.key.publicKey).compact) :: Nil)
     input.copy(witness = ScriptWitness(sig :: utxo.key.publicKey.value :: Nil), signatureScript = sigScript)
   }
@@ -176,8 +179,7 @@ class ElectrumWallet84(val secrets: Option[AccountAndXPrivKey], val xPub: Extend
   }
 
   override def signInput(utxo: Utxo, tx: Transaction, input: TxIn, index: Int): TxIn = {
-    val privateKey = derivePrivateKey(parent = secrets.map(_.master).getOrElse(fr.acinq.eclair.dummyExtPrivKey), utxo.key.path).privateKey
-    val sig = Transaction.signInput(tx, index, Script.pay2pkh(utxo.key.publicKey), SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_WITNESS_V0, privateKey)
+    val sig = Transaction.signInput(tx, index, Script.pay2pkh(utxo.key.publicKey), SIGHASH_ALL, utxo.item.value.sat, SigVersion.SIGVERSION_WITNESS_V0, extPrivKeyFromPub(utxo.key).privateKey)
     input.copy(witness = ScriptWitness(sig :: utxo.key.publicKey.value :: Nil), signatureScript = ByteVector.empty)
   }
 }

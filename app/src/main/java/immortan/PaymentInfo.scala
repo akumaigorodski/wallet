@@ -2,9 +2,11 @@ package immortan
 
 import java.util.Date
 
+import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
 import fr.acinq.bitcoin.{ByteVector32, Satoshi, Transaction}
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum.ElectrumWalletType
+import fr.acinq.eclair.blockchain.electrum.db.CompleteChainWalletInfo
 import immortan.crypto.Tools.{Any2Some, ExtPubKeys, Fiat2Btc, SEPARATOR, StringList}
 import immortan.utils.ImplicitJsonFormats._
 
@@ -52,9 +54,12 @@ case class AddressDescription(label: Option[String] = None) extends ItemDescript
   val semanticOrder: Option[SemanticOrder] = None
 }
 
-case class AddressInfo(identity: String, fresh: Boolean, description: AddressDescription) extends ItemDetails {
-  def updatedAt: Long = 0L
-  def seenAt: Long = 0L
+case class AddressInfo(ewt: ElectrumWalletType, core: CompleteChainWalletInfo, pubKey: ExtendedPublicKey,
+                       fresh: Boolean, description: AddressDescription) extends ItemDetails {
+
+  override val identity: String = ewt.textAddress(pubKey)
+  override def updatedAt: Long = 0L
+  override def seenAt: Long = 0L
 }
 
 // Tx descriptions
