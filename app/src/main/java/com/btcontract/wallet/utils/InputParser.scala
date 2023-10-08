@@ -67,16 +67,15 @@ object BIP322Data {
   }
 
   def parse(raw: String): Try[BIP322Data] = Try(raw split "|") map {
-    case Array(address, hash, sig64, "-", "-") => BIP322Data(address, ByteVector.fromValidHex(hash), sig64)
-    case Array(address, hash, sig64, msg, "-") => BIP322Data(address, ByteVector.fromValidHex(hash), sig64, fromBase64String(msg).asSome)
-    case Array(address, hash, sig64, msg, txid) => BIP322Data(address, ByteVector.fromValidHex(hash), sig64, fromBase64String(msg).asSome, ByteVector.fromValidHex(txid).asSome)
+    case Array(address, hash, sig64, "-") => BIP322Data(address, ByteVector.fromValidHex(hash), sig64)
+    case Array(address, hash, sig64, msg) => BIP322Data(address, ByteVector.fromValidHex(hash), sig64, fromBase64String(msg).asSome)
     case _ => throw new RuntimeException
   }
 }
 
-case class BIP322Data(address: String, messageHash: ByteVector, signature64: String, message: Option[String] = None, txid: Option[ByteVector] = None) {
-  def serialize: String = s"bip322:$address|${messageHash.toHex}|$signature64|${message.map(_.getBytes).map(Base64.toBase64String) getOrElse "-"}|${txid.map(_.toHex) getOrElse "-"}"
-  def hashEqualsMessage: Boolean = message.map(Bip322.getBip322MessageHash).map(ByteVector.view).forall(messageHash.==)
+case class BIP322Data(address: String, messageHash: ByteVector, signature64: String, message: Option[String] = None) {
+  def serialize: String = s"bip322:$address|${messageHash.toHex}|$signature64|${message.map(_.getBytes).map(Base64.toBase64String) getOrElse "-"}"
+  def hashEqualsMessage: Boolean = message.map(Bip322.getBip322MessageHash).map(ByteVector.view).forall(generated => messageHash == generated)
 }
 
 object MultiAddressParser extends RegexParsers {
