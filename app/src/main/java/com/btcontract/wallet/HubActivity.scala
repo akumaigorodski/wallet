@@ -465,7 +465,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
           if (canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
 
         case info: AddressInfo =>
-          addFlowChip(extraInfo, "Copy", R.drawable.border_yellow, _ => WalletApp.app copy info.identity)
+          addFlowChip(extraInfo, "Copy address", R.drawable.border_yellow, _ => WalletApp.app copy info.identity)
       }
     }
 
@@ -491,6 +491,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         description.setText(info.identity.short.html)
         statusText.setText(info.description.label getOrElse "?")
         nonLinkContainer setBackgroundResource R.drawable.border_gray
+        if (info.fresh) statusText setBackgroundResource R.drawable.border_green else statusText setBackgroundResource R.drawable.border_gray
         setVisMany(false -> labelIcon, true -> nonLinkContainer, false -> amountAndMeta, false -> statusIcon, true -> statusText, false -> setItemLabel)
         setVisibleIcon(id = R.id.btcAddress)
     }
@@ -772,8 +773,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     allAdressInfos = for {
       spec <- ElectrumWallet.specs.values
       description = AddressDescription(spec.info.label.asSome)
-      pubKey <- spec.data.keys.accountKeys ++ spec.data.keys.changeKeys
-    } yield AddressInfo(spec.data.keys.ewt.textAddress(pubKey), description)
+      (scriptHash, pubKey) <- spec.data.keys.accountKeyMap ++ spec.data.keys.changeKeyMap
+    } yield AddressInfo(spec.data.keys.ewt.textAddress(pubKey), spec.data.status(scriptHash) == new String, description)
 
     androidx.transition.TransitionManager.beginDelayedTransition(contentWindow)
     setVisMany(false -> walletCards.defaultHeader, true -> walletCards.searchField)
@@ -1016,22 +1017,21 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
 
     val spec = LNUrlAuthSpec(lnUrl.uri.getHost, ByteVector32 fromValidHex k1)
-    val title = titleBodyAsViewBuilder(s"<big>${lnUrl.warnUri}</big>".asDefView, null)
-    mkCheckFormNeutral(doAuth, none, displayInfo, title, actionResource, dialog_cancel, question)
+    mkCheckFormNeutral(alert => runAnd(alert.dismiss)(doAuth), none, displayInfo,
+      titleBodyAsViewBuilder(s"<big>${lnUrl.warnUri}</big>".asDefView, null),
+      actionResource, dialog_cancel, question)
 
     def displayInfo(alert: AlertDialog): Unit = {
       val explanation = getString(lnurl_auth_info).format(lnUrl.warnUri, spec.linkingPubKey.short).html
       mkCheckFormNeutral(_.dismiss, none, _ => share(spec.linkingPubKey), new AlertDialog.Builder(me).setMessage(explanation), dialog_ok, -1, dialog_share)
     }
 
-    def doAuth(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-      snack(contentWindow, lnUrl.warnUri.html, dialog_cancel) foreach { snack =>
-        val uri = lnUrl.uri.buildUpon.appendQueryParameter("sig", spec.derSignatureHex).appendQueryParameter("key", spec.linkingPubKey)
-        val level2Obs = LNUrl.level2DataResponse(uri).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
-        val level2Sub = level2Obs.subscribe(_ => UITask(WalletApp.app quickToast successResource).run, onFail)
-        val listener = onButtonTap(level2Sub.unsubscribe)
-        snack.setAction(dialog_cancel, listener).show
-      }
+    def doAuth: Unit = snack(contentWindow, lnUrl.warnUri.html, dialog_cancel).foreach { snack =>
+      val uri = lnUrl.uri.buildUpon.appendQueryParameter("sig", spec.derSignatureHex).appendQueryParameter("key", spec.linkingPubKey)
+      val level2Obs = LNUrl.level2DataResponse(uri).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
+      val level2Sub = level2Obs.subscribe(_ => UITask(WalletApp.app quickToast successResource).run, onFail)
+      val listener = onButtonTap(level2Sub.unsubscribe)
+      snack.setAction(dialog_cancel, listener).show
     }
   }
 }

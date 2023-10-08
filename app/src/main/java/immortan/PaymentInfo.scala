@@ -52,7 +52,7 @@ case class AddressDescription(label: Option[String] = None) extends ItemDescript
   val semanticOrder: Option[SemanticOrder] = None
 }
 
-case class AddressInfo(identity: String, description: AddressDescription) extends ItemDetails {
+case class AddressInfo(identity: String, fresh: Boolean, description: AddressDescription) extends ItemDetails {
   def updatedAt: Long = 0L
   def seenAt: Long = 0L
 }
