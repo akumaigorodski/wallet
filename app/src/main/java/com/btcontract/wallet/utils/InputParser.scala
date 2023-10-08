@@ -1,11 +1,14 @@
 package com.btcontract.wallet.utils
 
 import com.btcontract.wallet.utils.InputParser._
-import fr.acinq.bitcoin.{BtcAmount, Satoshi, SatoshiLong}
+import com.sparrowwallet.drongo.crypto.Bip322
+import fr.acinq.bitcoin.{BtcAmount, ByteVector32, Satoshi, SatoshiLong}
 import fr.acinq.eclair._
-import immortan.crypto.Tools.trimmed
+import immortan.crypto.Tools._
 import immortan.utils.Denomination
 import immortan.utils.uri.Uri
+import org.bouncycastle.util.encoders.Base64
+import scodec.bits.ByteVector
 
 import scala.util.parsing.combinator.RegexParsers
 import scala.util.{Success, Try}
@@ -26,8 +29,6 @@ object InputParser {
       content.mkString.replace("//", "")
     case _ => raw
   }
-
-  def withoutSlashes(prefix: String, uri: Uri): String = prefix + removePrefix(uri.toString)
 
   def recordValue(raw: String): Unit = value = parse(raw)
 
@@ -57,6 +58,25 @@ case class BitcoinUri(uri: Try[Uri], address: String) {
   val amount: Option[MilliSatoshi] = uri.map(_ getQueryParameter "amount").map(BigDecimal.apply).map(Denomination.btcBigDecimal2MSat).toOption
   val message: Option[String] = uri.map(_ getQueryParameter "message").map(trimmed).filter(_.nonEmpty).toOption
   val label: Option[String] = uri.map(_ getQueryParameter "label").map(trimmed).filter(_.nonEmpty).toOption
+}
+
+object BIP322Data {
+  def fromBase64String(raw64: String) = {
+    val decoded = Base64.decode(raw64)
+    new String(decoded)
+  }
+
+  def parse(raw: String): Try[BIP322Data] = Try(raw split "|") map {
+    case Array(address, hash, sig64, "-", "-") => BIP322Data(address, ByteVector.fromValidHex(hash), sig64)
+    case Array(address, hash, sig64, msg, "-") => BIP322Data(address, ByteVector.fromValidHex(hash), sig64, fromBase64String(msg).asSome)
+    case Array(address, hash, sig64, msg, txid) => BIP322Data(address, ByteVector.fromValidHex(hash), sig64, fromBase64String(msg).asSome, ByteVector.fromValidHex(txid).asSome)
+    case _ => throw new RuntimeException
+  }
+}
+
+case class BIP322Data(address: String, messageHash: ByteVector, signature64: String, message: Option[String] = None, txid: Option[ByteVector] = None) {
+  def serialize: String = s"bip322:$address|${messageHash.toHex}|$signature64|${message.map(_.getBytes).map(Base64.toBase64String) getOrElse "-"}|${txid.map(_.toHex) getOrElse "-"}"
+  def hashEqualsMessage: Boolean = message.map(Bip322.getBip322MessageHash).map(ByteVector.view).forall(messageHash.==)
 }
 
 object MultiAddressParser extends RegexParsers {
