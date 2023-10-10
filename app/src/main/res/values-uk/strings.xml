@@ -78,7 +78,7 @@
     <string name="popup_to_address"><![CDATA[<b>адреса</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 
-    <string name="popup_fiat"><![CDATA[<b>фіатна вартість</b>&#160;%1$s&#160;(%2$s)]]></string>
+    <string name="popup_fiat"><![CDATA[<b>фіатна вартість</b>&#160;%1$s]]></string>
     <string name="popup_chain_fee"><![CDATA[<b>комісія</b>&#160;%1$s]]></string>
 
     <!-- /special tx/payment descriptions -->
@@ -140,6 +140,26 @@
     ]]></string>
 
     <!-- /lnurl-auth -->
+
+    <!-- sign-verify -->
+
+    <string translatable="false" name="sign_address_not_found"><![CDATA[
+        Це повідомлення має бути підписано адресою <br><br><strong>%1$s</strong>
+        <br><br>Але у вашому гаманці такої адреси немає.
+    ]]></string>
+
+    <string translatable="false" name="sign_sign_message">Підписати повідомлення</string>
+    <string translatable="false" name="sign_signed_message">Підписане повідомлення</string>
+    <string translatable="false" name="sign_address">Біткоїн-адреса гаманця</string>
+    <string translatable="false" name="sign_message">Повідомлення</string>
+    <string translatable="false" name="sign_sign">Підписати</string>
+
+    <string translatable="false" name="verify_ok">ПІДПИС СПІВПАДАЄ</string>
+    <string translatable="false" name="verify_no">ПІДПИС НЕ СПІВПАДАЄ</string>
+    <string translatable="false" name="verify_message_hash">Хеш повідомлення</string>
+    <string translatable="false" name="verify_address">Біткоїн-дреса</string>
+
+    <!-- /sign-verify -->
 
     <string name="confirm_remove_item">&#9888; Бажаєте видалити цей елемент?</string>
     <string name="dialog_requested"><![CDATA[<b>запит</b>&#160;%1$s]]></string>

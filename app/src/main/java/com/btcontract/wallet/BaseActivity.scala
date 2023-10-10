@@ -56,6 +56,7 @@ import scala.util.{Failure, Success, Try}
 object BaseActivity {
   implicit class StringOps(source: String) {
     def html: Spanned = android.text.Html.fromHtml(source)
+    def humanFour: String = source.grouped(4).mkString(s"\u0020")
 
     def short: String = {
       val len = source.length
@@ -100,6 +101,11 @@ trait BaseActivity extends AppCompatActivity { me =>
   val nothingUsefulTask: Runnable = UITask(WalletApp.app quickToast error_nothing_useful)
   val timer: java.util.Timer = new java.util.Timer
 
+  val exitTo: Class[_] => Any = target => {
+    this startActivity new Intent(me, target)
+    finish
+  }
+
   val goTo: Class[_] => Any = target => {
     this startActivity new Intent(me, target)
     InputParser.DoNotEraseRecordedValue
@@ -109,11 +115,6 @@ trait BaseActivity extends AppCompatActivity { me =>
     // Utility method in case if target expects a value
     InputParser.value = value
     goTo(target)
-  }
-
-  val exitTo: Class[_] => Any = target => {
-    this startActivity new Intent(me, target)
-    runAnd(InputParser.DoNotEraseRecordedValue)(finish)
   }
 
   def START(state: Bundle): Unit
@@ -679,7 +680,7 @@ trait BaseCheckActivity extends BaseActivity { me =>
       // The way Android works is we can get some objects nullified when restoring from background
       // when that happens we make sure to free all remaining resources and start from scratch
       WalletApp.freePossiblyUsedRuntimeResouces
-      me exitTo ClassNames.hubActivityClass
+      exitTo(ClassNames.hubActivityClass)
     }
   }
 }

@@ -77,7 +77,7 @@
     <string name="popup_to_address"><![CDATA[<b>dirección</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 
-    <string name="popup_fiat"><![CDATA[<b>fiat&#160;valor</b>&#160;%1$s&#160;(%2$s)]]></string>
+    <string name="popup_fiat"><![CDATA[<b>fiat&#160;valor</b>&#160;%1$s]]></string>
     <string name="popup_chain_fee"><![CDATA[<b>cadena&#160;tarifa</b>&#160;%1$s]]></string>
 
     <!-- /special tx/payment descriptions -->

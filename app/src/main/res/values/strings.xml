@@ -78,7 +78,7 @@
     <string name="popup_to_address"><![CDATA[<b>address</b>&#160;%1$s]]></string>
     <string name="popup_txid"><![CDATA[<b>txid</b>&#160;%1$s]]></string>
 
-    <string name="popup_fiat"><![CDATA[<b>fiat&#160;value</b>&#160;%1$s&#160;(%2$s)]]></string>
+    <string name="popup_fiat"><![CDATA[<b>fiat&#160;value</b>&#160;%1$s]]></string>
     <string name="popup_chain_fee"><![CDATA[<b>chain&#160;fee</b>&#160;%1$s]]></string>
 
     <!-- /special tx/payment descriptions -->
@@ -140,6 +140,26 @@
     ]]></string>
 
     <!-- /lnurl-auth -->
+
+    <!-- sign-verify -->
+
+    <string translatable="false" name="sign_address_not_found"><![CDATA[
+        A message is requested to be signed with address <br><br><strong>%1$s</strong>
+        <br><br>But your wallet does not contain such an address.
+    ]]></string>
+
+    <string translatable="false" name="sign_sign_message">Sign message</string>
+    <string translatable="false" name="sign_signed_message">Signed message</string>
+    <string translatable="false" name="sign_address">Your Bitcoin address</string>
+    <string translatable="false" name="sign_message">Message</string>
+    <string translatable="false" name="sign_sign">Sign</string>
+
+    <string translatable="false" name="verify_ok">SIGNATURE MATCHES</string>
+    <string translatable="false" name="verify_no">SIGNATURE DOES NOT MATCH</string>
+    <string translatable="false" name="verify_message_hash">Message hash</string>
+    <string translatable="false" name="verify_address">Bitcoin address</string>
+
+    <!-- /sign-verify -->
 
     <string name="confirm_remove_item">&#9888; Do you want to remove this item?</string>
     <string name="dialog_requested"><![CDATA[<b>requested</b>&#160;%1$s]]></string>

@@ -13,10 +13,9 @@ class DBInterfaceSQLiteAndroidMisc(context: Context, name: String) extends SQLit
     ElectrumHeadersTable.createStatements.foreach(dbs.execSQL)
     ChainWalletTable.createStatements.foreach(dbs.execSQL)
     DataTable.createStatements.foreach(dbs.execSQL)
-    LogTable.createStatements.foreach(dbs.execSQL)
   }
 
   def onUpgrade(dbs: SQLiteDatabase, v0: Int, v1: Int): Unit = {
-    LogTable.createStatements.foreach(dbs.execSQL)
+    // Do nothing for now
   }
 }

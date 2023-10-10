@@ -91,15 +91,3 @@ object ElectrumHeadersTable extends Table {
 
   def createStatements: Seq[String] = s"CREATE TABLE IF NOT EXISTS $table($IDAUTOINC, $height INTEGER NOT NULL $UNIQUE, $blockHash TEXT NOT NULL, $header BLOB NOT NULL)" :: Nil
 }
-
-object LogTable extends Table {
-  val (table, stamp, tag, content) = ("log", "stamp", "tag", "content")
-
-  val newSql = s"INSERT INTO $table ($stamp, $tag, $content) VALUES (?, ?, ?)"
-
-  val recentSql = s"SELECT * FROM $table ORDER BY $id DESC LIMIT 1"
-
-  val countSql = s"SELECT COUNT(*) FROM $table"
-
-  def createStatements: Seq[String] = s"""CREATE TABLE IF NOT EXISTS $table($IDAUTOINC, $stamp INTEGER NOT NULL, $tag STRING NOT NULL, $content STRING NOT NULL)""" :: Nil
-}

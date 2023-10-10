@@ -444,16 +444,15 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
           val amount = if (info.isIncoming) info.receivedSat.toMilliSatoshi else info.sentSat.toMilliSatoshi
           val canRBF = !info.isIncoming && !info.isDoubleSpent && !info.isConfirmed && info.description.cpfpOf.isEmpty
           val canCPFP = info.isIncoming && !info.isDoubleSpent && !info.isConfirmed && info.description.rbf.isEmpty && info.description.canBeCPFPd
-          val fiatNow = WalletApp.msatInFiatHuman(WalletApp.fiatRates.info.rates, WalletApp.fiatCode, amount, Denomination.formatFiat)
           val fiatThen = WalletApp.msatInFiatHuman(info.fiatRateSnapshot, WalletApp.fiatCode, amount, Denomination.formatFiat)
 
           if (ElectrumWallet.specs.size > 1)
             for (wallet <- info.extPubs flatMap ElectrumWallet.specs.get)
               addFlowChip(extraInfo, wallet.info.label, R.drawable.border_gray)
 
+          addFlowChip(extraInfo, getString(popup_fiat).format(s"<font color=$cardIn>$fiatThen</font>"), R.drawable.border_gray)
           addFlowChip(extraInfo, chipText = getString(popup_txid) format info.txidString.short, R.drawable.border_green, info.txidString.asSome)
           for (adr <- info.description.addresses) addFlowChip(extraInfo, getString(popup_to_address) format adr.short, R.drawable.border_yellow, adr.asSome)
-          addFlowChip(extraInfo, getString(popup_fiat).format(s"<font color=$cardIn>$fiatNow</font>", fiatThen), R.drawable.border_gray)
 
           if (info.feeSat > 0L.sat) {
             val fee = WalletApp.denom.directedWithSign(0L.msat, info.feeSat.toMilliSatoshi, cardOut, cardIn, cardZero, isIncoming = false)
@@ -466,6 +465,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
         case info: AddressInfo =>
           addFlowChip(extraInfo, "Copy address", R.drawable.border_yellow, _ => WalletApp.app copy info.identity)
+          addFlowChip(extraInfo, getString(sign_sign_message), R.drawable.border_yellow)
       }
     }
 
@@ -638,7 +638,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   override def onResume: Unit = runAnd(super.onResume) {
     try ElectrumWallet.connectionProvider.notifyAppAvailable catch none
     val dataOpt = Seq(getIntent.getDataString, getIntent getStringExtra Intent.EXTRA_TEXT).find(externalData => null != externalData)
-    runInFutureProcessOnUI(dataOpt.foreach(InputParser.recordValue), none)(_ => try checkExternalData(noneRunnable) catch none)
+    runInFutureProcessOnUI(dataOpt foreach InputParser.recordValue, none)(_ => try checkExternalData(noneRunnable) catch none)
     setIntent(new Intent)
   }
 
@@ -682,11 +682,13 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         else if (usable.size == 1) bringSendMultiBitcoinPopup(usable, a2a)
         else bringMultiAddressSelector(a2a)
 
-      case lnUrl: LNUrl if lnUrl.isAuth =>
-        showAuthForm(lnUrl)
+      case lnUrl: LNUrl if lnUrl.isAuth => showAuthForm(lnUrl)
 
-      case _ =>
-        whenNone.run
+      case data: BIP322VerifyData => println(data)
+
+      case data: BIP32SignData => println(data)
+
+      case _ => whenNone.run
     }
   }
 
@@ -768,14 +770,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
   def bringSearch(view: View): Unit = {
     walletCards.searchField.setTag(true)
-
-    allAdressInfos = for {
-      spec <- ElectrumWallet.specs.values
-      description = AddressDescription(spec.info.label.asSome)
-      (scriptHash, pubKey) <- spec.data.keys.accountKeyMap ++ spec.data.keys.changeKeyMap
-    } yield AddressInfo(spec.data.keys.ewt, spec.info, pubKey, spec.data.status(scriptHash) == new String, description)
-
     androidx.transition.TransitionManager.beginDelayedTransition(contentWindow)
+    runInFutureProcessOnUI(getAddresses, none)(addresses => allAdressInfos = addresses)
     setVisMany(false -> walletCards.defaultHeader, true -> walletCards.searchField)
     showKeys(walletCards.searchField)
   }
@@ -792,15 +788,13 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     def doBringPasteAddressDialog: Unit = {
       val (container, extraInputLayout, extraInput) = singleInputPopup
       val builder = titleBodyAsViewBuilder(title = null, body = container)
-      mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
+      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
       extraInputLayout.setHint(typing_hints)
       showKeys(extraInput)
 
-      def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-        runInFutureProcessOnUI(InputParser recordValue extraInput.getText.toString, onFail) { _ =>
-          def attemptProcessInput: Unit = runAnd(doBringPasteAddressDialog)(nothingUsefulTask.run)
-          me checkExternalData UITask(attemptProcessInput)
-        }
+      def proceed: Unit = runInFutureProcessOnUI(InputParser recordValue extraInput.getText.toString, onFail) { _ =>
+        def attemptProcessInput: Unit = runAnd(doBringPasteAddressDialog)(nothingUsefulTask.run)
+        me checkExternalData UITask(attemptProcessInput)
       }
     }
 
@@ -1021,7 +1015,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       actionResource, dialog_cancel, question)
 
     def displayInfo(alert: AlertDialog): Unit = {
-      val explanation = getString(lnurl_auth_info).format(lnUrl.warnUri, spec.linkingPubKey.short).html
+      val explanation = getString(lnurl_auth_info).format(lnUrl.warnUri, spec.linkingPubKey.humanFour).html
       mkCheckFormNeutral(_.dismiss, none, _ => share(spec.linkingPubKey), new AlertDialog.Builder(me).setMessage(explanation), dialog_ok, -1, dialog_share)
     }
 
@@ -1033,4 +1027,11 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       snack.setAction(dialog_cancel, listener).show
     }
   }
+
+  private def getAddresses = for {
+    spec <- ElectrumWallet.specs.values
+    description = AddressDescription(spec.info.label.asSome)
+    (scriptHash, pubKey) <- spec.data.keys.accountKeyMap ++ spec.data.keys.changeKeyMap
+    info = AddressInfo(spec.data.keys.ewt, spec.info, pubKey, spec.data.status(scriptHash) == new String, description)
+  } yield info
 }
