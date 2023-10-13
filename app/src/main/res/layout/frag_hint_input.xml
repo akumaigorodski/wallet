@@ -1,16 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.textfield.TextInputLayout
+<LinearLayout
+    style="@style/StandardLinearLayout"
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/extraInputLayout"
     android:paddingStart="11dp"
     android:paddingEnd="14dp"
-    android:paddingTop="25dp"
-    style="@style/FillingView">
+    android:paddingTop="25dp">
 
-    <EditText
-        style="@style/FillingView"
-        android:inputType="textMultiLine"
-        android:id="@+id/extraInput"
-        android:maxLines="8"/>
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/extraInputLayout"
+        style="@style/FillingView">
 
-</com.google.android.material.textfield.TextInputLayout>
+        <EditText
+            style="@style/FillingView"
+            android:inputType="textMultiLine"
+            android:id="@+id/extraInput"
+            android:maxLines="8"/>
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <CheckBox
+        android:visibility="gone"
+        android:layout_marginTop="20dp"
+        android:id="@+id/extraOption"
+        style="@style/FillingView"/>
+
+    <TextView
+        android:visibility="gone"
+        android:layout_marginStart="6dp"
+        android:layout_marginBottom="10dp"
+        android:id="@+id/extraOptionText"
+        style="@style/BoundedView"/>
+
+</LinearLayout>
+
+
+

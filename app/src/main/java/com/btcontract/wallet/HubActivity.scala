@@ -18,6 +18,7 @@ import com.btcontract.wallet.utils._
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
 import com.danilomendes.progressbar.InvertedTextProgressbar
 import com.ornach.nobobutton.NoboButton
+import com.sparrowwallet.drongo
 import fr.acinq.bitcoin.DeterministicWallet.ExtendedPublicKey
 import fr.acinq.bitcoin._
 import fr.acinq.eclair._
@@ -31,6 +32,7 @@ import immortan.utils.ImplicitJsonFormats._
 import immortan.utils._
 import org.apmem.tools.layouts.FlowLayout
 import rx.lang.scala.Subscription
+import scodec.bits.ByteVector
 import spray.json._
 
 import scala.concurrent.Future
@@ -39,9 +41,18 @@ import scala.util.{Failure, Success, Try}
 
 
 object HubActivity {
+  var displayFullIxInfoHistory: Boolean = false
+  var alreadySeenTxids: Set[ByteVector32] = Set.empty[ByteVector32]
+  case class Accumulator(txids: Set[ByteVector32], txinfos: Vector[TxInfo] = Vector.empty) {
+    def withInfo(info: TxInfo): Accumulator = Accumulator(txids ++ info.relatedTxids, txinfos :+ info)
+  }
+
   var txInfos: Iterable[TxInfo] = Nil
+  var recentTxInfos: Iterable[TxInfo] = Nil
+
   var allAdressInfos: Iterable[AddressInfo] = Nil
   var filteredAddressInfos: Iterable[AddressInfo] = Nil
+
   var allInfos: Seq[ItemDetails] = Nil
   var instance: HubActivity = _
 }
@@ -50,26 +61,46 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   private[this] lazy val paymentTypeIconIds = List(R.id.btcAddress, R.id.btcIncoming,
     R.id.btcInBoosted, R.id.btcOutBoosted, R.id.btcOutCancelled, R.id.btcOutgoing)
 
-  private[this] lazy val bottomActionBar = findViewById(R.id.bottomActionBar).asInstanceOf[LinearLayout]
   private[this] lazy val contentWindow = findViewById(R.id.contentWindow).asInstanceOf[RelativeLayout]
   private[this] lazy val itemsList = findViewById(R.id.itemsList).asInstanceOf[ListView]
 
-  lazy val walletCards = new WalletCardsViewHolder
+  private[this] lazy val expandContainer = getLayoutInflater.inflate(R.layout.frag_expand, null, false)
+  private[this] lazy val expand = expandContainer.findViewById(R.id.expand).asInstanceOf[ImageButton]
+
   private[this] val viewBinderHelper = new ViewBinderHelper
+  lazy val walletCards = new WalletCardsViewHolder
   var openListItems = Set.empty[String]
 
   // PAYMENT LIST
 
   def loadRecentTxInfos: Unit = {
-    val recent = WalletApp.txDataBag.listRecentTxs(10).map(WalletApp.txDataBag.toTxInfo)
-    txInfos = recent.take(5) ++ recent.drop(5).filter(info => !info.isConfirmed && !info.isDoubleSpent)
     filteredAddressInfos = Nil
+
+    if (displayFullIxInfoHistory) {
+      // Use wishes to see all txs, we still limit by some sensible number to now slow UI down
+      recentTxInfos = WalletApp.txDataBag.listRecentTxs(500).map(WalletApp.txDataBag.toTxInfo)
+      txInfos = recentTxInfos
+    } else {
+      val initialAccumulator = Accumulator(alreadySeenTxids)
+      recentTxInfos = WalletApp.txDataBag.listRecentTxs(10).map(WalletApp.txDataBag.toTxInfo)
+      val accumulator2 = recentTxInfos.take(3).foldLeft(initialAccumulator)(_ withInfo _)
+
+      val accumulator3 = recentTxInfos.drop(3).foldLeft(accumulator2) {
+        case (acc, info) if acc.txids.intersect(info.relatedTxids).nonEmpty => acc.withInfo(info)
+        case (acc, info) if !info.isConfirmed && !info.isDoubleSpent => acc.withInfo(info)
+        case (acc, info) if alreadySeenTxids.contains(info.txid) => acc.withInfo(info)
+        case (acc, _) => acc
+      }
+
+      txInfos = accumulator3.txinfos
+      alreadySeenTxids ++= accumulator3.txids
+    }
   }
 
   def loadSearchedTxInfos(query: String): Unit = {
     val query1 = query.replaceAll("\\s", "").toLowerCase
-    txInfos = WalletApp.txDataBag.searchTransactions(query1).map(WalletApp.txDataBag.toTxInfo)
     filteredAddressInfos = allAdressInfos.filter(_.identity.toLowerCase startsWith query1).take(10)
+    txInfos = WalletApp.txDataBag.searchTransactions(query1).map(WalletApp.txDataBag.toTxInfo)
   }
 
   def fillAllInfos: Unit = {
@@ -149,9 +180,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     // MENU BUTTONS
 
     def doSetItemLabel: Unit = {
-      val (container, extraInputLayout, extraInput) = singleInputPopup
-      val builder = titleBodyAsViewBuilder(title = null, body = container)
-      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
+      val (container, extraInputLayout, extraInput, _, _) = singleInputPopup
+      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, titleBodyAsViewBuilder(null, container), dialog_ok, dialog_cancel)
       extraInputLayout.setHint(dialog_set_label)
       showKeys(extraInput)
 
@@ -465,7 +495,13 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
         case info: AddressInfo =>
           addFlowChip(extraInfo, "Copy address", R.drawable.border_yellow, _ => WalletApp.app copy info.identity)
-          addFlowChip(extraInfo, getString(sign_sign_message), R.drawable.border_yellow)
+          val sign = addFlowChip(extraInfo, getString(sign_sign_message), R.drawable.border_yellow, _ => me bringSignDialog info)
+
+          if (info.core.core.masterFingerprint.nonEmpty) {
+            // TODO: disable for now, implement HW signing later
+            sign.setEnabled(false)
+            sign.setAlpha(0.6F)
+          }
       }
     }
 
@@ -475,7 +511,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       case info: TxInfo =>
         // We are not sure if this one has been broadcasted yet
         val isEphemeral = WalletApp.pendingTxInfos.contains(info.txid)
-        if (isEphemeral) itemView.setAlpha(0.7F)
+        if (isEphemeral) itemView.setAlpha(0.6F)
         swipeWrap.setLockDrag(isEphemeral)
 
         statusIcon setImageResource txStatusIcon(info)
@@ -488,12 +524,12 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
       case info: AddressInfo =>
         swipeWrap.setLockDrag(false)
+        setVisibleIcon(id = R.id.btcAddress)
         description.setText(info.identity.short.html)
         statusText.setText(info.description.label getOrElse "?")
         nonLinkContainer setBackgroundResource R.drawable.border_gray
-        if (info.fresh) statusText setBackgroundResource R.drawable.border_green else statusText setBackgroundResource R.drawable.border_gray
-        setVisMany(false -> labelIcon, true -> nonLinkContainer, false -> amountAndMeta, false -> statusIcon, true -> statusText, false -> setItemLabel)
-        setVisibleIcon(id = R.id.btcAddress)
+        setVisMany(false -> labelIcon, true -> nonLinkContainer, false -> amountAndMeta,
+          false -> statusIcon, true -> statusText, false -> setItemLabel)
     }
 
     def setVisibleIcon(id: Int): Unit = if (lastVisibleIconId != id) {
@@ -557,9 +593,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       override def onWalletTap(key: ExtendedPublicKey): Unit = goToWithValue(ClassNames.qrChainActivityClass, key)
 
       override def onLabelTap(key: ExtendedPublicKey): Unit = {
-        val (container, extraInputLayout, extraInput) = singleInputPopup
-        val builder = titleBodyAsViewBuilder(title = null, body = container)
-        mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
+        val (container, extraInputLayout, extraInput, _, _) = singleInputPopup
+        mkCheckForm(proceed, none, titleBodyAsViewBuilder(null, container), dialog_ok, dialog_cancel)
         extraInputLayout.setHint(dialog_set_label)
         showKeys(extraInput)
 
@@ -703,16 +738,17 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         ElectrumWallet.catcher ! chainListener
         instance = me
 
-        bottomActionBar post UITask {
-          itemsList.setPadding(0, 0, 0, bottomActionBar.getHeight)
-        }
-
-        // LIST
-
+        itemsList.addFooterView(expandContainer)
         itemsList.addHeaderView(walletCards.view)
         itemsList.setAdapter(paymentsAdapter)
         itemsList.setDividerHeight(0)
         itemsList.setDivider(null)
+
+        expand setOnClickListener onButtonTap {
+          androidx.transition.TransitionManager.beginDelayedTransition(contentWindow)
+          runAnd(displayFullIxInfoHistory = true)(loadRecent)
+          paymentAdapterDataChanged.run
+        }
 
         // Fill wallet list with wallet card views here
         walletCards.recoveryPhraseWarning setOnClickListener onButtonTap(viewRecoveryCode)
@@ -736,7 +772,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
           if (!isSearchOn) loadRecent
 
           for {
-            txInfo <- txInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
+            txInfo <- recentTxInfos if !txInfo.isDoubleSpent && !txInfo.isConfirmed
             relatedSpec <- txInfo.extPubs.flatMap(ElectrumWallet.specs.get).headOption
             doubleSpent = ElectrumWallet.doubleSpent(relatedSpec.data.keys.ewt.xPub, txInfo.tx)
             if doubleSpent.depth != txInfo.depth || doubleSpent.isDoubleSpent != txInfo.isDoubleSpent
@@ -786,9 +822,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
   def bringPasteAddressDialog: Unit = {
     def doBringPasteAddressDialog: Unit = {
-      val (container, extraInputLayout, extraInput) = singleInputPopup
-      val builder = titleBodyAsViewBuilder(title = null, body = container)
-      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
+      val (container, extraInputLayout, extraInput, _, _) = singleInputPopup
+      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, titleBodyAsViewBuilder(null, container), dialog_ok, dialog_cancel)
       extraInputLayout.setHint(typing_hints)
       showKeys(extraInput)
 
@@ -818,7 +853,9 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     callScanner(sheet)
   }
 
-  def goToSettingsPage(view: View): Unit = goTo(ClassNames.settingsActivityClass)
+  def goToSettingsPage(view: View): Unit = {
+    goTo(ClassNames.settingsActivityClass)
+  }
 
   def bringSendBitcoinPopup(specs: Seq[WalletSpec], uri: BitcoinUri): Unit = {
     val sendView = new ChainSendView(specs, getString(dialog_set_label).asSome, dialog_visibility_private)
@@ -925,8 +962,38 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     feeView.worker addWork "MULTI-SEND-INIT-CALL"
   }
 
+  def bringSignDialog(info: AddressInfo): Unit = {
+    val title = getString(sign_sign_message_title).format(info.identity.short).asDefView
+    val (container, extraInputLayout, extraInput, extraOption, extraOptionText) = singleInputPopup
+    mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, titleBodyAsViewBuilder(title, container), sign_sign, dialog_cancel)
+    extraInputLayout.setHint(sign_message)
+    showKeys(extraInput)
+
+    setVisMany(true -> extraOptionText, true -> extraOption)
+    extraOptionText.setText(sign_sig_only_info)
+    extraOption.setText(sign_sig_only)
+
+    def proceed: Unit = {
+      val network = ElectrumWallet.chainHash match {
+        case Block.LivenetGenesisBlock.hash => drongo.Network.MAINNET
+        case Block.TestnetGenesisBlock.hash => drongo.Network.TESTNET
+        case _ => drongo.Network.REGTEST
+      }
+
+      val message = extraInput.getText.toString.trim
+      val hash = drongo.crypto.Bip322.getBip322MessageHash(message)
+      val messageOpt = if (extraOption.isChecked) None else Some(message)
+      val scriptType = drongo.address.Address.fromString(network, info.identity).getScriptType
+      val ecKey = drongo.crypto.ECKey.fromPrivate(info.ewt.extPrivKeyFromPub(info.pubKey).privateKey.value.toArray)
+      val signature = drongo.crypto.Bip322.signMessageBip322(scriptType, message, ecKey)
+
+      println(BIP322VerifyData(info.identity, ByteVector.view(hash), signature, messageOpt))
+    }
+  }
+
   def paymentAdapterDataChanged: TimerTask = UITask {
-    setVis(allInfos.isEmpty, walletCards.recoveryPhraseWarning)
+    val expandHideCases = displayFullIxInfoHistory || isSearchOn || recentTxInfos.size <= allInfos.size
+    setVisMany(allInfos.isEmpty -> walletCards.recoveryPhraseWarning, !expandHideCases -> expandContainer)
     paymentsAdapter.notifyDataSetChanged
   }
 
@@ -1012,7 +1079,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     val spec = LNUrlAuthSpec(lnUrl.uri.getHost, ByteVector32 fromValidHex k1)
     mkCheckFormNeutral(alert => runAnd(alert.dismiss)(doAuth), none, displayInfo,
       titleBodyAsViewBuilder(s"<big>${lnUrl.warnUri}</big>".asDefView, null),
-      actionResource, dialog_cancel, question)
+      actionResource, dialog_cancel, dialog_info)
 
     def displayInfo(alert: AlertDialog): Unit = {
       val explanation = getString(lnurl_auth_info).format(lnUrl.warnUri, spec.linkingPubKey.humanFour).html
@@ -1031,7 +1098,6 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   private def getAddresses = for {
     spec <- ElectrumWallet.specs.values
     description = AddressDescription(spec.info.label.asSome)
-    (scriptHash, pubKey) <- spec.data.keys.accountKeyMap ++ spec.data.keys.changeKeyMap
-    info = AddressInfo(spec.data.keys.ewt, spec.info, pubKey, spec.data.status(scriptHash) == new String, description)
-  } yield info
+    (_, pubKey) <- spec.data.keys.accountKeyMap ++ spec.data.keys.changeKeyMap
+  } yield AddressInfo(spec.data.keys.ewt, spec.info, pubKey, description)
 }

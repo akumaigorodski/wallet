@@ -134,7 +134,7 @@
     <string name="lnurl_auth_link_ok">Link bem-sucedido</string>
 
     <string name="lnurl_auth_info"><![CDATA[
-        Chave Auth gerada pela sua carteira para <i>%1$s</i>:<br><br><strong>%2$s</strong>.
+        Chave Auth gerada pela sua carteira para <i>%1$s</i>:<br><br><strong>%2$s</strong>
         <br><br>Ela será usada para autorização anônima em<i>%1$s</i>, nenhuma informação pessoal será revelada.
     ]]></string>
 

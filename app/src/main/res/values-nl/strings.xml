@@ -134,7 +134,7 @@
     <string name="lnurl_auth_link_ok">Succesvol gelinkt</string>
 
     <string name="lnurl_auth_info"><![CDATA[
-        Auth-sleutel gegenereerd door je portemonnee voor <i>%1$s</i>:<br><br><strong>%2$s</strong>.
+        Auth-sleutel gegenereerd door je portemonnee voor <i>%1$s</i>:<br><br><strong>%2$s</strong>
         <br><br>Het wordt gebruikt voor anonieme authorisatie bij <i>%1$s</i>, geen persoonlijke data zal worden vrijgegeven.
     ]]></string>
 

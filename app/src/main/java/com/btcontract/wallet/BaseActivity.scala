@@ -317,10 +317,11 @@ trait BaseActivity extends AppCompatActivity { me =>
   def addFlowChip(flow: FlowLayout, chipText: String, backgroundRes: Int, onTap: String => Unit): TextView = {
     val text = getLayoutInflater.inflate(R.layout.frag_chip_text, flow, false).asInstanceOf[TextView]
     text setOnClickListener onButtonTap(onTap apply text.getText.toString)
-    text.setBackgroundResource(backgroundRes)
-    flow.setVisibility(View.VISIBLE)
-    text.setText(chipText.html)
-    flow.addView(text)
+    text setBackgroundResource backgroundRes
+    text setText chipText.html
+
+    flow setVisibility View.VISIBLE
+    flow addView text
     text
   }
 
@@ -330,11 +331,13 @@ trait BaseActivity extends AppCompatActivity { me =>
     timer.schedule(UITask(process), 225)
   }
 
-  def singleInputPopup: (View, TextInputLayout, EditText) = {
-    val container: View = getLayoutInflater.inflate(R.layout.frag_hint_input, null, false)
+  def singleInputPopup: (View, TextInputLayout, EditText, CheckBox, TextView) = {
+    val container = getLayoutInflater.inflate(R.layout.frag_hint_input, null, false)
+    val extraOption = container.findViewById(R.id.extraOption).asInstanceOf[CheckBox]
+    val extraOptionText = container.findViewById(R.id.extraOptionText).asInstanceOf[TextView]
     val extraInputLayout = container.findViewById(R.id.extraInputLayout).asInstanceOf[TextInputLayout]
     val extraInput = container.findViewById(R.id.extraInput).asInstanceOf[EditText]
-    (container, extraInputLayout, extraInput)
+    (container, extraInputLayout, extraInput, extraOption, extraOptionText)
   }
 
   // Rich popup title

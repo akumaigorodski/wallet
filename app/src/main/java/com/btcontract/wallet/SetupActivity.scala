@@ -101,7 +101,7 @@ trait MnemonicActivity { me: BaseActivity =>
     }
 
     view setOnClickListener onButtonTap {
-      val (container, extraInputLayout, extraInput) = singleInputPopup
+      val (container, extraInputLayout, extraInput, _, _) = singleInputPopup
       val builder = titleBodyAsViewBuilder(getString(settings_custom_electrum_disabled).asDefView, container)
       mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, builder, dialog_ok, dialog_cancel)
       extraInputLayout.setHint(settings_custom_electrum_host_port)

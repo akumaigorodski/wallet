@@ -28,6 +28,7 @@ object Tools {
   implicit class Any2Some[T](underlying: T) {
     def asLeft: Left[T, Nothing] = Left(underlying)
     def asRight: Right[Nothing, T] = Right(underlying)
+    def asVector: Vector[T] = Vector(underlying)
     def asSome: Option[T] = Some(underlying)
   }
 

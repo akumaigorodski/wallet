@@ -54,9 +54,7 @@ case class AddressDescription(label: Option[String] = None) extends ItemDescript
   val semanticOrder: Option[SemanticOrder] = None
 }
 
-case class AddressInfo(ewt: ElectrumWalletType, core: CompleteChainWalletInfo, pubKey: ExtendedPublicKey,
-                       fresh: Boolean, description: AddressDescription) extends ItemDetails {
-
+case class AddressInfo(ewt: ElectrumWalletType, core: CompleteChainWalletInfo, pubKey: ExtendedPublicKey, description: AddressDescription) extends ItemDetails {
   override val identity: String = ewt.textAddress(pubKey)
   override def updatedAt: Long = 0L
   override def seenAt: Long = 0L
@@ -83,6 +81,11 @@ case class TxInfo(txString: String, txidString: String, extPubsString: String, d
   lazy val txid: ByteVector32 = ByteVector32.fromValidHex(txidString)
 
   lazy val tx: Transaction = Transaction.read(txString)
+
+  lazy val relatedTxids: Set[ByteVector32] = {
+    val rbfTxidSet = description.rbf.map(_.ofTxid).toSet
+    rbfTxidSet ++ description.cpfpBy ++ description.cpfpOf + txid
+  }
 }
 
 sealed trait TxDescription extends ItemDescription {

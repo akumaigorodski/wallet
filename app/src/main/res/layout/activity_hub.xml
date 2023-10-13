@@ -23,7 +23,6 @@
         android:paddingTop="14dp"
         android:paddingBottom="14dp"
         android:layout_alignParentBottom="true"
-        android:id="@+id/bottomActionBar"
         android:orientation="horizontal"
         style="@style/FillingView"
         android:gravity="center">

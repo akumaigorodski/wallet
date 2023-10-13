@@ -134,7 +134,7 @@
     <string name="lnurl_auth_link_ok">Enlazado exitosamente</string>
 
     <string name="lnurl_auth_info"><![CDATA[
-        Clave de autenticación generada por tu billetera para <i>%1$s</i>:<br><br><strong>%2$s</strong>.
+        Clave de autenticación generada por tu billetera para <i>%1$s</i>:<br><br><strong>%2$s</strong>
         <br><br>Será usada para autorización anónima en <i>%1$s</i>, ningún dato personal será divulgado.
     ]]></string>
 

@@ -179,13 +179,13 @@ object WalletApp {
     ElectrumWallet.connectionProvider doWhenReady {
       ElectrumWallet.pool ! ElectrumClientPool.InitConnect
 
-      val feeratePeriodHours = 3
+      val feeratePeriodHours = 2
       val rateRetry = Rx.retry(Rx.ioQueue.map(_ => feeRates.reloadData), Rx.incSec, 3 to 18 by 3)
       val rateRepeat = Rx.repeat(rateRetry, Rx.incHour, feeratePeriodHours to Int.MaxValue by feeratePeriodHours)
       val feerateObs = Rx.initDelay(rateRepeat, feeRates.info.stamp, feeratePeriodHours * 3600 * 1000L)
       feerateObs.foreach(feeRates.updateInfo, none)
 
-      val fiatPeriodSecs = 60 * 10
+      val fiatPeriodSecs = 60 * 5
       val fiatRetry = Rx.retry(Rx.ioQueue.map(_ => fiatRates.reloadData), Rx.incSec, 3 to 18 by 3)
       val fiatRepeat = Rx.repeat(fiatRetry, Rx.incSec, fiatPeriodSecs to Int.MaxValue by fiatPeriodSecs)
       val fiatObs = Rx.initDelay(fiatRepeat, fiatRates.info.stamp, fiatPeriodSecs * 1000L)
