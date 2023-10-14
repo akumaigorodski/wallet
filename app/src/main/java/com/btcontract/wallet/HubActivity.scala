@@ -739,8 +739,17 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
   }
 
-  override def onBackPressed: Unit = if (isSearchOn) rmSearch(null) else super.onBackPressed
-  def isSearchOn: Boolean = walletCards.searchField.getTag.asInstanceOf[Boolean]
+  override def onBackPressed: Unit =
+    if (isSearchOn) rmSearch(view = null)
+    else if (displayFullIxInfoHistory) {
+      displayFullIxInfoHistory = false
+      allInfos = allInfos.take(n = 3)
+      paymentAdapterDataChanged.run
+    } else super.onBackPressed
+
+  def isSearchOn: Boolean = {
+    walletCards.searchField.getTag.asInstanceOf[Boolean]
+  }
 
   override def START(state: Bundle): Unit =
     WalletApp.isAlive match {
