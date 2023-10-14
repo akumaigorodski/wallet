@@ -215,7 +215,7 @@ class WalletApp extends Application { me =>
 
   import android.provider.Settings.System.{FONT_SCALE, getFloat}
   // Special handling for cases when user has chosen large font and screen size is constrained
-  lazy val tooFewSpace: Boolean = getFloat(getContentResolver, FONT_SCALE, 1) > 1 && scrWidth < 2.4
+  lazy val tooFewSpace: Boolean = getFloat(getContentResolver, FONT_SCALE, 1) > 1.15 || scrWidth < 2.4
 
   lazy val dateFormat: SimpleDateFormat = DateFormat.is24HourFormat(me) match {
     case false if tooFewSpace => new SimpleDateFormat("MM/dd/yy")
