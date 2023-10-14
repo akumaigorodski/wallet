@@ -90,6 +90,12 @@
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
+            android:name="QRSigActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoActionBar"/>
+
+        <activity
             android:name="SettingsActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"

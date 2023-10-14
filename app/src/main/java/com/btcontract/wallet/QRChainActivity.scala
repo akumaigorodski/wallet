@@ -92,11 +92,12 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
   }
 
   override def PROCEED(state: Bundle): Unit = {
-    setContentView(R.layout.activity_qr_chain_addresses)
+    setContentView(R.layout.activity_qr_addresses)
     checkExternalData(noneRunnable)
   }
 
   def showQRCode: Unit = {
+    val title = getString(dialog_receive_btc) + "<br>" + spec.info.label
     val keys = spec.data.firstUnusedAccountKeys.toList.sortBy(_.path.lastChildNumber)
     val layoutManager = new CarouselLayoutManager(CarouselLayoutManager.HORIZONTAL, false)
     layoutManager.setPostLayoutListener(new CarouselZoomPostLayoutListener)
@@ -115,15 +116,11 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
       chainQrMore.setVisibility(View.GONE)
     }
 
+    chainQrCaption.setText(title.html)
     chainQrCodes.addOnScrollListener(new CenterScrollListener)
     chainQrCodes.setLayoutManager(layoutManager)
     chainQrCodes.setHasFixedSize(true)
     chainQrCodes.setAdapter(adapter)
-
-    val text = chainWalletNotice(spec) map { textRes =>
-      getString(dialog_receive_btc) + "<br>" + getString(textRes)
-    } getOrElse getString(dialog_receive_btc)
-    chainQrCaption.setText(text.html)
   }
 
   override def checkExternalData(whenNone: Runnable): Unit = InputParser.checkAndMaybeErase {

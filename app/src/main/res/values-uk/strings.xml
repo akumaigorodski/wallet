@@ -42,7 +42,7 @@
     <string name="dialog_add_description">Додати опис&#8230;</string>
     <string name="dialog_set_label">Додати мітку&#8230;</string>
 
-    <string name="dialog_receive_btc"><![CDATA[Отримати на <b>Біткоїн</b>-адресу]]></string>
+    <string name="dialog_receive_btc"><![CDATA[Ваша <b>Біткоїн</b>-адреса]]></string>
 
     <string name="dialog_up_to"><![CDATA[<b>до</b> %1$s]]></string>
     <string name="dialog_fee_sat_vbyte"><![CDATA[<b>ціна</b> %1$s sat/vB]]></string>
@@ -141,6 +141,34 @@
 
     <!-- /lnurl-auth -->
 
+    <!-- sign-verify -->
+
+    <string name="sign_address_not_found"><![CDATA[
+        Для підпису треба мати адресу <strong>%1$s</strong>,
+        але у вашому гаманці такої адреси немає.
+    ]]></string>
+
+    <string name="sign_sign_message_title"><![CDATA[Підписати повідомлення<br><br><b>адресою</b> %1$s]]></string>
+    <string name="sign_signed_message_title"><![CDATA[<b>Підписане повідомлення</b><br>%1$s]]></string>
+
+    <string name="sign_sign_message">Підписати повідомлення</string>
+    <string name="sign_sig_only">Поділитися лише підписом і хешем</string>
+    <string name="sign_sig_only_info">Не розкривати повідомлення</string>
+    <string name="sign_message">Повідомлення</string>
+    <string name="sign_sign">Підписати</string>
+
+    <string name="verify_ok">ПІДПИС ЗБІГАЄТЬСЯ</string>
+    <string name="verify_no">ПІДПИС НЕ ЗБІГАЄТЬСЯ</string>
+
+    <string name="verify_details"><![CDATA[
+        Bitcoin-адреса<br><tt><b>%1$s</b></tt><br><br>
+        BIP322 Хеш повідомлення<br><tt><b>%2$s</b></tt><br><br>
+        Текст повідомлення<br><tt><b>%3$s</b></tt>
+    ]]></string>
+
+    <!-- /sign-verify -->
+
+    <string name="tap_to_receive">Tap to receive</string>
     <string name="confirm_remove_item">&#9888; Бажаєте видалити цей елемент?</string>
     <string name="dialog_requested"><![CDATA[<b>запит</b>&#160;%1$s]]></string>
 </resources>

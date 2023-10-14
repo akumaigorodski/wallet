@@ -64,10 +64,8 @@ case class BitcoinUri(uri: Try[Uri], address: String) {
 }
 
 object BIP322Data {
-  def fromBase64String(raw64: String) = {
-    val decoded = Base64.decode(raw64)
-    new String(decoded)
-  }
+  def fromBase64String(raw64: String) = new String(Base64 decode raw64)
+  def toBase64String(raw: String) = Base64.toBase64String(raw.getBytes)
 
   def parseVerify(raw: String): BIP322VerifyData = raw split '|' match {
     case Array(address, hash, sig64, "-") => BIP322VerifyData(address, ByteVector.fromValidHex(hash), sig64, Option.empty)
@@ -76,19 +74,18 @@ object BIP322Data {
   }
 
   def parseSign(raw: String): BIP32SignData = raw split '|' match {
-    case Array(message, address) => BIP32SignData(fromBase64String(message), address)
+    case Array(message, address) => BIP32SignData(message, address)
     case _ => throw new RuntimeException
   }
 }
 
 case class BIP322VerifyData(address: String, messageHash: ByteVector, signature64: String, message: Option[String] = None) {
-  def hashEqualsMessage: Boolean = message.map(Bip322.getBip322MessageHash).map(ByteVector.view).forall(generated => messageHash == generated)
   def serialize: String = s"bip322verify$address|${messageHash.toHex}|$signature64|${message.map(_.getBytes).map(Base64.toBase64String) getOrElse "-"}"
 }
 
-case class BIP32SignData(message: String, address: String) {
-  def messageHash: ByteVector32 = Crypto.sha256(ByteVector view message.getBytes)
-  def serialize: String = s"bip322sign${Base64 toBase64String message.getBytes}|$address"
+case class BIP32SignData(message64: String, address: String) {
+  lazy val message: String = BIP322Data.fromBase64String(message64)
+  def serialize: String = s"bip322sign$message64|$address"
 }
 
 object MultiAddressParser extends RegexParsers {

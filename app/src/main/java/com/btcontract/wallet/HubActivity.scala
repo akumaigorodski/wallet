@@ -717,13 +717,25 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         else if (usable.size == 1) bringSendMultiBitcoinPopup(usable, a2a)
         else bringMultiAddressSelector(a2a)
 
-      case lnUrl: LNUrl if lnUrl.isAuth => showAuthForm(lnUrl)
+      case lnUrl: LNUrl if lnUrl.isAuth =>
+        showAuthForm(lnUrl)
 
-      case data: BIP322VerifyData => println(data)
+      case data: BIP322VerifyData =>
+        val address = drongo.address.Address.fromString(drongoNetwork, data.address)
+        val verifies = drongo.crypto.Bip322.verifyHashBip322(address.getScriptType, address, data.messageHash.toArray, data.signature64)
+        val isLegit = verifies && data.message.map(drongo.crypto.Bip322.getBip322MessageHash).map(ByteVector.view).forall(messageHash => data.messageHash == messageHash)
+        val title = if (isLegit) new TitleView(me getString verify_ok).asColoredView(R.color.buttonGreen) else new TitleView(me getString verify_no).asColoredView(R.color.buttonRed)
+        val bld = new AlertDialog.Builder(me).setCustomTitle(title).setMessage(getString(verify_details).format(data.address.short, data.messageHash.toHex.humanFour, data.message getOrElse "?").html)
+        mkCheckForm(_.dismiss, share(data.serialize), bld, dialog_ok, dialog_share)
 
-      case data: BIP32SignData => println(data)
+      case data: BIP32SignData =>
+        runInFutureProcessOnUI(getAddresses.find(info => data.address == info.identity), onFail) {
+          case None => snack(contentWindow, getString(sign_address_not_found).format(data.address.short).html, dialog_ok, _.dismiss)
+          case Some(info) => bringSignDialog(info).setText(data.message)
+        }
 
-      case _ => whenNone.run
+      case _ =>
+        whenNone.run
     }
   }
 
@@ -962,7 +974,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     feeView.worker addWork "MULTI-SEND-INIT-CALL"
   }
 
-  def bringSignDialog(info: AddressInfo): Unit = {
+  def bringSignDialog(info: AddressInfo): EditText = {
     val title = getString(sign_sign_message_title).format(info.identity.short).asDefView
     val (container, extraInputLayout, extraInput, extraOption, extraOptionText) = singleInputPopup
     mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, titleBodyAsViewBuilder(title, container), sign_sign, dialog_cancel)
@@ -974,21 +986,16 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     extraOption.setText(sign_sig_only)
 
     def proceed: Unit = {
-      val network = ElectrumWallet.chainHash match {
-        case Block.LivenetGenesisBlock.hash => drongo.Network.MAINNET
-        case Block.TestnetGenesisBlock.hash => drongo.Network.TESTNET
-        case _ => drongo.Network.REGTEST
-      }
-
       val message = extraInput.getText.toString.trim
       val hash = drongo.crypto.Bip322.getBip322MessageHash(message)
       val messageOpt = if (extraOption.isChecked) None else Some(message)
-      val scriptType = drongo.address.Address.fromString(network, info.identity).getScriptType
+      val scriptType = drongo.address.Address.fromString(drongoNetwork, info.identity).getScriptType
       val ecKey = drongo.crypto.ECKey.fromPrivate(info.ewt.extPrivKeyFromPub(info.pubKey).privateKey.value.toArray)
-      val signature = drongo.crypto.Bip322.signMessageBip322(scriptType, message, ecKey)
-
-      println(BIP322VerifyData(info.identity, ByteVector.view(hash), signature, messageOpt))
+      val data = BIP322VerifyData(info.identity, ByteVector.view(hash), drongo.crypto.Bip322.signMessageBip322(scriptType, message, ecKey), messageOpt)
+      goToWithValue(classOf[QRSigActivity], data)
     }
+
+    extraInput
   }
 
   def paymentAdapterDataChanged: TimerTask = UITask {
@@ -1100,4 +1107,10 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     description = AddressDescription(spec.info.label.asSome)
     (_, pubKey) <- spec.data.keys.accountKeyMap ++ spec.data.keys.changeKeyMap
   } yield AddressInfo(spec.data.keys.ewt, spec.info, pubKey, description)
+
+  private def drongoNetwork = ElectrumWallet.chainHash match {
+    case Block.LivenetGenesisBlock.hash => drongo.Network.MAINNET
+    case Block.TestnetGenesisBlock.hash => drongo.Network.TESTNET
+    case _ => drongo.Network.REGTEST
+  }
 }

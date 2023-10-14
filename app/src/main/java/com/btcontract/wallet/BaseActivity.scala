@@ -151,11 +151,11 @@ trait BaseActivity extends AppCompatActivity { me =>
     me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri)
   } catch { case exception: Throwable => me onFail exception }
 
-  def chainWalletNotice(wallet: WalletSpec): Option[Int] = {
-    if (wallet.info.core.attachedMaster.isDefined) Some(attached_wallet)
-    else if (wallet.info.core.masterFingerprint.nonEmpty) Some(hardware_wallet)
-    else if (wallet.data.keys.ewt.secrets.isEmpty) Some(watching_wallet)
-    else None
+  def chainWalletNotice(wallet: WalletSpec): Int = {
+    if (wallet.info.core.attachedMaster.isDefined) attached_wallet
+    else if (wallet.info.core.masterFingerprint.nonEmpty) hardware_wallet
+    else if (wallet.data.keys.ewt.secrets.isEmpty) watching_wallet
+    else tap_to_receive
   }
 
   def share(text: CharSequence): Unit = startActivity {
@@ -790,11 +790,7 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
       host.setVisMany(hasMoney -> chainBalanceWrap, !hasMoney -> receiveBitcoinTip, spec.info.isCoinControlOn -> coinControlOn)
       chainBalance.setText(WalletApp.denom.parsedWithSign(spec.info.lastBalance.toMilliSatoshi, cardIn, zeroColor).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman spec.info.lastBalance.toMilliSatoshi)
-
-      host.chainWalletNotice(spec) foreach { textRes =>
-        host.setVis(isVisible = true, chainWalletNotice)
-        chainWalletNotice.setText(textRes)
-      }
+      chainWalletNotice setText host.chainWalletNotice(spec)
 
       chainLabel setText spec.info.label.asSome.filter(_.trim.nonEmpty).getOrElse(spec.info.core.walletType)
       coinControl setOnClickListener host.onButtonTap(me onCoinControlTap spec.data.keys.ewt.xPub)

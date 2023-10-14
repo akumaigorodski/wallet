@@ -41,7 +41,7 @@
     <string name="dialog_add_description">Adicione descrição&#8230;</string>
     <string name="dialog_set_label">Rótulo do item&#8230;</string>
 
-    <string name="dialog_receive_btc"><![CDATA[Receber em endereço <b>Bitcoin</b>]]></string>
+    <string name="dialog_receive_btc"><![CDATA[Your <b>Bitcoin</b> address]]></string>
 
     <string name="dialog_up_to"><![CDATA[<b>até</b> %1$s]]></string>
     <string name="dialog_fee_sat_vbyte"><![CDATA[<b>taxa</b> %1$s sat/vB]]></string>
@@ -140,6 +140,34 @@
 
     <!-- /lnurl-auth -->
 
+    <!-- sign-verify -->
+
+    <string name="sign_address_not_found"><![CDATA[
+        Message is requested to be signed with address <strong>%1$s</strong>,
+        but your wallet does not contain such an address.
+    ]]></string>
+
+    <string name="sign_sign_message_title"><![CDATA[Sign message<br><br><b>with address</b> %1$s]]></string>
+    <string name="sign_signed_message_title"><![CDATA[<b>Signed message</b><br>%1$s]]></string>
+
+    <string name="sign_sign_message">Sign message</string>
+    <string name="sign_sig_only">Share signature and hash only</string>
+    <string name="sign_sig_only_info">Do not reveal a message itself</string>
+    <string name="sign_message">Message</string>
+    <string name="sign_sign">Sign</string>
+
+    <string name="verify_ok">SIGNATURE MATCHES</string>
+    <string name="verify_no">SIGNATURE DOES NOT MATCH</string>
+
+    <string name="verify_details"><![CDATA[
+        Bitcoin address<br><tt><b>%1$s</b></tt><br><br>
+        BIP322 Message hash<br><tt><b>%2$s</b></tt><br><br>
+        Message text<br><tt><b>%3$s</b></tt>
+    ]]></string>
+
+    <!-- /sign-verify -->
+
+    <string name="tap_to_receive">Toque para receber</string>
     <string name="confirm_remove_item">&#9888; Você quer remover este item?</string>
     <string name="dialog_requested"><![CDATA[<b>solicitado</b>&#160;%1$s]]></string>
 </resources>

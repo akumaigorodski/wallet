@@ -67,7 +67,6 @@
                         style="@style/Emphasized"/>
 
                     <TextView
-                        android:visibility="gone"
                         android:layout_marginTop="6dp"
                         android:id="@+id/chainWalletNotice"
                         style="@style/BoundedView"/>

@@ -34,7 +34,7 @@ public class Bip322 {
         ECKey pubKey = ECKey.fromPublicOnly(privKey);
         Address address = scriptType.getAddress(pubKey);
 
-        Transaction toSpend = getBip322ToSpend(address, message);
+        Transaction toSpend = getBip322ToSpend(address, getBip322MessageHash(message));
         Transaction toSign = getBip322ToSign(toSpend);
 
         TransactionOutput utxoOutput = toSpend.getOutputs().get(0);
@@ -54,6 +54,10 @@ public class Bip322 {
     }
 
     public static boolean verifyMessageBip322(ScriptType scriptType, Address address, String message, String signatureBase64) throws SignatureException {
+        return verifyHashBip322(scriptType, address, getBip322MessageHash(message), signatureBase64);
+    }
+
+    public static boolean verifyHashBip322(ScriptType scriptType, Address address, byte[] messageHash, String signatureBase64) throws SignatureException {
         checkScriptType(scriptType);
 
         if(signatureBase64.trim().isEmpty()) {
@@ -102,7 +106,7 @@ public class Bip322 {
             throw new SignatureException(scriptType + " addresses are not supported");
         }
 
-        Transaction toSpend = getBip322ToSpend(address, message);
+        Transaction toSpend = getBip322ToSpend(address, messageHash);
         Transaction toSign = getBip322ToSign(toSpend);
 
         PSBT psbt = new PSBT(toSign);
@@ -143,14 +147,14 @@ public class Bip322 {
         return scriptType == ScriptType.P2WPKH || scriptType == P2TR;
     }
 
-    public static Transaction getBip322ToSpend(Address address, String message) {
+    public static Transaction getBip322ToSpend(Address address, byte[] messageHash) {
         Transaction toSpend = new Transaction();
         toSpend.setVersion(0);
         toSpend.setLocktime(0);
 
         List<ScriptChunk> scriptSigChunks = new ArrayList<>();
         scriptSigChunks.add(ScriptChunk.fromOpcode(ScriptOpCodes.OP_0));
-        scriptSigChunks.add(ScriptChunk.fromData(getBip322MessageHash(message)));
+        scriptSigChunks.add(ScriptChunk.fromData(messageHash));
         Script scriptSig = new Script(scriptSigChunks);
         toSpend.addInput(Sha256Hash.ZERO_HASH, 0xFFFFFFFFL, scriptSig, new TransactionWitness(toSpend, Collections.emptyList()));
         toSpend.getInputs().get(0).setSequenceNumber(0L);
