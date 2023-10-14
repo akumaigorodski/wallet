@@ -121,21 +121,22 @@
                             android:id="@+id/description"
                             android:layout_centerVertical="true"
                             android:layout_toEndOf="@+id/labelIcon"
-                            android:layout_toStartOf="@id/statusIcon"
+                            android:layout_toStartOf="@id/statusText"
                             android:layout_marginEnd="3dp"
                             android:textStyle="bold"
                             android:ellipsize="end"
                             android:maxLines="1"/>
 
-                        <ImageView
-                            style="@style/BoundedView"
-                            android:id="@+id/statusIcon"
-                            android:layout_centerVertical="true"
-                            android:layout_alignParentEnd="true"/>
-
                         <TextView
                             style="@style/ChipTextGray"
                             android:id="@+id/statusText"
+                            android:layout_centerVertical="true"
+                            android:layout_alignParentEnd="true"
+                            android:layout_toStartOf="@id/statusIcon"/>
+
+                        <ImageView
+                            style="@style/BoundedView"
+                            android:id="@+id/statusIcon"
                             android:layout_centerVertical="true"
                             android:layout_alignParentEnd="true"/>
 

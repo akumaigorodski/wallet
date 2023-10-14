@@ -148,7 +148,7 @@
         but your wallet does not contain such an address.
     ]]></string>
 
-    <string name="sign_sign_message_title"><![CDATA[Sign message<br><br><b>with address</b> %1$s]]></string>
+    <string name="sign_sign_message_title"><![CDATA[Sign message using address<br><br><b>%1$s</b>]]></string>
     <string name="sign_signed_message_title"><![CDATA[<b>Signed message</b><br>%1$s]]></string>
 
     <string name="sign_sign_message">Sign message</string>
@@ -161,7 +161,7 @@
     <string name="verify_no">SIGNATURE DOES NOT MATCH</string>
 
     <string name="verify_details"><![CDATA[
-        Bitcoin address<br><tt><b>%1$s</b></tt><br><br>
+        Bitcoin address<br><b>%1$s</b><br><br>
         BIP322 Message hash<br><tt><b>%2$s</b></tt><br><br>
         Message text<br><tt><b>%3$s</b></tt>
     ]]></string>

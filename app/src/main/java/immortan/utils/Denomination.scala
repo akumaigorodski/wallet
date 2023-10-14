@@ -51,7 +51,7 @@ object SatDenomination extends Denomination { me =>
     if (0L == msat.toLong) "0" else parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
 
   def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
-    s"<font color=$mainColor>" + fmt.format(me fromMsat msat) + "</font>"
+    s"<tt><font color=$mainColor>" + fmt.format(me fromMsat msat) + "</font></tt>"
 }
 
 object BtcDenomination extends Denomination { me =>
@@ -74,8 +74,8 @@ object BtcDenomination extends Denomination { me =>
     val finalSplitIndex = if (".00000000" == decimal) splitIndex - 1 else splitIndex
     val (finalWhole, finalDecimal) = bld.splitAt(finalSplitIndex)
 
-    new StringBuilder("<font color=").append(zeroColor).append('>').append(finalWhole).append("</font>")
-      .append("<font color=").append(mainColor).append('>').append(finalDecimal).append("</font>")
+    new StringBuilder("<tt><font color=").append(zeroColor).append('>').append(finalWhole).append("</font>")
+      .append("<font color=").append(mainColor).append('>').append(finalDecimal).append("</font></tt>")
       .toString
   }
 }

@@ -148,7 +148,7 @@
         але у вашому гаманці такої адреси немає.
     ]]></string>
 
-    <string name="sign_sign_message_title"><![CDATA[Підписати повідомлення<br><br><b>адресою</b> %1$s]]></string>
+    <string name="sign_sign_message_title"><![CDATA[Підписати повідомлення адресою<br><br><b>%1$s</b>]]></string>
     <string name="sign_signed_message_title"><![CDATA[<b>Підписане повідомлення</b><br>%1$s]]></string>
 
     <string name="sign_sign_message">Підписати повідомлення</string>
