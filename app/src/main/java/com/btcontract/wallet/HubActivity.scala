@@ -722,9 +722,9 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
       case data: BIP322VerifyData =>
         val address = drongo.address.Address.fromString(drongoNetwork, data.address)
-        val verifies = drongo.crypto.Bip322.verifyHashBip322(address.getScriptType, address, data.messageHash.toArray, data.signature64)
-        val isLegit = verifies && data.message.map(drongo.crypto.Bip322.getBip322MessageHash).map(ByteVector.view).forall(messageHash => data.messageHash == messageHash)
-        val title = if (isLegit) new TitleView(me getString verify_ok).asColoredView(R.color.buttonGreen) else new TitleView(me getString verify_no).asColoredView(R.color.buttonRed)
+        val verifies = try drongo.crypto.Bip322.verifyHashBip322(address.getScriptType, address, data.messageHash.toArray, data.signature64) catch { case _: Throwable => false }
+        val isSignatureLegit = verifies && data.message.map(drongo.crypto.Bip322.getBip322MessageHash).map(ByteVector.view).forall(messageHash => data.messageHash == messageHash)
+        val title = if (isSignatureLegit) new TitleView(me getString verify_ok).asColoredView(R.color.buttonGreen) else new TitleView(me getString verify_no).asColoredView(R.color.buttonRed)
         val bld = new AlertDialog.Builder(me).setCustomTitle(title).setMessage(getString(verify_details).format(data.address.short, data.messageHash.toHex.humanFour, data.message getOrElse "?").html)
         mkCheckForm(_.dismiss, share(data.serialize), bld, dialog_ok, dialog_share)
 
