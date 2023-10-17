@@ -137,19 +137,19 @@ object ElectrumWallet extends CanBeShutDown {
   }
 
   def spendAll(restPubKeyScript: ByteVector, strictPubKeyScriptsToAmount: Map[ByteVector, Satoshi],
-               usableInUtxos: Seq[Utxo], feeRatePerKw: FeeratePerKw, sequenceFlag: Long): SendAllResponse = {
+               usableInUtxos: Seq[Utxo], feeRatePerKw: FeeratePerKw, sequenceFlag: Long,
+               extraOutUtxos: List[TxOut] = Nil): SendAllResponse = {
 
     val strictTxOuts = for (pubKeyScript \ amount <- strictPubKeyScriptsToAmount) yield TxOut(amount, pubKeyScript)
-    val restTxOut = TxOut(amount = usableInUtxos.map(_.item.value.sat).sum - strictTxOuts.map(_.amount).sum, restPubKeyScript)
-    val tx = Transaction(version = 2, txIn = Nil, restTxOut :: strictTxOuts.toList, lockTime = 0)
+    val restTxOut = TxOut(amount = usableInUtxos.map(_.item.value.sat).sum - strictTxOuts.map(_.amount).sum - extraOutUtxos.map(_.amount).sum, restPubKeyScript)
+    val tx = Transaction(version = 2, txIn = Nil, txOut = restTxOut :: strictTxOuts.toList ::: extraOutUtxos, lockTime = 0)
     val tx1 = ElectrumWalletType.dummySignTransaction(usableInUtxos, tx, sequenceFlag)
 
     val fee = weight2fee(weight = tx1.weight(Protocol.PROTOCOL_VERSION), feeratePerKw = feeRatePerKw)
     require(restTxOut.amount - fee > params.dustLimit, "Resulting tx amount to send is below dust limit")
 
     val restTxOut1 = TxOut(restTxOut.amount - fee, restPubKeyScript)
-    val tx2 = tx1.copy(txOut = restTxOut1 :: strictTxOuts.toList)
-
+    val tx2 = tx1.copy(txOut = restTxOut1 :: strictTxOuts.toList ::: extraOutUtxos)
     val allPubKeyScriptsToAmount = strictPubKeyScriptsToAmount.updated(restPubKeyScript, restTxOut1.amount)
     val (wallets, tx3) = ElectrumWalletType.signTransaction(usableInUtxos, tx2)
     SendAllResponse(allPubKeyScriptsToAmount, wallets, tx3, fee)
@@ -166,7 +166,7 @@ object ElectrumWallet extends CanBeShutDown {
 
     val ourInputs = for {
       txInput <- transaction.txIn
-      data <- datas if data.isMine(txInput)
+      data <- datas if data.extPubKeyFromInput(txInput).isDefined
     } yield txInput
 
     val utxos = for {
@@ -174,8 +174,8 @@ object ElectrumWallet extends CanBeShutDown {
       data <- datas if data.transactions.contains(txInput.outPoint.txid)
       txOutput = data.transactions(txInput.outPoint.txid).txOut(txInput.outPoint.index.toInt)
       item = UnspentItem(txInput.outPoint.txid, txInput.outPoint.index.toInt, txOutput.amount.toLong, 0)
-      spentPunKeyExt <- data.keys.publicScriptMap.get(txOutput.publicKeyScript)
-    } yield Utxo(spentPunKeyExt, item, data.keys.ewt)
+      spentPubKeyExt <- data.keys.publicScriptMap.get(txOutput.publicKeyScript)
+    } yield Utxo(spentPubKeyExt, item, data.keys.ewt)
 
     if (utxos.size != ourInputs.size) None else {
       val totalMineSent = utxos.map(_.item.value.sat).sum
@@ -197,6 +197,12 @@ object ElectrumWallet extends CanBeShutDown {
   def makeTx(specs: Seq[WalletSpec], changeTo: WalletSpec, pubKeyScript: ByteVector, amount: Satoshi, prevScriptToAmount: Map[ByteVector, Satoshi], feeRatePerKw: FeeratePerKw): GenerateTxResponse = {
     if (specs.map(_.data.balance).sum != prevScriptToAmount.values.sum + amount) makeBatchTx(specs, changeTo, prevScriptToAmount.updated(pubKeyScript, amount), feeRatePerKw)
     else spendAll(pubKeyScript, prevScriptToAmount, specs.flatMap(_.data.utxos), feeRatePerKw, OPT_IN_FULL_RBF)
+  }
+
+  private def emptyUtxo(pubKeyScript: ByteVector): TxOut = TxOut(Satoshi(0L), pubKeyScript)
+  def stampHashes(utxo: Utxo, hashes: Set[ByteVector32], pubKeyScript: ByteVector, feeRatePerKw: FeeratePerKw): GenerateTxResponse = {
+    val preimageTxOuts = hashes.toList.map(_.bytes).map(OP_PUSHDATA.apply).grouped(2).map(OP_RETURN :: _).map(Script.write).map(emptyUtxo).toList
+    spendAll(pubKeyScript, Map.empty, List(utxo), feeRatePerKw, OPT_IN_FULL_RBF, preimageTxOuts)
   }
 
   def makeCPFP(specs: Seq[WalletSpec], fromOutpoints: Set[OutPoint], pubKeyScript: ByteVector, feeRatePerKw: FeeratePerKw): GenerateTxResponse = {
@@ -260,9 +266,8 @@ object ElectrumWallet extends CanBeShutDown {
   def determineChangeWallet(candidates: Iterable[WalletSpec] = Nil): WalletSpec = candidates.minBy {
     case hardware if hardware.data.keys.ewt.secrets.isEmpty && hardware.info.core.masterFingerprint.nonEmpty => 0
     case default if default.data.keys.ewt.secrets.nonEmpty && default.info.core.walletType == BIP84 => 1
-    case localSigning if localSigning.data.keys.ewt.secrets.nonEmpty => 2
-    case attached if attached.info.core.attachedMaster.nonEmpty => 3
-    case _ => 4
+    case signing if signing.data.keys.ewt.secrets.nonEmpty => 2
+    case _ => 3
   }
 
   // Async API
@@ -576,7 +581,7 @@ case class ElectrumData(blockchain: Blockchain, keys: MemoizedKeys, excludedOutP
 
   def isTxKnown(txid: ByteVector32): Boolean = transactions.contains(txid) || pendingTransactionRequests.contains(txid) || pendingTransactions.exists(_.txid == txid)
 
-  def isMine(txIn: TxIn): Boolean = keys.ewt.extractPubKeySpentFrom(txIn).map(keys.ewt.writePublicKeyScriptHash).exists(keys.publicScriptMap.contains)
+  def extPubKeyFromInput(txIn: TxIn): Option[ExtendedPublicKey] = keys.ewt.extractPubKeySpentFrom(txIn).map(keys.ewt.writePublicKeyScriptHash).flatMap(keys.publicScriptMap.get)
 
   def isMine(txOut: TxOut): Boolean = keys.publicScriptMap.contains(txOut.publicKeyScript)
 

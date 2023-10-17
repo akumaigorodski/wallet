@@ -149,7 +149,8 @@
     ]]></string>
 
     <string name="sign_sign_message_title"><![CDATA[Підписати повідомлення адресою<br><br><b>%1$s</b>]]></string>
-    <string name="sign_signed_message_title"><![CDATA[<b>Підписане повідомлення</b><br>%1$s]]></string>
+    <string name="sign_sign_message_tx_title"><![CDATA[Підписати повідомлення адресою<br><br><b>%1$s</b><br><br>З транзакції<br><br><b>%2$s</b>]]></string>
+    <string name="sign_signed_message_title"><![CDATA[<b>Повідомлення, підписане адресою</b><br>%1$s]]></string>
 
     <string name="sign_sign_message">Підписати повідомлення</string>
     <string name="sign_sig_only">Поділитися лише підписом і хешем</string>
@@ -161,9 +162,9 @@
     <string name="verify_no">ПІДПИС НЕ ЗБІГАЄТЬСЯ</string>
 
     <string name="verify_details"><![CDATA[
-        Bitcoin-адреса<br><tt><b>%1$s</b></tt><br><br>
-        BIP322 Хеш повідомлення<br><tt><b>%2$s</b></tt><br><br>
-        Текст повідомлення<br><tt><b>%3$s</b></tt>
+        <br>Підписано Bitcoin-адресою<br><b>%1$s</b><br><br>
+        BIP322 Хеш повідомлення<br><b>%2$s</b><br><br>
+        Текст повідомлення<br><b>%3$s</b>
     ]]></string>
 
     <!-- /sign-verify -->

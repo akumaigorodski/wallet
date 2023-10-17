@@ -79,8 +79,8 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
       }
 
       // Allow user to add a hardware wallet or another BIP39-based wallet
-      addFlowChip(options.flow, getString(settings_add_hardware_wallet), R.drawable.border_green, startHardware)
-      addFlowChip(options.flow, getString(settings_add_recovery_phrase), R.drawable.border_green, startMnemonic)
+      addFlowChip(options.flow, getString(settings_add_hardware_wallet), R.drawable.border_green, startHardware).setTextSize(18f)
+      addFlowChip(options.flow, getString(settings_add_recovery_phrase), R.drawable.border_green, startMnemonic).setTextSize(18f)
       sheet.view.setBackgroundResource(R.color.almostBlack)
       sheet.view.addView(options.view)
 
@@ -116,7 +116,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
 
     view setOnClickListener onButtonTap {
       val list = getLayoutInflater.inflate(R.layout.frag_selector_list, null).asInstanceOf[ListView]
-      val listOptions = for (unit <- units) yield unit.parsedWithSign(MilliSatoshi(526800020L), cardIn, cardZero).html
+      val listOptions = for (unit <- units) yield unit.parsedWithSignTT(MilliSatoshi(526800020L), cardIn, cardZero).html
       list setAdapter new ArrayAdapter(me, android.R.layout.simple_expandable_list_item_1, listOptions.toArray)
       new sheets.ChoiceBottomSheet(list, CHOICE_DENOM_TAG, me).show(getSupportFragmentManager, "unused-tag")
     }

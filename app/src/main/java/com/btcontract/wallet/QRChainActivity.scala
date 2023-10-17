@@ -41,7 +41,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     }
 
     private def updateView(bu: BitcoinUri, holder: QRViewHolder): Unit = bu.uri foreach { uri =>
-      val humanAmountOpt = for (requestedAmount <- bu.amount) yield WalletApp.denom.parsedWithSign(requestedAmount, cardIn, cardZero)
+      val humanAmountOpt = for (requestedAmount <- bu.amount) yield WalletApp.denom.parsedWithSignTT(requestedAmount, cardIn, cardZero)
       val contentToShare = if (bu.amount.isDefined || bu.label.isDefined) InputParser.bitcoin + InputParser.removePrefix(uri.toString) else bu.address
 
       val visibleText = (bu.label, humanAmountOpt) match {
@@ -67,7 +67,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     val background = walletBackground(spec :: Nil)
     val maxMsat = Btc(21000000L).toSatoshi.toMilliSatoshi
     val canReceiveFiatHuman = WalletApp.currentMsatInFiatHuman(maxMsat)
-    val canReceiveHuman = WalletApp.denom.parsedWithSign(maxMsat, cardIn, cardZero)
+    val canReceiveHuman = WalletApp.denom.parsedWithSignTT(maxMsat, cardIn, cardZero)
     val body = getLayoutInflater.inflate(R.layout.frag_input_fiat_converter, null).asInstanceOf[ViewGroup]
     lazy val manager = new RateManager(body, getString(dialog_add_description).asSome, dialog_visibility_sender, WalletApp.fiatRates.info.rates, WalletApp.fiatCode)
     mkCheckForm(proceed, none, titleBodyAsViewBuilder(getString(dialog_receive_btc).asColoredView(background), manager.content), dialog_ok, dialog_cancel)

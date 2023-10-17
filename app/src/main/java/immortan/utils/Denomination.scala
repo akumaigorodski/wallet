@@ -20,20 +20,19 @@ object Denomination {
 }
 
 trait Denomination {
-  def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String
-
+  protected def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String
+  def parsedWithSignTT(msat: MilliSatoshi, mainColor: String, zeroColor: String): String
   def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String
-
   def fromMsat(amount: MilliSatoshi): BigDecimal = BigDecimal(amount.toLong) / factor
 
   def directedWithSign(incoming: MilliSatoshi, outgoing: MilliSatoshi,
                        inColor: String, outColor: String, zeroColor: String,
                        isIncoming: Boolean): String = {
 
-    if (isIncoming && incoming == 0L.msat) parsedWithSign(incoming, inColor, zeroColor)
-    else if (isIncoming) "+&#160;" + parsedWithSign(incoming, inColor, zeroColor)
-    else if (outgoing == 0L.msat) parsedWithSign(outgoing, outColor, zeroColor)
-    else "-&#160;" + parsedWithSign(outgoing, outColor, zeroColor)
+    if (isIncoming && incoming == 0L.msat) parsedWithSignTT(incoming, inColor, zeroColor)
+    else if (isIncoming) "+&#160;" + parsedWithSignTT(incoming, inColor, zeroColor)
+    else if (outgoing == 0L.msat) parsedWithSignTT(outgoing, outColor, zeroColor)
+    else "-&#160;" + parsedWithSignTT(outgoing, outColor, zeroColor)
   }
 
   val fmt: DecimalFormat
@@ -47,11 +46,14 @@ object SatDenomination extends Denomination { me =>
   val factor = 1000L
   val sign = "sat"
 
+  def parsedWithSignTT(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
+    if (0L == msat.toLong) "<tt>0</tt>" else "<tt>" + parsed(msat, mainColor, zeroColor) + "</tt>\u00A0" + sign
+
   def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
     if (0L == msat.toLong) "0" else parsed(msat, mainColor, zeroColor) + "\u00A0" + sign
 
-  def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
-    s"<tt><font color=$mainColor>" + fmt.format(me fromMsat msat) + "</font></tt>"
+  protected def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
+    s"<font color=$mainColor>" + fmt.format(me fromMsat msat) + "</font>"
 }
 
 object BtcDenomination extends Denomination { me =>
@@ -60,10 +62,13 @@ object BtcDenomination extends Denomination { me =>
   val factor = 100000000000L
   val sign = "btc"
 
+  def parsedWithSignTT(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
+    if (0L == msat.toLong) "<tt>0</tt>" else "<tt>" + parsed(msat, mainColor, zeroColor) + "</tt>"
+
   def parsedWithSign(msat: MilliSatoshi, mainColor: String, zeroColor: String): String =
     if (0L == msat.toLong) "0" else parsed(msat, mainColor, zeroColor)
 
-  def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = {
+  protected def parsed(msat: MilliSatoshi, mainColor: String, zeroColor: String): String = {
     // Alpha channel does not work on Android when set as HTML attribute
     // hence zero color is supplied to match different backgrounds well
 
@@ -74,8 +79,8 @@ object BtcDenomination extends Denomination { me =>
     val finalSplitIndex = if (".00000000" == decimal) splitIndex - 1 else splitIndex
     val (finalWhole, finalDecimal) = bld.splitAt(finalSplitIndex)
 
-    new StringBuilder("<tt><font color=").append(zeroColor).append('>').append(finalWhole).append("</font>")
-      .append("<font color=").append(mainColor).append('>').append(finalDecimal).append("</font></tt>")
+    new StringBuilder("<font color=").append(zeroColor).append('>').append(finalWhole).append("</font>")
+      .append("<font color=").append(mainColor).append('>').append(finalDecimal).append("</font>")
       .toString
   }
 }

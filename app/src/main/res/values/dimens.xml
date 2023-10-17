@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="corner_radius">3dp</dimen>
-    <dimen name="large_button_margin">45dp</dimen>
     <dimen name="header_size">22sp</dimen>
     <dimen name="qr_size">120sp</dimen>
 

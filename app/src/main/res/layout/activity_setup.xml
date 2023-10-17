@@ -11,8 +11,8 @@
         <LinearLayout style="@style/StandardXYMarginLinearLayout">
 
             <com.ornach.nobobutton.NoboButton
+                android:layout_marginTop="20dp"
                 app:nb_text="@string/setup_create_new"
-                android:layout_marginTop="@dimen/large_button_margin"
                 android:onClick="createNewWallet"
                 style="@style/GreenButton"/>
 
@@ -22,11 +22,11 @@
                 style="@style/BoundedView"/>
 
             <com.ornach.nobobutton.NoboButton
+                android:layout_marginTop="45dp"
                 app:nb_text="@string/setup_restore_existing"
-                android:layout_marginTop="@dimen/large_button_margin"
                 android:id="@+id/restoreOptionsButton"
                 android:onClick="showMnemonicPopup"
-                style="@style/GreenButton"/>
+                style="@style/GrayButton"/>
 
         </LinearLayout>
     </LinearLayout>

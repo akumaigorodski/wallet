@@ -12,7 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
-import com.btcontract.wallet.HubActivity._
+import com.btcontract.wallet.HubActivity.{addressSpec, _}
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.utils._
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
@@ -41,6 +41,10 @@ import scala.util.{Failure, Success, Try}
 
 
 object HubActivity {
+  case class AddressSpec(amounts: Map[ExtendedPublicKey, Satoshi], addresses: List[AddressInfo] = Nil) {
+    def withBalance: List[AddressInfo] = addresses.filter(address => amounts contains address.pubKey)
+  }
+
   var displayFullIxInfoHistory: Boolean = false
   var alreadySeenTxids: Set[ByteVector32] = Set.empty[ByteVector32]
   case class Accumulator(txids: Set[ByteVector32], txinfos: Vector[TxInfo] = Vector.empty) {
@@ -50,7 +54,7 @@ object HubActivity {
   var txInfos: Iterable[TxInfo] = Nil
   var recentTxInfos: Iterable[TxInfo] = Nil
 
-  var allAdressInfos: Iterable[AddressInfo] = Nil
+  var addressSpec: AddressSpec = _
   var filteredAddressInfos: Iterable[AddressInfo] = Nil
 
   var allInfos: Seq[ItemDetails] = Nil
@@ -99,7 +103,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
   def loadSearchedTxInfos(query: String): Unit = {
     val query1 = query.replaceAll("\\s", "").toLowerCase
-    filteredAddressInfos = allAdressInfos.filter(_.identity.toLowerCase startsWith query1).take(10)
+    filteredAddressInfos = addressSpec.addresses.filter(_.identity.toLowerCase startsWith query1)
     txInfos = WalletApp.txDataBag.searchTransactions(query1).map(WalletApp.txDataBag.toTxInfo)
   }
 
@@ -289,7 +293,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
     def doBoostRBF(specs: Seq[WalletSpec], info: TxInfo): Unit = {
       val changeTo = ElectrumWallet.determineChangeWallet(candidates = specs)
-      val currentFee = WalletApp.denom.parsedWithSign(info.feeSat.toMilliSatoshi, cardOut, cardIn)
+      val currentFee = WalletApp.denom.parsedWithSignTT(info.feeSat.toMilliSatoshi, cardOut, cardIn)
 
       val sendView = new ChainSendView(specs, badge = None, visibilityRes = -1)
       val blockTarget = WalletApp.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
@@ -379,7 +383,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
       val sendView = new ChainSendView(specs, badge = None, visibilityRes = -1)
       val blockTarget = WalletApp.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
-      val currentFee = WalletApp.denom.parsedWithSign(info.feeSat.toMilliSatoshi, cardOut, cardIn)
+      val currentFee = WalletApp.denom.parsedWithSignTT(info.feeSat.toMilliSatoshi, cardOut, cardIn)
       val target = WalletApp.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
       lazy val feeView: FeeView[RBFResponse] = new FeeView[RBFResponse](FeeratePerByte(target), sendView.rbfView.host) {
         rate = target
@@ -489,13 +493,24 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
             addFlowChip(extraInfo, chipText = getString(popup_chain_fee) format fee, R.drawable.border_gray)
           }
 
+          for (addressInfo <- findTxInputAddress(info.tx).headOption) {
+            def doSign: Unit = bringSignDialog(getString(sign_sign_message_tx_title).format(addressInfo.identity.short, info.txidString.humanFour).asDefView, addressInfo)
+            addFlowChip(extraInfo, getString(sign_sign_message), R.drawable.border_yellow, _ => doSign)
+          }
+
           if (canCPFP) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostCPFP info)
           if (canRBF) addFlowChip(extraInfo, getString(dialog_cancel), R.drawable.border_yellow, _ => self cancelRBF info)
           if (canRBF) addFlowChip(extraInfo, getString(dialog_boost), R.drawable.border_yellow, _ => self boostRBF info)
 
         case info: AddressInfo =>
           addFlowChip(extraInfo, "Copy address", R.drawable.border_yellow, _ => WalletApp.app copy info.identity)
-          val sign = addFlowChip(extraInfo, getString(sign_sign_message), R.drawable.border_yellow, _ => me bringSignDialog info)
+          def doSign: Unit = bringSignDialog(getString(sign_sign_message_title).format(info.identity.short).asDefView, info)
+          val sign = addFlowChip(extraInfo, getString(sign_sign_message), R.drawable.border_yellow, _ => doSign)
+
+          addressSpec.amounts.get(info.pubKey).map(_.toMilliSatoshi) foreach { balance =>
+            val amount = WalletApp.denom.parsedWithSign(balance, cardIn, cardZero)
+            addFlowChip(extraInfo, s"balance $amount", R.drawable.border_gray)
+          }
 
           if (info.core.core.masterFingerprint.nonEmpty) {
             // TODO: disable for now, implement HW signing later
@@ -528,8 +543,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         description.setText(info.identity.short.html)
         statusText.setText(info.description.label getOrElse "?")
         nonLinkContainer setBackgroundResource R.drawable.border_gray
-        setVisMany(false -> labelIcon, true -> nonLinkContainer, false -> amountAndMeta,
-          false -> statusIcon, true -> statusText, false -> setItemLabel)
+        setVisMany(false -> labelIcon, true -> nonLinkContainer, false -> amountAndMeta, false -> statusIcon, true -> statusText, false -> setItemLabel)
+        if (addressSpec.amounts contains info.pubKey) expand(info)
     }
 
     def setVisibleIcon(id: Int): Unit = if (lastVisibleIconId != id) {
@@ -725,13 +740,13 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         val verifies = try drongo.crypto.Bip322.verifyHashBip322(address.getScriptType, address, data.messageHash.toArray, data.signature64) catch { case _: Throwable => false }
         val isSignatureLegit = verifies && data.message.map(drongo.crypto.Bip322.getBip322MessageHash).map(ByteVector.view).forall(messageHash => data.messageHash == messageHash)
         val title = if (isSignatureLegit) new TitleView(me getString verify_ok).asColoredView(R.color.buttonGreen) else new TitleView(me getString verify_no).asColoredView(R.color.buttonRed)
-        val bld = new AlertDialog.Builder(me).setCustomTitle(title).setMessage(getString(verify_details).format(data.address.short, data.messageHash.toHex.humanFour, data.message getOrElse "?").html)
+        val bld = new AlertDialog.Builder(me).setCustomTitle(title).setMessage(getString(verify_details).format(data.address.humanFour, data.messageHash.toHex.humanFour, data.message getOrElse "?").html)
         mkCheckForm(_.dismiss, share(data.serialize), bld, dialog_ok, dialog_share)
 
       case data: BIP32SignData =>
-        runInFutureProcessOnUI(getAddresses.find(info => data.address == info.identity), onFail) {
+        runInFutureProcessOnUI(getAddressSpec.addresses.find(addressInfo => data.address == addressInfo.identity), onFail) {
           case None => snack(contentWindow, getString(sign_address_not_found).format(data.address.short).html, dialog_ok, _.dismiss)
-          case Some(info) => bringSignDialog(info).setText(data.message)
+          case Some(info) => bringSignDialog(getString(sign_sign_message_title).format(info.identity.short).asDefView, info).setText(data.message)
         }
 
       case _ =>
@@ -828,9 +843,18 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   def bringSearch(view: View): Unit = {
     walletCards.searchField.setTag(true)
     androidx.transition.TransitionManager.beginDelayedTransition(contentWindow)
-    runInFutureProcessOnUI(getAddresses, none)(addresses => allAdressInfos = addresses)
     setVisMany(false -> walletCards.defaultHeader, true -> walletCards.searchField)
     showKeys(walletCards.searchField)
+
+    runInFutureProcessOnUI(getAddressSpec, none) { spec =>
+      filteredAddressInfos = spec.withBalance
+      txInfos = recentTxInfos.take(3)
+      addressSpec = spec
+      fillAllInfos
+
+      // Update view after filling
+      paymentAdapterDataChanged.run
+    }
   }
 
   def rmSearch(view: View): Unit = {
@@ -971,7 +995,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
 
     for (address \ amount <- addressToAmount.values.reverse) {
-      val humanAmount = WalletApp.denom.parsedWithSign(amount.toMilliSatoshi, cardIn, cardZero)
+      val humanAmount = WalletApp.denom.parsedWithSignTT(amount.toMilliSatoshi, cardIn, cardZero)
       val parent = getLayoutInflater.inflate(R.layout.frag_two_sided_item, null)
       new TwoSidedItem(parent, address.short.html, humanAmount.html)
       sendView.chainEditView.host.addView(parent, 0)
@@ -983,8 +1007,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     feeView.worker addWork "MULTI-SEND-INIT-CALL"
   }
 
-  def bringSignDialog(info: AddressInfo): EditText = {
-    val title = getString(sign_sign_message_title).format(info.identity.short).asDefView
+  def bringSignDialog(title: LinearLayout, info: AddressInfo): EditText = {
     val (container, extraInputLayout, extraInput, extraOption, extraOptionText) = singleInputPopup
     mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, titleBodyAsViewBuilder(title, container), sign_sign, dialog_cancel)
     extraInputLayout.setHint(sign_message)
@@ -1111,11 +1134,30 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
   }
 
-  private def getAddresses = for {
-    spec <- ElectrumWallet.specs.values
-    description = AddressDescription(spec.info.label.asSome)
-    (_, pubKey) <- spec.data.keys.accountKeyMap ++ spec.data.keys.changeKeyMap
-  } yield AddressInfo(spec.data.keys.ewt, spec.info, pubKey, description)
+  def getAddressSpec = {
+    val addresses = for {
+      spec <- ElectrumWallet.specs.values.toList
+      description = AddressDescription(spec.info.label.asSome)
+      (_, extPubKey) <- spec.data.keys.accountKeyMap ++ spec.data.keys.changeKeyMap
+    } yield AddressInfo(spec.data.keys.ewt, spec.info, extPubKey, description)
+
+    val amounts = Map.empty[ExtendedPublicKey, Satoshi]
+    AddressSpec(ElectrumWallet.specs.values.flatMap(_.data.utxos).foldLeft(amounts) { case (acc, utxo) =>
+      acc.updated(utxo.key, acc.getOrElse(utxo.key, 0L.sat) + utxo.item.value.sat)
+    }, addresses)
+  }
+
+  def findTxInputAddress(tx: Transaction): Stream[AddressInfo] = {
+    // Using stream to make computation lazy and don't overcompute
+    // can be used to take the first found value
+
+    for {
+      txIn <- tx.txIn.toStream
+      spec <- ElectrumWallet.specs.valuesIterator
+      extPubKey <- spec.data.extPubKeyFromInput(txIn)
+      description = AddressDescription(spec.info.label.asSome)
+    } yield AddressInfo(spec.data.keys.ewt, spec.info, extPubKey, description)
+  }
 
   private def drongoNetwork = ElectrumWallet.chainHash match {
     case Block.LivenetGenesisBlock.hash => drongo.Network.MAINNET

@@ -56,7 +56,7 @@ import scala.util.{Failure, Success, Try}
 object BaseActivity {
   implicit class StringOps(source: String) {
     def html: Spanned = android.text.Html.fromHtml(source)
-    def humanFour: String = source.grouped(4).mkString(s"\u0020")
+    def humanFour: String = "<tt>" + source.grouped(4).mkString(s"\u0020") + "</tt>"
 
     def short: String = {
       val len = source.length
@@ -140,7 +140,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     val title = new TitleView(caption)
 
     for (amount <- uri.amount) {
-      val amountHuman = WalletApp.denom.parsedWithSign(amount, cardIn, cardZero)
+      val amountHuman = WalletApp.denom.parsedWithSignTT(amount, cardIn, cardZero)
       val requested = getString(dialog_requested).format(amountHuman)
       addFlowChip(title.flow, requested, R.drawable.border_gray)
     }
@@ -554,7 +554,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     val inputChain: LinearLayout = host.findViewById(R.id.inputChain).asInstanceOf[LinearLayout]
 
     val totalCanSend = specs.map(_.info.lastBalance).sum.toMilliSatoshi
-    val canSend = WalletApp.denom.parsedWithSign(totalCanSend, cardIn, cardZero)
+    val canSend = WalletApp.denom.parsedWithSignTT(totalCanSend, cardIn, cardZero)
     val canSendFiat = WalletApp.currentMsatInFiatHuman(totalCanSend)
 
     manager.hintFiatDenom setText getString(dialog_up_to).format(canSendFiat).html
@@ -610,8 +610,8 @@ trait BaseActivity extends AppCompatActivity { me =>
       chainConfirmView.chainButtonsView.chainCancelButton setOnClickListener onButtonTap(alert.dismiss)
       chainConfirmView.chainButtonsView.chainEditButton setOnClickListener onButtonTap(me switchToDefault alert)
 
-      chainConfirmView.confirmFee.secondItem setText WalletApp.denom.parsedWithSign(response.fee.toMilliSatoshi, cardIn, cardZero).html
-      chainConfirmView.confirmAmount.secondItem setText WalletApp.denom.parsedWithSign(response.transferred.toMilliSatoshi, cardIn, cardZero).html
+      chainConfirmView.confirmFee.secondItem setText WalletApp.denom.parsedWithSignTT(response.fee.toMilliSatoshi, cardIn, cardZero).html
+      chainConfirmView.confirmAmount.secondItem setText WalletApp.denom.parsedWithSignTT(response.transferred.toMilliSatoshi, cardIn, cardZero).html
       chainConfirmView.confirmFiat.secondItem setText WalletApp.currentMsatInFiatHuman(response.transferred.toMilliSatoshi).html
 
       switchButtons(alert, on = false)
@@ -789,7 +789,7 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
       val zeroColor = if (spec.data.keys.ewt.secrets.nonEmpty) signCardZero else watchCardZero
       val bgResource = if (selected contains spec.data.keys.ewt.xPub) selectedBackground(spec) else host.walletBackground(spec :: Nil)
       host.setVisMany(hasMoney -> chainBalanceWrap, !hasMoney -> receiveBitcoinTip, spec.info.isCoinControlOn -> coinControlOn)
-      chainBalance.setText(WalletApp.denom.parsedWithSign(spec.info.lastBalance.toMilliSatoshi, cardIn, zeroColor).html)
+      chainBalance.setText(WalletApp.denom.parsedWithSignTT(spec.info.lastBalance.toMilliSatoshi, cardIn, zeroColor).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman spec.info.lastBalance.toMilliSatoshi)
       chainWalletNotice setText host.chainWalletNotice(spec)
 
