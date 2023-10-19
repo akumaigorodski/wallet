@@ -12,7 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
-import com.btcontract.wallet.HubActivity.{addressSpec, _}
+import com.btcontract.wallet.HubActivity._
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.utils._
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
