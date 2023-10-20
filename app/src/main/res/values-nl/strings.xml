@@ -41,7 +41,7 @@
     <string name="dialog_add_description">Voeg beschrijving toe&#8230;</string>
     <string name="dialog_set_label">Bevestig label&#8230;</string>
 
-    <string name="dialog_receive_btc"><![CDATA[Your <b>Bitcoin</b> address]]></string>
+    <string name="dialog_receive_btc"><![CDATA[Your address]]></string>
 
     <string name="dialog_up_to"><![CDATA[<b>tot</b> %1$s]]></string>
     <string name="dialog_fee_sat_vbyte"><![CDATA[<b>tarief</b> %1$s sat/vB]]></string>

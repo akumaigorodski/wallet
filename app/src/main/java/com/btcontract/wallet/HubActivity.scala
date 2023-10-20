@@ -493,7 +493,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
             addFlowChip(extraInfo, chipText = getString(popup_chain_fee) format fee, R.drawable.border_gray)
           }
 
-          for (addressInfo <- findTxInputAddress(info.tx).headOption) {
+          for (addressInfo <- findTxInputAddress(info.tx).headOption if addressInfo.ewt.secrets.nonEmpty) {
             def doSign: Unit = bringSignDialog(getString(sign_sign_message_tx_title).format(addressInfo.identity.short, info.txidString.humanFour).asDefView, addressInfo)
             addFlowChip(extraInfo, getString(sign_sign_message), R.drawable.border_yellow, _ => doSign)
           }
@@ -505,17 +505,11 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         case info: AddressInfo =>
           addFlowChip(extraInfo, "Copy address", R.drawable.border_yellow, _ => WalletApp.app copy info.identity)
           def doSign: Unit = bringSignDialog(getString(sign_sign_message_title).format(info.identity.short).asDefView, info)
-          val sign = addFlowChip(extraInfo, getString(sign_sign_message), R.drawable.border_yellow, _ => doSign)
+          if (info.ewt.secrets.nonEmpty) addFlowChip(extraInfo, getString(sign_sign_message), R.drawable.border_yellow, _ => doSign)
 
           addressSpec.amounts.get(info.pubKey).map(_.toMilliSatoshi) foreach { balance =>
             val amount = WalletApp.denom.parsedWithSign(balance, cardIn, cardZero)
             addFlowChip(extraInfo, s"balance $amount", R.drawable.border_gray)
-          }
-
-          if (info.core.core.masterFingerprint.nonEmpty) {
-            // TODO: disable for now, implement HW signing later
-            sign.setEnabled(false)
-            sign.setAlpha(0.6F)
           }
       }
     }

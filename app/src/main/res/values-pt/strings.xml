@@ -41,7 +41,7 @@
     <string name="dialog_add_description">Adicione descrição&#8230;</string>
     <string name="dialog_set_label">Rótulo do item&#8230;</string>
 
-    <string name="dialog_receive_btc"><![CDATA[Your <b>Bitcoin</b> address]]></string>
+    <string name="dialog_receive_btc"><![CDATA[Your address]]></string>
 
     <string name="dialog_up_to"><![CDATA[<b>até</b> %1$s]]></string>
     <string name="dialog_fee_sat_vbyte"><![CDATA[<b>taxa</b> %1$s sat/vB]]></string>

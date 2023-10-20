@@ -42,7 +42,7 @@
     <string name="dialog_add_description">Додати опис&#8230;</string>
     <string name="dialog_set_label">Додати мітку&#8230;</string>
 
-    <string name="dialog_receive_btc"><![CDATA[Ваша <b>Біткоїн</b>-адреса]]></string>
+    <string name="dialog_receive_btc"><![CDATA[Ваша адреса]]></string>
 
     <string name="dialog_up_to"><![CDATA[<b>до</b> %1$s]]></string>
     <string name="dialog_fee_sat_vbyte"><![CDATA[<b>ціна</b> %1$s sat/vB]]></string>
