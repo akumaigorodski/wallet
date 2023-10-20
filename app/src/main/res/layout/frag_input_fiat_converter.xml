@@ -54,9 +54,7 @@
 
     <!-- Extra input -->
 
-    <include
-        android:visibility="gone"
-        layout="@layout/frag_hint_input"/>
+    <include layout="@layout/frag_hint_input"/>
 
     <TextView
         style="@style/XMarginFillingView"

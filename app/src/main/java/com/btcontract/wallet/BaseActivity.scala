@@ -416,23 +416,21 @@ trait BaseActivity extends AppCompatActivity { me =>
       inputAmount setMaxNumberOfDecimalDigits 8
     }
 
-    extraText match {
-      case Some(hintText) =>
-        val revealExtraInputListener = onButtonTap {
-          extraInputLayout.setVisibility(View.VISIBLE)
-          extraInputOption.setVisibility(View.GONE)
-          showKeys(extraInput)
-        }
+    // At first we set all extra input elements to zero, next we'll see if we should change this
+    setVisMany(false -> extraInputLayout, false -> extraInputOption, false -> extraInputVisibility)
 
-        extraInputLayout.setHint(hintText)
-        extraInputOption.setText(hintText)
-        extraInputVisibility.setText(visHintRes)
-        extraInputOption.setOnClickListener(revealExtraInputListener)
-        extraInputVisibility.setOnClickListener(revealExtraInputListener)
+    for (hintText <- extraText) {
+      val revealExtraInputListener = onButtonTap {
+        setVisMany(true -> extraInputLayout, false -> extraInputOption)
+        showKeys(extraInput)
+      }
 
-      case None =>
-        extraInputOption.setVisibility(View.GONE)
-        extraInputVisibility.setVisibility(View.GONE)
+      extraInputLayout.setHint(hintText)
+      extraInputOption.setText(hintText)
+      extraInputVisibility.setText(visHintRes)
+      extraInputOption.setOnClickListener(revealExtraInputListener)
+      extraInputVisibility.setOnClickListener(revealExtraInputListener)
+      setVisMany(true -> extraInputOption, true -> extraInputVisibility)
     }
 
     fiatInputAmount addTextChangedListener onTextChange { _ =>

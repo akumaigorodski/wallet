@@ -13,8 +13,7 @@
         <EditText
             style="@style/FillingView"
             android:inputType="textMultiLine"
-            android:id="@+id/extraInput"
-            android:maxLines="8"/>
+            android:id="@+id/extraInput"/>
 
     </com.google.android.material.textfield.TextInputLayout>
 
