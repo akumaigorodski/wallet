@@ -4,8 +4,8 @@
     android:background="@color/almostBlack"
     style="@style/StandardLinearLayout">
 
-    <RelativeLayout
-        style="@style/StandardXYMarginLinearLayout">
+    <View style="@style/GrayDivider"/>
+    <RelativeLayout style="@style/StandardXYMarginLinearLayout">
 
         <TextView
             style="@style/FillingView"
