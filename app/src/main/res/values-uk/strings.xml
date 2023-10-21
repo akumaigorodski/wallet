@@ -49,8 +49,8 @@
     <string name="dialog_change_feerate">Змінити комісію&#8230;</string>
     <string name="dialog_insufficient_funds">недостатньо коштів</string>
 
-    <string name="dialog_send_btc"><![CDATA[Надіслати <b>Біткоїн</b>-транзакцію<br>%1$s%2$s]]></string>
-    <string name="dialog_send_btc_many"><![CDATA[Надіслати <b>Біткоїн</b>-транзакцію<br><b>на багато адрес</b>]]></string>
+    <string name="dialog_send_btc"><![CDATA[Надіслати <b>Біткоїн</b> на адресу<br>%1$s%2$s]]></string>
+    <string name="dialog_send_btc_many"><![CDATA[Надіслати <b>Біткоїн</b><br><b>на багато адрес</b>]]></string>
     <string name="dialog_send_btc_confirm_amount">Надіслати суму</string>
     <string name="dialog_send_btc_confirm_fiat">Фіатна вартість</string>
     <string name="dialog_send_btc_confirm_fee">Комісія</string>
