@@ -53,10 +53,6 @@ public class Bip322 {
         return android.util.Base64.encodeToString(finalizedTxInput.getWitness().toByteArray(), android.util.Base64.NO_WRAP);
     }
 
-    public static boolean verifyMessageBip322(ScriptType scriptType, Address address, String message, String signatureBase64) throws SignatureException {
-        return verifyHashBip322(scriptType, address, getBip322MessageHash(message), signatureBase64);
-    }
-
     public static boolean verifyHashBip322(ScriptType scriptType, Address address, byte[] messageHash, String signatureBase64) throws SignatureException {
         checkScriptType(scriptType);
 
@@ -141,10 +137,6 @@ public class Bip322 {
         if(scriptType == ScriptType.P2SH_P2WPKH) {
             throw new UnsupportedOperationException("The P2SH-P2WPKH script type is not currently supported");
         }
-    }
-
-    public static boolean isSupported(ScriptType scriptType) {
-        return scriptType == ScriptType.P2WPKH || scriptType == P2TR;
     }
 
     public static Transaction getBip322ToSpend(Address address, byte[] messageHash) {

@@ -644,21 +644,27 @@ trait BaseActivity extends AppCompatActivity { me =>
   }
 
   abstract class WalletSelector(title: TitleView) {
+    val info = addFlowChip(title.flow, getString(select_wallets), R.drawable.border_yellow)
     val cardsContainer = getLayoutInflater.inflate(R.layout.frag_linear_layout, null).asInstanceOf[LinearLayout]
     val alert = mkCheckForm(alert => runAnd(alert.dismiss)(onOk), none, titleBodyAsViewBuilder(title.view, cardsContainer), dialog_ok, dialog_cancel)
     val spendable = ElectrumWallet.specs.values.filter(_.spendable)
+    updatePopupButton(getPositiveButton(alert), isEnabled = false)
 
     val chooser = new ChainWalletCards(me) {
       val holder: LinearLayout = cardsContainer
-      override def onWalletTap(key: ExtendedPublicKey): Unit = {
-        if (selected contains key) selected -= key else selected += Tuple2(key, ElectrumWallet specs key)
+
+      override def onWalletTap(pubKey: ExtendedPublicKey): Unit = {
+        selected = if (selected contains pubKey) selected - pubKey else selected.updated(pubKey, ElectrumWallet specs pubKey)
         updatePopupButton(button = getPositiveButton(alert), isEnabled = selected.nonEmpty)
         update(spendable)
+
+        val totalCanSend = selected.valuesIterator.map(_.info.lastBalance).sum.toMilliSatoshi
+        val formatted = WalletApp.denom.parsedWithSignTT(totalCanSend, cardIn, cardZero)
+        if (totalCanSend > 0L.msat) info.setText(s"∑ $formatted".html)
+        else info.setText(select_wallets)
       }
     }
 
-    addFlowChip(title.flow, getString(select_wallets), R.drawable.border_yellow)
-    updatePopupButton(getPositiveButton(alert), isEnabled = false)
     chooser.init(spendable.size)
     chooser.update(spendable)
     chooser.unPadCards
