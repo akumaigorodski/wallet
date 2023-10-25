@@ -668,8 +668,14 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   }
 
   private val fiatRatesListener = new FiatRatesListener {
-    def onFiatRates(rates: FiatRatesInfo): Unit =
-      UITask(walletCards.updateView).run
+    def onFiatRates(rates: FiatRatesInfo): Unit = UITask {
+      walletCards.fiatUnitPriceAndChange setAlpha 1F
+      walletCards.updateView
+    }.run
+
+    override def onAttemptGetRates: Unit = UITask {
+      walletCards.fiatUnitPriceAndChange setAlpha 0.6F
+    }.run
   }
 
   // Lifecycle methods
