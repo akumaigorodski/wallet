@@ -15,8 +15,8 @@ android {
         targetSdkVersion 30
         minSdkVersion 21
 
-        versionName '2.5.7'
-        versionCode 108
+        versionName '2.5.8'
+        versionCode 109
     }
 
     buildTypes {
