@@ -21,12 +21,9 @@ class FiatRates(bag: SQLiteData) extends CanBeShutDown {
     "twd" -> "New Taiwan Dollar", "krw" -> "South Korean won", "clp" -> "Chilean Peso", "sgd" -> "Singapore Dollar", "hkd" -> "Hong Kong Dollar", "pln" -> "Polish złoty",
     "dkk" -> "Danish Krone", "sek" -> "Swedish Krona", "chf" -> "Swiss franc", "huf" -> "Hungarian forint")
 
-  def reloadData: Tools.Fiat2Btc = {
-    for (lst <- listeners) lst.onAttemptGetRates
-    fr.acinq.eclair.secureRandom nextInt 2 match {
-      case 0 => to[CoinGecko](ElectrumWallet.connectionProvider.get("https://api.coingecko.com/api/v3/exchange_rates").string).rates.map { case (code, item) => code.toLowerCase -> item.value }
-      case 1 => to[FiatRates.BlockchainInfoItemMap](ElectrumWallet.connectionProvider.get("https://blockchain.info/ticker").string).map { case (code, item) => code.toLowerCase -> item.last }
-    }
+  def reloadData: Tools.Fiat2Btc = fr.acinq.eclair.secureRandom nextInt 2 match {
+    case 0 => to[CoinGecko](ElectrumWallet.connectionProvider.get("https://api.coingecko.com/api/v3/exchange_rates").string).rates.map { case (code, item) => code.toLowerCase -> item.value }
+    case 1 => to[FiatRates.BlockchainInfoItemMap](ElectrumWallet.connectionProvider.get("https://blockchain.info/ticker").string).map { case (code, item) => code.toLowerCase -> item.last }
   }
 
   def updateInfo(newRates: Tools.Fiat2Btc): Unit = {
@@ -41,7 +38,6 @@ class FiatRates(bag: SQLiteData) extends CanBeShutDown {
 }
 
 trait FiatRatesListener {
-  def onAttemptGetRates: Unit = Tools.none
   def onFiatRates(rates: FiatRatesInfo): Unit
 }
 

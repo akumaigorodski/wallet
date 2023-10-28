@@ -86,7 +86,7 @@ object WalletApp {
   }
 
   def makeAlive: Unit = {
-    ElectrumWallet.chainHash = Block.LivenetGenesisBlock.hash
+    ElectrumWallet.chainHash = Block.TestnetGenesisBlock.hash
     val miscInterface = new DBInterfaceSQLiteAndroidMisc(app, "misc.db")
 
     miscInterface txWrap {
@@ -185,11 +185,10 @@ object WalletApp {
       val feerateObs = Rx.initDelay(rateRepeat, feeRates.info.stamp, feeratePeriodHours * 3600 * 1000L)
       feerateObs.foreach(feeRates.updateInfo, none)
 
-      val fiatPeriodSecs = 60 * 5
+      val fiatPeriodSecs = 60 * 3
       val fiatRetry = Rx.retry(Rx.ioQueue.map(_ => fiatRates.reloadData), Rx.incSec, 3 to 18 by 3)
       val fiatRepeat = Rx.repeat(fiatRetry, Rx.incSec, fiatPeriodSecs to Int.MaxValue by fiatPeriodSecs)
-      val fiatObs = Rx.initDelay(fiatRepeat, fiatRates.info.stamp, fiatPeriodSecs * 1000L)
-      fiatObs.foreach(fiatRates.updateInfo, none)
+      fiatRepeat.foreach(fiatRates.updateInfo, none)
     }
   }
 
