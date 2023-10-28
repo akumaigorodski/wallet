@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SBW</string>
-    <string name="sources">Переглянути код</string>
-    <string name="manual">Читати інструкцію</string>
-
     <string name="select_wallets">Обрати гаманці</string>
     <string name="hardware_wallet">Апаратний гаманець</string>
     <string name="watching_wallet">Спостережний гаманець</string>

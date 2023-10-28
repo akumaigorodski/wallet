@@ -141,8 +141,8 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
 
     val title = new TitleView(s"<strong>S</strong>imple <strong>B</strong>itcoin <strong>W</strong>allet $VERSION_NAME-$VERSION_CODE")
     addFlowChip(title.flow, "Nostr", R.drawable.border_gray, _ => me browse "https://njump.me/npub1chxa2um7gl65ymyaagjrqys39mtzlwnm2drcs6qkqmme7k4edq4qghrjdd")
-    addFlowChip(title.flow, getString(sources), R.drawable.border_gray, _ => me browse "https://github.com/akumaigorodski/wallet")
-    addFlowChip(title.flow, getString(manual), R.drawable.border_gray, _ => me browse "https://sbw.app/posts/manual")
+    addFlowChip(title.flow, "Sources", R.drawable.border_gray, _ => me browse "https://github.com/akumaigorodski/wallet")
+    addFlowChip(title.flow, "Manual", R.drawable.border_gray, _ => me browse "https://sbw.app/posts/manual")
 
     activityContainer.addView(title.view)
     activityContainer.addView(enforceTor.view)
