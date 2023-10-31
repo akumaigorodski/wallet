@@ -122,8 +122,11 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
   }
 
   def showWalletInfo: Unit = {
-    val container = findViewById(R.id.chainCardContainer).asInstanceOf[LinearLayout]
-    chooser = new ChainWalletCards(me) { val holder: LinearLayout = container }
+    chooser = new ChainWalletCards(me) {
+      val holder: LinearLayout = findViewById(R.id.chainCardContainer).asInstanceOf[LinearLayout]
+      override def onWalletTap(key: ExtendedPublicKey): Unit = goToWithValue(ClassNames.qrChainActivityClass, key)
+    }
+
     txLabels = WalletApp.txDataBag.listAllDescriptions
     ElectrumWallet.catcher ! chainListener
     chooser.init(1)

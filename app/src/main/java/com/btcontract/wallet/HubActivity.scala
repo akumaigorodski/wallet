@@ -103,7 +103,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
   def loadSearchedTxInfos(query: String): Unit = {
     val query1 = query.replaceAll("\\s", "").toLowerCase
-    filteredAddressInfos = addressSpec.addresses.filter(_.identity.toLowerCase startsWith query1)
+    filteredAddressInfos = addressSpec.addresses.filter(_.identity.toLowerCase contains query1)
     txInfos = WalletApp.txDataBag.searchTransactions(query1).map(WalletApp.txDataBag.toTxInfo)
   }
 
