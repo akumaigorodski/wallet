@@ -2,7 +2,6 @@
 <resources>
     <color name="bg">#282B30</color>
     <color name="colorAccent">#FAFAFA</color>
-    <color name="bgalpha">#AA282B30</color>
     <color name="text">#CFDAE6</color>
 
     <color name="paymentAwait">#E08f04</color>
@@ -28,7 +27,6 @@
     <color name="buttonGrayRipple">#868899</color>
     <color name="buttonGrayBorder">#494949</color>
 
-    <color name="almostBlack">#1A1A1A</color>
     <color name="cardOutText">#88FF88</color>
     <color name="cardZeroText">#888888</color>
     <color name="watchCardText">#737eaa</color>
