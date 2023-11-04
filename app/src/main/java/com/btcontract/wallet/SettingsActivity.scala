@@ -85,11 +85,13 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
       sheet.view.addView(options.view)
 
       ElectrumWallet.specs.values.collect {
-        case spec if spec.data.keys.ewt.secrets.isDefined =>
-          val master = spec.info.core.attachedMaster.getOrElse(WalletApp.secret.keys.master)
-          makeSigningWalletTypes(sheet.view, title = spec.info.label, master)
+        // Add attached wallets first, the reason we separate is that if built-in wallet is removed it won't be found here
+        case spec if ElectrumWallet.BIP84 == spec.info.core.walletType && spec.info.core.attachedMaster.isDefined =>
+          makeSigningWalletTypes(sheet.view, spec.info.label, spec.info.core.attachedMaster.get)
       }
 
+      // And finally show options for built-in BIP39 wallet for which we store a mnemonic phrase
+      makeSigningWalletTypes(sheet.view, getString(bitcoin_wallet), WalletApp.secret.keys.master)
       sheet.show(getSupportFragmentManager, "utag")
     }
   }
