@@ -63,12 +63,10 @@
 
                     <TextView
                         android:id="@+id/chainLabel"
-                        android:textColor="@android:color/white"
                         style="@style/Emphasized"/>
 
                     <TextView
                         android:layout_marginTop="6dp"
-                        android:textColor="@color/text"
                         android:id="@+id/chainWalletNotice"
                         style="@style/BoundedView"/>
 
@@ -88,7 +86,6 @@
 
                     <TextView
                         android:layout_marginTop="6dp"
-                        android:textColor="@color/text"
                         android:id="@+id/chainBalanceFiat"
                         style="@style/BoundedView"/>
 
