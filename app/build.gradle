@@ -52,6 +52,7 @@ dependencies {
     implementation 'com.cottacush:CurrencyEditText:0.0.10'
     implementation 'com.google.android.material:material:1.4.0'
     implementation 'com.google.android.play:review:2.0.1'
+    implementation 'androidx.multidex:multidex:2.0.1'
 
     implementation('com.journeyapps:zxing-android-embedded:4.2.0') {
         // We use zxing sources with fixed List.sort which is not in API21
