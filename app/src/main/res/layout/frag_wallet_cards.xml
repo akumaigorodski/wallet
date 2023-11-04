@@ -19,7 +19,7 @@
             style="@style/FillingView">
 
             <TextView
-                android:alpha="0.5"
+                android:alpha="0.4"
                 android:id="@+id/fiatUnitPriceAndChange"
                 android:layout_centerVertical="true"
                 style="@style/BoundedView"/>

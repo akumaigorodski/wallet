@@ -794,7 +794,7 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
       val zeroColor = if (spec.data.keys.ewt.secrets.nonEmpty) signCardZero else watchCardZero
       val bgResource = if (selected contains spec.data.keys.ewt.xPub) selectedBackground(spec) else host.walletBackground(spec :: Nil)
       host.setVisMany(hasMoney -> chainBalanceWrap, !hasMoney -> receiveBitcoinTip, spec.info.isCoinControlOn -> coinControlOn)
-      chainBalance.setText(WalletApp.denom.parsedWithSignTT(spec.info.lastBalance.toMilliSatoshi, cardIn, zeroColor).html)
+      chainBalance.setText(WalletApp.denom.parsedWithSignTT(spec.info.lastBalance.toMilliSatoshi, "#FFFFFF", zeroColor).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman spec.info.lastBalance.toMilliSatoshi)
       chainWalletNotice setText host.chainWalletNotice(spec)
 
