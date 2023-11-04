@@ -47,7 +47,6 @@ trait MnemonicActivity { me: BaseActivity =>
     recoveryPhrase.addChipTerminator(',', com.hootsuite.nachos.terminator.ChipTerminatorHandler.BEHAVIOR_CHIPIFY_TO_TERMINATOR)
     recoveryPhrase.addChipTerminator('\n', com.hootsuite.nachos.terminator.ChipTerminatorHandler.BEHAVIOR_CHIPIFY_TO_TERMINATOR)
     recoveryPhrase setAdapter new ArrayAdapter(me, android.R.layout.simple_list_item_1, englishWordList)
-    recoveryPhrase setDropDownBackgroundResource R.color.button_material_dark
 
     def getMnemonicList: StringList = {
       val mnemonic = recoveryPhrase.getText.toString.toLowerCase.trim
