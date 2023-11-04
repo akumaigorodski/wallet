@@ -7,6 +7,9 @@
     <string name="attached_wallet">Attached wallet</string>
     <string name="coin_control">Coin control</string>
 
+    <string translatable="false" name="wallet_send">Send</string>
+    <string translatable="false" name="wallet_receive">Receive</string>
+
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="typing_hints">Bitcoin address or Login code</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>

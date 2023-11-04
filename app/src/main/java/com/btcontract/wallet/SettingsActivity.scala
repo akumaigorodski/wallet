@@ -84,14 +84,12 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
       sheet.view.setBackgroundResource(com.btcontract.wallet.R.color.chip_default_text_color)
       sheet.view.addView(options.view)
 
-      // Attached
       ElectrumWallet.specs.values.collect {
-        case spec if ElectrumWallet.BIP84 == spec.info.core.walletType && spec.info.core.attachedMaster.isDefined =>
-          makeSigningWalletTypes(sheet.view, spec.info.label, spec.info.core.attachedMaster.get)
+        case spec if spec.data.keys.ewt.secrets.isDefined =>
+          val master = spec.info.core.attachedMaster.getOrElse(WalletApp.secret.keys.master)
+          makeSigningWalletTypes(sheet.view, title = spec.info.label, master)
       }
 
-      // And finally show options for built-in BIP39 wallet for which we store a mnemonic phrase
-      makeSigningWalletTypes(sheet.view, getString(bitcoin_wallet), WalletApp.secret.keys.master)
       sheet.show(getSupportFragmentManager, "utag")
     }
   }
@@ -201,7 +199,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
       spec.data.keys.ewt.secrets.exists(_.master == master) && spec.info.core.walletType == walletType
     }
 
-    val ws = for (Tuple2(tag, info \ path) <- wallets) yield s"<b>$tag</b> <i>$path</i><br>$info".html
+    val ws = for (Tuple2(tag, info \ path) <- wallets) yield s"&#160;<b>$tag</b> <i>$path</i><br>&#160;$info".html
     val list = getLayoutInflater.inflate(R.layout.frag_selector_list, null).asInstanceOf[ListView]
     list setAdapter new ArrayAdapter(me, android.R.layout.select_dialog_multichoice, ws.toArray)
 

@@ -26,9 +26,19 @@
         android:gravity="center">
 
         <com.ornach.nobobutton.NoboButton
-            app:nb_drawableResource="@drawable/outline_qr_code_scanner_32_24"
+            android:layout_width="110sp"
+            android:layout_margin="7dp"
+            app:nb_text="@string/wallet_send"
             app:nb_backgroundColor="@color/bg"
             android:onClick="bringScanner"
+            style="@style/GreenButton"/>
+
+        <com.ornach.nobobutton.NoboButton
+            android:layout_width="110sp"
+            android:layout_margin="7dp"
+            app:nb_text="@string/wallet_receive"
+            app:nb_backgroundColor="@color/bg"
+            android:onClick="goToReceivePage"
             style="@style/GreenButton"/>
 
     </LinearLayout>

@@ -16,6 +16,7 @@
 
     <com.ornach.nobobutton.NoboButton
         app:nb_text="@string/dialog_ok"
+        app:nb_textColor="@android:color/white"
         android:layout_centerVertical="true"
         android:id="@+id/chainNextButton"
         style="@style/GreenButton"/>

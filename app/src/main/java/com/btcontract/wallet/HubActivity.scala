@@ -214,7 +214,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
 
     def doBoostCPFP(specs: Seq[WalletSpec], info: TxInfo): Unit = {
-      val changeSpec = ElectrumWallet.determineChangeWallet(candidates = specs)
+      val changeSpec = ElectrumWallet.orderByImportance(candidates = specs).head
       val address = changeSpec.data.keys.ewt.textAddress(changeSpec.data.changePubKey)
       val ourPubKeyScript = ElectrumWallet.addressToPubKeyScript(address)
 
@@ -292,7 +292,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
 
     def doBoostRBF(specs: Seq[WalletSpec], info: TxInfo): Unit = {
-      val changeTo = ElectrumWallet.determineChangeWallet(candidates = specs)
+      val changeTo = ElectrumWallet.orderByImportance(candidates = specs).head
       val currentFee = WalletApp.denom.parsedWithSignTT(info.feeSat.toMilliSatoshi, cardOut, cardIn)
 
       val sendView = new ChainSendView(specs, badge = None, visibilityRes = -1)
@@ -377,7 +377,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
 
     def doCancelRBF(specs: Seq[WalletSpec], info: TxInfo): Unit = {
-      val changeSpec = ElectrumWallet.determineChangeWallet(candidates = specs)
+      val changeSpec = ElectrumWallet.orderByImportance(candidates = specs).head
       val address = changeSpec.data.keys.ewt.textAddress(changeSpec.data.changePubKey)
       val ourPubKeyScript = ElectrumWallet.addressToPubKeyScript(address)
 
@@ -895,6 +895,14 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     callScanner(sheet)
   }
 
+  def goToReceivePage(view: View): Unit = if (ElectrumWallet.specs.nonEmpty) {
+    val specs = ElectrumWallet.orderByImportance(ElectrumWallet.specs.values.toList)
+    goToWithValue(ClassNames.qrChainActivityClass, specs.head.data.keys.ewt.xPub)
+  } else {
+    val message = getString(error_btc_no_wallet).html
+    snack(contentWindow, message, dialog_ok, _.dismiss)
+  }
+
   def goToSettingsPage(view: View): Unit = {
     goTo(ClassNames.settingsActivityClass)
   }
@@ -902,7 +910,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   def bringSendBitcoinPopup(specs: Seq[WalletSpec], uri: BitcoinUri): Unit = {
     val sendView = new ChainSendView(specs, getString(dialog_set_label).asSome, dialog_visibility_private)
     val pubKeyScript = ElectrumWallet.addressToPubKeyScript(uri.address)
-    val changeTo = ElectrumWallet.determineChangeWallet(specs)
+    val changeTo = ElectrumWallet.orderByImportance(specs).head
 
     def attempt(alert: AlertDialog): Unit =
       runInFutureProcessOnUI(ElectrumWallet.makeTx(specs, changeTo, pubKeyScript, sendView.manager.resultMsat.truncateToSatoshi, Map.empty, feeView.rate), onFail) { response =>
@@ -955,7 +963,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   def bringSendMultiBitcoinPopup(specs: Seq[WalletSpec], addressToAmount: MultiAddressParser.AddressToAmount): Unit = {
     val scriptToAmount = addressToAmount.values.firstItems.map(ElectrumWallet.addressToPubKeyScript).zip(addressToAmount.values.secondItems).toMap
     val sendView = new ChainSendView(specs, badge = None, visibilityRes = -1)
-    val changeTo = ElectrumWallet.determineChangeWallet(specs)
+    val changeTo = ElectrumWallet.orderByImportance(specs).head
 
     def attempt(alert: AlertDialog): Unit =
       runInFutureProcessOnUI(ElectrumWallet.makeBatchTx(specs, changeTo, scriptToAmount, feeView.rate), onFail) { response =>

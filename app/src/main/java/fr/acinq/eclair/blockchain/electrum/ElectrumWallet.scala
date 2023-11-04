@@ -263,7 +263,7 @@ object ElectrumWallet extends CanBeShutDown {
     IsDoubleSpentResponse(depth, stamp, isDoubleSpent)
   }
 
-  def determineChangeWallet(candidates: Iterable[WalletSpec] = Nil): WalletSpec = candidates.minBy {
+  def orderByImportance(candidates: Seq[WalletSpec] = Nil): Seq[WalletSpec] = candidates.sortBy {
     case hardware if hardware.data.keys.ewt.secrets.isEmpty && hardware.info.core.masterFingerprint.nonEmpty => 0
     case default if default.data.keys.ewt.secrets.nonEmpty && default.info.core.walletType == BIP84 => 1
     case signing if signing.data.keys.ewt.secrets.nonEmpty => 2

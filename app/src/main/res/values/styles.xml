@@ -26,7 +26,6 @@
     <!-- item styles -->
 
     <style name="GreenButton">
-        <item name="nb_textColor">@color/colorAccent</item>
         <item name="nb_focusColor">@color/buttonGreenRipple</item>
         <item name="nb_borderColor">@color/buttonGreenBorder</item>
         <item name="nb_backgroundColor">@color/buttonGreen</item>

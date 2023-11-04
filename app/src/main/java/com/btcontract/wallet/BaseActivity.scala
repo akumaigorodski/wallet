@@ -167,7 +167,7 @@ trait BaseActivity extends AppCompatActivity { me =>
   def viewRecoveryCode: Unit = {
     val content = new TitleView(me getString settings_view_revocery_phrase_ext)
     getWindow.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-    new AlertDialog.Builder(me).setView(content.asDefView).show setOnDismissListener new DialogInterface.OnDismissListener {
+    new AlertDialog.Builder(me).setView(content.view).show setOnDismissListener new DialogInterface.OnDismissListener {
       override def onDismiss(dialog: DialogInterface): Unit = getWindow.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
 
@@ -746,8 +746,9 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
   var cardViews = List.empty[ChainCard]
 
   def unPadCards: Unit = cardViews.foreach(_.unPad)
-  def update(specs: Iterable[WalletSpec] = Nil): Unit = cardViews.zip(specs).foreach {
-    case (chainCard, walletSpec) => chainCard updateView walletSpec
+  def update(specs: Iterable[WalletSpec] = Nil): Unit = {
+    val items = cardViews zip ElectrumWallet.orderByImportance(specs.toList)
+    for (Tuple2(chainCard, walletSpec) <- items) chainCard updateView walletSpec
   }
 
   def init(size: Int): Unit = {
