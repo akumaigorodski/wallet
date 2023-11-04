@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
     style="@style/StandardLinearLayout"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <TextView
         android:gravity="center"
@@ -16,13 +15,5 @@
         android:layout_height="match_parent"
         android:layout_width="match_parent"
         android:id="@+id/chainQrCodes"/>
-
-    <com.ornach.nobobutton.NoboButton
-        android:layout_marginBottom="25dp"
-        app:nb_drawableResource="@drawable/baseline_add_24"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:id="@+id/chainQrMore"
-        style="@style/GrayButton"/>
 
 </RelativeLayout>

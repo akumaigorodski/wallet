@@ -24,11 +24,8 @@ import scala.util.Success
 class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
   lazy private[this] val chainQrCaption = findViewById(R.id.chainQrCaption).asInstanceOf[TextView]
   lazy private[this] val chainQrCodes = findViewById(R.id.chainQrCodes).asInstanceOf[RecyclerView]
-  lazy private[this] val chainQrMore = findViewById(R.id.chainQrMore).asInstanceOf[NoboButton]
-
-  private[this] var spec: WalletSpec = _
-  private[this] var allAddresses: List[BitcoinUri] = Nil
   private[this] var addresses: List[BitcoinUri] = Nil
+  private[this] var spec: WalletSpec = _
 
   val adapter: RecyclerView.Adapter[QRViewHolder] = new RecyclerView.Adapter[QRViewHolder] {
     override def onBindViewHolder(holder: QRViewHolder, pos: Int): Unit = updateView(addresses(pos), holder)
@@ -104,17 +101,7 @@ class QRChainActivity extends QRActivity with ExternalDataChecker { me =>
     layoutManager.setMaxVisibleItems(ElectrumWallet.MAX_RECEIVE_ADDRESSES)
 
     // Allow MAX_RECEIVE_ADDRESSES - 16 (first 4 addresses) to be seen to not make it crowded
-    allAddresses = keys.dropRight(16).map(spec.data.keys.ewt.textAddress).map(BitcoinUri.fromRaw)
-    addresses = allAddresses.take(1)
-
-    chainQrMore setOnClickListener onButtonTap {
-      // Show all remaining QR images right away
-      addresses = allAddresses
-
-      // Animate list changes and remove a button since it gets useless
-      adapter.notifyItemRangeInserted(1, allAddresses.size - 1)
-      chainQrMore.setVisibility(View.GONE)
-    }
+    addresses = keys.dropRight(16).map(spec.data.keys.ewt.textAddress).map(BitcoinUri.fromRaw)
 
     chainQrCaption.setText(title.html)
     chainQrCodes.addOnScrollListener(new CenterScrollListener)
