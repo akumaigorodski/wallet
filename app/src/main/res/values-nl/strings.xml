@@ -10,8 +10,6 @@
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="typing_hints">Bitcoinadres / Login code</string>
     <string name="copied_to_clipboard">Gekopieerd naar klembord</string>
-    <string name="add_address">Meer verse adressen</string>
-
     <string name="search_recent">My transactions and addresses</string>
     <string name="emergency_mode">Iets ging mis</string>
     <string name="error_log">Exporteer foutlog</string>

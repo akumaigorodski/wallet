@@ -19,9 +19,9 @@
 
     <com.ornach.nobobutton.NoboButton
         android:layout_marginBottom="25dp"
+        app:nb_drawableResource="@drawable/baseline_add_24"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        app:nb_text="@string/add_address"
         android:id="@+id/chainQrMore"
         style="@style/GrayButton"/>
 

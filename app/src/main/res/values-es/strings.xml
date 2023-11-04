@@ -10,8 +10,6 @@
     <string name="bitcoin_wallet">Bitcoin</string>
     <string name="typing_hints">Dirección de Bitcoin / Login code</string>
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
-    <string name="add_address">Más direcciones no usadas</string>
-
     <string name="search_recent">My transactions and addresses</string>
     <string name="error_log">Exportar registro de errores</string>
     <string name="emergency_mode">Algo salió mal</string>

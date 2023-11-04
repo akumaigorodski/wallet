@@ -10,8 +10,6 @@
     <string name="bitcoin_wallet">Біткоїн</string>
     <string name="typing_hints">Біткоїн-адреса чи Login-код</string>
     <string name="copied_to_clipboard">Скопійовано у буфер</string>
-    <string name="add_address">Більше нових адрес</string>
-
     <string name="search_recent">Мої транзакції та адреси</string>
     <string name="emergency_mode">Щось пішло не так</string>
     <string name="error_log">Експортувати помилку</string>
