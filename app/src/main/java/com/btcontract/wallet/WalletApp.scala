@@ -48,6 +48,7 @@ object WalletApp {
   final val FIAT_CODE = "fiatCode"
   final val BTC_DENOM = "btcDenom"
   final val ENSURE_TOR = "ensureTor"
+  final val APP_OPENS_LEFT = "appOpensLeft"
   final val CUSTOM_ELECTRUM = "customElectrum"
 
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
