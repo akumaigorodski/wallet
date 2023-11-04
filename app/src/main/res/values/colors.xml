@@ -2,7 +2,7 @@
 <resources>
     <color name="bg">#282B30</color>
     <color name="colorAccent">#FAFAFA</color>
-    <color name="text">#CFDAE6</color>
+    <color name="text">#e3eaf2</color>
 
     <color name="paymentAwait">#E08f04</color>
     <color name="paymentDone">#99CC00</color>
@@ -11,8 +11,8 @@
 
     <color name="paymentPassiveBorder">#555555</color>
 
-    <color name="cardBitcoinSigning">#876319</color>
-    <color name="cardBitcoinHardware">#4F5B8F</color>
+    <color name="cardBitcoinSigning">#916c20</color>
+    <color name="cardBitcoinHardware">#5b679c</color>
     <color name="cardBitcoinMixed">#5A5A5A</color>
 
     <color name="buttonGreenRipple">#8BD670</color>

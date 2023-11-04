@@ -29,6 +29,7 @@
             android:layout_width="110sp"
             android:layout_margin="7dp"
             app:nb_text="@string/wallet_send"
+            app:nb_textColor="@color/colorAccent"
             app:nb_backgroundColor="@color/bg"
             android:onClick="bringScanner"
             style="@style/GreenButton"/>
@@ -37,6 +38,7 @@
             android:layout_width="110sp"
             android:layout_margin="7dp"
             app:nb_text="@string/wallet_receive"
+            app:nb_textColor="@color/colorAccent"
             app:nb_backgroundColor="@color/bg"
             android:onClick="goToReceivePage"
             style="@style/GreenButton"/>

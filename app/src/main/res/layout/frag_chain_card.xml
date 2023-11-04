@@ -63,7 +63,7 @@
 
                     <TextView
                         android:id="@+id/chainLabel"
-                        android:textColor="@color/text"
+                        android:textColor="@android:color/white"
                         style="@style/Emphasized"/>
 
                     <TextView
