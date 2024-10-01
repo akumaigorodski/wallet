@@ -1,3 +1,0 @@
-* Fix chain wallet rescan bug which was showing an incorrect balance sometimes.
-* Fix UI blurring bug which was causing app crashes sometimes.
-* Show expected fees before sending an LN payment.

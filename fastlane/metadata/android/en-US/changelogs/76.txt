@@ -1,3 +1,0 @@
-* Add CPFP, RBF-cancel, RBF-boost to chain wallet.
-* Lots of minor bugfixes and improvements.
-* Add portuguese translation.

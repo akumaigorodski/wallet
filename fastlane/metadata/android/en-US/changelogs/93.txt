@@ -1,4 +1,0 @@
-* Show node alias on channel card.
-* Allow cleartext Electrum connection for port 50001.
-* Provide Hosted channel and Tor options on setup.
-* Minor bugfixes and improvements.

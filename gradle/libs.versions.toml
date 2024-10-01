@@ -1,0 +1,11 @@
+[versions]
+agp = "8.3.2"
+scalaAndroidPlugin = "24.0606.2018"
+scalaLibrary = "2.11.12"
+
+[libraries]
+scala-android-plugin = { module = "com.soundcorset:scala-android-plugin", version.ref = "scalaAndroidPlugin" }
+scala-library = { module = "org.scala-lang:scala-library", version.ref = "scalaLibrary" }
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }

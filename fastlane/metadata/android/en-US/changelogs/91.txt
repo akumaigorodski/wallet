@@ -1,3 +1,0 @@
-* Use built-in Tor.
-* Improve biometric auth.
-* Minor UI improvements.

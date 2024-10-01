@@ -1,2 +1,0 @@
-* Add built-in PIN auth.
-* Minor UI fixes.

@@ -1,2 +1,0 @@
-* RBF/CPFP for hardware wallets
-* Multiple UI improvements

@@ -1,7 +1,0 @@
-* Fixed a bug where chain wallet appeared to be empty in some edge cases.
-* Fixed a bug where channel with peers behind an onion address could not be established because of alias length limitations.
-* Fixed LNURL bug where domain names were not normalized before comparing them.
-* Fixed an MPP bug where payment could be split into practically infinite amount of parts in some edge cases.
-* Improved an error reporting when connecting to remote peers with unsupported features.
-* Improved LNURL-PAY links representation.
-* Added live network info in Settings -> Usage statistics

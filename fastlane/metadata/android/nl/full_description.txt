@@ -1,1 +1,0 @@
-Eenvoudige Bitcoinportemonnee (Simple Bitcoin Wallet of SBW) is een open source, niet-vrijheidsbeperkende, autonome Bitcoin portemonnee voor Androidapparaten die BTC kan opslaan maar ook Bitcointransacties kan versturen en ontvangen.

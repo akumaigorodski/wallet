@@ -1,1 +1,0 @@
-* Even more UI-related bugfixes and improvements.

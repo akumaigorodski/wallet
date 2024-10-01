@@ -1,1 +1,0 @@
-* Version 2 with revamped UI, advanced Bitcoin wallet features and Lightning network support.

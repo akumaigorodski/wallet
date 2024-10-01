@@ -22,7 +22,7 @@
         android:fullBackupContent="false"
         android:supportsRtl="false"
         android:allowBackup="false"
-        android:largeHeap="true"
+        tools:targetApi="31"
 
         android:theme="@style/AppTheme"
         android:name="com.btcontract.wallet.WalletApp"

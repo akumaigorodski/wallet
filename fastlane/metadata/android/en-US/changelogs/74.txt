@@ -1,4 +1,0 @@
-* Private hosted channel support.
-* API21 bugfixes to ensure correct work on older phones.
-* Spanish and Russian translations.
-* UI bugfixes and improvements.
