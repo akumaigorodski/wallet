@@ -16,18 +16,19 @@ android {
         minSdk = 28
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
     buildTypes {
         release {
             isMinifyEnabled = false
         }
+
         debug {
             isMinifyEnabled = false
         }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     packaging {
@@ -38,6 +39,12 @@ android {
 }
 
 dependencies {
+    compileOnly (
+        fileTree(layout.buildDirectory) {
+            include("**/R.jar")
+        }
+    )
+
     // Android-specific
     implementation(libs.material)
     implementation(libs.appcompat)
@@ -60,11 +67,6 @@ dependencies {
     implementation(libs.bcprov.jdk15to18)
     implementation(libs.commons.codec)
     implementation(libs.netty.all)
-    implementation(libs.guava)
-
     implementation(libs.okhttp)
-
-    compileOnly(fileTree(layout.buildDirectory) {
-        include("**/R.jar")
-    })
+    implementation(libs.guava)
 }

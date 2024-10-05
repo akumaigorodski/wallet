@@ -1,8 +1,7 @@
 package com.btcontract.wallet.utils
 
 import com.btcontract.wallet.utils.InputParser._
-import com.sparrowwallet.drongo.crypto.Bip322
-import fr.acinq.bitcoin.{BtcAmount, ByteVector32, Crypto, Satoshi, SatoshiLong}
+import fr.acinq.bitcoin.{BtcAmount, Satoshi, SatoshiLong}
 import fr.acinq.eclair._
 import immortan.crypto.Tools._
 import immortan.utils.Denomination
@@ -32,7 +31,6 @@ object InputParser {
 
   def recordValue(raw: String): Unit = value = parse(raw)
 
-  private[this] val lnUrl = "(?im).*?(lnurl)([0-9]+[a-z0-9]+)".r.unanchored
   private[this] val bip322Sign = "(?im).*?(bip322sign)([A-Za-z0-9+/=a-fA-F|-]+)".r.unanchored
   private[this] val bip322Verify = "(?im).*?(bip322verify)([A-Za-z0-9+/=a-fA-F|-]+)".r.unanchored
   val bitcoin: String = "bitcoin:"
@@ -40,7 +38,6 @@ object InputParser {
   def parse(rawInput: String): Any = rawInput take 2880 match {
     case bip322Sign(_, rawData) => BIP322Data.parseSign(rawData)
     case bip322Verify(_, rawData) => BIP322Data.parseVerify(rawData)
-    case lnUrl(prefix, rawData) => LNUrl.fromBech32(s"$prefix$rawData")
 
     case _ =>
       val withoutSlashes = removePrefix(rawInput).trim

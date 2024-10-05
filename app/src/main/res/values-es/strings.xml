@@ -8,7 +8,7 @@
     <string name="coin_control">Control de monedas</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
-    <string name="typing_hints">Dirección de Bitcoin / Login code</string>
+    <string name="typing_hints">Dirección de Bitcoin</string>
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
     <string name="search_recent">My transactions and addresses</string>
     <string name="error_log">Exportar registro de errores</string>
@@ -113,25 +113,6 @@
     <string name="tx_rbf_err_parents_missing">No se puede impulsar esta transaccion porque sus padres éstan ausentes en esta billetera</string>
 
     <!-- /CPFP/RBF -->
-
-    <!-- lnurl-auth -->
-
-    <string name="lnurl_auth_register">Registrarse</string>
-    <string name="lnurl_auth_login">Acceso</string>
-    <string name="lnurl_auth_auth">Auth</string>
-    <string name="lnurl_auth_link">Enlace</string>
-
-    <string name="lnurl_auth_register_ok">Registrado exitosamente</string>
-    <string name="lnurl_auth_login_ok">Acceso exitoso</string>
-    <string name="lnurl_auth_auth_ok">Autorizado exitosamente</string>
-    <string name="lnurl_auth_link_ok">Enlazado exitosamente</string>
-
-    <string name="lnurl_auth_info"><![CDATA[
-        Clave de autenticación generada por tu billetera para <i>%1$s</i>:<br><br><strong>%2$s</strong>
-        <br><br>Será usada para autorización anónima en <i>%1$s</i>, ningún dato personal será divulgado.
-    ]]></string>
-
-    <!-- /lnurl-auth -->
 
     <!-- sign-verify -->
 

@@ -724,9 +724,6 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         else if (usable.size == 1) bringSendMultiBitcoinPopup(usable, a2a)
         else bringMultiAddressSelector(a2a)
 
-      case lnUrl: LNUrl if lnUrl.isAuth =>
-        showAuthForm(lnUrl)
-
       case data: BIP322VerifyData =>
         val address = drongo.address.Address.fromString(drongoNetwork, data.address)
         val verifies = try drongo.crypto.Bip322.verifyHashBip322(address.getScriptType, address, data.messageHash.toArray, data.signature64) catch { case _: Throwable => false }
@@ -1106,35 +1103,6 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     WalletApp.seenTxInfos.remove(failedTxid)
     DbStreams.next(DbStreams.txDbStream)
     onFail(message)
-  }
-
-  // LNAuth
-
-  def showAuthForm(lnUrl: LNUrl): Unit = lnUrl.k1.foreach { k1 =>
-    val (successResource, actionResource) = lnUrl.authAction match {
-      case "register" => (lnurl_auth_register_ok, lnurl_auth_register)
-      case "auth" => (lnurl_auth_auth_ok, lnurl_auth_auth)
-      case "link" => (lnurl_auth_link_ok, lnurl_auth_link)
-      case _ => (lnurl_auth_login_ok, lnurl_auth_login)
-    }
-
-    val spec = LNUrlAuthSpec(lnUrl.uri.getHost, ByteVector32 fromValidHex k1)
-    mkCheckFormNeutral(alert => runAnd(alert.dismiss)(doAuth), none, displayInfo,
-      titleBodyAsViewBuilder(s"<big>${lnUrl.warnUri}</big>".asDefView, null),
-      actionResource, dialog_cancel, dialog_info)
-
-    def displayInfo(alert: AlertDialog): Unit = {
-      val explanation = getString(lnurl_auth_info).format(lnUrl.warnUri, spec.linkingPubKey.humanFour).html
-      mkCheckFormNeutral(_.dismiss, none, _ => share(spec.linkingPubKey), new AlertDialog.Builder(me).setMessage(explanation), dialog_ok, -1, dialog_share)
-    }
-
-    def doAuth: Unit = snack(contentWindow, lnUrl.warnUri.html, dialog_cancel).foreach { snack =>
-      val uri = lnUrl.uri.buildUpon.appendQueryParameter("sig", spec.derSignatureHex).appendQueryParameter("key", spec.linkingPubKey)
-      val level2Obs = LNUrl.level2DataResponse(uri).doOnUnsubscribe(snack.dismiss).doOnTerminate(snack.dismiss)
-      val level2Sub = level2Obs.subscribe(_ => UITask(WalletApp.app quickToast successResource).run, onFail)
-      val listener = onButtonTap(level2Sub.unsubscribe)
-      snack.setAction(dialog_cancel, listener).show
-    }
   }
 
   def getAddressSpec = {

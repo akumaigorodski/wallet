@@ -11,7 +11,7 @@
     <string translatable="false" name="wallet_receive">Recevoir</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
-    <string name="typing_hints">Adresse Bitcoin ou code de session</string>
+    <string name="typing_hints">Adresse Bitcoin</string>
     <string name="copied_to_clipboard">Copié dans le presse-papiers</string>
     <string name="search_recent">Mes transactions et adresses</string>
     <string name="emergency_mode">Quelque chose a mal fonctionné</string>
@@ -118,25 +118,6 @@
 
     <!-- /CPFP/RBF -->
 
-    <!-- lnurl-auth -->
-
-    <string name="lnurl_auth_register">Enregistrer</string>
-    <string name="lnurl_auth_login">Connexion</string>
-    <string name="lnurl_auth_auth">Autr</string>
-    <string name="lnurl_auth_link">Lien</string>
-
-    <string name="lnurl_auth_register_ok">Enregistré avec succès</string>
-    <string name="lnurl_auth_login_ok">Session ouverte avec succès</string>
-    <string name="lnurl_auth_auth_ok">Autorisé avec succès</string>
-    <string name="lnurl_auth_link_ok">Lien établi avec succès</string>
-
-    <string name="lnurl_auth_info"><![CDATA[
-        Clef d\'autorisation générée par votre porte-monnaie pour <i>%1$s</i>:<br><br><strong>%2$s</strong>
-        <br><br>Elle sera utilisée pour l\'autorisation anonyme à <i>%1$s</i>, aucune information personnelle ne sera divulguée.
-    ]]></string>
-
-    <!-- /lnurl-auth -->
-
     <!-- sign-verify -->
 
     <string name="sign_address_not_found"><![CDATA[
@@ -168,5 +149,4 @@
     <string name="tap_to_receive">Toucher pour recevoir</string>
     <string name="confirm_remove_item">&#9888; Souhaitez-vous enlever cet élément ?</string>
     <string name="dialog_requested"><![CDATA[<b>requis</b>&#160;%1$s]]></string>
-    <string name="dialog_info" translatable="false">Infos</string>
 </resources>

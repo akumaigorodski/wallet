@@ -11,7 +11,7 @@
     <string translatable="false" name="wallet_receive">Al</string>
 
     <string name="bitcoin_wallet">Bitcoin</string>
-    <string name="typing_hints">Bitcoin adresi veya oturum kodu</string>
+    <string name="typing_hints">Bitcoin adresi</string>
     <string name="copied_to_clipboard">Panoya kopyalandı</string>
     <string name="search_recent">Muamelelerim ve adreslerim</string>
     <string name="emergency_mode">Bir şeyler yanlış gitti</string>
@@ -118,25 +118,6 @@
 
     <!-- /CPFP/RBF -->
 
-    <!-- lnurl-auth -->
-
-    <string name="lnurl_auth_register">Kaydol</string>
-    <string name="lnurl_auth_login">Giriş yap</string>
-    <string name="lnurl_auth_auth">İzin</string>
-    <string name="lnurl_auth_link">Bağlantı</string>
-
-    <string name="lnurl_auth_register_ok">Başarıyla kayıt yapıldı</string>
-    <string name="lnurl_auth_login_ok">Başarıyla giriş yapıldı</string>
-    <string name="lnurl_auth_auth_ok">Başarıyla izin verildi</string>
-    <string name="lnurl_auth_link_ok">Başarıyla bağlantı yapıldı</string>
-
-    <string name="lnurl_auth_info"><![CDATA[
-        Şu için cüzdanınız tarafından oluşturulan izin anahtarı <i>%1$s</i>:<br><br><strong>%2$s</strong>
-        <br><br>Şurada anonim izin için kullanılacaktır <i>%1$s</i>, hiçbir kişisel veri açığa çıkarılmayacaktır.
-    ]]></string>
-
-    <!-- /lnurl-auth -->
-
     <!-- sign-verify -->
 
     <string name="sign_address_not_found"><![CDATA[
@@ -168,5 +149,4 @@
     <string name="tap_to_receive">Almak için dokun</string>
     <string name="confirm_remove_item">&#9888; Bu unsuru kaldırmak istiyor musunuz?</string>
     <string name="dialog_requested"><![CDATA[<b>talep edilen</b>&#160;%1$s]]></string>
-    <string name="dialog_info" translatable="false">Bilgi</string>
 </resources>

@@ -8,7 +8,7 @@
     <string name="coin_control">Контроль монет</string>
 
     <string name="bitcoin_wallet">Біткоїн</string>
-    <string name="typing_hints">Біткоїн-адреса чи Login-код</string>
+    <string name="typing_hints">Біткоїн-адреса</string>
     <string name="copied_to_clipboard">Скопійовано у буфер</string>
     <string name="search_recent">Мої транзакції та адреси</string>
     <string name="emergency_mode">Щось пішло не так</string>
@@ -114,25 +114,6 @@
     <string name="tx_rbf_err_parents_missing">Не можна підсилити цю транзакцію, оскільки її батьки відсутні в цьому гаманці</string>
 
     <!-- /CPFP/RBF -->
-
-    <!-- lnurl-auth -->
-
-    <string name="lnurl_auth_register">Реєстрація</string>
-    <string name="lnurl_auth_auth">Авторизація</string>
-    <string name="lnurl_auth_link">Приєднати</string>
-    <string name="lnurl_auth_login">Вхід</string>
-
-    <string name="lnurl_auth_register_ok">Реєстрація успішна</string>
-    <string name="lnurl_auth_login_ok">Вхід здійснено</string>
-    <string name="lnurl_auth_auth_ok">Авторизовано</string>
-    <string name="lnurl_auth_link_ok">Приєднано</string>
-
-    <string name="lnurl_auth_info"><![CDATA[
-        Ось ключ авторизації, згенерований вашим гаманцем для <i>%1$s</i>:<br><br><strong>%2$s</strong>
-        <br><br>Він буде використаний для анонімної авторизації на <i>%1$s</i>, жодні особисті дані не будуть розкриті.
-    ]]></string>
-
-    <!-- /lnurl-auth -->
 
     <!-- sign-verify -->
 
