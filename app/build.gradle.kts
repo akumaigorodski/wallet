@@ -38,10 +38,6 @@ android {
 }
 
 dependencies {
-    compileOnly(fileTree(layout.buildDirectory) {
-        include("**/R.jar")
-    })
-
     // Android-specific
     implementation(libs.material)
     implementation(libs.appcompat)
@@ -66,6 +62,9 @@ dependencies {
     implementation(libs.netty.all)
     implementation(libs.guava)
 
-    // Built-in Tor
     implementation(libs.okhttp)
+
+    compileOnly(fileTree(layout.buildDirectory) {
+        include("**/R.jar")
+    })
 }
