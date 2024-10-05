@@ -24,42 +24,6 @@
                 android:layout_centerVertical="true"
                 style="@style/BoundedView"/>
 
-            <TextView
-                style="@style/ChipTextGray"
-                android:layout_toStartOf="@id/chainSyncIndicator"
-                android:textSize="@dimen/text_size_12"
-                android:layout_centerVertical="true"
-                android:id="@+id/offlineIndicator"
-                android:layout_marginEnd="6dp"
-                android:visibility="gone"
-                android:text="OFFLINE"/>
-
-            <com.danilomendes.progressbar.InvertedTextProgressbar
-                card_view:text_inverted_color="@android:color/black"
-                android:background="@drawable/border_yellow"
-                android:layout_toStartOf="@id/torIndicator"
-                card_view:text_color="@android:color/white"
-                android:layout_centerVertical="true"
-                android:id="@+id/chainSyncIndicator"
-                android:src="@color/paymentAwait"
-                android:layout_marginEnd="6dp"
-                android:layout_height="24sp"
-                android:layout_width="65sp"
-                card_view:min_progress="0"
-                android:visibility="gone"
-                card_view:text="SYNC"
-                android:padding="1dp"/>
-
-            <TextView
-                style="@style/ChipTextGray"
-                android:layout_toStartOf="@id/enterSearchMode"
-                android:textSize="@dimen/text_size_12"
-                android:layout_centerVertical="true"
-                android:id="@+id/torIndicator"
-                android:layout_marginEnd="2dp"
-                android:visibility="gone"
-                android:text="TOR"/>
-
             <ImageButton
                 android:padding="6dp"
                 android:onClick="bringSearch"

@@ -88,8 +88,6 @@
     <string name="settings_hw_zpub_tip">Porte-monnaie matériel ou bien zpub</string>
 
     <string name="settings_chain_wallets">Ajouter plus de porte-monnaies&#8230;</string>
-    <string name="settings_ensure_tor">Utiliser la connexion Tor</string>
-
     <string name="settings_add_hardware_wallet">Analyser le QR code du porte-monnaie matériel</string>
     <string name="settings_add_recovery_phrase">Attacher la phrase de récupération BIP39</string>
 

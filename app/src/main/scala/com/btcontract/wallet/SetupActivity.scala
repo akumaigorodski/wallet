@@ -78,19 +78,6 @@ trait MnemonicActivity { me: BaseActivity =>
     scala.io.Source.fromInputStream(rawData, "UTF-8").getLines.toArray
   }
 
-  lazy val enforceTor = new SettingsHolder(me) {
-    override def updateView: Unit = settingsCheck.setChecked(WalletApp.ensureTor)
-
-    settingsTitle.setText(settings_ensure_tor)
-    setVis(isVisible = false, settingsInfo)
-    disableIfOldAndroid
-
-    view setOnClickListener onButtonTap {
-      putBoolAndUpdateView(WalletApp.ENSURE_TOR, !WalletApp.ensureTor)
-      notifyRestart(settings_custom_electrum_restart_notice)
-    }
-  }
-
   lazy val electrum: SettingsHolder = new SettingsHolder(me) {
     setVis(isVisible = false, settingsCheck)
 
@@ -151,8 +138,6 @@ class SetupActivity extends BaseActivity with MnemonicActivity { me =>
   override def START(s: Bundle): Unit = {
     setContentView(R.layout.activity_setup)
     activityContainer.addView(electrum.view, 0)
-    activityContainer.addView(enforceTor.view, 0)
-    enforceTor.updateView
     electrum.updateView
   }
 

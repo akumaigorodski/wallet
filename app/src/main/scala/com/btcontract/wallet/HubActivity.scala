@@ -16,7 +16,6 @@ import com.btcontract.wallet.HubActivity._
 import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.utils._
 import com.chauthai.swipereveallayout.{SwipeRevealLayout, ViewBinderHelper}
-import com.danilomendes.progressbar.InvertedTextProgressbar
 import com.google.android.gms.tasks.{OnCompleteListener, Task}
 import com.google.android.play.core.review.{ReviewInfo, ReviewManagerFactory}
 import com.ornach.nobobutton.NoboButton
@@ -591,10 +590,6 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     val fiatUnitPriceAndChange: TextView = view.findViewById(R.id.fiatUnitPriceAndChange).asInstanceOf[TextView]
     val recoveryPhraseWarning: TextView = view.findViewById(R.id.recoveryPhraseWarning).asInstanceOf[TextView]
     val defaultHeader: LinearLayout = view.findViewById(R.id.defaultHeader).asInstanceOf[LinearLayout]
-
-    val offlineIndicator: TextView = view.findViewById(R.id.offlineIndicator).asInstanceOf[TextView]
-    val chainSyncIndicator: InvertedTextProgressbar = view.findViewById(R.id.chainSyncIndicator).asInstanceOf[InvertedTextProgressbar]
-    val torIndicator: TextView = view.findViewById(R.id.torIndicator).asInstanceOf[TextView]
     val searchField: EditText = view.findViewById(R.id.searchField).asInstanceOf[EditText]
     // This means search is off at start
     searchField.setTag(false)
@@ -649,21 +644,19 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
   private val chainListener = new WalletEventsListener {
     override def onChainMasterSelected(event: InetSocketAddress): Unit = UITask {
-      androidx.transition.TransitionManager.beginDelayedTransition(walletCards.defaultHeader)
-      setVis(isVisible = false, walletCards.offlineIndicator)
+      // TODO: implement UI logic
     }.run
 
     override def onChainDisconnected: Unit = UITask {
-      setVis(isVisible = true, walletCards.offlineIndicator)
+      // TODO: implement UI logic
     }.run
 
     override def onChainSyncing(start: Int, now: Int, max: Int): Unit = UITask {
-      walletCards.chainSyncIndicator.setMaxProgress(max - start).setProgress(now - start)
-      setVis(isVisible = max - now > 2016 * 4, walletCards.chainSyncIndicator)
+      // TODO: implement UI logic
     }.run
 
     override def onChainSyncEnded(localTip: Int): Unit = UITask {
-      setVis(isVisible = false, walletCards.chainSyncIndicator)
+      // TODO: implement UI logic
     }.run
 
     override def onWalletReady(event: WalletReady): Unit =
@@ -795,8 +788,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
           val appOpensLeft = WalletApp.app.prefs.getInt(WalletApp.APP_OPENS_LEFT, 4)
           if (txInfos.nonEmpty && appOpensLeft > 0) WalletApp.app.prefs.edit.putInt(WalletApp.APP_OPENS_LEFT, appOpensLeft - 1).commit
           else if (txInfos.nonEmpty && appOpensLeft == 0) runAnd(WalletApp.app.prefs.edit.putInt(WalletApp.APP_OPENS_LEFT, -1).commit)(launchRateDialog)
-          // User may kill an activity but not an app and on getting back there won't be a chain listener event, so check connectivity once again here
-          setVisMany(WalletApp.ensureTor -> walletCards.torIndicator, WalletApp.currentChainNode.isEmpty -> walletCards.offlineIndicator)
+          // TODO: User may kill an activity but not an app and on getting back there won't be a chain listener event, so check connectivity once again here
           walletCards.searchField addTextChangedListener onTextChange(searchWorker.addWork)
           paymentAdapterDataChanged.run
         }

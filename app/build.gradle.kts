@@ -11,7 +11,7 @@ android {
     defaultConfig {
         applicationId = "com.btcontract.wallet"
         versionName = "2.5.9"
-        versionCode = 110
+        versionCode = 111
         targetSdk = 35
         minSdk = 28
     }
@@ -19,6 +19,15 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+        }
+        debug {
+            isMinifyEnabled = false
+        }
     }
 
     packaging {
@@ -29,10 +38,6 @@ android {
 }
 
 dependencies {
-    compileOnly(fileTree(layout.buildDirectory) {
-        include("**/R.jar")
-    })
-
     // Android-specific
     implementation(libs.material)
     implementation(libs.appcompat)
@@ -57,8 +62,9 @@ dependencies {
     implementation(libs.netty.all)
     implementation(libs.guava)
 
-    // Built-in Tor
     implementation(libs.okhttp)
-    implementation(libs.tor.android)
-    implementation(libs.jtorctl)
+
+    compileOnly(fileTree(layout.buildDirectory) {
+        include("**/R.jar")
+    })
 }

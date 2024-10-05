@@ -84,8 +84,6 @@
     <string name="settings_hw_zpub_tip">Billetera hardware o zpub</string>
 
     <string name="settings_chain_wallets">Add more wallets&#8230;</string>
-    <string name="settings_ensure_tor">Obligar conexion a Tor</string>
-
     <string name="settings_add_hardware_wallet">Scan hardware wallet QR code</string>
     <string name="settings_add_recovery_phrase">Attach BIP39 recovery phrase</string>
 

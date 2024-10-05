@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.btcontract.wallet">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-sdk tools:overrideLibrary="com.google.zxing.client.android"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
@@ -22,7 +21,6 @@
         android:fullBackupContent="false"
         android:supportsRtl="false"
         android:allowBackup="false"
-        tools:targetApi="31"
 
         android:theme="@style/AppTheme"
         android:name="com.btcontract.wallet.WalletApp"
@@ -45,7 +43,6 @@
             android:exported="true"
             android:name="HubActivity"
             android:launchMode="singleTask"
-            android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"
             android:windowSoftInputMode="adjustNothing">
 
@@ -74,37 +71,31 @@
         <activity
             android:launchMode="singleTask"
             android:name="EmergencyActivity"
-            android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
             android:name="SetupActivity"
             android:launchMode="singleTask"
-            android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
             android:name="QRChainActivity"
             android:launchMode="singleTask"
-            android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
             android:name="QRSigActivity"
             android:launchMode="singleTask"
-            android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
             android:name="SettingsActivity"
             android:launchMode="singleTask"
-            android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
         <activity
             android:launchMode="singleTask"
             android:name="CoinControlActivity"
-            android:screenOrientation="portrait"
             android:theme="@style/AppThemeNoActionBar"/>
 
     </application>
