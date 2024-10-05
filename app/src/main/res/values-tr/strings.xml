@@ -88,8 +88,6 @@
     <string name="settings_hw_zpub_tip">Donanım cüzdanı veya zpub</string>
 
     <string name="settings_chain_wallets">Daha fazla cüzdan ekle&#8230;</string>
-    <string name="settings_ensure_tor">Tor bağlantısı kullan</string>
-
     <string name="settings_add_hardware_wallet">Donanım cüzdanı QR kodunu tara</string>
     <string name="settings_add_recovery_phrase">BIP39 kurtarma cümlesi bağla</string>
 

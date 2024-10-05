@@ -33,7 +33,6 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
 
   override def onResume: Unit = {
     chainWallets.updateView
-    enforceTor.updateView
     electrum.updateView
     setFiat.updateView
     setBtc.updateView
@@ -142,7 +141,6 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
     addFlowChip(title.flow, "Manual", R.drawable.border_gray, _ => me browse "https://sbw.app/posts/manual")
 
     activityContainer.addView(title.view)
-    activityContainer.addView(enforceTor.view)
     activityContainer.addView(viewCode.view)
 
     activityContainer.addView(chainWallets.view)

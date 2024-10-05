@@ -48,12 +48,10 @@ object WalletApp {
 
   final val FIAT_CODE = "fiatCode"
   final val BTC_DENOM = "btcDenom"
-  final val ENSURE_TOR = "ensureTor"
   final val APP_OPENS_LEFT = "appOpensLeft"
   final val CUSTOM_ELECTRUM = "customElectrum"
 
   def fiatCode: String = app.prefs.getString(FIAT_CODE, "usd")
-  def ensureTor: Boolean = app.prefs.getBoolean(ENSURE_TOR, false)
 
   def denom: Denomination = {
     val denom = app.prefs.getString(BTC_DENOM, BtcDenomination.sign)
@@ -101,8 +99,9 @@ object WalletApp {
   def makeOperational(sec: WalletSecret): Unit = {
     require(isAlive, "Halted, application is not alive yet")
     val currentCustomElectrum: Try[NodeAddress] = customElectrumAddress
+
     ElectrumWallet.params = WalletParameters(extDataBag, chainWalletBag, txDataBag, dustLimit = 546L.sat)
-    ElectrumWallet.connectionProvider = if (ensureTor) new TorConnectionProvider(app) else new ClearnetConnectionProvider
+    ElectrumWallet.connectionProvider = new ClearnetConnectionProvider
     secret = sec
 
     extDataBag.db txWrap {

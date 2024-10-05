@@ -85,8 +85,6 @@
     <string name="settings_hw_zpub_tip">Апаратний гаманець або zpub</string>
 
     <string name="settings_chain_wallets">Додати гаманці&#8230;</string>
-    <string name="settings_ensure_tor">Використовувати Tor</string>
-
     <string name="settings_add_hardware_wallet">Сканувати QR-код апаратного гаманця</string>
     <string name="settings_add_recovery_phrase">Приєднати ще одну BIP39 фразу</string>
 
