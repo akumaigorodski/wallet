@@ -1,7 +1,4 @@
 buildscript {
-    repositories {
-        mavenLocal()
-    }
     dependencies {
         classpath(libs.scala.android.plugin)
     }

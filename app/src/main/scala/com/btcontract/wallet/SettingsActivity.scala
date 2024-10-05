@@ -181,11 +181,10 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
       showKeys(extraInput)
 
       def proceed: Unit = runAnd(finish) {
-        if (ElectrumWallet.specs.get(data.bip84XPub).isEmpty) {
-          val core = WatchingWallet(ElectrumWallet.BIP84, masterFingerprint = data.masterFingerprint, data.bip84XPub)
-          ElectrumWallet addWallet ElectrumWallet.makeWatchingWallet84Parts(core, Satoshi(0L), extraInput.getText.toString.trim)
-          HubActivity.instance.walletCards.resetChainCards
-        }
+        if (ElectrumWallet.specs contains data.bip84XPub) return
+        val core = WatchingWallet(ElectrumWallet.BIP84, masterFingerprint = data.masterFingerprint, data.bip84XPub)
+        ElectrumWallet addWallet ElectrumWallet.makeWatchingWallet84Parts(core, Satoshi(0L), extraInput.getText.toString.trim)
+        HubActivity.instance.walletCards.resetChainCards
       }
     }
 
