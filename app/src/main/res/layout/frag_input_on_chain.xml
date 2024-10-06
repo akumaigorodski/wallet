@@ -36,16 +36,6 @@
             <View style="@style/GrayDivider"/>
         </LinearLayout>
 
-        <LinearLayout android:visibility="gone" style="@style/StandardLinearLayout" android:id="@+id/slideshowChain">
-            <ImageView android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/qrSlideshow"/>
-            <include layout="@layout/frag_chain_buttons"/>
-        </LinearLayout>
-
-        <LinearLayout android:visibility="gone" style="@style/StandardLinearLayout" android:id="@+id/readerChain">
-            <com.journeyapps.barcodescanner.BarcodeView android:layout_height="wrap_content" android:layout_width="match_parent" android:id="@+id/qrReader"/>
-            <include layout="@layout/frag_chain_buttons"/>
-        </LinearLayout>
-
         <LinearLayout android:visibility="gone" android:paddingTop="10dp" style="@style/StandardLinearLayout" android:id="@+id/confirmChain">
             <include layout="@layout/frag_two_sided_item" android:id="@+id/confirmFiat"/>
             <include layout="@layout/frag_two_sided_item" android:id="@+id/confirmAmount"/>

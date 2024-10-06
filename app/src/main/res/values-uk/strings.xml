@@ -81,12 +81,7 @@
     <!-- Settings activity -->
 
     <string name="settings_attached_label">Мітка для приєднаного гаманця</string>
-    <string name="settings_hardware_label">Мітка для апаратного гаманця</string>
-    <string name="settings_hw_zpub_tip">Апаратний гаманець або zpub</string>
-
-    <string name="settings_chain_wallets">Додати гаманці&#8230;</string>
-    <string name="settings_add_hardware_wallet">Сканувати QR-код апаратного гаманця</string>
-    <string name="settings_add_recovery_phrase">Приєднати ще одну BIP39 фразу</string>
+    <string name="settings_chain_wallets">Додати гаманець</string>
 
     <string name="settings_btc_unit">Біткоїн одиниця</string>
     <string name="settings_fiat_currency">Фіатна валюта</string>

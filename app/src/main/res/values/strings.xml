@@ -2,8 +2,6 @@
 <resources>
     <string name="app_name">SBW</string>
     <string name="select_wallets">Select wallets</string>
-    <string name="hardware_wallet">Hardware wallet</string>
-    <string name="watching_wallet">Watching wallet</string>
     <string name="attached_wallet">Attached wallet</string>
     <string name="coin_control">Coin control</string>
 
@@ -59,7 +57,6 @@
 
     <string name="error_btc_no_wallet">Can not proceed because related chain wallet is not found, please add it from app settings.</string>
     <string name="error_wrong_phrase"><![CDATA[<b>Provided phrase is incorrect</b>.<br><br>Error details<br><b>%1$s</b>]]></string>
-    <string name="error_old_api_level">Requires API 24+, yours is %1$s</string>
     <string name="error_nothing_useful">Nothing useful is found</string>
 
     <!-- /errors -->
@@ -84,12 +81,7 @@
     <!-- Settings activity -->
 
     <string name="settings_attached_label">Set attached wallet label</string>
-    <string name="settings_hardware_label">Set hardware wallet label</string>
-    <string name="settings_hw_zpub_tip">Hardware wallet or zpub</string>
-
-    <string name="settings_chain_wallets">Add more wallets&#8230;</string>
-    <string name="settings_add_hardware_wallet">Scan hardware wallet QR code</string>
-    <string name="settings_add_recovery_phrase">Attach BIP39 recovery phrase</string>
+    <string name="settings_chain_wallets">Add another wallet</string>
 
     <string name="settings_btc_unit">Bitcoin units</string>
     <string name="settings_fiat_currency">Fiat currency</string>

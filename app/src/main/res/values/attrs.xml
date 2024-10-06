@@ -95,14 +95,6 @@
         <attr name="android:layout_gravity"/>
     </declare-styleable>
 
-    <!-- Blur view -->
-
-    <declare-styleable name="RealtimeBlurView">
-        <attr name="realtimeBlurRadius" format="dimension"/>
-        <attr name="realtimeDownsampleFactor" format="float"/>
-        <attr name="realtimeOverlayColor" format="color"/>
-    </declare-styleable>
-
     <!-- Swipe-reveal layout -->
 
     <declare-styleable name="SwipeRevealLayout">
@@ -120,17 +112,5 @@
 
         <attr name="minDistRequestDisallowParent" format="dimension"/>
         <attr name="flingVelocity" format="integer"/>
-    </declare-styleable>
-
-    <!-- InvertedTextProgressbar -->
-
-    <declare-styleable name="InvertedTextProgressbar">
-        <attr name="text" format="string"/>
-        <attr name="text_color" format="color"/>
-        <attr name="text_inverted_color" format="color"/>
-        <attr name="text_size" format="dimension"/>
-        <attr name="text_typeface" format="integer"/>
-        <attr name="max_progress" format="integer"/>
-        <attr name="min_progress" format="integer"/>
     </declare-styleable>
 </resources>

@@ -84,12 +84,7 @@
     <!-- Settings activity -->
 
     <string name="settings_attached_label">Bağlı cüzdan etiketini ayarla</string>
-    <string name="settings_hardware_label">Donanım cüzdan etiketini ayarla</string>
-    <string name="settings_hw_zpub_tip">Donanım cüzdanı veya zpub</string>
-
-    <string name="settings_chain_wallets">Daha fazla cüzdan ekle&#8230;</string>
-    <string name="settings_add_hardware_wallet">Donanım cüzdanı QR kodunu tara</string>
-    <string name="settings_add_recovery_phrase">BIP39 kurtarma cümlesi bağla</string>
+    <string name="settings_chain_wallets">Daha fazla cüzdan ekle</string>
 
     <string name="settings_btc_unit">Bitcoin birimleri</string>
     <string name="settings_fiat_currency">Fiat para birimi</string>

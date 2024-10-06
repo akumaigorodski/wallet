@@ -1,6 +1,6 @@
 package com.btcontract.wallet
 
-import android.os.{Build, Bundle}
+import android.os.Bundle
 import android.view.View
 import android.widget._
 import androidx.appcompat.app.AlertDialog
@@ -9,7 +9,7 @@ import com.btcontract.wallet.R.string._
 import fr.acinq.bitcoin.MnemonicCode
 import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
 import fr.acinq.eclair.wire.{Domain, NodeAddress}
-import immortan.crypto.Tools.{SEPARATOR, StringList, none, runAnd, \}
+import immortan.crypto.Tools.{SEPARATOR, StringList, \, none, runAnd}
 import immortan.{LightningNodeKeys, WalletSecret}
 
 import scala.util.Success
@@ -25,14 +25,6 @@ abstract class SettingsHolder(host: BaseActivity) {
   def putBoolAndUpdateView(key: String, value: Boolean): Unit = {
     WalletApp.app.prefs.edit.putBoolean(key, value).commit
     updateView
-  }
-
-  def disableIfOldAndroid: Unit = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-    val message = host.getString(error_old_api_level).format(Build.VERSION.SDK_INT)
-    host.setVis(isVisible = true, settingsInfo)
-    settingsInfo.setText(message)
-    settingsTitle.setAlpha(0.5F)
-    view.setEnabled(false)
   }
 }
 
@@ -148,7 +140,6 @@ class SetupActivity extends BaseActivity with MnemonicActivity { me =>
   }
 
   def showMnemonicPopup(view: View): Unit = {
-    val title = R.string.action_recovery_phrase_title
-    showMnemonicInput(title)(proceedWithMnemonics)
+    showMnemonicInput(action_recovery_phrase_title)(proceedWithMnemonics)
   }
 }

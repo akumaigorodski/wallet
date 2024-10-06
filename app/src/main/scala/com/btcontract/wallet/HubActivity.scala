@@ -1036,56 +1036,16 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     paymentsAdapter.notifyDataSetChanged
   }
 
-  def proceedConfirm(sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit =
-    sendView.specs.find(spec => spec.info.core.masterFingerprint.nonEmpty && spec.info.core.walletType == ElectrumWallet.BIP84) match {
+  def proceedConfirm(sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
+    val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
+    finalSendButton setOnClickListener onButtonTap(process apply response.tx)
+    sendView.switchToConfirm(alert, response)
+  }
 
-      case Some(hwSpec) =>
-        val psbt = prepareBip84Psbt(response, hwSpec)
-        sendView.switchToHardwareOutgoing(alert, psbt)
-        sendView.chainReaderView.onPsbt = postSignedPsbt => UITask {
-          postSignedPsbt.extract orElse extractTx(response, hwSpec, postSignedPsbt) match {
-            case Success(postSignedTx) if postSignedTx.txOut.toSet == response.tx.txOut.toSet =>
-              val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
-              finalSendButton setOnClickListener onButtonTap(process apply postSignedTx)
-              sendView.switchToConfirm(alert, response)
-
-            case Failure(failureReason) =>
-              onFail(failureReason)
-              alert.dismiss
-
-            case _ =>
-              onFail("Outputs mismatch")
-              alert.dismiss
-          }
-        }
-
-      case None =>
-        // This is a signing wallet so signed response tx is a final one, we use it
-        val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
-        finalSendButton setOnClickListener onButtonTap(process apply response.tx)
-        sendView.switchToConfirm(alert, response)
-    }
-
-  def proceedWithoutConfirm(sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit =
-    sendView.specs.find(spec => spec.info.core.masterFingerprint.nonEmpty && spec.info.core.walletType == ElectrumWallet.BIP84) match {
-
-      case Some(hwSpec) =>
-        val psbt = prepareBip84Psbt(response, hwSpec)
-        sendView.switchToHardwareOutgoing(alert, psbt)
-        sendView.chainReaderView.onPsbt = postSignedPsbt => UITask {
-          postSignedPsbt.extract orElse extractTx(response, hwSpec, postSignedPsbt) match {
-            case Success(signedTx) if signedTx.txOut.toSet == response.tx.txOut.toSet => process(signedTx)
-            case Failure(failureReason) => onFail(failureReason)
-            case _ => onFail("Outputs mismatch")
-          }
-
-          alert.dismiss
-        }
-
-      case None =>
-        process(response.tx)
-        alert.dismiss
-    }
+  def proceedWithoutConfirm(sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
+    process(response.tx)
+    alert.dismiss
+  }
 
   def broadcastTx(desc: TxDescription, finalTx: Transaction, received: Satoshi, sent: Satoshi, fee: Satoshi, incoming: Int): Future[OkOrError] = {
     val txInfo = TxInfo(finalTx.toString, finalTx.txid.toHex, invalidPubKey.toString, depth = 0, received, sent, fee, seenAt = System.currentTimeMillis,

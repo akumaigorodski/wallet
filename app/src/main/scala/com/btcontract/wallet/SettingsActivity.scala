@@ -5,15 +5,12 @@ import android.widget._
 import com.btcontract.wallet.BaseActivity.StringOps
 import com.btcontract.wallet.Colors._
 import com.btcontract.wallet.R.string._
-import com.btcontract.wallet.sheets.{LinearBottomSheet, PairingData}
-import com.btcontract.wallet.utils.OnListItemClickListener
 import com.google.android.material.snackbar.Snackbar
-import fr.acinq.bitcoin.DeterministicWallet.ExtendedPrivateKey
 import fr.acinq.bitcoin.{MnemonicCode, Satoshi}
 import fr.acinq.eclair.MilliSatoshi
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.chainHash
-import fr.acinq.eclair.blockchain.electrum.db.{SigningWallet, WatchingWallet}
-import fr.acinq.eclair.blockchain.electrum.{ElectrumWallet, ElectrumWalletType, WalletSpec}
+import fr.acinq.eclair.blockchain.electrum.db.SigningWallet
+import fr.acinq.eclair.blockchain.electrum.{ElectrumWallet, ElectrumWalletType}
 import immortan.LightningNodeKeys
 import immortan.crypto.Tools._
 import immortan.utils.{BtcDenomination, SatDenomination}
@@ -59,38 +56,27 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
   lazy private[this] val chainWallets: SettingsHolder = new SettingsHolder(me) {
     setVisMany(false -> settingsCheck, false -> settingsInfo)
     settingsTitle.setText(settings_chain_wallets)
-    override def updateView: Unit = none
 
     view setOnClickListener onButtonTap {
-      val sheet = new LinearBottomSheet(R.layout.frag_linear_layout, me)
-      val options = new TitleView(getString(settings_chain_wallets).trim)
+      showMnemonicInput(action_recovery_phrase_title) { mnemonic =>
+        val (container, extraInputLayout, extraInput, _, _) = singleInputPopup
+        val keys = LightningNodeKeys.fromSeed(MnemonicCode.toSeed(mnemonic, new String).toArray)
+        val bld = titleBodyAsViewBuilder(getString(settings_attached_label).asDefView, container)
+        mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, bld, dialog_ok, dialog_cancel)
+        extraInputLayout.setHint(dialog_set_label)
+        showKeys(extraInput)
 
-      val startHardware: String => Unit = { _ =>
-        timer.schedule(UITask(callUrScanner), 225)
-        sheet.dismiss
+        def proceed: Unit = runAnd(finish) {
+          if (WalletApp.secret.keys.master == keys.master) return
+          val core = SigningWallet(ElectrumWallet.BIP84, attachedMaster = keys.master.asSome)
+          val ewt = ElectrumWalletType.makeSigningType(core.walletType, master = keys.master, chainHash)
+          ElectrumWallet addWallet ElectrumWallet.makeSigningWalletParts(core, ewt, Satoshi(0L), extraInput.getText.toString.trim)
+          HubActivity.instance.walletCards.resetChainCards
+        }
       }
-
-      val startMnemonic: String => Unit = { _ =>
-        timer.schedule(UITask(callMnemonic), 225)
-        sheet.dismiss
-      }
-
-      // Allow user to add a hardware wallet or another BIP39-based wallet
-      addFlowChip(options.flow, getString(settings_add_hardware_wallet), R.drawable.border_green, startHardware).setTextSize(18f)
-      addFlowChip(options.flow, getString(settings_add_recovery_phrase), R.drawable.border_green, startMnemonic).setTextSize(18f)
-      sheet.view.setBackgroundResource(com.btcontract.wallet.R.color.chip_default_text_color)
-      sheet.view.addView(options.view)
-
-      ElectrumWallet.specs.values.collect {
-        // Add attached wallets first, the reason we separate is that if built-in wallet is removed it won't be found here
-        case spec if ElectrumWallet.BIP84 == spec.info.core.walletType && spec.info.core.attachedMaster.isDefined =>
-          makeSigningWalletTypes(sheet.view, spec.info.label, spec.info.core.attachedMaster.get)
-      }
-
-      // And finally show options for built-in BIP39 wallet for which we store a mnemonic phrase
-      makeSigningWalletTypes(sheet.view, getString(bitcoin_wallet), WalletApp.secret.keys.master)
-      sheet.show(getSupportFragmentManager, "utag")
     }
+
+    override def updateView: Unit = none
   }
 
   lazy private[this] val setFiat = new SettingsHolder(me) {
@@ -148,86 +134,4 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
     activityContainer.addView(setFiat.view)
     activityContainer.addView(setBtc.view)
   }
-
-  // Signing wallet options
-
-  def callMnemonic: Unit =
-    showMnemonicInput(settings_add_recovery_phrase) { mnemonic =>
-      val (container, extraInputLayout, extraInput, _, _) = singleInputPopup
-      val bld = titleBodyAsViewBuilder(getString(settings_attached_label).asDefView, container)
-      val keys = LightningNodeKeys.fromSeed(MnemonicCode.toSeed(mnemonic, new String).toArray)
-      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, bld, dialog_ok, dialog_cancel)
-      extraInputLayout.setHint(dialog_set_label)
-      showKeys(extraInput)
-
-      def proceed: Unit = runAnd(finish) {
-        if (WalletApp.secret.keys.master != keys.master) {
-          val core = SigningWallet(ElectrumWallet.BIP84, attachedMaster = keys.master.asSome)
-          val ewt = ElectrumWalletType.makeSigningType(core.walletType, master = keys.master, chainHash)
-          ElectrumWallet addWallet ElectrumWallet.makeSigningWalletParts(core, ewt, Satoshi(0L), extraInput.getText.toString.trim)
-          HubActivity.instance.walletCards.resetChainCards
-        }
-      }
-    }
-
-  def callUrScanner: Unit = {
-    def onKey(data: PairingData): Unit = {
-      val (container, extraInputLayout, extraInput, _, _) = singleInputPopup
-      val bld = titleBodyAsViewBuilder(getString(settings_hardware_label).asDefView, container)
-      mkCheckForm(alert => runAnd(alert.dismiss)(proceed), none, bld, dialog_ok, dialog_cancel)
-      extraInputLayout.setHint(dialog_set_label)
-      showKeys(extraInput)
-
-      def proceed: Unit = runAnd(finish) {
-        if (ElectrumWallet.specs contains data.bip84XPub) return
-        val core = WatchingWallet(ElectrumWallet.BIP84, masterFingerprint = data.masterFingerprint, data.bip84XPub)
-        ElectrumWallet addWallet ElectrumWallet.makeWatchingWallet84Parts(core, Satoshi(0L), extraInput.getText.toString.trim)
-        HubActivity.instance.walletCards.resetChainCards
-      }
-    }
-
-    val sheet = new sheets.URBottomSheet(me, onKey)
-    callScanner(sheet)
-  }
-
-  def makeSigningWalletTypes(host: LinearLayout, title: String, master: ExtendedPrivateKey): Unit = {
-    def find(walletType: String): Option[WalletSpec] = ElectrumWallet.specs.values.find { spec =>
-      spec.data.keys.ewt.secrets.exists(_.master == master) && spec.info.core.walletType == walletType
-    }
-
-    val ws = for (Tuple2(tag, info \ path) <- wallets) yield s"&#160;<b>$tag</b> <i>$path</i><br>&#160;$info".html
-    val list = getLayoutInflater.inflate(R.layout.frag_selector_list, null).asInstanceOf[ListView]
-    list setAdapter new ArrayAdapter(me, android.R.layout.select_dialog_multichoice, ws.toArray)
-
-    val listener = new OnListItemClickListener {
-      def onItemClicked(itemPosition: Int): Unit = {
-        val attachedMaster = if (master == WalletApp.secret.keys.master) None else Some(master)
-        val core = SigningWallet(possibleKeys(itemPosition), attachedMaster)
-
-        if (list isItemChecked itemPosition) {
-          val ewt = ElectrumWalletType.makeSigningType(core.walletType, master, chainHash)
-          ElectrumWallet addWallet ElectrumWallet.makeSigningWalletParts(core, ewt, Satoshi(0L), core.walletType)
-        } else find(core.walletType).foreach(spec => ElectrumWallet removeWallet spec.data.keys.ewt.xPub)
-        HubActivity.instance.walletCards.resetChainCards
-      }
-    }
-
-    list.setOnItemClickListener(listener)
-    list.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE)
-    host.addView(new TitleView(title).view)
-    host.addView(list)
-
-    for {
-      walletType <- possibleKeys if find(walletType).isDefined
-    } list.setItemChecked(possibleKeys.indexOf(walletType), true)
-  }
-
-  private val wallets = Map(
-    ElectrumWallet.BIP84 -> ("Modern SBW", "m/84'/0'/0'/0/n"),
-    ElectrumWallet.BIP32 -> ("Legacy SBW, BRD, Mycelium", "m/0'/0/n"),
-    ElectrumWallet.BIP44 -> ("Bitcoin.com, Trust wallet, Exodus", "m/44'/0'/0'/0/n")
-  )
-
-  private val possibleKeys: StringList =
-    wallets.keys.toList
 }
