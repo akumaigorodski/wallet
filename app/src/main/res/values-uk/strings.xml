@@ -78,7 +78,7 @@
     <!-- Settings activity -->
 
     <string name="settings_attached_label">Мітка для приєднаного гаманця</string>
-    <string name="settings_chain_wallets">Додати гаманець</string>
+    <string name="settings_chain_wallets">Додати BIP39 гаманець</string>
 
     <string name="settings_btc_unit">Біткоїн одиниця</string>
     <string name="settings_fiat_currency">Фіатна валюта</string>

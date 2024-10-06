@@ -20,7 +20,7 @@ import fr.acinq.eclair.blockchain.electrum.ElectrumClient.SSL
 import fr.acinq.eclair.blockchain.electrum.ElectrumClientPool.ElectrumServerAddress
 import fr.acinq.eclair.blockchain.electrum.ElectrumWallet.{TransactionReceived, chainHash}
 import fr.acinq.eclair.blockchain.electrum._
-import fr.acinq.eclair.blockchain.electrum.db.{CompleteChainWalletInfo, SigningWallet, WatchingWallet}
+import fr.acinq.eclair.blockchain.electrum.db.{CompleteChainWalletInfo, SigningWallet}
 import fr.acinq.eclair.wire.CommonCodecs.nodeaddress
 import fr.acinq.eclair.wire.NodeAddress
 import immortan._
@@ -122,20 +122,15 @@ object WalletApp {
       case _ => throw new RuntimeException
     }
 
-    ElectrumWallet.pool = ElectrumWallet.system.actorOf(Props(classOf[ElectrumClientPool], ElectrumWallet.chainHash, ElectrumWallet.ec), "connection-pool")
-    ElectrumWallet.sync = ElectrumWallet.system.actorOf(Props(classOf[ElectrumChainSync], ElectrumWallet.pool, ElectrumWallet.params.headerDb, ElectrumWallet.chainHash), "chain-sync")
-    ElectrumWallet.catcher = ElectrumWallet.system.actorOf(Props(new WalletEventsCatcher), "events-catcher")
+    ElectrumWallet.pool = ElectrumWallet.system.actorOf(Props(classOf[ElectrumClientPool], ElectrumWallet.chainHash, ElectrumWallet.ec), "pool")
+    ElectrumWallet.sync = ElectrumWallet.system.actorOf(Props(classOf[ElectrumChainSync], ElectrumWallet.pool, ElectrumWallet.params.headerDb, ElectrumWallet.chainHash), "sync")
+    ElectrumWallet.catcher = ElectrumWallet.system.actorOf(Props(new WalletEventsCatcher), "catcher")
 
     chainWalletBag.listWallets collect {
       case CompleteChainWalletInfo(core: SigningWallet, persistentData, lastBalance, label, false) =>
         val ewt = ElectrumWalletType.makeSigningType(core.walletType, core.attachedMaster.getOrElse(secret.keys.master), chainHash)
         val spec = ElectrumWallet.makeSigningWalletParts(core, ewt, lastBalance, label)
         ElectrumWallet.specs.update(ewt.xPub, spec)
-        spec.walletRef ! persistentData
-
-      case CompleteChainWalletInfo(core: WatchingWallet, persistentData, lastBalance, label, false) =>
-        val spec = ElectrumWallet.makeWatchingWallet84Parts(core, lastBalance, label)
-        ElectrumWallet.specs.update(core.xPub, spec)
         spec.walletRef ! persistentData
     }
 

@@ -81,7 +81,7 @@
     <!-- Settings activity -->
 
     <string name="settings_attached_label">Set attached wallet label</string>
-    <string name="settings_chain_wallets">Add another wallet</string>
+    <string name="settings_chain_wallets">Attach another BIP39 wallet</string>
 
     <string name="settings_btc_unit">Bitcoin units</string>
     <string name="settings_fiat_currency">Fiat currency</string>

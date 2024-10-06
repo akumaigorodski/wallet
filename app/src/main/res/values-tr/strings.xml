@@ -81,7 +81,7 @@
     <!-- Settings activity -->
 
     <string name="settings_attached_label">Bağlı cüzdan etiketini ayarla</string>
-    <string name="settings_chain_wallets">Daha fazla cüzdan ekle</string>
+    <string name="settings_chain_wallets">Daha fazla cüzdan BIP39 ekle</string>
 
     <string name="settings_btc_unit">Bitcoin birimleri</string>
     <string name="settings_fiat_currency">Fiat para birimi</string>
