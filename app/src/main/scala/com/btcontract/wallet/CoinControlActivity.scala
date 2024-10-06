@@ -49,7 +49,7 @@ class CoinControlActivity extends BaseCheckActivity with ExternalDataChecker { m
     override def getCount: Int = items.size
 
     def getView(position: Int, savedView: View, parent: ViewGroup): View = {
-      val view = if (null == savedView) getLayoutInflater.inflate(R.layout.frag_utxo_line, null) else savedView.asInstanceOf[View]
+      val view = if (null == savedView) getLayoutInflater.inflate(R.layout.frag_utxo_line, null) else savedView
       val holder = if (null == view.getTag) new UtxoHolder(view) else view.getTag.asInstanceOf[UtxoHolder]
 
       getItem(position) match {
