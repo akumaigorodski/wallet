@@ -2,8 +2,6 @@
 <resources>
     <string name="app_name">SBW</string>
     <string name="select_wallets">Select wallets</string>
-    <string name="hardware_wallet">Hardwareportemonnee</string>
-    <string name="watching_wallet">Alleen-kijkenportemonnee</string>
     <string name="attached_wallet">Attached wallet</string>
     <string name="coin_control">Muntbeheer</string>
 
@@ -55,7 +53,6 @@
 
     <string name="error_btc_no_wallet">Kan niet verder gaan omdat gerelateerde ketenportemonnee niet is gevonden, voeg die a.u.b. toe vanuit de appinstellingen.</string>
     <string name="error_wrong_phrase"><![CDATA[<b>Ingevoerde wachtwoordzin is incorrect</b>.<br><br>Foutdetails<br><b>%1$s</b>]]></string>
-    <string name="error_old_api_level">Vereist API 24+, die van jou is %1$s</string>
     <string name="error_nothing_useful">Niets bruikbaars is gevonden</string>
 
     <!-- /errors -->

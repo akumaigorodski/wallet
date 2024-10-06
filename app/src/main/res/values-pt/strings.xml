@@ -2,8 +2,6 @@
 <resources>
     <string name="app_name">SBW</string>
     <string name="select_wallets">Select wallets</string>
-    <string name="hardware_wallet">Hardware wallet</string>
-    <string name="watching_wallet">Watching wallet</string>
     <string name="attached_wallet">Carteira em anexo</string>
     <string name="coin_control">Coin control</string>
 
@@ -55,7 +53,6 @@
 
     <string name="error_btc_no_wallet">Can not proceed because related chain wallet is not found, please add it from app settings.</string>
     <string name="error_wrong_phrase"><![CDATA[<b>A frase fornecida está incorreta</b>.<br><br>Detalhes do erro<br><b>%1$s</b>]]></string>
-    <string name="error_old_api_level">Requires API 24+, yours is %1$s</string>
     <string name="error_nothing_useful">Nada útil foi encontrado</string>
 
     <!-- /errors -->

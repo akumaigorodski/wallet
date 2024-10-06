@@ -2,8 +2,6 @@
 <resources>
     <string name="app_name">SBW</string>
     <string name="select_wallets">Обрати гаманці</string>
-    <string name="hardware_wallet">Апаратний гаманець</string>
-    <string name="watching_wallet">Спостережний гаманець</string>
     <string name="attached_wallet">Приєднаний гаманець</string>
     <string name="coin_control">Контроль монет</string>
 
@@ -56,7 +54,6 @@
 
     <string name="error_btc_no_wallet">Не можна продовжити, бо відповідний гаманець не знайдено. Будь ласка, додайте його в налаштуваннях.</string>
     <string name="error_wrong_phrase"><![CDATA[<b>Надана фраза неправильна</b>.<br><br>Подробиці помилки<br><b>%1$s</b>]]></string>
-    <string name="error_old_api_level">Потрібний API 24+, у вас %1$s</string>
     <string name="error_nothing_useful">Нічого не знайдено</string>
 
     <!-- /errors -->

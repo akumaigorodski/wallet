@@ -2,8 +2,6 @@
 <resources>
     <string name="app_name">SBW</string>
     <string name="select_wallets">Cüzdanları seç</string>
-    <string name="hardware_wallet">Donanım cüzdanı</string>
-    <string name="watching_wallet">Cüzdan izleniyor</string>
     <string name="attached_wallet">Bağlı cüzdan</string>
     <string name="coin_control">Para kontrolü</string>
 
@@ -59,7 +57,6 @@
 
     <string name="error_btc_no_wallet">İlişkili zincir cüzdanı bulunamadığından ilerlenemiyor, lütfen bunu uygulama ayarlarından ekleyin.</string>
     <string name="error_wrong_phrase"><![CDATA[<b>Sağlanan cümle yanlış</b>.<br><br>Hata ayrıntıları<br><b>%1$s</b>]]></string>
-    <string name="error_old_api_level">API 24+\'ya ihtiyaç duyar, sizinki %1$s</string>
     <string name="error_nothing_useful">Yararlı hiçbir şey bulunamadı</string>
 
     <!-- /errors -->

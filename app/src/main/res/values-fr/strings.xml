@@ -2,8 +2,6 @@
 <resources>
     <string name="app_name">SBW</string>
     <string name="select_wallets">Choisir les porte-monnaies</string>
-    <string name="hardware_wallet">Porte-monnaie virtuel</string>
-    <string name="watching_wallet">Porte-monnaie observé</string>
     <string name="attached_wallet">Porte-monnaie attaché</string>
     <string name="coin_control">Contrôle de monnaie</string>
 
@@ -59,7 +57,6 @@
 
     <string name="error_btc_no_wallet">Impossible de continuer car le porte-monnaie de chaîne connexe est introuvable, veuillez l\'ajouter depuis les réglages de l\'application.</string>
     <string name="error_wrong_phrase"><![CDATA[<b>La phrase fournie est incorrecte</b>.<br><br>Détails de l\'erreur<br><b>%1$s</b>]]></string>
-    <string name="error_old_api_level">Nécessite l\'API 24+, le vôtre est %1$s</string>
     <string name="error_nothing_useful">Rien d\'utile n\'a pu être trouvé</string>
 
     <!-- /errors -->

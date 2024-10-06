@@ -75,7 +75,6 @@ object Colors {
   val cardIn: String = "#" + WalletApp.app.getResources.getString(R.color.colorAccent).substring(3)
   val cardOut: String = "#" + WalletApp.app.getResources.getString(R.color.cardOutText).substring(3)
   val cardZero: String = "#" + WalletApp.app.getResources.getString(R.color.cardZeroText).substring(3)
-  val watchCardZero: String = "#" + WalletApp.app.getResources.getString(R.color.watchCardText).substring(3)
   val signCardZero: String = "#" + WalletApp.app.getResources.getString(R.color.signCardZeroText).substring(3)
 }
 
@@ -588,14 +587,6 @@ trait BaseActivity extends AppCompatActivity { me =>
     chooser.unPadCards
     def onOk: Unit
   }
-
-  def walletBackground(specs: Seq[WalletSpec] = Nil): Int = {
-    val containsSigning = specs.exists(_.data.keys.ewt.secrets.nonEmpty)
-    val containsHardware = specs.exists(_.info.core.masterFingerprint.nonEmpty)
-    if (containsSigning && containsHardware) R.color.cardBitcoinMixed
-    else if (containsHardware) R.color.cardBitcoinHardware
-    else R.color.cardBitcoinSigning
-  }
 }
 
 trait BaseCheckActivity extends BaseActivity { me =>
@@ -699,20 +690,10 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
       view.setLockDrag(true)
     }
 
-    def selectedBackground(spec: WalletSpec): Int = {
-      val containsSigning = spec.data.keys.ewt.secrets.nonEmpty
-      val containsHardware = spec.info.core.masterFingerprint.nonEmpty
-      if (containsSigning && containsHardware) R.drawable.border_card_mixed_on
-      else if (containsHardware) R.drawable.border_card_hardware_on
-      else R.drawable.border_card_signing_on
-    }
-
     def updateView(spec: WalletSpec): Unit = {
       val hasMoney = spec.info.lastBalance > 0L.sat
-      val zeroColor = if (spec.data.keys.ewt.secrets.nonEmpty) signCardZero else watchCardZero
-      val bgResource = if (selected contains spec.data.keys.ewt.xPub) selectedBackground(spec) else host.walletBackground(spec :: Nil)
       host.setVisMany(hasMoney -> chainBalanceWrap, !hasMoney -> receiveBitcoinTip, spec.info.isCoinControlOn -> coinControlOn)
-      chainBalance.setText(WalletApp.denom.parsedWithSignTT(spec.info.lastBalance.toMilliSatoshi, "#FFFFFF", zeroColor).html)
+      chainBalance.setText(WalletApp.denom.parsedWithSignTT(spec.info.lastBalance.toMilliSatoshi, "#FFFFFF", signCardZero).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman spec.info.lastBalance.toMilliSatoshi)
       chainWalletNotice setText host.chainWalletNotice(spec)
 
@@ -721,7 +702,7 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
       setItemLabel setOnClickListener host.onButtonTap(me onLabelTap spec.data.keys.ewt.xPub)
       removeItem setOnClickListener host.onButtonTap(me onRemoveTap spec.data.keys.ewt.xPub)
       chainWrap setOnClickListener host.onButtonTap(me onWalletTap spec.data.keys.ewt.xPub)
-      chainContainer setBackgroundResource bgResource
+      chainContainer setBackgroundResource R.color.cardBitcoinSigning
     }
   }
 
