@@ -8,8 +8,6 @@ trait FeeProvider {
   def getFeerates: Future[FeeratesPerKB]
 }
 
-case object CannotRetrieveFeerates extends RuntimeException("cannot retrieve feerates: channels may be at risk")
-
 object FeeratePerByte {
   def apply(feeratePerKw: FeeratePerKw): FeeratePerByte = FeeratePerByte(FeeratePerKB(feeratePerKw).feerate / 1000)
 }

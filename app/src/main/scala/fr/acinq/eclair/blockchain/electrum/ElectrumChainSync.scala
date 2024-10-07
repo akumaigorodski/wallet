@@ -77,7 +77,7 @@ class ElectrumChainSync(client: ActorRef, headerDb: HeaderDb, chainHash: ByteVec
           goto(SYNCING) using blockchain2
 
         case Failure(error) =>
-          log.error("Electrum peer sent bad headers", error)
+          log.error("Electrum peer sent bad headers")
           goto(DISCONNECTED) replying PoisonPill
       }
 

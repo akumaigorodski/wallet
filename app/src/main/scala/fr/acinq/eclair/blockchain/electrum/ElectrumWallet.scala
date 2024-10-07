@@ -376,7 +376,7 @@ class ElectrumWallet(client: ActorRef, chainSync: ActorRef, ewt: ElectrumWalletT
         case (Some(data), ElectrumClient.ScriptHashSubscriptionResponse(scriptHash, status), RUNNING) if status.isEmpty =>
           // Generally we don't need to do anything here because most likely this is a fresh address where scriptHash is already empty
           // But if we did have something there while now there is nothing then an incoming transaction has likely been cancelled
-          if (data.status.get(scriptHash).nonEmpty) client ! ElectrumClient.GetScriptHashHistory(scriptHash)
+          if (data.status contains scriptHash) client ! ElectrumClient.GetScriptHashHistory(scriptHash)
 
         case (Some(data), ElectrumClient.ScriptHashSubscriptionResponse(scriptHash, status), RUNNING) =>
           val data1 = data.copy(status = data.status.updated(scriptHash, status), pendingHistoryRequests = data.pendingHistoryRequests + scriptHash)
