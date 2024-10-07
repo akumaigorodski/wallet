@@ -21,6 +21,7 @@ scodecCore_xX1 = "1.11.4"
 secp256k1KmpJniAndroid = "0.5.2"
 sprayJson_xX1 = "1.3.6"
 zxingAndroidEmbedded = "4.2.0"
+google-play-services-auth = "21.2.0"
 
 [libraries]
 akka-actor_x-x1 = { module = "com.typesafe.akka:akka-actor_2.11", version.ref = "akkaActor_xX1" }
@@ -44,6 +45,7 @@ scodec-core_x-x1 = { module = "org.scodec:scodec-core_2.11", version.ref = "scod
 secp256k1-kmp-jni-android = { module = "fr.acinq.secp256k1:secp256k1-kmp-jni-android", version.ref = "secp256k1KmpJniAndroid" }
 spray-json_x-x1 = { module = "io.spray:spray-json_2.11", version.ref = "sprayJson_xX1" }
 zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxingAndroidEmbedded" }
+google-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "google-play-services-auth" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
