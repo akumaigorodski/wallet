@@ -122,7 +122,7 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
   override def PROCEED(state: Bundle): Unit = {
     setContentView(R.layout.activity_settings)
 
-    val title = new TitleView("<strong>S</strong>imple <strong>B</strong>itcoin <strong>W</strong>allet")
+    val title = new TitleView("-= <strong>S</strong>imple <strong>B</strong>itcoin <strong>W</strong>allet =-")
     addFlowChip(title.flow, "Sources", R.drawable.border_gray, _ => me browse "https://github.com/akumaigorodski/wallet")
     addFlowChip(title.flow, "Manual", R.drawable.border_gray, _ => me browse "https://sbw.app/posts/manual")
 

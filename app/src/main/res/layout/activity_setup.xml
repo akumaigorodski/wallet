@@ -11,7 +11,6 @@
         <LinearLayout style="@style/StandardXYMarginLinearLayout">
 
             <com.ornach.nobobutton.NoboButton
-                android:layout_marginTop="20dp"
                 app:nb_text="@string/setup_create_new"
                 android:onClick="createNewWallet"
                 style="@style/GreenButton"/>

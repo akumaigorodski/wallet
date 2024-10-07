@@ -129,7 +129,10 @@ class SetupActivity extends BaseActivity with MnemonicActivity { me =>
 
   override def START(s: Bundle): Unit = {
     setContentView(R.layout.activity_setup)
+
+    val title = new TitleView("-= <strong>S</strong>imple <strong>B</strong>itcoin <strong>W</strong>allet =-")
     activityContainer.addView(electrum.view, 0)
+    activityContainer.addView(title.view, 0)
     electrum.updateView
   }
 
