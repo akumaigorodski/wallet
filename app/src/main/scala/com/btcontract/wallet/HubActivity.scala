@@ -916,7 +916,6 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       val neutralRes = if (uri.amount.isDefined) -1 else dialog_max
       val builder = titleBodyAsViewBuilder(title.asColoredView(R.color.cardBitcoinSigning), sendView.body)
       def useMax(alert: AlertDialog): Unit = sendView.manager.updateText(specs.map(_.info.lastBalance).sum.toMilliSatoshi)
-      for (usedSpec <- specs) addFlowChip(title.flow, usedSpec.info.label, R.drawable.border_yellow)
       mkCheckFormNeutral(attempt, none, useMax, builder, dialog_ok, dialog_cancel, neutralRes)
     }
 
@@ -965,10 +964,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       }
 
     lazy val alert = {
-      val title = new TitleView(me getString dialog_send_btc_many)
-      val builder = titleBodyAsViewBuilder(title.asColoredView(R.color.cardBitcoinSigning), sendView.body)
-      for (usedSpec <- specs) addFlowChip(title.flow, usedSpec.info.label, R.drawable.border_yellow)
-      mkCheckForm(attempt, none, builder, dialog_ok, dialog_cancel)
+      val view = new TitleView(me getString dialog_send_btc_many).asColoredView(R.color.cardBitcoinSigning)
+      mkCheckForm(attempt, none, titleBodyAsViewBuilder(view, sendView.body), dialog_ok, dialog_cancel)
     }
 
     lazy val feeView = new FeeView[GenerateTxResponse](FeeratePerByte(1L.sat), sendView.chainEditView.host) {

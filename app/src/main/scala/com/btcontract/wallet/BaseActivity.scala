@@ -132,7 +132,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     val title = new TitleView(caption)
 
     for (amount <- uri.amount) {
-      val amountHuman = WalletApp.denom.parsedWithSignTT(amount, cardIn, cardZero)
+      val amountHuman = WalletApp.denom.parsedWithSignTT(amount, cardIn, signCardZero)
       val requested = getString(dialog_requested).format(amountHuman)
       addFlowChip(title.flow, requested, R.drawable.border_gray)
     }
