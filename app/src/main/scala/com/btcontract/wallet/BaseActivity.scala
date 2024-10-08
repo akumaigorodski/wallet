@@ -692,6 +692,7 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
 
     def updateView(spec: WalletSpec): Unit = {
       val hasMoney = spec.info.lastBalance > 0L.sat
+      val bgResource = if (selected contains spec.data.keys.ewt.xPub) R.drawable.border_card_signing_on else R.color.cardBitcoinSigning
       host.setVisMany(hasMoney -> chainBalanceWrap, !hasMoney -> receiveBitcoinTip, spec.info.isCoinControlOn -> coinControlOn)
       chainBalance.setText(WalletApp.denom.parsedWithSignTT(spec.info.lastBalance.toMilliSatoshi, "#FFFFFF", signCardZero).html)
       chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman spec.info.lastBalance.toMilliSatoshi)
@@ -702,7 +703,7 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
       setItemLabel setOnClickListener host.onButtonTap(me onLabelTap spec.data.keys.ewt.xPub)
       removeItem setOnClickListener host.onButtonTap(me onRemoveTap spec.data.keys.ewt.xPub)
       chainWrap setOnClickListener host.onButtonTap(me onWalletTap spec.data.keys.ewt.xPub)
-      chainContainer setBackgroundResource R.color.cardBitcoinSigning
+      chainContainer setBackgroundResource bgResource
     }
   }
 
