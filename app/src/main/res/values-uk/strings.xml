@@ -3,7 +3,6 @@
     <string name="app_name">SBW</string>
     <string name="select_wallets">Обрати гаманці</string>
     <string name="attached_wallet">Приєднаний гаманець</string>
-    <string name="coin_control">Контроль монет</string>
 
     <string name="bitcoin_wallet">Біткоїн</string>
     <string name="typing_hints">Біткоїн-адреса</string>
