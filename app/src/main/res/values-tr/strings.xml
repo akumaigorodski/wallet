@@ -3,7 +3,6 @@
     <string name="app_name">SBW</string>
     <string name="select_wallets">Cüzdanları seç</string>
     <string name="attached_wallet">Bağlı cüzdan</string>
-    <string name="coin_control">Para kontrolü</string>
 
     <string translatable="false" name="wallet_send">Gönder</string>
     <string translatable="false" name="wallet_receive">Al</string>
