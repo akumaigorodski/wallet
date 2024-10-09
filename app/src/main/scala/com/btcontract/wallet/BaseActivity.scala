@@ -608,6 +608,7 @@ trait BaseActivity extends AppCompatActivity { me =>
       case AuthRequestCode => Try {
         val task = GoogleSignIn.getSignedInAccountFromIntent(data)
         val account = task getResult classOf[ApiException]
+        Toast.makeText(this, account.getEmail, Toast.LENGTH_LONG)
       }
     }
   }

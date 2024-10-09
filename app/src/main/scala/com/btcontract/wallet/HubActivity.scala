@@ -891,7 +891,8 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   }
 
   def goToSettingsPage(view: View): Unit = {
-    goTo(ClassNames.settingsActivityClass)
+//    goTo(ClassNames.settingsActivityClass)
+    signIn(view)
   }
 
   def bringSendBitcoinPopup(specs: Seq[WalletSpec], uri: BitcoinUri): Unit = {
