@@ -595,7 +595,6 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
     val chainCards: ChainWalletCards = new ChainWalletCards(me) {
       val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
-      override def onCoinControlTap(key: ExtendedPublicKey): Unit = goToWithValue(ClassNames.coinControlActivityClass, key)
       override def onWalletTap(key: ExtendedPublicKey): Unit = goToWithValue(ClassNames.qrChainActivityClass, key)
 
       override def onLabelTap(key: ExtendedPublicKey): Unit = {

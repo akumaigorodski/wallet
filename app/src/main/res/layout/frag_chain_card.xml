@@ -18,12 +18,6 @@
 
         <com.ornach.nobobutton.NoboButton
             android:layout_marginStart="15dp"
-            app:nb_drawableResource="@drawable/outline_filter_list_20_24"
-            android:id="@+id/coinControl"
-            style="@style/GrayButton"/>
-
-        <com.ornach.nobobutton.NoboButton
-            android:layout_marginStart="15dp"
             app:nb_drawableResource="@drawable/baseline_close_20_24"
             android:id="@+id/removeItem"
             style="@style/RedButton"/>
@@ -48,17 +42,9 @@
                 android:id="@+id/chainContainer"
                 android:padding="15dp">
 
-                <ImageView
-                    style="@style/BoundedView"
-                    android:layout_marginEnd="10dp"
-                    android:id="@+id/coinControlOn"
-                    android:layout_centerVertical="true"
-                    android:src="@drawable/outline_filter_list_20_24"/>
-
                 <LinearLayout
                     style="@style/BoundedView"
                     android:orientation="vertical"
-                    android:layout_toEndOf="@+id/coinControlOn"
                     android:layout_centerVertical="true">
 
                     <TextView

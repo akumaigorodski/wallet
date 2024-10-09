@@ -93,10 +93,5 @@
             android:launchMode="singleTask"
             android:theme="@style/AppThemeNoActionBar"/>
 
-        <activity
-            android:launchMode="singleTask"
-            android:name="CoinControlActivity"
-            android:theme="@style/AppThemeNoActionBar"/>
-
     </application>
 </manifest>
