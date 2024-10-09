@@ -8,7 +8,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.text.{Editable, Spanned, TextWatcher}
-import android.util.Log
 import android.view.View.OnClickListener
 import android.view.{View, ViewGroup, WindowManager}
 import android.widget._
@@ -69,7 +68,6 @@ object BaseActivity {
 
 object ClassNames {
   val qrChainActivityClass: Class[QRChainActivity] = classOf[QRChainActivity]
-  val coinControlActivityClass: Class[CoinControlActivity] = classOf[CoinControlActivity]
   val settingsActivityClass: Class[SettingsActivity] = classOf[SettingsActivity]
   val hubActivityClass: Class[HubActivity] = classOf[HubActivity]
 }
@@ -701,9 +699,7 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
     val chainWrap: CardView = view.findViewById(R.id.chainWrap).asInstanceOf[CardView]
 
     val chainContainer: View = view.findViewById(R.id.chainContainer).asInstanceOf[View]
-    val coinControlOn: ImageView = view.findViewById(R.id.coinControlOn).asInstanceOf[ImageView]
     val setItemLabel: NoboButton = view.findViewById(R.id.setItemLabel).asInstanceOf[NoboButton]
-    val coinControl: NoboButton = view.findViewById(R.id.coinControl).asInstanceOf[NoboButton]
     val removeItem: NoboButton = view.findViewById(R.id.removeItem).asInstanceOf[NoboButton]
 
     val chainLabel: TextView = view.findViewById(R.id.chainLabel).asInstanceOf[TextView]
@@ -722,13 +718,12 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
     def updateView(spec: WalletSpec): Unit = {
       val hasMoney = spec.info.lastBalance > 0L.sat
       val bgResource = if (selected contains spec.data.keys.ewt.xPub) R.drawable.border_card_signing_on else R.color.cardBitcoinSigning
-      host.setVisMany(hasMoney -> chainBalanceWrap, !hasMoney -> receiveBitcoinTip, spec.info.isCoinControlOn -> coinControlOn)
       chainBalance setText WalletApp.denom.parsedWithSignTT(spec.info.lastBalance.toMilliSatoshi, "#FFFFFF", signCardZero).html
       chainBalanceFiat setText WalletApp.currentMsatInFiatHuman(spec.info.lastBalance.toMilliSatoshi)
       chainWalletNotice setText host.chainWalletNotice(spec)
 
+      host.setVisMany(hasMoney -> chainBalanceWrap, !hasMoney -> receiveBitcoinTip)
       chainLabel setText spec.info.label.asSome.filter(_.trim.nonEmpty).getOrElse(spec.info.core.walletType)
-      coinControl setOnClickListener host.onButtonTap(me onCoinControlTap spec.data.keys.ewt.xPub)
       setItemLabel setOnClickListener host.onButtonTap(me onLabelTap spec.data.keys.ewt.xPub)
       removeItem setOnClickListener host.onButtonTap(me onRemoveTap spec.data.keys.ewt.xPub)
       chainWrap setOnClickListener host.onButtonTap(me onWalletTap spec.data.keys.ewt.xPub)
@@ -738,7 +733,6 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
 
   def onLabelTap(key: ExtendedPublicKey): Unit = none
   def onRemoveTap(key: ExtendedPublicKey): Unit = none
-  def onCoinControlTap(key: ExtendedPublicKey): Unit = none
   def onWalletTap(key: ExtendedPublicKey): Unit = none
   def holder: LinearLayout
 }
