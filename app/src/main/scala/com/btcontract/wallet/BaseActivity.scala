@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.text.{Editable, Spanned, TextWatcher}
+import android.util.Log
 import android.view.View.OnClickListener
 import android.view.{View, ViewGroup, WindowManager}
 import android.widget._
@@ -23,6 +24,8 @@ import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.utils.{BitcoinUri, InputParser}
 import com.chauthai.swipereveallayout.SwipeRevealLayout
 import com.cottacush.android.currencyedittext.CurrencyEditText
+import com.google.android.gms.auth.api.signin.{GoogleSignIn, GoogleSignInClient, GoogleSignInOptions}
+import com.google.android.gms.common.api.ApiException
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.{BaseTransientBottomBar, Snackbar}
 import com.google.android.material.textfield.TextInputLayout
@@ -488,7 +491,7 @@ trait BaseActivity extends AppCompatActivity { me =>
     }
   }
 
-  // Chan TX popup for signing and hardware wallets
+  // Chan TX popup for wallets
 
   class ChainButtonsView(host: View) {
     val chainText: TextView = host.findViewById(R.id.chainText).asInstanceOf[TextView]
@@ -587,6 +590,32 @@ trait BaseActivity extends AppCompatActivity { me =>
     chooser.unPadCards
     def onOk: Unit
   }
+
+  // Google Auth
+
+  final val AuthRequestCode = 102
+
+  lazy val googleAuthClient: GoogleSignInClient = {
+    val serverToken = "923958205109-25u1rfr9p72s9crbjpj4uiaksu4uuku8.apps.googleusercontent.com"
+    val gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestIdToken(serverToken)
+    GoogleSignIn.getClient(this, gso.requestEmail.build)
+  }
+
+  override def onActivityResult(requestCode: Int, resultCode: Int, data: Intent): Unit = {
+    super.onActivityResult(requestCode, resultCode, data)
+
+    requestCode match {
+      case AuthRequestCode => Try {
+        val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+        val account = task getResult classOf[ApiException]
+      }
+    }
+  }
+
+  def signIn(view: View): Unit = {
+    val signInIntent = googleAuthClient.getSignInIntent
+    startActivityForResult(signInIntent, AuthRequestCode)
+  }
 }
 
 trait BaseCheckActivity extends BaseActivity { me =>
@@ -657,7 +686,7 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
   def unPadCards: Unit = cardViews.foreach(_.unPad)
   def update(specs: Iterable[WalletSpec] = Nil): Unit = {
     val items = cardViews zip ElectrumWallet.orderByImportance(specs.toList)
-    for (Tuple2(chainCard, walletSpec) <- items) chainCard updateView walletSpec
+    for (chainCard \ walletSpec <- items) chainCard updateView walletSpec
   }
 
   def init(size: Int): Unit = {
@@ -694,8 +723,8 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
       val hasMoney = spec.info.lastBalance > 0L.sat
       val bgResource = if (selected contains spec.data.keys.ewt.xPub) R.drawable.border_card_signing_on else R.color.cardBitcoinSigning
       host.setVisMany(hasMoney -> chainBalanceWrap, !hasMoney -> receiveBitcoinTip, spec.info.isCoinControlOn -> coinControlOn)
-      chainBalance.setText(WalletApp.denom.parsedWithSignTT(spec.info.lastBalance.toMilliSatoshi, "#FFFFFF", signCardZero).html)
-      chainBalanceFiat.setText(WalletApp currentMsatInFiatHuman spec.info.lastBalance.toMilliSatoshi)
+      chainBalance setText WalletApp.denom.parsedWithSignTT(spec.info.lastBalance.toMilliSatoshi, "#FFFFFF", signCardZero).html
+      chainBalanceFiat setText WalletApp.currentMsatInFiatHuman(spec.info.lastBalance.toMilliSatoshi)
       chainWalletNotice setText host.chainWalletNotice(spec)
 
       chainLabel setText spec.info.label.asSome.filter(_.trim.nonEmpty).getOrElse(spec.info.core.walletType)

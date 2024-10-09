@@ -224,11 +224,6 @@ class WalletApp extends Application { me =>
     MultiDex.install(me)
   }
 
-  override def onCreate: Unit = runAnd(super.onCreate) {
-    // Currently night theme is the only option, should be set by default
-    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-  }
-
   def when(thenDate: Date, simpleFormat: SimpleDateFormat): String =
     System.currentTimeMillis - thenDate.getTime match {
       case ago if ago > 12960000 => simpleFormat.format(thenDate)
