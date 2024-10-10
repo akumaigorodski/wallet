@@ -35,7 +35,6 @@ import fr.acinq.bitcoin._
 import fr.acinq.eclair._
 import fr.acinq.eclair.blockchain.electrum._
 import fr.acinq.eclair.blockchain.fee.{FeeratePerByte, FeeratePerKw}
-import immortan.crypto.CanBeShutDown
 import immortan.crypto.Tools._
 import immortan.utils._
 import org.apmem.tools.layouts.FlowLayout
@@ -668,8 +667,9 @@ trait WalletCard {
   val setItemLabel: NoboButton = view.findViewById(R.id.setItemLabel).asInstanceOf[NoboButton]
   val removeItem: NoboButton = view.findViewById(R.id.removeItem).asInstanceOf[NoboButton]
 
-  val cardLabel: TextView = view.findViewById(R.id.cardLabel).asInstanceOf[TextView]
-  val cardNotice: TextView = view.findViewById(R.id.cardNotice).asInstanceOf[TextView]
+  val cardImageLabel: ImageView = view.findViewById(R.id.cardImageLabel).asInstanceOf[ImageView]
+  val cardTextLabel: TextView = view.findViewById(R.id.cardTextLabel).asInstanceOf[TextView]
+  val cardTextNotice: TextView = view.findViewById(R.id.cardTextNotice).asInstanceOf[TextView]
 
   val balanceWrap: LinearLayout = view.findViewById(R.id.balanceWrap).asInstanceOf[LinearLayout]
   val balanceFiat: TextView = view.findViewById(R.id.balanceFiat).asInstanceOf[TextView]
@@ -678,13 +678,13 @@ trait WalletCard {
 
 case class ChainCard(host: BaseActivity, exPub: ExtendedPublicKey) extends WalletCard {
   override def update(backgroundRes: Int): Unit = ElectrumWallet.specs.get(exPub).foreach { spec =>
-    if (spec.info.core.attachedMaster.isDefined) cardNotice setText attached_wallet else cardNotice setText tap_to_receive
+    if (spec.info.core.attachedMaster.isDefined) cardTextNotice setText attached_wallet else cardTextNotice setText tap_to_receive
     balance setText WalletApp.denom.parsedWithSignTT(spec.info.lastBalance.toMilliSatoshi, "#FFFFFF", signCardZero).html
-    cardLabel setText spec.info.label.asSome.filter(_.trim.nonEmpty).getOrElse(spec.info.core.walletType)
+    cardTextLabel setText spec.info.label.asSome.filter(_.trim.nonEmpty).getOrElse(spec.info.core.walletType)
     balanceFiat setText WalletApp.currentMsatInFiatHuman(spec.info.lastBalance.toMilliSatoshi)
 
     val warm = spec.info.lastBalance > Satoshi(0L)
-    host.setVisMany(warm -> balanceWrap, !warm-> doActionTip)
+    host.setVisMany(warm -> balanceWrap, !warm -> doActionTip)
     cardContainer setBackgroundResource backgroundRes
   }
 }

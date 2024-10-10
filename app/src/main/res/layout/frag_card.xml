@@ -47,23 +47,33 @@
                     android:orientation="vertical"
                     android:layout_centerVertical="true">
 
+                    <ImageView
+                        style="@style/BoundedView"
+                        android:id="@+id/cardImageLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="30dp"
+                        android:scaleType="fitStart"
+                        android:visibility="gone"/>
+
                     <TextView
                         android:textColor="@android:color/white"
-                        android:id="@+id/cardLabel"
+                        android:id="@+id/cardTextLabel"
                         style="@style/Emphasized"/>
 
                     <TextView
                         android:layout_marginTop="6dp"
                         android:textColor="@android:color/white"
-                        android:id="@+id/cardNotice"
+                        android:id="@+id/cardTextNotice"
                         style="@style/BoundedView"/>
 
                 </LinearLayout>
 
+                <!-- Some coins present -->
+
                 <LinearLayout
                     style="@style/BoundedView"
-                    android:orientation="vertical"
                     android:id="@+id/balanceWrap"
+                    android:orientation="vertical"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:gravity="end">
