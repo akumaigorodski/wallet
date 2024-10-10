@@ -213,11 +213,9 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
 
     def doBoostCPFP(specs: Seq[WalletSpec], info: TxInfo): Unit = {
-      val changeSpec = ElectrumWallet.orderByImportance(candidates = specs).head
-      val address = changeSpec.data.keys.ewt.textAddress(changeSpec.data.changePubKey)
-      val ourPubKeyScript = ElectrumWallet.addressToPubKeyScript(address)
-
+      val address = specs.head.data.keys.ewt.textAddress(specs.head.data.changePubKey)
       val fromOutPoints = for (idx <- info.tx.txOut.indices) yield OutPoint(info.tx.hash, idx)
+      val ourPubKeyScript = ElectrumWallet.addressToPubKeyScript(address)
       val receivedMsat = info.receivedSat.toMilliSatoshi
 
       val sendView = new ChainSendView(specs, badge = None, visibilityRes = -1)
@@ -291,12 +289,10 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
 
     def doBoostRBF(specs: Seq[WalletSpec], info: TxInfo): Unit = {
-      val changeTo = ElectrumWallet.orderByImportance(candidates = specs).head
-      val currentFee = WalletApp.denom.parsedWithSignTT(info.feeSat.toMilliSatoshi, cardOut, cardIn)
-
       val sendView = new ChainSendView(specs, badge = None, visibilityRes = -1)
       val blockTarget = WalletApp.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
       val target = WalletApp.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
+      val currentFee = WalletApp.denom.parsedWithSignTT(info.feeSat.toMilliSatoshi, cardOut, cardIn)
       lazy val feeView: FeeView[RBFResponse] = new FeeView[RBFResponse](FeeratePerByte(target), sendView.rbfView.host) {
         rate = target
 
@@ -308,7 +304,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
             case _ => error(new RuntimeException)
           }
 
-          override def work(reason: String): RBFResponse = ElectrumWallet.rbfBump(specs, changeTo, info.tx, rate)
+          override def work(reason: String): RBFResponse = ElectrumWallet.rbfBump(specs, specs.head, info.tx, rate)
           override def error(exc: Throwable): Unit = update(feeOpt = None, showIssue = true)
         }
 
@@ -335,7 +331,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         val ofOriginalTxid = info.description.rbf.map(_.ofTxid).getOrElse(info.txid).toHex
         val rbfBumpOrder = SemanticOrder(ofOriginalTxid, -System.currentTimeMillis)
 
-        runInFutureProcessOnUI(ElectrumWallet.rbfBump(specs, changeTo, info.tx, feeView.rate), onFail) { responseWrap =>
+        runInFutureProcessOnUI(ElectrumWallet.rbfBump(specs, specs.head, info.tx, feeView.rate), onFail) { responseWrap =>
           // At this point we have received some response, in this case it can not be failure but then we maybe have a hardware wallet
           val response = responseWrap.result.right.get
 
@@ -376,14 +372,13 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     }
 
     def doCancelRBF(specs: Seq[WalletSpec], info: TxInfo): Unit = {
-      val changeSpec = ElectrumWallet.orderByImportance(candidates = specs).head
-      val address = changeSpec.data.keys.ewt.textAddress(changeSpec.data.changePubKey)
+      val address = specs.head.data.keys.ewt.textAddress(specs.head.data.changePubKey)
       val ourPubKeyScript = ElectrumWallet.addressToPubKeyScript(address)
 
       val sendView = new ChainSendView(specs, badge = None, visibilityRes = -1)
       val blockTarget = WalletApp.feeRates.info.onChainFeeConf.feeTargets.fundingBlockTarget
-      val currentFee = WalletApp.denom.parsedWithSignTT(info.feeSat.toMilliSatoshi, cardOut, cardIn)
       val target = WalletApp.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(blockTarget)
+      val currentFee = WalletApp.denom.parsedWithSignTT(info.feeSat.toMilliSatoshi, cardOut, cardIn)
       lazy val feeView: FeeView[RBFResponse] = new FeeView[RBFResponse](FeeratePerByte(target), sendView.rbfView.host) {
         rate = target
 
@@ -882,31 +877,30 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   }
 
   def goToReceivePage(view: View): Unit = if (ElectrumWallet.specs.nonEmpty) {
-    val specs = ElectrumWallet.orderByImportance(ElectrumWallet.specs.values.toList)
-    goToWithValue(ClassNames.qrChainActivityClass, specs.head.data.keys.ewt.xPub)
+    val exPub = ElectrumWallet.specs.values.head.data.keys.ewt.xPub
+    goToWithValue(ClassNames.qrChainActivityClass, exPub)
   } else {
     val message = getString(error_btc_no_wallet).html
     snack(contentWindow, message, dialog_ok, _.dismiss)
   }
 
   def goToSettingsPage(view: View): Unit = {
-//    goTo(ClassNames.settingsActivityClass)
-    signIn(view)
+    goTo(ClassNames.settingsActivityClass)
   }
 
   def bringSendBitcoinPopup(specs: Seq[WalletSpec], uri: BitcoinUri): Unit = {
     val sendView = new ChainSendView(specs, getString(dialog_set_label).asSome, dialog_visibility_private)
     val pubKeyScript = ElectrumWallet.addressToPubKeyScript(uri.address)
-    val changeTo = ElectrumWallet.orderByImportance(specs).head
 
     def attempt(alert: AlertDialog): Unit =
-      runInFutureProcessOnUI(ElectrumWallet.makeTx(specs, changeTo, pubKeyScript, sendView.manager.resultMsat.truncateToSatoshi, Map.empty, feeView.rate), onFail) { response =>
-        // This may be a signing or a hardware wallet, in case if it's a hardware wallet we need additional UI action so we use this proxy method here
+      runInFutureProcessOnUI(fun = ElectrumWallet.makeTx(specs, specs.head, pubKeyScript,
+        sendView.manager.resultMsat.truncateToSatoshi, Map.empty, feeView.rate), onFail) { response =>
 
-        proceedConfirm(sendView, alert, response) { signedTx =>
-          val desc = PlainTxDescription(uri.address :: Nil, sendView.manager.resultExtraInput orElse uri.label orElse uri.message)
-          val broadcastFuture = broadcastTx(desc, signedTx, received = Satoshi(0L), sent = response.transferred, response.fee, incoming = 0)
-          runFutureProcessOnUI(broadcastFuture, onFail) { case Some(error) => cleanFailedBroadcast(signedTx.txid, error.message) case None => }
+        sendView.switchToConfirm(alert, response)
+        sendView.chainConfirmView.chainButtonsView.chainNextButton setOnClickListener onButtonTap {
+          val desc = PlainTxDescription(List(uri.address), sendView.manager.resultExtraInput orElse uri.label orElse uri.message)
+          val broadcastFuture = broadcastTx(desc, response.tx, received = Satoshi(0L), sent = response.transferred, response.fee, incoming = 0)
+          runFutureProcessOnUI(broadcastFuture, onFail) { case Some(error) => cleanFailedBroadcast(response.tx.txid, error.message) case None => }
           alert.dismiss
         }
       }
@@ -924,7 +918,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
       worker = new ThrottledWork[String, GenerateTxResponse] {
         // This is a generic sending facility which may send to non-segwit, so always use a safer high dust threshold
-        override def work(reason: String): GenerateTxResponse = ElectrumWallet.makeTx(specs, changeTo, pubKeyScript, sendView.manager.resultMsat.truncateToSatoshi, Map.empty, rate)
+        override def work(reason: String): GenerateTxResponse = ElectrumWallet.makeTx(specs, specs.head, pubKeyScript, sendView.manager.resultMsat.truncateToSatoshi, Map.empty, rate)
         override def error(exception: Throwable): Unit = update(feeOpt = None, showIssue = sendView.manager.resultMsat >= ElectrumWallet.params.dustLimit)
         override def process(reason: String, response: GenerateTxResponse): Unit = update(response.fee.toMilliSatoshi.asSome, showIssue = false)
       }
@@ -948,17 +942,17 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
   def bringSendMultiBitcoinPopup(specs: Seq[WalletSpec], addressToAmount: MultiAddressParser.AddressToAmount): Unit = {
     val scriptToAmount = addressToAmount.values.firstItems.map(ElectrumWallet.addressToPubKeyScript).zip(addressToAmount.values.secondItems).toMap
+    val desc = PlainTxDescription(addresses = addressToAmount.values.firstItems.toList)
     val sendView = new ChainSendView(specs, badge = None, visibilityRes = -1)
-    val changeTo = ElectrumWallet.orderByImportance(specs).head
 
     def attempt(alert: AlertDialog): Unit =
-      runInFutureProcessOnUI(ElectrumWallet.makeBatchTx(specs, changeTo, scriptToAmount, feeView.rate), onFail) { response =>
-        // This may be a signing or a hardware wallet, in case if it's a hardware wallet we need additional UI action so we use this method here
+      runInFutureProcessOnUI(fun = ElectrumWallet.makeBatchTx(specs,
+        specs.head, scriptToAmount, feeView.rate), onFail) { response =>
 
-        proceedConfirm(sendView, alert, response) { signedTx =>
-          val desc = PlainTxDescription(addressToAmount.values.firstItems.toList)
-          val broadcastFuture = broadcastTx(desc, signedTx, received = Satoshi(0L), sent = response.transferred, response.fee, incoming = 0)
-          runFutureProcessOnUI(broadcastFuture, onFail) { case Some(error) => cleanFailedBroadcast(signedTx.txid, error.message) case None => }
+        sendView.switchToConfirm(alert, response)
+        sendView.chainConfirmView.chainButtonsView.chainNextButton setOnClickListener onButtonTap {
+          val broadcastFuture = broadcastTx(desc, response.tx, received = Satoshi(0L), sent = response.transferred, response.fee, incoming = 0)
+          runFutureProcessOnUI(broadcastFuture, onFail) { case Some(error) => cleanFailedBroadcast(response.tx.txid, error.message) case None => }
           alert.dismiss
         }
       }
@@ -972,7 +966,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       rate = WalletApp.feeRates.info.onChainFeeConf.feeEstimator.getFeeratePerKw(WalletApp.feeRates.info.onChainFeeConf.feeTargets.mutualCloseBlockTarget)
 
       worker = new ThrottledWork[String, GenerateTxResponse] {
-        override def work(reason: String): GenerateTxResponse = ElectrumWallet.makeBatchTx(specs, changeTo, scriptToAmount, rate)
+        override def work(reason: String): GenerateTxResponse = ElectrumWallet.makeBatchTx(specs, specs.head, scriptToAmount, rate)
         override def process(reason: String, response: GenerateTxResponse): Unit = update(response.fee.toMilliSatoshi.asSome, showIssue = false)
         override def error(exception: Throwable): Unit = update(feeOpt = None, showIssue = true)
       }
@@ -1023,12 +1017,6 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     val expandHideCases = displayFullIxInfoHistory || isSearchOn || recentTxInfos.size <= allInfos.size
     setVisMany(allInfos.isEmpty -> walletCards.recoveryPhraseWarning, !expandHideCases -> expandContainer)
     paymentsAdapter.notifyDataSetChanged
-  }
-
-  def proceedConfirm(sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
-    val finalSendButton = sendView.chainConfirmView.chainButtonsView.chainNextButton
-    finalSendButton setOnClickListener onButtonTap(process apply response.tx)
-    sendView.switchToConfirm(alert, response)
   }
 
   def proceedWithoutConfirm(sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {

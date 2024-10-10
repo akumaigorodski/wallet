@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="AppTheme" parent="Theme.MaterialComponents.Bridge">
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
         <item name="android:fontFamily">@font/lato_regular</item>
         <item name="android:navigationBarColor">@color/bg</item>
         <item name="android:textColor">@color/colorAccent</item>

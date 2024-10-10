@@ -50,7 +50,6 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.currencyedittext)
     implementation(libs.zxing.android.embedded)
-    implementation(libs.google.auth)
     implementation(libs.multidex)
     implementation(libs.review)
 

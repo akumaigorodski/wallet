@@ -263,13 +263,6 @@ object ElectrumWallet extends CanBeShutDown {
     IsDoubleSpentResponse(depth, stamp, isDoubleSpent)
   }
 
-  def orderByImportance(candidates: Seq[WalletSpec] = Nil): Seq[WalletSpec] = candidates.sortBy {
-    case hardware if hardware.data.keys.ewt.secrets.isEmpty && hardware.info.core.masterFingerprint.nonEmpty => 0
-    case default if default.data.keys.ewt.secrets.nonEmpty && default.info.core.walletType == BIP84 => 1
-    case signing if signing.data.keys.ewt.secrets.nonEmpty => 2
-    case _ => 3
-  }
-
   // Async API
 
   def broadcast(tx: Transaction): Future[OkOrError] = pool ? BroadcastTransaction(tx) flatMap {

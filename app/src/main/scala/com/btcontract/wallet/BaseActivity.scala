@@ -23,8 +23,6 @@ import com.btcontract.wallet.R.string._
 import com.btcontract.wallet.utils.{BitcoinUri, InputParser}
 import com.chauthai.swipereveallayout.SwipeRevealLayout
 import com.cottacush.android.currencyedittext.CurrencyEditText
-import com.google.android.gms.auth.api.signin.{GoogleSignIn, GoogleSignInClient, GoogleSignInOptions}
-import com.google.android.gms.common.api.ApiException
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.{BaseTransientBottomBar, Snackbar}
 import com.google.android.material.textfield.TextInputLayout
@@ -145,11 +143,6 @@ trait BaseActivity extends AppCompatActivity { me =>
     me startActivity new Intent(Intent.ACTION_VIEW, Uri parse maybeUri)
   } catch { case exception: Throwable => me onFail exception }
 
-  def chainWalletNotice(wallet: WalletSpec): Int = {
-    if (wallet.info.core.attachedMaster.isDefined) attached_wallet
-    else tap_to_receive
-  }
-
   def share(text: CharSequence): Unit = startActivity {
     val shareAction = (new Intent).setAction(Intent.ACTION_SEND)
     shareAction.setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
@@ -197,7 +190,8 @@ trait BaseActivity extends AppCompatActivity { me =>
   def runInFutureProcessOnUI[T](fun: => T, no: Throwable => Unit)(ok: T => Unit): Unit = runFutureProcessOnUI[T](Future(fun), no)(ok)
 
   def runFutureProcessOnUI[T](fun: Future[T], no: Throwable => Unit)(ok: T => Unit): Unit = fun onComplete {
-    case Success(result) => UITask(ok apply result).run case Failure(error) => UITask(no apply error).run
+    case Success(result) => UITask(ok apply result).run
+    case Failure(error) => UITask(no apply error).run
   }
 
   def setVis(isVisible: Boolean, view: View): Unit = {
@@ -588,32 +582,6 @@ trait BaseActivity extends AppCompatActivity { me =>
     chooser.unPadCards
     def onOk: Unit
   }
-
-  // Google Auth
-
-  final val AuthRequestCode = 102
-
-  lazy val googleAuthClient: GoogleSignInClient = {
-    val serverToken = "923958205109-25u1rfr9p72s9crbjpj4uiaksu4uuku8.apps.googleusercontent.com"
-    val gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestIdToken(serverToken)
-    GoogleSignIn.getClient(this, gso.requestEmail.build)
-  }
-
-  override def onActivityResult(requestCode: Int, resultCode: Int, data: Intent): Unit = {
-    super.onActivityResult(requestCode, resultCode, data)
-
-    requestCode match {
-      case AuthRequestCode => Try {
-        val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-        val account = task getResult classOf[ApiException]
-      }
-    }
-  }
-
-  def signIn(view: View): Unit = {
-    val signInIntent = googleAuthClient.getSignInIntent
-    startActivityForResult(signInIntent, AuthRequestCode)
-  }
 }
 
 trait BaseCheckActivity extends BaseActivity { me =>
@@ -682,14 +650,13 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
   var cardViews = List.empty[ChainCard]
 
   def unPadCards: Unit = cardViews.foreach(_.unPad)
-  def update(specs: Iterable[WalletSpec] = Nil): Unit = {
-    val items = cardViews zip ElectrumWallet.orderByImportance(specs.toList)
-    for (chainCard \ walletSpec <- items) chainCard updateView walletSpec
-  }
+  def update(specs: Iterable[WalletSpec] = Nil): Unit = for {
+    chainCard \ walletSpec <- cardViews zip specs
+  } chainCard updateView walletSpec
 
   def init(size: Int): Unit = {
     cardViews = List.fill(size)(new ChainCard)
-    cardViews.foreach(card => holder addView card.view)
+    cardViews.foreach(holder addView _.view)
   }
 
   class ChainCard {
@@ -718,9 +685,9 @@ abstract class ChainWalletCards(host: BaseActivity) { me =>
     def updateView(spec: WalletSpec): Unit = {
       val hasMoney = spec.info.lastBalance > 0L.sat
       val bgResource = if (selected contains spec.data.keys.ewt.xPub) R.drawable.border_card_signing_on else R.color.cardBitcoinSigning
+      if (spec.info.core.attachedMaster.isDefined) chainWalletNotice setText attached_wallet else chainWalletNotice setText tap_to_receive
       chainBalance setText WalletApp.denom.parsedWithSignTT(spec.info.lastBalance.toMilliSatoshi, "#FFFFFF", signCardZero).html
       chainBalanceFiat setText WalletApp.currentMsatInFiatHuman(spec.info.lastBalance.toMilliSatoshi)
-      chainWalletNotice setText host.chainWalletNotice(spec)
 
       host.setVisMany(hasMoney -> chainBalanceWrap, !hasMoney -> receiveBitcoinTip)
       chainLabel setText spec.info.label.asSome.filter(_.trim.nonEmpty).getOrElse(spec.info.core.walletType)
