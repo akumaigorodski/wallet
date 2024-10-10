@@ -579,55 +579,60 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
   // LIST CAPTION CLASS
 
   class WalletCardsViewHolder {
+    var chainCardsPresent = Set.empty[ChainCard]
     val view: LinearLayout = getLayoutInflater.inflate(R.layout.frag_wallet_cards, null).asInstanceOf[LinearLayout]
     val fiatUnitPriceAndChange: TextView = view.findViewById(R.id.fiatUnitPriceAndChange).asInstanceOf[TextView]
     val recoveryPhraseWarning: TextView = view.findViewById(R.id.recoveryPhraseWarning).asInstanceOf[TextView]
+    val cardsContainer: LinearLayout = view.findViewById(R.id.cardsContainer).asInstanceOf[LinearLayout]
     val defaultHeader: LinearLayout = view.findViewById(R.id.defaultHeader).asInstanceOf[LinearLayout]
     val searchField: EditText = view.findViewById(R.id.searchField).asInstanceOf[EditText]
     val spinner: ProgressBar = view.findViewById(R.id.spinner).asInstanceOf[ProgressBar]
     // This means search is off at start
     searchField.setTag(false)
 
-    val chainCards: ChainWalletCards = new ChainWalletCards(me) {
-      val holder: LinearLayout = view.findViewById(R.id.chainCardsContainer).asInstanceOf[LinearLayout]
-      override def onWalletTap(key: ExtendedPublicKey): Unit = goToWithValue(ClassNames.qrChainActivityClass, key)
+    def addChainCard(exPub: ExtendedPublicKey) = {
+      val card = ChainCard(me, exPub)
 
-      override def onLabelTap(key: ExtendedPublicKey): Unit = {
+      card.wrap setOnClickListener onButtonTap {
+        goToWithValue(ClassNames.qrChainActivityClass, card.exPub)
+      }
+
+      card.setItemLabel setOnClickListener onButtonTap {
         val (container, extraInputLayout, extraInput, _, _) = singleInputPopup
         mkCheckForm(proceed, none, titleBodyAsViewBuilder(null, container), dialog_ok, dialog_cancel)
         extraInputLayout.setHint(dialog_set_label)
         showKeys(extraInput)
 
         def proceed(alert: AlertDialog): Unit = runAnd(alert.dismiss) {
-          ElectrumWallet.setLabel(extraInput.getText.toString)(key)
-          resetChainCards
+          ElectrumWallet.setLabel(extraInput.getText.toString)(card.exPub)
+          card.update(R.color.cardBitcoinSigning)
         }
       }
 
-      override def onRemoveTap(key: ExtendedPublicKey): Unit = {
+      card.removeItem setOnClickListener onButtonTap {
         val builder = new AlertDialog.Builder(me).setMessage(confirm_remove_item)
         mkCheckForm(proceed, none, builder, dialog_ok, dialog_cancel)
 
         def proceed(alert: AlertDialog): Unit = {
-          ElectrumWallet.removeWallet(key)
-          resetChainCards
+          ElectrumWallet.removeWallet(card.exPub)
+          cardsContainer.removeView(card.view)
+          chainCardsPresent -= card
           alert.dismiss
         }
       }
-    }
 
-    def resetChainCards: Unit = {
-      chainCards.holder.removeAllViewsInLayout
-      chainCards.init(ElectrumWallet.specs.size)
-      updateView
+      cardsContainer.addView(card.view)
+      card.update(R.color.cardBitcoinSigning)
+      chainCardsPresent += card
     }
 
     def updateView: Unit = {
+      val btc = 100000000000L.msat
       androidx.transition.TransitionManager.beginDelayedTransition(defaultHeader)
       val change = WalletApp.fiatRates.info.pctDifference(code = WalletApp.fiatCode).getOrElse(default = new String)
-      val unitRate = WalletApp.msatInFiatHuman(WalletApp.fiatRates.info.rates, WalletApp.fiatCode, 100000000000L.msat, Denomination.formatFiatShort)
+      val unitRate = WalletApp.msatInFiatHuman(WalletApp.fiatRates.info.rates, WalletApp.fiatCode, btc, Denomination.formatFiatShort)
+      chainCardsPresent.foreach(_ update R.color.cardBitcoinSigning)
       fiatUnitPriceAndChange.setText(s"$unitRate $change".html)
-      chainCards.update(ElectrumWallet.specs.values)
     }
   }
 
@@ -688,11 +693,11 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     val usable = ElectrumWallet.specs.values.filter(_.usable).toList
 
     def bringSingleAddressSelector(bitcoinUri: BitcoinUri) = new WalletSelector(me titleViewFromUri bitcoinUri) {
-      def onOk: Unit = bringSendBitcoinPopup(chooser.selected.values.toList, bitcoinUri)
+      def onOk: Unit = bringSendBitcoinPopup(selected.flatMap(ElectrumWallet.specs.get).toList, bitcoinUri)
     }
 
     def bringMultiAddressSelector(a2a: MultiAddressParser.AddressToAmount) = new WalletSelector(me getString dialog_send_btc_many) {
-      def onOk: Unit = bringSendMultiBitcoinPopup(chooser.selected.values.toList, a2a)
+      def onOk: Unit = bringSendMultiBitcoinPopup(selected.flatMap(ElectrumWallet.specs.get).toList, a2a)
     }
 
     InputParser.checkAndMaybeErase {
@@ -765,7 +770,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
         // Fill wallet list with wallet card views here
         walletCards.recoveryPhraseWarning setOnClickListener onButtonTap(viewRecoveryCode)
-        walletCards.chainCards.init(ElectrumWallet.specs.size)
+        ElectrumWallet.specs.values.map(_.data.keys.ewt.xPub).foreach(walletCards.addChainCard)
         walletCards.updateView
 
         runInFutureProcessOnUI(loadRecent, none) { _ =>

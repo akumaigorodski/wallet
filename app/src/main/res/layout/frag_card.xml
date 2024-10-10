@@ -29,17 +29,17 @@
         android:paddingEnd="15dp"
         android:paddingStart="15dp"
         android:orientation="vertical"
-        android:id="@+id/chainPaddingWrap"
+        android:id="@+id/paddingWrap"
         style="@style/FillingView">
 
         <androidx.cardview.widget.CardView
             card_view:cardCornerRadius="@dimen/corner_radius"
-            android:id="@+id/chainWrap"
+            android:id="@+id/wrap"
             style="@style/Card">
 
             <RelativeLayout
                 style="@style/FillingView"
-                android:id="@+id/chainContainer"
+                android:id="@+id/cardContainer"
                 android:padding="15dp">
 
                 <LinearLayout
@@ -49,13 +49,13 @@
 
                     <TextView
                         android:textColor="@android:color/white"
-                        android:id="@+id/chainLabel"
+                        android:id="@+id/cardLabel"
                         style="@style/Emphasized"/>
 
                     <TextView
                         android:layout_marginTop="6dp"
                         android:textColor="@android:color/white"
-                        android:id="@+id/chainWalletNotice"
+                        android:id="@+id/cardNotice"
                         style="@style/BoundedView"/>
 
                 </LinearLayout>
@@ -63,19 +63,19 @@
                 <LinearLayout
                     style="@style/BoundedView"
                     android:orientation="vertical"
-                    android:id="@+id/chainBalanceWrap"
+                    android:id="@+id/balanceWrap"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:gravity="end">
 
                     <TextView
-                        android:id="@+id/chainBalance"
+                        android:id="@+id/balance"
                         style="@style/Emphasized"/>
 
                     <TextView
                         android:layout_marginTop="6dp"
                         android:textColor="@android:color/white"
-                        android:id="@+id/chainBalanceFiat"
+                        android:id="@+id/balanceFiat"
                         style="@style/BoundedView"/>
 
                 </LinearLayout>
@@ -84,7 +84,7 @@
 
                 <ImageView
                     style="@style/BoundedView"
-                    android:id="@+id/receiveBitcoinTip"
+                    android:id="@+id/doActionTip"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:background="@drawable/baseline_add_24"

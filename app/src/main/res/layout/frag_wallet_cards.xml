@@ -60,13 +60,13 @@
 
         </RelativeLayout>
 
-        <!-- Bitcoin cards -->
+        <!-- Cards -->
 
         <LinearLayout
             style="@style/FillingView"
             android:layout_marginTop="15dp"
             android:layout_marginBottom="5dp"
-            android:id="@+id/chainCardsContainer"
+            android:id="@+id/cardsContainer"
             android:orientation="vertical"/>
 
         <!-- Recovery phrase warning -->

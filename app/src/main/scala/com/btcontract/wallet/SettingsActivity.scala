@@ -70,8 +70,9 @@ class SettingsActivity extends BaseCheckActivity with MnemonicActivity with Choi
           if (WalletApp.secret.keys.master == keys.master) return
           val core = SigningWallet(ElectrumWallet.BIP84, attachedMaster = keys.master.asSome)
           val ewt = ElectrumWalletType.makeSigningType(core.walletType, master = keys.master, chainHash)
-          ElectrumWallet addWallet ElectrumWallet.makeSigningWalletParts(core, ewt, Satoshi(0L), extraInput.getText.toString.trim)
-          HubActivity.instance.walletCards.resetChainCards
+          val spec = ElectrumWallet.makeSigningWalletParts(core, ewt, Satoshi(0L), extraInput.getText.toString.trim)
+          HubActivity.instance.walletCards.addChainCard(spec.data.keys.ewt.xPub)
+          ElectrumWallet.addWallet(spec)
         }
       }
     }
