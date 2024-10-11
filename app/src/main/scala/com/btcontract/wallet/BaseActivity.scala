@@ -667,9 +667,9 @@ trait WalletCard {
   val setItemLabel: NoboButton = view.findViewById(R.id.setItemLabel).asInstanceOf[NoboButton]
   val removeItem: NoboButton = view.findViewById(R.id.removeItem).asInstanceOf[NoboButton]
 
-  val cardImageLabel: ImageView = view.findViewById(R.id.cardImageLabel).asInstanceOf[ImageView]
   val cardTextLabel: TextView = view.findViewById(R.id.cardTextLabel).asInstanceOf[TextView]
   val cardTextNotice: TextView = view.findViewById(R.id.cardTextNotice).asInstanceOf[TextView]
+  val cardImageLabel: ImageView = view.findViewById(R.id.cardImageLabel).asInstanceOf[ImageView]
 
   val balanceWrap: LinearLayout = view.findViewById(R.id.balanceWrap).asInstanceOf[LinearLayout]
   val balanceFiat: TextView = view.findViewById(R.id.balanceFiat).asInstanceOf[TextView]
@@ -686,5 +686,14 @@ case class ChainCard(host: BaseActivity, exPub: ExtendedPublicKey) extends Walle
     val warm = spec.info.lastBalance > Satoshi(0L)
     host.setVisMany(warm -> balanceWrap, !warm -> doActionTip)
     cardContainer setBackgroundResource backgroundRes
+  }
+}
+
+case class TacAdvCard(host: BaseActivity) extends WalletCard {
+  override def update(backgroundResource: Int): Unit = {
+    host.setVisMany(false -> cardTextLabel, true -> cardImageLabel, true -> doActionTip)
+    cardContainer setBackgroundResource backgroundResource
+    cardImageLabel setImageResource R.drawable.talogo
+    cardTextNotice setText tacadv_hint
   }
 }

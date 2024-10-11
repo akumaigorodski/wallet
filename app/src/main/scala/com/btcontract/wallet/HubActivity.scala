@@ -1024,6 +1024,7 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     paymentsAdapter.notifyDataSetChanged
   }
 
+  // TODO: remove
   def proceedWithoutConfirm(sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
     process(response.tx)
     alert.dismiss
