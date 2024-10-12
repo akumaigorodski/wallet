@@ -770,8 +770,12 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
 
         // Fill wallet list with wallet card views here
         walletCards.recoveryPhraseWarning setOnClickListener onButtonTap(viewRecoveryCode)
-        ElectrumWallet.specs.values.map(_.data.keys.ewt.xPub).foreach(walletCards.addChainCard)
+        ElectrumWallet.specs.keys.foreach(walletCards.addChainCard)
         walletCards.updateView
+
+        val card = TacAdvCard(me)
+        walletCards.cardsContainer.addView(card.view)
+        card.update(R.drawable.border_black)
 
         runInFutureProcessOnUI(loadRecent, none) { _ =>
           val appOpensLeft = WalletApp.app.prefs.getInt(WalletApp.APP_OPENS_LEFT, 4)
