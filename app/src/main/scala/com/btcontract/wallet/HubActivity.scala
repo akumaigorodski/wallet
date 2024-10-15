@@ -251,22 +251,20 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         WalletApp.txDataBag.updDescription(parentDescWithOrder, info.txid)
 
         runInFutureProcessOnUI(ElectrumWallet.makeCPFP(specs, fromOutPoints.toSet, ourPubKeyScript, feeView.rate), onFail) { response =>
-          // At this point we have received some response, in this case it can not be failure but then we maybe have a hardware wallet
+          val desc = PlainTxDescription(addresses = List(address), label = None, cpfpBumpOrder.asSome, cpfpBy = None, cpfpOf = info.txid.asSome)
+          runFutureProcessOnUI(broadcastTx(desc, response.tx, response.transferred, sent = Satoshi(0L), response.fee, incoming = 1), onFail) {
 
-          proceedWithoutConfirm(sendView, alert, response) { signedTx =>
-            val desc = PlainTxDescription(address :: Nil, label = None, cpfpBumpOrder.asSome, cpfpBy = None, cpfpOf = info.txid.asSome)
-            runFutureProcessOnUI(broadcastTx(desc, signedTx, response.transferred, sent = Satoshi(0L), response.fee, incoming = 1), onFail) {
+            case Some(error) =>
+              // We revert the whole description back since CPFP has failed
+              WalletApp.txDataBag.updDescription(info.description, info.txid)
+              cleanFailedBroadcast(response.tx.txid, error.message)
 
-              case Some(error) =>
-                // We revert the whole description back since CPFP has failed
-                WalletApp.txDataBag.updDescription(info.description, info.txid)
-                cleanFailedBroadcast(signedTx.txid, error.message)
-
-              case None =>
-                // Parent semantic order has already been updated, now we also must update CPFP parent info
-                WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCPFPBy(signedTx.txid), info.txid)
-            }
+            case None =>
+              // Parent semantic order has already been updated, now we also must update CPFP parent info
+              WalletApp.txDataBag.updDescription(parentDescWithOrder.withNewCPFPBy(response.tx.txid), info.txid)
           }
+
+          alert.dismiss
         }
       }
 
@@ -331,25 +329,22 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         val ofOriginalTxid = info.description.rbf.map(_.ofTxid).getOrElse(info.txid).toHex
         val rbfBumpOrder = SemanticOrder(ofOriginalTxid, -System.currentTimeMillis)
 
-        runInFutureProcessOnUI(ElectrumWallet.rbfBump(specs, specs.head, info.tx, feeView.rate), onFail) { responseWrap =>
-          // At this point we have received some response, in this case it can not be failure but then we maybe have a hardware wallet
-          val response = responseWrap.result.right.get
+        runInFutureProcessOnUI(ElectrumWallet.rbfBump(specs, specs.head, info.tx, feeView.rate).result.right.get, onFail) { response =>
+          val desc = PlainTxDescription(addresses = Nil, label = None, rbfBumpOrder.asSome, cpfpBy = None, cpfpOf = None, rbfParams.asSome)
+          runFutureProcessOnUI(broadcastTx(desc, response.tx, received = Satoshi(0L), info.sentSat, response.fee, incoming = 0), onFail) {
 
-          proceedWithoutConfirm(sendView, alert, response) { signedTx =>
-            val desc = PlainTxDescription(Nil, label = None, rbfBumpOrder.asSome, cpfpBy = None, cpfpOf = None, rbfParams.asSome)
-            runFutureProcessOnUI(broadcastTx(desc, signedTx, received = Satoshi(0L), info.sentSat, response.fee, incoming = 0), onFail) {
+            case Some(error) =>
+              // We revert the whole description back since CPFP has failed
+              WalletApp.txDataBag.updDescription(info.description, info.txid)
+              cleanFailedBroadcast(response.tx.txid, error.message)
 
-              case Some(error) =>
-                // We revert the whole description back since CPFP has failed
-                WalletApp.txDataBag.updDescription(info.description, info.txid)
-                cleanFailedBroadcast(signedTx.txid, error.message)
-
-              case None =>
-                val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
-                val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
-                WalletApp.txDataBag.updDescription(parentDesc, info.txid)
-            }
+            case None =>
+              val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
+              val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
+              WalletApp.txDataBag.updDescription(parentDesc, info.txid)
           }
+
+          alert.dismiss
         }
       }
 
@@ -417,25 +412,22 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
         val ofOriginalTxid = info.description.rbf.map(_.ofTxid).getOrElse(info.txid).toHex
         val rbfBumpOrder = SemanticOrder(ofOriginalTxid, -System.currentTimeMillis)
 
-        runInFutureProcessOnUI(ElectrumWallet.rbfReroute(specs, info.tx, feeView.rate, ourPubKeyScript), onFail) { responseWrap =>
-          // At this point we have received some response, in this case it can not be failure but then we maybe have a hardware wallet
-          val response = responseWrap.result.right.get
+        runInFutureProcessOnUI(ElectrumWallet.rbfReroute(specs, info.tx, feeView.rate, ourPubKeyScript).result.right.get, onFail) { response =>
+          val desc = PlainTxDescription(addresses = Nil, label = None, rbfBumpOrder.asSome, cpfpBy = None, cpfpOf = None, rbf = rbfParams.asSome)
+          runFutureProcessOnUI(broadcastTx(desc, response.tx, info.sentSat - response.fee, sent = Satoshi(0L), response.fee, incoming = 1), onFail) {
 
-          proceedWithoutConfirm(sendView, alert, response) { signedTx =>
-            val desc = PlainTxDescription(addresses = Nil, label = None, rbfBumpOrder.asSome, None, None, rbfParams.asSome)
-            runFutureProcessOnUI(broadcastTx(desc, signedTx, info.sentSat - response.fee, sent = Satoshi(0L), response.fee, incoming = 1), onFail) {
+            case Some(error) =>
+              // We revert the whole description back since CPFP has failed
+              WalletApp.txDataBag.updDescription(info.description, info.txid)
+              cleanFailedBroadcast(response.tx.txid, error.message)
 
-              case Some(error) =>
-                // We revert the whole description back since CPFP has failed
-                WalletApp.txDataBag.updDescription(info.description, info.txid)
-                cleanFailedBroadcast(signedTx.txid, error.message)
-
-              case None =>
-                val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
-                val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
-                WalletApp.txDataBag.updDescription(parentDesc, info.txid)
-            }
+            case None =>
+              val parentLowestOrder = rbfBumpOrder.copy(order = Long.MaxValue)
+              val parentDesc = info.description.withNewOrderCond(parentLowestOrder.asSome)
+              WalletApp.txDataBag.updDescription(parentDesc, info.txid)
           }
+
+          alert.dismiss
         }
       }
 
@@ -1015,7 +1007,9 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
       val messageOpt = if (extraOption.isChecked) None else Some(message)
       val scriptType = drongo.address.Address.fromString(drongoNetwork, info.identity).getScriptType
       val ecKey = drongo.crypto.ECKey.fromPrivate(info.ewt.extPrivKeyFromPub(info.pubKey).privateKey.value.toArray)
-      val data = BIP322VerifyData(info.identity, ByteVector.view(hash), drongo.crypto.Bip322.signMessageBip322(scriptType, message, ecKey), messageOpt)
+
+      val signature = drongo.crypto.Bip322.signMessageBip322(scriptType, message, ecKey)
+      val data = BIP322VerifyData(messageOpt, info.identity, ByteVector.view(hash), signature)
       goToWithValue(classOf[QRSigActivity], data)
     }
 
@@ -1026,12 +1020,6 @@ class HubActivity extends BaseActivity with ExternalDataChecker { me =>
     val expandHideCases = displayFullIxInfoHistory || isSearchOn || recentTxInfos.size <= allInfos.size
     setVisMany(allInfos.isEmpty -> walletCards.recoveryPhraseWarning, !expandHideCases -> expandContainer)
     paymentsAdapter.notifyDataSetChanged
-  }
-
-  // TODO: remove
-  def proceedWithoutConfirm(sendView: ChainSendView, alert: AlertDialog, response: GenerateTxResponse)(process: Transaction => Unit): Unit = {
-    process(response.tx)
-    alert.dismiss
   }
 
   def broadcastTx(desc: TxDescription, finalTx: Transaction, received: Satoshi, sent: Satoshi, fee: Satoshi, incoming: Int): Future[OkOrError] = {
