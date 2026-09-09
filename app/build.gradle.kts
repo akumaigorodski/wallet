@@ -7,7 +7,7 @@ scala.scalaVersion = "2.11.12"
 
 android {
     namespace = "trading.tacticaladvantage"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "trading.tacticaladvantage"
