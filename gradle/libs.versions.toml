@@ -17,7 +17,6 @@ currencyedittext = "1.0.0"
 zxingAndroidEmbedded = "4.3.0"
 nvWebsocketClient = "2.14"
 rxscala = "0.27.0"
-multidex = "2.0.1"
 material = "1.14.0"
 web3j = "6.0.0"
 
@@ -37,7 +36,6 @@ recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 currencyedittext = { module = "com.cottacush:CurrencyEditText", version.ref = "currencyedittext" }
 zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxingAndroidEmbedded" }
-multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
 rxscala = { module = "io.reactivex:rxscala_2.11", version.ref = "rxscala" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 websocket = { group = "com.neovisionaries", name = "nv-websocket-client", version.ref = "nvWebsocketClient" }

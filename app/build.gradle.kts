@@ -4,6 +4,7 @@ plugins {
 }
 
 scala.scalaVersion = "2.11.12"
+configurations["androidTestReleaseImplementation"].dependencies.clear()
 
 android {
     namespace = "trading.tacticaladvantage"
@@ -51,7 +52,6 @@ dependencies {
     implementation(libs.currencyedittext)
     implementation(libs.recyclerview)
     implementation(libs.appcompat)
-    implementation(libs.multidex)
     implementation(libs.material)
 
     implementation(libs.secp256k1.kmp.jni.android)

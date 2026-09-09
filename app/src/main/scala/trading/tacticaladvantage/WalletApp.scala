@@ -9,7 +9,6 @@ import android.icu.util.ULocale
 import android.text.format.{DateFormat, DateUtils}
 import android.view.inputmethod.InputMethodManager
 import android.widget.{EditText, Toast}
-import androidx.multidex.MultiDex
 import fr.acinq.bitcoin.DeterministicWallet.{ExtendedPrivateKey, ExtendedPublicKey}
 import fr.acinq.bitcoin.{Block, Satoshi}
 import fr.acinq.eclair._
@@ -279,11 +278,6 @@ class WalletApp extends Application { me =>
     val is24HourFormat = DateFormat.is24HourFormat(me)
     if (is24HourFormat) new SimpleDateFormat("dd/MM/yy")
     else new SimpleDateFormat("MM/dd/yy")
-  }
-
-  override def attachBaseContext(base: Context): Unit = {
-    super.attachBaseContext(base)
-    MultiDex.install(me)
   }
 
   def quickToast(code: Int): Unit = quickToast(me getString code)
